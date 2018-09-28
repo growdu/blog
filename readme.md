@@ -2,7 +2,7 @@
 
 This is grwodu's [blog](https://freecode.top).
 
-# <center>Preview</center>
+# <center>preview</center>
 
 |growdu|programmer|
 |:--:|:--:|
