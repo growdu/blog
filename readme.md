@@ -1,6 +1,6 @@
 # <center><font color="blue">blog</font></center>
 
-<table bgcolor="khaki">This is grwodu's [blog](https://freecode.top).</table>
+This is grwodu's [blog](https://freecode.top).
 
 # <center>Preview</center>
 
