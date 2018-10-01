@@ -1,3 +1,5 @@
+<body bgcolor="khaki">
+
 # <center><font color="blue">growdu</font></center>
 
 This is grwodu's [blog](https://freecode.top).
@@ -39,3 +41,4 @@ base目录下主要存放一些基础性的东西，比如
 ## 说明
 
 该目录下主要存放个人总结。
+</body>
