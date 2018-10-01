@@ -4,7 +4,7 @@ This is grwodu's [blog](https://freecode.top).
 
 # 最新文章
 
-* [pdf解析](https://github.com/growdu/blog/tree/master/page/pdfParse.html)
+* [pdf解析](https://github.com/growdu/blog/tree/master/page/pdfParse.md)
 
 
 
