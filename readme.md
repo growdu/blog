@@ -1,4 +1,4 @@
-# <center><font color="blue">blog</font></center>
+# <center><font color="blue">growdu</font></center>
 
 This is grwodu's [blog](https://freecode.top).
 
@@ -8,7 +8,7 @@ This is grwodu's [blog](https://freecode.top).
 
 
 
-# <center>preview</center>
+# preview
 
 |growdu|programmer|
 |:--:|:--:|
