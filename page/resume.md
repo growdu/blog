@@ -1,8 +1,9 @@
 <body bgcolor="khaki">
+
 # <center><font color="red">Introduction</font></center>
 
 
-|![growdu](self.jpg) |<let><font color="">name:&ensp;&emsp;&emsp;growdu<br>phone:&emsp;&emsp;13275631003<br>email:&ensp;&emsp;&emsp;growdu\@gmail.com<br>blog:&emsp;&emsp;&emsp;[https://www.freecode.top](https://github.com/growdu/blog)<br><br>career:&emsp;&emsp;programmer<br>hobby:&emsp;&emsp;computer<br>dream:&emsp;&emsp;write great software<br>target:&emsp;&emsp;write valuable software<br>state:&ensp;&emsp;&emsp;apprentice<br> </font></body></left>|
+|![growdu](./self.jpg) |<let><font color="black">name:&ensp;&emsp;&emsp;growdu<br>phone:&emsp;&emsp;13275631003<br>email:&ensp;&emsp;&emsp;growdu\@gmail.com<br>blog:&emsp;&emsp;&emsp;[https://www.freecode.top](https://github.com/growdu/blog)<br><br>career:&emsp;&emsp;programmer<br>hobby:&emsp;&emsp;computer<br>dream:&emsp;&emsp;write great software<br>target:&emsp;&emsp;write valuable software<br>state:&ensp;&emsp;&emsp;apprentice<br> </font></body></left>|
 |:--|:--|
 
 # <center><font color="red">Education</font></center>
