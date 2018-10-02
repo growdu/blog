@@ -6,6 +6,8 @@ This is grwodu's [blog](https://freecode.top).
 
 # 最新文章
 
+
+* [如何学习编程](https://github.com/growdu/blog/tree/master/page/如何学习编程.md)
 * [pdf解析](https://github.com/growdu/blog/tree/master/page/pdfParse.md)
 
 
