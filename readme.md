@@ -4,17 +4,18 @@
 
 This is grwodu's [blog](https://freecode.top).
 
-# 最新文章
+# [最新文章](https://github.com/growdu/blog/tree/master/page)
 
-
+* [file opreation](https://github.com/growdu/blog/tree/master/base/file.md)
 * [如何学习编程](https://github.com/growdu/blog/tree/master/page/如何学习编程.md)
 * [pdf解析](https://github.com/growdu/blog/tree/master/page/pdfParse.md)
  
 
 # [base](https://github.com/growdu/blog/tree/master/base)
 
-This directory store basis about program,such as
+This [directory](https://github.com/growdu/blog/tree/master/base) store basis about program,such as
 
+* program basis([file](https://github.com/growdu/blog/tree/master/base/file.md) and [process](https://github.com/growdu/blog/tree/master/base/process.md))
 * algorithm
 * data structure
 * Software Architecture
@@ -23,7 +24,7 @@ This directory store basis about program,such as
 
 # [code](https://github.com/growdu/blog/tree/master/code)
 
-This directory store code include
+This [directory](https://github.com/growdu/blog/tree/master/code) store code include
 
 * [c-work](https://github.com/growdu/blog/tree/master/code/c-work)
 * [java-work](https://github.com/growdu/blog/tree/master/code/java-work)
@@ -33,7 +34,7 @@ This directory store code include
 
 # [page](https://github.com/growdu/blog/tree/master/page)
 
-This directory store article.
+This [directory](https://github.com/growdu/blog/tree/master/page) store article.
 
 * [如何学习编程](https://github.com/growdu/blog/tree/master/page/如何学习编程.md)
 * [pdf解析](https://github.com/growdu/blog/tree/master/page/pdfParse.md)
