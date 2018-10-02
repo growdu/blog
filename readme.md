@@ -1,6 +1,6 @@
 <body bgcolor="khaki">
 
-# <center><font color="blue">growdu</font></center>
+# <center><font color="blue">[growdu](https://github.com/growdu/blog/tree/master/page/resume.md)</font></center>
 
 This is grwodu's [blog](https://freecode.top).
 
@@ -9,38 +9,34 @@ This is grwodu's [blog](https://freecode.top).
 
 * [如何学习编程](https://github.com/growdu/blog/tree/master/page/如何学习编程.md)
 * [pdf解析](https://github.com/growdu/blog/tree/master/page/pdfParse.md)
-
-
-
-# preview
-
-|growdu|programmer|
-|:--:|:--:|
-|hobby|computer|
-|dream|write great software|
-|target|write valuable software|
-|current state|apprentice|
+ 
 
 # [base](https://github.com/growdu/blog/tree/master/base)
 
-## 说明
+This directory store basis about program,such as
 
-base目录下主要存放一些基础性的东西，比如
-
-* 算法
-* 数据结构
-* 软件架构
-* 程序逻辑
+* algorithm
+* data structure
+* Software Architecture
+* Program logic
+* Mathematical knowledge
 
 # [code](https://github.com/growdu/blog/tree/master/code)
 
-## 说明
+This directory store code include
 
-该目录下主要存放代码文件。
+* [c-work](https://github.com/growdu/blog/tree/master/code/c-work)
+* [java-work](https://github.com/growdu/blog/tree/master/code/java-work)
+* [C#-work](https://github.com/growdu/blog/tree/master/code/C#-work)
+* [python-work](https://github.com/growdu/blog/tree/master/code/python-work)
+* [shell-work](https://github.com/growdu/blog/tree/master/code/shell-work)
 
 # [page](https://github.com/growdu/blog/tree/master/page)
 
-## 说明
+This directory store article.
 
-该目录下主要存放个人总结。
+* [如何学习编程](https://github.com/growdu/blog/tree/master/page/如何学习编程.md)
+* [pdf解析](https://github.com/growdu/blog/tree/master/page/pdfParse.md)
+* [resume](https://github.com/growdu/blog/tree/master/page/resume.md)
+
 </body>
