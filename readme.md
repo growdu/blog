@@ -4,11 +4,12 @@
 
 This is grwodu's [blog](https://freecode.top).
 
-# [最新文章](https://github.com/growdu/blog/tree/master/page)
+# [latest article](https://github.com/growdu/blog/tree/master/page)
 
+* [process](https://github.com/growdu/blog/tree/master/base/process.md)
 * [file opreation](https://github.com/growdu/blog/tree/master/base/file.md)
-* [如何学习编程](https://github.com/growdu/blog/tree/master/page/如何学习编程.md)
-* [pdf解析](https://github.com/growdu/blog/tree/master/page/pdfParse.md)
+* [how to learn program](https://github.com/growdu/blog/tree/master/page/如何学习编程.md)
+* [pdf parse](https://github.com/growdu/blog/tree/master/page/pdfParse.md)
  
 
 # [base](https://github.com/growdu/blog/tree/master/base)
@@ -36,8 +37,8 @@ This [directory](https://github.com/growdu/blog/tree/master/code) store code inc
 
 This [directory](https://github.com/growdu/blog/tree/master/page) store article.
 
-* [如何学习编程](https://github.com/growdu/blog/tree/master/page/如何学习编程.md)
-* [pdf解析](https://github.com/growdu/blog/tree/master/page/pdfParse.md)
+* [how to learn program](https://github.com/growdu/blog/tree/master/page/如何学习编程.md)
+* [pdf parse](https://github.com/growdu/blog/tree/master/page/pdfParse.md)
 * [resume](https://github.com/growdu/blog/tree/master/page/resume.md)
 
 </body>
