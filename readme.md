@@ -16,7 +16,7 @@ This is grwodu's [blog](https://freecode.top).
 
 This [directory](https://github.com/growdu/blog/tree/master/base) store basis about program,such as
 
-* program basis([file](https://github.com/growdu/blog/tree/master/base/file.md) and [process](https://github.com/growdu/blog/tree/master/base/process.md))
+* program basis([string](https://github.com/growdu/blog/tree/master/base/string.md),[file](https://github.com/growdu/blog/tree/master/base/file.md) and [process](https://github.com/growdu/blog/tree/master/base/process.md))
 * algorithm
 * data structure
 * Software Architecture
