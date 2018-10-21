@@ -3,6 +3,24 @@
 <body bgcolor="khaki"></body>
 <font color="black">
 
+## 文件系统
+
+### ext2
+
+1.superblock
+
+superblock记录整个文件系统相关信息的地方，包括
+
+* block和inode的总量
+* 未使用和已使用的indoe/block数量
+* block与inode的大小
+
+2.inode
+
+3.block
+
+
+
 * 文件的各种属性
 
 ```C
