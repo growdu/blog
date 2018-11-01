@@ -55,3 +55,44 @@ eg：
 //sender代表事件发送者，e是事件参数类
 public delegate void MyEventHandler(object sender, MyEventArgs e);
 ```
+
+# csharp IEnumberable用法
+
+IEnumerable接口是非常的简单，只包含一个抽象的方法GetEnumerator()，它返回一个可用于循环访问集合的IEnumerator对象。任何支持GetEnumerator()方法的类型都可以通过foreach结构进行运算。
+
+```
+IEnumberable<string> test=new IEnumberable<string>();
+string[] temp=test.ToArray();
+```
+
+# csharp 多线程
+
+使用多线程的要点，如何对任务进行划分。
+
+## Thread 类
+
+```
+bool done=false;
+Thread thread=new Thread(()=>{
+    //do something
+    done=true;//线程是否运行结束
+    });
+thread.IsBackround=true;//设置后台运行
+while(!done){
+    Thread.Sleep(5);
+    Application.DoEvents();
+}
+```
+
+## Task类
+
+```C#
+Task task=new Task(()=>{
+    //do something
+    });
+task.start();
+if(task.IsCompleted){
+    //done
+}
+Task task=Task.Factory.StartNew();
+```
