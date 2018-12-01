@@ -1,9 +1,0 @@
-E:\gitwork\blog\code\c-sharp-work\Utils\Utils\bin\Debug\Utils.exe
-E:\gitwork\blog\code\c-sharp-work\Utils\Utils\bin\Debug\Utils.pdb
-E:\gitwork\blog\code\c-sharp-work\Utils\Utils\obj\Debug\Utils.csprojAssemblyReference.cache
-E:\gitwork\blog\code\c-sharp-work\Utils\Utils\obj\Debug\Utils.Form1.resources
-E:\gitwork\blog\code\c-sharp-work\Utils\Utils\obj\Debug\Utils.Properties.Resources.resources
-E:\gitwork\blog\code\c-sharp-work\Utils\Utils\obj\Debug\Utils.csproj.GenerateResource.cache
-E:\gitwork\blog\code\c-sharp-work\Utils\Utils\obj\Debug\Utils.csproj.CoreCompileInputs.cache
-E:\gitwork\blog\code\c-sharp-work\Utils\Utils\obj\Debug\Utils.exe
-E:\gitwork\blog\code\c-sharp-work\Utils\Utils\obj\Debug\Utils.pdb
