@@ -1,7 +1,5 @@
 # growdu's blog
 
-# .git
-
 # base
 - [bat](./base/bat.md)
 - [data-struct](./base/data-struct.md)
@@ -68,7 +66,6 @@
 
 ## python-work
 - [python](./code/python-work/python.md)
-- [readme](./code/python-work/readme.md)
 
 ## shell-work
 - [readme](./code/shell-work/readme.md)
@@ -101,12 +98,12 @@
 # pgsql
 
 ## extension
-- [pgsql扩展](./pgsql/extension/pgsql扩展.md)
+- [pgsql鎵╁睍](./pgsql/extension/pgsql鎵╁睍.md)
 - [insert_data](./pgsql/insert_data.md)
 
 ## pgsql_image
 - [pgsql_main_structure](./pgsql/pgsql_main_structure.md)
-- [pg_io_调优](./pgsql/pg_io_调优.md)
+- [pg_io_璋冧紭](./pgsql/pg_io_璋冧紭.md)
 
 ## process
 - [BgWriter](./pgsql/process/BgWriter.md)
@@ -123,7 +120,7 @@
 - [pgsql_page](./pgsql/storage/file/pgsql_page.md)
 
 ### mm
-- [pgsql内存管理](./pgsql/storage/mm/pgsql内存管理.md)
+- [pgsql鍐呭瓨绠＄悊](./pgsql/storage/mm/pgsql鍐呭瓨绠＄悊.md)
 - [pgsql_storage](./pgsql/storage/pgsql_storage.md)
 - [readme](./readme.md)
 

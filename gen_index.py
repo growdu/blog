@@ -14,6 +14,8 @@ def write_index(path, num):
         tempf = os.path.join(path, f)
         #判断是不是文件夹
         if os.path.isdir(tempf):
+            if (f == ".git"):
+                continue
             temp = "\n"
             for n in range(num):
                 temp = temp + "#"
@@ -32,7 +34,7 @@ if (os.path.exists(filepath)) :
 	#存在，则删除文件
 	os.remove(filepath)
 
-file = open(filepath,'a')
+file = open(filepath,'a',encoding="UTF-8")
 file.write("# growdu's blog\n")
 write_index(".", 0)
 file.close()
