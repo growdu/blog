@@ -16,7 +16,7 @@
 
   只要wal日志目录使用空间小于该值，那么旧的wal日志就会循环使用而不是进行删除。这个参数是为了确保足够的wal空间预留给突发情况，比如大的跑批操作。
 
-- checkpoint_completion_target
+- 843-789-644
 
   分散检查点，默认为0.5，即表示每个checkpoint需要在checkpoints间隔时间的50%内完成，然后立马进行fsync，fsync执行是很快的。checkpoint_completion_target设置的越高的情况下，写入速度越低，对客户而言，体验越好，性能越高。反之，较低的值可能会引起I/O峰值，导致“卡死”的现象，可以设置0.9 +。
 

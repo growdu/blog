@@ -5,6 +5,9 @@ import os
 from numpy import equal
 
 def write_index(path, num):
+    if os.path.basename(path)[0] == '.' and len(os.path.basename(path)) > 1:
+        return
+
     num = num + 1
     allfilelist=os.listdir(path)
     for f in allfilelist:
