@@ -14,7 +14,7 @@ def write_index(path, num):
         tempf = os.path.join(path, f)
         #判断是不是文件夹
         if os.path.isdir(tempf):
-            if (f == ".git"):
+            if (f == ".git") or f == "code":
                 continue
             temp = "\n"
             for n in range(num):
@@ -36,5 +36,5 @@ if (os.path.exists(filepath)) :
 
 file = open(filepath,'a',encoding="UTF-8")
 file.write("# growdu's blog\n")
-write_index(".", 0)
+write_index(".", 1)
 file.close()
