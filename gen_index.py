@@ -36,5 +36,8 @@ if (os.path.exists(filepath)) :
 
 file = open(filepath,'a',encoding="UTF-8")
 file.write("# growdu's blog\n")
+file.write("\n## about me\n")
+file.write("- [resume](./page/resume.md)\n")
+file.write("- [resume-zh](./page/resume-zh.md)\n")
 write_index(".", 1)
 file.close()

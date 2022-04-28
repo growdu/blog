@@ -1,5 +1,9 @@
 # growdu's blog
 
+## about me
+- [resume](./page/resume.md)
+- [resume-zh](./page/resume-zh.md)
+
 ## base
 - [bat](./base/bat.md)
 - [data-struct](./base/data-struct.md)
@@ -63,6 +67,7 @@
 ### storage
 - [pgsql_page](./pgsql/storage/file/pgsql_page.md)
 - [pgsql内存管理](./pgsql/storage/mm/pgsql内存管理.md)
+- [pg_page](./pgsql/storage/mm/pg_page.md)
 - [pgsql_storage](./pgsql/storage/pgsql_storage.md)
 - [readme](./readme.md)
 
