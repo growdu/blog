@@ -26,6 +26,9 @@
 - [vim](./base/use-tools/vim.md)
 - [how_to_learn_program](./how_to_learn_program.md)
 
+## language
+- [c语言变长数组](./language/c语言变长数组.md)
+
 ## page
 - [Csharp](./page/Csharp.md)
 - [devExpress](./page/devExpress.md)
@@ -54,11 +57,17 @@
 ### pgsql_image
 - [pgsql_main_structure](./pgsql/pgsql_main_structure.md)
 - [pg_io_调优](./pgsql/pg_io_调优.md)
+- [pg_replication](./pgsql/pg_replication.md)
 
 ### process
 - [BgWriter](./pgsql/process/BgWriter.md)
 - [Checkpoint](./pgsql/process/Checkpoint.md)
 - [WalWriter](./pgsql/process/WalWriter.md)
+
+### replication
+- [pg_logic_decode](./pgsql/replication/pg_logic_decode.md)
+- [pg_slot](./pgsql/replication/pg_slot.md)
+- [pg_walsender](./pgsql/replication/pg_walsender.md)
 
 ### repmgr
 - [pgsql_repmgr](./pgsql/repmgr/pgsql_repmgr.md)
