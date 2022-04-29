@@ -31,15 +31,26 @@ pgsql把客户端称为前端，把服务端称为后端。前端通过调用**l
   - autovacuum
   - wal sender/wal receiver
 
+### 启动流程
+
+```mermaid
+graph TB
+main-->PostmasterMain-->SysLogger_Start-->fork_process-->InitPostmasterChild-->SysLoggerMain
+PostmasterMain-->maybe_start_bgworkers-->ServerLoop-->StartAutoVacLauncher-->MaybeStartWalReceiver
+PostmasterMain-->StartCheckpointer
+PostmasterMain-->StartBackgroundWriter
+```
+
+
+
 ### 后端处理流程
 
- 1.接收前端发送过来的请求报文
- 2.parse模块进行文本解析，得到查询树
- 3.analyze模块进行分析处理
- 4.通过查询语句的重写实现视图和规则
- 5.查询优化，优化查询树
- 6.executor执行处理
- 7.返回执行结果给前端
- 8.重复步骤1-7
-
+1. 接收前端发送过来的请求报文
+2. parse模块进行文本解析，得到查询树
+3. analyze模块进行分析处理
+4. 通过查询语句的重写实现视图和规则
+5. 查询优化，优化查询树
+6. executor执行处理
+7. 返回执行结果给前端
+8. 重复步骤1-7
 

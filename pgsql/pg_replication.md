@@ -156,14 +156,60 @@ pg_recvlogical是 PostgreSQL自带的工具，它管理插槽并使用插槽中�
 
 - WalSender
 
+  WalSender是Wal日志发送进程，运行在主库。当收到备库的WalReciver进程发过来的建链请求时，主库postgres进程会fork出WalSender进程。
+
   ```mermaid
   graph TB
   BackendStartup-->BackendRun-->PostgresMain-->InitWalSender-->exec_replication_command-->StartReplication-->WalSndLoop-->XLogSendPhysical
   exec_replication_command-->StartLogicalReplication-->WalSndLoop-->XLogSendLogical
   ```
 
+  ```c
+  switch (cmd_node->type)
+  	{
+  		case T_IdentifySystemCmd:
+  			IdentifySystem();
+  			break;
+  		case T_ReadReplicationSlotCmd:
+  			ReadReplicationSlot((ReadReplicationSlotCmd *) cmd_node);
+  			break;
+  		case T_BaseBackupCmd:
+  			SendBaseBackup((BaseBackupCmd *) cmd_node);
+  			break;
+  		case T_CreateReplicationSlotCmd:
+  			CreateReplicationSlot((CreateReplicationSlotCmd *) cmd_node);
+  			break;
+  		case T_DropReplicationSlotCmd:
+  			DropReplicationSlot((DropReplicationSlotCmd *) cmd_node);
+  			break;
+  		case T_StartReplicationCmd:
+  			{
+  				StartReplicationCmd *cmd = (StartReplicationCmd *) cmd_node;
+  				if (cmd->kind == REPLICATION_KIND_PHYSICAL)
+  					StartReplication(cmd);
+  				else
+  					StartLogicalReplication(cmd);
+  				break;
+  			}
+  
+  		case T_TimeLineHistoryCmd:
+  			EndReplicationCommand(cmdtag);
+  			break;
+  		case T_VariableShowStmt:
+  				CommitTransactionCommand();
+  			break;
+  		default:
+  			elog(ERROR, "unrecognized replication command node tag: %u",
+  				 cmd_node->type);
+  	}
+  ```
+
+  
+
 - WalReciver
 
+  从库启动时会在postgresql启动时就创建WalReciver进程，并主动连接主库。
+  
   ```mermaid
   graph TB
   main-->PostmasterMain-->StartChildProcess-->fork_process-->AuxiliaryProcessMain-->WalReceiverMain
