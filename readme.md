@@ -1,5 +1,9 @@
 # growdu's blog
 
+[use-tools](#use-tools)
+
+[language](#language)
+
 ## about me
 - [resume](./page/resume.md)
 - [resume-zh](./page/resume-zh.md)
