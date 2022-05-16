@@ -1,6 +1,16 @@
 # pg_walsender
 
-## 交互接口
+walsender分析分为两部分，
+
+- 与备库建立链接前的流程
+
+  主库会监听socket，并接受备库的tcp链接请求，当收到备库walReceiver请求后，主库postgres就会fork出一个waksender进程来处理相关请求。
+
+- 与备库建立链接后的流程
+
+  建立连接后，walsender需要判断发送哪些数据，并启动keepalive机制，探测备库receiver是否正常，同时发送数据。
+
+## 建连前
 
 ### 全局变量
 
@@ -249,16 +259,8 @@ typedef enum NodeTag {
   ```c
   typedef struct XLogRecoveryCtlData
   {
-  	/*
-  	 * SharedHotStandbyActive indicates if we allow hot standby queries to be
-  	 * run.  Protected by info_lck.
-  	 */
   	bool		SharedHotStandbyActive;
   
-  	/*
-  	 * SharedPromoteIsTriggered indicates if a standby promotion has been
-  	 * triggered.  Protected by info_lck.
-  	 */
   	bool		SharedPromoteIsTriggered;
   
   	Latch		recoveryWakeupLatch;
@@ -270,20 +272,11 @@ typedef enum NodeTag {
   	XLogRecPtr	lastReplayedEndRecPtr;	/* end+1 position */
   	TimeLineID	lastReplayedTLI;	/* timeline */
   
-  	/*
-  	 * When we're currently replaying a record, ie. in a redo function,
-  	 * replayEndRecPtr points to the end+1 of the record being replayed,
-  	 * otherwise it's equal to lastReplayedEndRecPtr.
-  	 */
   	XLogRecPtr	replayEndRecPtr;
   	TimeLineID	replayEndTLI;
   	/* timestamp of last COMMIT/ABORT record replayed (or being replayed) */
   	TimestampTz recoveryLastXTime;
   
-  	/*
-  	 * timestamp of when we started replaying the current chunk of WAL data,
-  	 * only relevant for replication or archive recovery
-  	 */
   	TimestampTz currentChunkStartTime;
   	/* Recovery pause state */
   	RecoveryPauseState recoveryPauseState;
@@ -293,6 +286,236 @@ typedef enum NodeTag {
   } XLogRecoveryCtlData;
   ```
 
-  
+### 请求接收
 
-## 执行逻辑
+postgresmain会监听socket，并接受对端的请求。
+
+```mermaid
+graph TB
+PostgresMain-->ReadCommand-->SocketBackend-->pq_getbyte-->pq_recvbuf-->secure_read-->secure_raw_read-->recv
+pq_getbyte-->|firstChar=='Q'|exec_replication_command
+```
+
+
+
+### 数据发送 
+
+  数据通过socket接口进行发送，最终数据出口为操作系统提供的socket接口的send函数。
+
+```c
+typedef struct
+{
+	void		(*comm_reset) (void);
+	int			(*flush) (void);
+	int			(*flush_if_writable) (void);
+	bool		(*is_send_pending) (void);
+	int			(*putmessage) (char msgtype, const char *s, size_t len);
+	void		(*putmessage_noblock) (char msgtype, const char *s, size_t len);
+} PQcommMethods;
+```
+
+```c
+static const PQcommMethods PqCommSocketMethods = {
+	socket_comm_reset,
+	socket_flush,
+	socket_flush_if_writable,
+	socket_is_send_pending,
+	socket_putmessage,
+	socket_putmessage_noblock
+};
+```
+
+其执行流程如下：
+
+```mermaid
+graph TB
+XLogSendPhysical-->pq_putmessage_noblock-->socket_putmessage_noblock-->socket_putmessage-->internal_putbytes-->internal_flush-->secure_write-->secure_raw_write-->send
+```
+
+## 建连后
+
+## 基本流程
+
+建立连接后，walsender会进入一个循环中，循环判断是否需要发送数据，是否需要启动心跳机制。
+
+其流程如下：
+
+```mermaid
+graph TB
+WalSndLoop-->|接收报文|ProcessRepliesIfAny-->|判断需要发送报文|send_data-->|检查心跳是否超时|WalSndCheckTimeOut-->|未超时检查是否需要发送心跳|WalSndKeepaliveIfNecessary-->|上次执行时间当当前时间间隔已超过设置的一半超时时间则发送keepalive报文|WalSndKeepalive-->loop
+WalSndCheckTimeOut-->|超时关闭walSender|WalSndShutdown
+```
+
+其中walsender收包的流程如下：
+
+```mermaid
+graph TB
+ProcessRepliesIfAny-->pq_getbyte_if_available-->secure_read-->secure_raw_read-->recv
+```
+
+需要特别注意的是recv分为阻塞IO和非阻塞IO，pg使用的是非阻塞IO，收包不会在这里卡住。
+
+### 心跳
+
+心跳主要由以下两个时间来控制：
+
+```c
+/* Timestamp of last ProcessRepliesIfAny(). */
+static TimestampTz last_processing = 0;
+
+/*
+ * Timestamp of last ProcessRepliesIfAny() that saw a reply from the
+ * standby. Set to 0 if wal_sender_timeout doesn't need to be active.
+ */
+static TimestampTz last_reply_timestamp = 0;
+```
+
+其中last_reply_timestamp会在进入循环的时候获取当前时间戳，
+
+```c
+last_reply_timestamp = GetCurrentTimestamp();
+```
+
+在每次sender循环中，都会先检查sender有没有收到receiver发过来的报文，此时在收包前会记下当前的时间戳，并赋值给last_processing。
+
+```c
+last_processing = GetCurrentTimestamp();
+```
+
+此时会适用recv进行收包，若收到报文类型为'd'和‘c’的报文时，会将是否收到报文的状态量received设置为true。并且若receivede为true，则在收包完成后更新last_reply_timestamp。
+
+```c
+	/*
+	 * Save the last reply timestamp if we've received at least one reply.
+	 */
+	if (received)
+	{
+		last_reply_timestamp = last_processing;
+		waiting_for_ping_response = false;
+	}
+```
+
+当获取到last_processing和last_reply_timestamp时间后，再结合配置wal_send_timeout即可计算sender是否需要关闭，以及计算sender的keepalive发送的时机。
+
+- 是否关闭sender
+
+  通过WalSndCheckTimeOut来检查sender是否超时，其主要判断依据是
+
+  ```c
+  	timeout = TimestampTzPlusMilliseconds(last_reply_timestamp,
+  										  wal_sender_timeout);
+  
+  	if (wal_sender_timeout > 0 && last_processing >= timeout)
+  	{
+  		/*
+  		 * Since typically expiration of replication timeout means
+  		 * communication problem, we don't send the error message to the
+  		 * standby.
+  		 */
+  		ereport(COMMERROR,
+  				(errmsg("terminating walsender process due to replication timeout")));
+  
+  		WalSndShutdown();
+  	}
+  ```
+
+  用上一次收到回复的时刻，加上wal_sender_timeout，计算得到一个时间戳timeout，然后看last_processing是否已经超过了timeout。或者说从上次收到回复到当前执行的时间差值是否已经超过了wal_sender_timeout。
+
+- 是否需要发送keepalive
+
+  通过WalSndKeepaliveIfNecessary来检查是否需要发送keepalive报文。其判断逻辑如下：
+
+  ```c
+  	/*
+  	 * If half of wal_sender_timeout has lapsed without receiving any reply
+  	 * from the standby, send a keep-alive message to the standby requesting
+  	 * an immediate reply.
+  	 */
+  	ping_time = TimestampTzPlusMilliseconds(last_reply_timestamp,
+  											wal_sender_timeout / 2);
+  	if (last_processing >= ping_time)
+  	{
+  		WalSndKeepalive(true, InvalidXLogRecPtr);
+  
+  		/* Try to flush pending output to the client */
+  		if (pq_flush_if_writable() != 0)
+  			WalSndShutdown();
+  	}
+  ```
+
+  可以看到与超时关闭不同的是，发送心跳报文的判断时间是wal_sender_timeout的一半。
+
+### sender消息处理
+
+walsender收到receiver的消息后，通过消息的第一个字符来处理对应的消息。sender仅处理如下三种类型的报文：
+
+- x
+
+  x表示对端已经关闭了流复制的socket
+
+- d
+
+  d表示的是数据报文。
+
+- c
+
+  c表示的是copydone，表示备机已经完成流式复制，若sender还没有发送数据的话，也需要使用这种类型回复。
+
+### sender消息发送
+
+- 心跳报文
+
+  心跳报文在WalSndKeepalive中发送，其消息格式如下：
+
+  ```c
+  	pq_sendbyte(&output_message, 'k');
+  	pq_sendint64(&output_message, XLogRecPtrIsInvalid(writePtr) ? sentPtr : writePtr);
+  	pq_sendint64(&output_message, GetCurrentTimestamp());
+  	pq_sendbyte(&output_message, requestReply ? 1 : 0);
+  ```
+
+  第一个字符是'k'，表示心跳报文，然后跟着一个8字节的数据指针和一个8字节的时间戳，最后还有一个字节的是否需要回复标志。
+
+- 数据报文
+
+  ```c
+  	pq_sendbyte(&output_message, 'w');
+  
+  	pq_sendint64(&output_message, startptr);	/* dataStart */
+  	pq_sendint64(&output_message, SendRqstPtr); /* walEnd */
+  	pq_sendint64(&output_message, 0);	/* sendtime, filled in last */
+  ```
+
+#### 逻辑复制
+
+
+
+#### 物理复制
+
+物理复制使用XLogSendPhysical进行数据发送。
+
+```mermaid
+graph TB
+XLogSendPhysical-->GetStandbyFlushRecPtr-->GetWalRcvFlushRecPtr-->GetXLogReplayRecPtr-->WALRead-->pg_read-->read
+```
+
+先找到未同步的起始指针
+
+```c
+    receivePtr = GetWalRcvFlushRecPtr(NULL, &receiveTLI);
+	replayPtr = GetXLogReplayRecPtr(&replayTLI);
+
+	*tli = replayTLI;
+
+	result = replayPtr;
+	if (receiveTLI == replayTLI && receivePtr > replayPtr)
+		result = receivePtr;
+```
+
+
+
+```mermaid
+graph TB
+
+```
+
