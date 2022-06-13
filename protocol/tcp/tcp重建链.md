@@ -5,6 +5,7 @@
 - TCP_USER_TIMEOUT(需要内核2.6.37及其以上版本)
 - SIOCOUTQ
 - tcp_retries2
+- 应用层keepalive
 
 ## TCP_USER_TIMEOUT
 
@@ -50,7 +51,17 @@ if(!sysctl(name, sizeof(name)/sizeof(name[0]), NULL, NULL, &value, size) {
 }
 ```
 
+tcp_retries2指定的是tcp重传的次数，其超时时间与RTO的计算有关。RTO最小值默认为200ms，最大为120s，在tcp的重传过程中，以200ms为基础，每次重传超时时间翻倍，但最大只能为120s。
+
+在linux中tcp_retries2默认为15，因而其超时时间为：(2^9 -1)*0.2 + (16 - 9) * 120s = 924.6s.
+
 <font color="red">需要特别留意的是tcp_retries2针对的是系统上的所有链路。</font>
+
+## 应用层keepalive
+
+可以在应用层实现keepalive机制，通过主动发送keepalive报文和设置超时时间来检测链路是否异常。
+
+<font color="red">需修改应用层代码，设计实现keepalive。</font>
 
 ## reference
 

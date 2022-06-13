@@ -22,3 +22,4 @@ $1 = "\"/usr/local/postgresql/bin/postgres\" --boot -X 16777216  -F -c log_check
 
 ```
 
+可以看到，initdb最终会调用postgres来初始化数据库。
