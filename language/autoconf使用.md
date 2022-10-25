@@ -13,6 +13,10 @@
 > ```
 
 > 使用automake,程序开发人员只需要写一些简单的 含有预定义宏的 文件,由autoconf根据一个宏文件生成configure,由automake根据另一个宏文件生成Makefile.in,再使用configure依据Makefile.in来生成一个符合惯例的 Makefile.
+>
+> automake 读取 Makefile.am 来产生 Makefile.in。
+>
+> configure 读取 Makefile.in 来产生 Makefile。
 
 使用autoconf的最终目的是生成能够根据不同系统生成Makefile的configure文件，一般情况下我们需要准备如下内容：
 

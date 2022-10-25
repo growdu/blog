@@ -369,3 +369,6 @@ ha@machine1:~/code/kazoo_test$ python3 run.py
 [192.168.145.130-0000000001, 192.168.145.131-0000000002]
 ```
 
+# reference
+
+1. https://cloud.tencent.com/developer/article/1050471
