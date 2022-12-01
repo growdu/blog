@@ -7,6 +7,7 @@ linux内核提供在运行时可进行扩展的特性，这意味着当系统启
 内核模块编译后会生成.ko的文件，在linux系统中可以执行如下命令查看模块相关信息。
 
 ```shell
+<<<<<<< HEAD
 
 #加载内核模块
 
@@ -24,6 +25,16 @@ lsmod
 
 modinfo modname
 
+=======
+#加载内核模块
+insmod
+#卸载内核模块
+rmmod
+#列出内核模块
+lsmod
+#查看模块信息
+modinfo modname
+>>>>>>> 805efff96212946933afaddb75d65e85df96dac0
 ```
 
 ## 编写内核模块
@@ -43,9 +54,13 @@ modinfo modname
 我们可以在加载内核模块的时候向其传递参数，以让同一代码达到不同的效果。当然我们的参数必须用module_param宏来声明具体如下：
 
 ```c
+<<<<<<< HEAD
 
 module_param（name，type，perm）
 
+=======
+module_param（name，type，perm） 
+>>>>>>> 805efff96212946933afaddb75d65e85df96dac0
 ```
 
 -  name  ： 变量名
@@ -59,7 +74,6 @@ module_param（name，type，perm）
 ```c
 
 Module_param_array（name，type，num，perm）
-
 ```
 
 ### 模块符号导出
@@ -108,6 +122,7 @@ module_exit(hello_exit);//跟上面的宏对立
 
 ```makefile
 
+
 obj-m := hello.o
 
 DIRS :=/home/linux
@@ -119,7 +134,6 @@ make -C $(DIRS) M=$(PWD) modules
 clean:
 
 rm -Rf*.o *.ko *.mod.c *.order *.symvers
-
 ```
 
 - printk
@@ -127,6 +141,7 @@ rm -Rf*.o *.ko *.mod.c *.order *.symvers
 printk函数为内核打印函数，其和printf函数功能类似，不过比printf多了打印权限一共有8个级别，printk的日志级别定义如下（在include/linux/kernel.h中）
 
 ```c
+
 
 #define KERN_EMERG 0 //紧急事件消息，系统崩溃之前提示，表示系统不可用
 
@@ -149,5 +164,3 @@ printk函数为内核打印函数，其和printf函数功能类似，不过比pr
 # reference
 
 1. https://blog.csdn.net/qq_33406883/article/details/100071183
-
-1. https://www.cnblogs.com/wrjvszq/p/4260996.html
