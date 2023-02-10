@@ -46,6 +46,24 @@ do
 done
 ```
 
+```shell
+while true:
+do
+	echo "loop"
+done
+```
+
+```shell
+n=0
+while [ $n -le 100 ]
+do
+	echo "loop"
+	let n++
+done
+```
+
+
+
 ## 条件判断
 
 ### 字符串判断
