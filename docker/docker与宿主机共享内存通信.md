@@ -9,15 +9,15 @@ docker中的进程要与宿主机使用共享内存通信，需要在启动容�
 ```c
 #ifndef _SHMDATA_H_HEADER
 #define _SHMDATA_H_HEADER
- 
+
 #define TEXT_SZ 2048
- 
+
 struct shared_use_st
 {
     int written; // 作为一个标志，非0：表示可读，0：表示可写
     char text[TEXT_SZ]; // 记录写入 和 读取 的文本
 };
- 
+
 #endif
 ```
 
@@ -30,14 +30,14 @@ struct shared_use_st
 #include <string.h>
 #include <sys/shm.h>
 #include "shmdata.h"
- 
+
 int main(int argc, char **argv)
 {
     void *shm = NULL;
     struct shared_use_st *shared = NULL;
     char buffer[BUFSIZ + 1]; // 用于保存输入的文本
     int shmid;
- 
+
     // 创建共享内存
     shmid = shmget((key_t)1234, sizeof(struct shared_use_st), 0666|IPC_CREAT);
     if (shmid == -1)
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "shmget failed\n");
         exit(EXIT_FAILURE);
     }
- 
+
     // 将共享内存连接到当前的进程地址空间
     shm = shmat(shmid, (void *)0, 0);
     if (shm == (void *)-1)
@@ -53,9 +53,9 @@ int main(int argc, char **argv)
         fprintf(stderr, "shmat failed\n");
         exit(EXIT_FAILURE);
     }
- 
+
     printf("Memory attched at %X\n", (int)shm);
- 
+
     // 设置共享内存
     shared = (struct shared_use_st *)shm;
     while (1) // 向共享内存中写数据
@@ -66,29 +66,29 @@ int main(int argc, char **argv)
             sleep(1);
             printf("Waiting...\n");
         }
- 
+
         // 向共享内存中写入数据
         printf("Enter some text: ");
         fgets(buffer, BUFSIZ, stdin);
         strncpy(shared->text, buffer, TEXT_SZ);
- 
+
         // 写完数据，设置written使共享内存段可读
         shared->written = 1;
- 
+
         // 输入了end，退出循环（程序）
         if (strncmp(buffer, "end", 3) == 0)
         {
             break;
         }
     }
- 
+
     // 把共享内存从当前进程中分离
     if (shmdt(shm) == -1)
     {
         fprintf(stderr, "shmdt failed\n");
         exit(EXIT_FAILURE);
     }
- 
+
     sleep(2);
     exit(EXIT_SUCCESS);
 }
@@ -98,9 +98,9 @@ int main(int argc, char **argv)
 
 ```makefile
 all:
-	gcc -o shm_slave shm_slave.c
+    gcc -o shm_slave shm_slave.c
 clean:
-	rm -rf shm_slave
+    rm -rf shm_slave
 ```
 
 ## docker镜像准备
@@ -110,15 +110,15 @@ clean:
 ```c
 #ifndef _SHMDATA_H_HEADER
 #define _SHMDATA_H_HEADER
- 
+
 #define TEXT_SZ 2048
- 
+
 struct shared_use_st
 {
     int written; // 作为一个标志，非0：表示可读，0：表示可写
     char text[TEXT_SZ]; // 记录写入 和 读取 的文本
 };
- 
+
 #endif
 ```
 
@@ -132,7 +132,7 @@ struct shared_use_st
 #include <unistd.h>
 #include <string.h>
 #include "shmdata.h"
- 
+
 int main(int argc, char **argv)
 {
     void *shm = NULL;
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
     int shmid; // 共享内存标识符
     // 将内容写入到文件，可以通过查看文件确定共享内存是否成功
     FILE* file = fopen("t.txt","w+");
- 
+
     // 创建共享内存
     shmid = shmget((key_t)1234, sizeof(struct shared_use_st), 0666|IPC_CREAT);
     if (shmid == -1)
@@ -148,7 +148,7 @@ int main(int argc, char **argv)
         fprintf(stderr, "shmat failed\n");
         exit(EXIT_FAILURE);
     }
- 
+
     // 将共享内存连接到当前进程的地址空间
     shm = shmat(shmid, 0, 0);
     if (shm == (void *)-1)
@@ -156,9 +156,9 @@ int main(int argc, char **argv)
         fprintf(stderr, "shmat failed\n");
         exit(EXIT_FAILURE);
     }
- 
+
     printf("\nMemory attached at %X\n", (int)shm);
- 
+
     // 设置共享内存
     shared = (struct shared_use_st*)shm; // 注意：shm有点类似通过 malloc() 获取到的内存，所以这里需要做个 类型强制转换
     shared->written = 0;
@@ -171,10 +171,10 @@ int main(int argc, char **argv)
             fputs(shared->text,file);
             fflush(file);
             sleep(1);
- 
+
             // 读取完数据，设置written使共享内存段可写
             shared->written = 0;
- 
+
             // 输入了 end，退出循环（程序）
             if (strncmp(shared->text, "end", 3) == 0)
             {
@@ -186,7 +186,7 @@ int main(int argc, char **argv)
             sleep(1);
         }
     }
- 
+
     // 把共享内存从当前进程中分离
     if (shmdt(shm) == -1)
     {
@@ -194,7 +194,7 @@ int main(int argc, char **argv)
         flcose(file);
         exit(EXIT_FAILURE);
     }
- 
+
     // 删除共享内存
     if (shmctl(shmid, IPC_RMID, 0) == -1)
     {
@@ -202,7 +202,7 @@ int main(int argc, char **argv)
         fclose(file);
         exit(EXIT_FAILURE);
     }
- 	flcose(file);
+     flcose(file);
     exit(EXIT_SUCCESS);
 }
 ```
@@ -211,9 +211,9 @@ int main(int argc, char **argv)
 
 ```makefile
 all:
-	gcc -o shm_master shm_master.c
+    gcc -o shm_master shm_master.c
 clean:
-	rm -rf shm_master
+    rm -rf shm_master
 ```
 
 - Dockerfile
@@ -299,5 +299,5 @@ recv time:1641533617589
 1. https://www.cnblogs.com/hailun1987/p/9697236.html
 
 2. https://www.jianshu.com/p/7eb7c7f62bf3
-3. https://www.cnblogs.com/52php/p/5861372.html
 
+3. https://www.cnblogs.com/52php/p/5861372.html

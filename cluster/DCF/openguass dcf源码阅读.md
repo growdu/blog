@@ -10,17 +10,15 @@ dcf_set_param-->dcf_register_after_writer-->dcf_register_consensus_notify-->dcf_
 ```
 
 - dcf_start
-
-  ```mermaid
-  graph TB
-  cm_latch_x-->init_dcf_errno_desc-->cm_reset_error-->init_main_threads-->init_tool_threads-->add_manual_notify_item-->rep_check_param_majority_groups
-  ```
+  
+```mermaid
+graph TB
+cm_latch_x-->init_dcf_errno_desc-->cm_reset_error-->init_main_threads-->init_tool_threads-->add_manual_notify_item-->rep_check_param_majority_groups
+```
 
 - init_main_threads
-
-  ```mermaid
-  graph TB
-  cm_start_timer-->init_logger-->md_init
-  ```
-
   
+```mermaid
+graph TB
+cm_start_timer-->init_logger-->md_init
+```

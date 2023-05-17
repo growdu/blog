@@ -21,4 +21,3 @@ cd test_web
 python manage.py runserver #运行项目
 python manage.py startapp app1 # 创建app1
 ```
-

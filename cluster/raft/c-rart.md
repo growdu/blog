@@ -92,7 +92,7 @@ raft_uv_init(&io, &loop, dir, &transport);
 
 2. 定义应用层的`Raft FSM`，实现`raft_fsm`接口
 
-````c
+```c
 ```C
 struct raft_fsm
 {
@@ -102,7 +102,7 @@ struct raft_fsm
   int (*restore)(struct raft_fsm *fsm, struct raft_buffer *buf);
 }
 ```
-````
+```
 
 3. 为每个服务节点选择一个唯一的 ID 和地址并初始化 raft 对象：
 

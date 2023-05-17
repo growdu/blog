@@ -36,69 +36,67 @@ walsender通过wal_sender_timeout确认keepalive超时时间，默认为60s。�
 ### walreceiver心跳发送机制
 
 - 收到心跳报文
-
+  
   walreceiver收到心跳报文后，会立马回复心跳报文，且不存在写入操作。
 
 - 收到数据报文
-
+  
   walreceiver收到数据报文后，会在将socket的buffer缓冲区内的数据接收处理完成后回复reply报文，wlasender收到这种报文回复后同样可以重置walsender的last_reply_time;
 
 - 主动发送reply报文
-
+  
   当walreceiver在wal_receiver_timeout/2时间内没有收到walsender的心跳报文或者数据报文，walreceiver也会主动发送reply报文，并需要walsender回复。
-
+  
   同样的walreceiver在wal_receiver_timeout时间内没有收到walsender的心跳报文或者数据报文，walreceiver会认为walsender超时而断开连接。
 
 ### walreceiver报文接收回复及其实现
 
 ```c
-				/* See if we can read data immediately */
-				len = walrcv_receive(wrconn, &buf, &wait_fd);
-				if (len != 0)
-				{
-					/*
-					 * Process the received data, and any subsequent data we
-					 * can read without blocking.
-					 */
-					for (;;)
-					{
-						if (len > 0)
-						{
-							/*
-							 * Something was received from primary, so reset
-							 * timeout
-							 */
-							last_recv_timestamp = GetCurrentTimestamp();
-							ping_sent = false;
-							XLogWalRcvProcessMsg(buf[0], &buf[1], len - 1,
-												 startpointTLI);
-						}
-						else if (len == 0)
-							break;
-						else if (len < 0)
-						{
-							ereport(LOG,
-									(errmsg("replication terminated by primary server"),
-									 errdetail("End of WAL reached on timeline %u at %X/%X.",
-											   startpointTLI,
-											   LSN_FORMAT_ARGS(LogstreamResult.Write))));
-							endofwal = true;
-							break;
-						}
-						len = walrcv_receive(wrconn, &buf, &wait_fd);
-					}
+                /* See if we can read data immediately */
+                len = walrcv_receive(wrconn, &buf, &wait_fd);
+                if (len != 0)
+                {
+                    /*
+                     * Process the received data, and any subsequent data we
+                     * can read without blocking.
+                     */
+                    for (;;)
+                    {
+                        if (len > 0)
+                        {
+                            /*
+                             * Something was received from primary, so reset
+                             * timeout
+                             */
+                            last_recv_timestamp = GetCurrentTimestamp();
+                            ping_sent = false;
+                            XLogWalRcvProcessMsg(buf[0], &buf[1], len - 1,
+                                                 startpointTLI);
+                        }
+                        else if (len == 0)
+                            break;
+                        else if (len < 0)
+                        {
+                            ereport(LOG,
+                                    (errmsg("replication terminated by primary server"),
+                                     errdetail("End of WAL reached on timeline %u at %X/%X.",
+                                               startpointTLI,
+                                               LSN_FORMAT_ARGS(LogstreamResult.Write))));
+                            endofwal = true;
+                            break;
+                        }
+                        len = walrcv_receive(wrconn, &buf, &wait_fd);
+                    }
 
-					/* Let the primary know that we received some data. */
-					XLogWalRcvSendReply(false, false);
+                    /* Let the primary know that we received some data. */
+                    XLogWalRcvSendReply(false, false);
 
-					/*
-					 * If we've written some records, flush them to disk and
-					 * let the startup process and primary server know about
-					 * them.
-					 */
-					XLogWalRcvFlush(false, startpointTLI);
+                    /*
+                     * If we've written some records, flush them to disk and
+                     * let the startup process and primary server know about
+                     * them.
+                     */
+                    XLogWalRcvFlush(false, startpointTLI);
 ```
 
-
-
-​	 
+​     
