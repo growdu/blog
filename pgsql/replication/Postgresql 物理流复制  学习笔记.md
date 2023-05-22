@@ -4,10 +4,10 @@ postgresql 提供了主从复制功能，有基于文件的拷贝和基于 tcp �
 
 当配置好了主从后，我们需要先启动主库，再启动从库。
 
-1.  从库启动后，会创建 walreceiver 进程，然后发送同步请求到主库。
-2.  主库收到请求后，会创建 walsender 进程。
-3.  walsender 进程启动后会和 walreceiver 建立 tcp 连接
-4.  主库和从库就依靠这个 tcp 连接进行后续通信
+1. 从库启动后，会创建 walreceiver 进程，然后发送同步请求到主库。
+2. 主库收到请求后，会创建 walsender 进程。
+3. walsender 进程启动后会和 walreceiver 建立 tcp 连接
+4. 主库和从库就依靠这个 tcp 连接进行后续通信
 
 walsender 进程只会运行在主库上，而 walreceiver 进程只会运行在从库上。
 
