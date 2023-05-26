@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 import os
 
-from numpy import equal
 
 def write_index(path, num):
     if os.path.basename(path)[0] == '.' and len(os.path.basename(path)) > 1:
