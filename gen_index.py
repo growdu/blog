@@ -23,6 +23,7 @@ def write_index(path, num):
                 file.write(temp)
             write_index(tempf, num)
         elif tempf.endswith(".md"): 
+            tempf=tempf.replace(" ","_").replace("-","_").replace("-","_")
             temp = "- " + "[" + os.path.basename(tempf).split('.')[0] + "]" + "(" + tempf + ")" + "\n"
             temp = temp.replace("\\", "/")
             file.write(temp)
