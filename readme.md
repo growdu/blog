@@ -5,9 +5,6 @@
 - [resume-zh](./page/resume-zh.md)
 - [readme](./readme.md)
 
-## plan
-- [2023新疆农版本计划](./plan/2023新疆农版本计划.md)
-
 ## tools
 - [readme](./tools/readme.md)
 - [nc](./tools/nc.md)
