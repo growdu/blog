@@ -1,4 +1,4 @@
-# 一文看懂openguass dcf网络模块
+# 一文读懂openguass dcf网络模块
 
 | 编写人 | 编写内容 | 编写时间       |
 | --- | ---- | ---------- |
@@ -10,9 +10,7 @@
 
 ## 0. mec概要
 
-通信模块主要是基于MEC实现（Message Exchange Component），提供整个DCF组件实例间通信能力，以及异步事件处理框架。主要功能有：可扩展的多种通信协议，单播、广播、环回的发送接口，消息异步处理的框架，支持多channel机制和多优先级队列，支持压缩和批量发送等。
-
-mec主要通过channel来进行通信，节点之间可能存在多个channel通道。
+通信模块主要是基于MEC实现（Message Exchange Component），提供整个DCF组件实例间通信能力，以及异步事件处理框架。主要功能有：可扩展的多种通信协议，单播、广播、环回的发送接口，消息异步处理的框架，支持多channel机制和多优先级队列，支持压缩和批量发送等mec主要通过channel来进行通信，节点之间可能存在多个channel通道。
 
 ![](./img/node_comm.jpg)
 
@@ -289,14 +287,14 @@ cs_connect-->cs_open_tcp_link-->|发送pipe层连接信息|cs_tcp_connect-->cm_i
 ```
 
 - mec_proc_recv_pipe
-  
+
 ```mermaid
 graph TB
 mec_proc_recv_pipe-->mec_proc_recv_msg-->mec_read_message-->mec_process_message-->|处理消息实际上放入消息队列,每一个队列会创建一个线程,由线程循环函数去解析消息|dtc_task_proc-->|批量从队列中取出消息来处理|get_batch_msgitems-->|批量处理接收|dtc_proc_batch_recv-->dtc_proc_batch-->dtc_proc_batch_core-->dtc_recv_proc
 dtc_proc_batch-->dtc_decompress_batch
 get_batch_msgitems-->|批量处理发送|dtc_proc_batch_send
 ```
-  
+
   服务端启动监听的流程如下：
 
 ```mermaid

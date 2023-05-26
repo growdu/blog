@@ -119,12 +119,11 @@ got_recptr = SyncRepGetSyncRecPtr(&writePtr, &flushPtr, &applyPtr, &am_sync);
 ```
 
 ```c
-    if (!got_recptr || !am_sync)	{ // 若确认的standby个数不足或者不是sync模式直接返回
-		LWLockRelease(SyncRepLock);
-		announce_next_takeover = !am_sync;
-		return;
-	}
-
+    if (!got_recptr || !am_sync)    { // 若确认的standby个数不足或者不是sync模式直接返回
+        LWLockRelease(SyncRepLock);
+        announce_next_takeover = !am_sync;
+        return;
+    }
 ```
 
 若确认的standby个数不足或者不是sync模式直接返回；
@@ -133,20 +132,20 @@ got_recptr = SyncRepGetSyncRecPtr(&writePtr, &flushPtr, &applyPtr, &am_sync);
 
 ```c
     if (walsndctl->lsn[SYNC_REP_WAIT_WRITE] < writePtr)
-	{
-		walsndctl->lsn[SYNC_REP_WAIT_WRITE] = writePtr;
-		numwrite = SyncRepWakeQueue(false, SYNC_REP_WAIT_WRITE);
-	}
-	if (walsndctl->lsn[SYNC_REP_WAIT_FLUSH] < flushPtr)
-	{
-		walsndctl->lsn[SYNC_REP_WAIT_FLUSH] = flushPtr;
-		numflush = SyncRepWakeQueue(false, SYNC_REP_WAIT_FLUSH);
-	}
-	if (walsndctl->lsn[SYNC_REP_WAIT_APPLY] < applyPtr)
-	{
-		walsndctl->lsn[SYNC_REP_WAIT_APPLY] = applyPtr;
-		numapply = SyncRepWakeQueue(false, SYNC_REP_WAIT_APPLY);
-	}
+    {
+        walsndctl->lsn[SYNC_REP_WAIT_WRITE] = writePtr;
+        numwrite = SyncRepWakeQueue(false, SYNC_REP_WAIT_WRITE);
+    }
+    if (walsndctl->lsn[SYNC_REP_WAIT_FLUSH] < flushPtr)
+    {
+        walsndctl->lsn[SYNC_REP_WAIT_FLUSH] = flushPtr;
+        numflush = SyncRepWakeQueue(false, SYNC_REP_WAIT_FLUSH);
+    }
+    if (walsndctl->lsn[SYNC_REP_WAIT_APPLY] < applyPtr)
+    {
+        walsndctl->lsn[SYNC_REP_WAIT_APPLY] = applyPtr;
+        numapply = SyncRepWakeQueue(false, SYNC_REP_WAIT_APPLY);
+    }
 ```
 
 此时唤醒对应的后端进程后，后端进程将回复客户端。
@@ -155,23 +154,23 @@ got_recptr = SyncRepGetSyncRecPtr(&writePtr, &flushPtr, &applyPtr, &am_sync);
 
 ```c
     switch (newval)
-	{
+    {
         // 备库接收到wal日志并写入缓存
-		case SYNCHRONOUS_COMMIT_REMOTE_WRITE:
-			SyncRepWaitMode = SYNC_REP_WAIT_WRITE;
-			break;
+        case SYNCHRONOUS_COMMIT_REMOTE_WRITE:
+            SyncRepWaitMode = SYNC_REP_WAIT_WRITE;
+            break;
         // 备库接收到日志并写入磁盘
-		case SYNCHRONOUS_COMMIT_REMOTE_FLUSH:
-			SyncRepWaitMode = SYNC_REP_WAIT_FLUSH;
-			break;
+        case SYNCHRONOUS_COMMIT_REMOTE_FLUSH:
+            SyncRepWaitMode = SYNC_REP_WAIT_FLUSH;
+            break;
         // 备库接收到日志写入磁盘并且redo数据也写到磁盘
-		case SYNCHRONOUS_COMMIT_REMOTE_APPLY:
-			SyncRepWaitMode = SYNC_REP_WAIT_APPLY;
-			break;
-		default:
-			SyncRepWaitMode = SYNC_REP_NO_WAIT;
-			break;
-	}
+        case SYNCHRONOUS_COMMIT_REMOTE_APPLY:
+            SyncRepWaitMode = SYNC_REP_WAIT_APPLY;
+            break;
+        default:
+            SyncRepWaitMode = SYNC_REP_NO_WAIT;
+            break;
+    }
 ```
 
 对于SYNC_REP_WAIT_WRITE，使用的是writePtr唤醒后端进程。
@@ -179,5 +178,3 @@ got_recptr = SyncRepGetSyncRecPtr(&writePtr, &flushPtr, &applyPtr, &am_sync);
 对于SYNC_REP_WAIT_FLUSH，使用的是flushPtr唤醒后端进程。
 
 对于SYNC_REP_WAIT_APPLY，使用的是applyPtr唤醒后端进程。
-
-

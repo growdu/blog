@@ -1,5 +1,7 @@
 # chatgpt使用
 
+可点击([高效率工具——chatgpt使用_growdu_real的博客-CSDN博客](https://blog.csdn.net/github_38294679/article/details/130811966?spm=1001.2014.3001.5501))在网络上访问本文。
+
 ## chatgpt是什么
 
 > ChatGPT是使用OpenAI的GPT（Generative Pre-trained Transformer）模型构建的聊天机器人，它可以为用户提供自然语言交互，回答用户的问题或提供有用的信息。该模型训练于大量的文本数据，可以生成与自然语言相似的响应，这使得它可以模拟人类对话，并向用户提供帮助和支持。
