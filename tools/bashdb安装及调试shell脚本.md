@@ -1,4 +1,5 @@
-[bashdb下载地址](http://download.csdn.net/download/u012062455/10264307)
+# bashdb 安装调试
+[bashdb下载地址](https://bashdb.sourceforge.net/)
 
 解压安装 bashdb是在linux环境下使用的，将资源下载下来后，解压上传到linux系统，再执行以下指令完成安装。
 
