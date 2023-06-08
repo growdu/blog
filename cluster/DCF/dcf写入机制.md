@@ -192,7 +192,44 @@ disk_thread_entry-->|append线程|process_append_action-->stream_append_entry_im
 stream_batcher_flush-->callback_rep_func
 ```
 
-可以看到其中一个回调函数是由append线程触发的，
+可以看到其中一个回调函数是由append线程触发的，append线程会等待stream->disk_event条件变量被唤醒。stream->disk_event在stream_append_entry中被唤醒。
+
+```mermaid
+graph TB
+rep_appendlog_req_proc-->rep_follower_process
+-->rep_follower_appendlog-->stg_append_entry
+-->stream_append_entry
+rep_write-->stg_append_entry
+```
+
+```c
+register_msg_process(MEC_CMD_APPEND_LOG_RPC_REQ, rep_appendlog_req_proc, PRIV_LOW);
+```
+
+MEC_CMD_APPEND_LOG_RPC_REQ在rep_appendlog_node中发送。
+
+```mermaid
+graph TB
+rep_appendlog_thread_entry-->rep_appendlog_stream-->rep_appendlog_node
+```
+
+rep_appendlog_thread_entry有条件变量g_appendlog_cond唤醒。g_appendlog_cond又通过rep_appendlog_trigger唤醒。
+
+```mermaid
+graph TB
+rep_write-->rep_appendlog_trigger
+rep_appendlog_ack_proc-->rep_appendlog_trigger
+rep_rematch_proc-->rep_appendlog_trigger
+
+```
+
+rep_appendlog_trigger由MEC_CMD_APPEND_LOG_RPC_ACK消息触发。
+
+```c
+register_msg_process(MEC_CMD_APPEND_LOG_RPC_ACK, rep_appendlog_ack_proc, PRIV_LOW);
+```
+
+
 
 dd
 
