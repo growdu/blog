@@ -41,7 +41,10 @@ git log --left-right branch1...branch2
 
 ```shell
 git log --date=iso --pretty=format:'"%h","%an","%ad","%s"' >log.csv
+# 将2021-12-12之后的commit输出
+git log --date=iso --pretty=format:'"%h","%an","%ad","%s"' --after="2021-12-12" >log.csv
 ```
+
 logc参数说明如下：
 
 ```shell
@@ -77,6 +80,36 @@ logc参数说明如下：
 %s 提交说明
 ```
 
+```shell
+-<n>
+
+仅显示最近的 n 条提交。
+
+--since, --after
+
+仅显示指定时间之后的提交。
+
+--until, --before
+
+仅显示指定时间之前的提交。
+
+--author
+
+仅显示作者匹配指定字符串的提交。
+
+--committer
+
+仅显示提交者匹配指定字符串的提交。
+
+--grep
+
+仅显示提交说明中包含指定字符串的提交。
+
+-S
+
+仅显示添加或删除内容匹配指定字符串的提交
+```
+
 可以在比较两个分支的同时，将日志格式化输出：
 
 ```shell
@@ -88,3 +121,5 @@ git log --date=iso --pretty=format:'"%h","%an","%ad","%s"' branch1..branch >log.
 1. https://www.jianshu.com/p/413ea4c4ccf6
 
 2. https://blog.csdn.net/allanGold/article/details/87181284
+
+3. https://git-scm.com/book/zh/v2/Git-%E5%9F%BA%E7%A1%80-%E6%9F%A5%E7%9C%8B%E6%8F%90%E4%BA%A4%E5%8E%86%E5%8F%B2
