@@ -6,7 +6,7 @@
 wget https://gigenet.dl.sourceforge.net/project/cunit/CUnit/2.1-3/CUnit-2.1-3.tar.bz2
 cd CUnit-2.1-3
 ./bootstrap
-./cobnfigure
+./configure
 make -j 8
 make install
 ```
