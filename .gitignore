@@ -3,3 +3,7 @@ CNAME
 **/obj
 **/.vs
 *.pdf
+.pytest_cache
+.vscode
+__pycache__
+
