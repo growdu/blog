@@ -36,20 +36,20 @@ echo Time taken to execute commands is ${take} ms.
 ips=(192.168.1.1 192.168.1.2)
 for ip in ${ips[@]}
 do
-	echo "${ip}"
+    echo "${ip}"
 done
 
 # 从第二个元素开始
 for ip in ${ips[@]:1}
 do
-	echo "${ip}"
+    echo "${ip}"
 done
 ```
 
 ```shell
 while true:
 do
-	echo "loop"
+    echo "loop"
 done
 ```
 
@@ -57,12 +57,10 @@ done
 n=0
 while [ $n -le 100 ]
 do
-	echo "loop"
-	let n++
+    echo "loop"
+    let n++
 done
 ```
-
-
 
 ## 条件判断
 
@@ -73,7 +71,7 @@ done
 ip="192.168.1.1"
 if [ "${ip}"x == ""x ];
 then
-	echo "eqal"
+    echo "eqal"
 fi
 ```
 
@@ -84,7 +82,7 @@ fi
 ip=192
 if [ ${ip} -eq 192 ];
 then
-	echo "equal"
+    echo "equal"
 fi
 ```
 
@@ -95,7 +93,6 @@ fi
 ip="192"
 if [ -d ${ip} ];
 then
-	echo "exist"
+    echo "exist"
 fi
 ```
-
