@@ -2,6 +2,7 @@ CNAME
 **/bin
 **/obj
 **/.vs
+plan
 *.pdf
 .pytest_cache
 .vscode
