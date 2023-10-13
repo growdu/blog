@@ -40,6 +40,14 @@ docker container rm id
 
 ## 制作基础镜像
 
+无网络环境下使用本地文件作为基础镜像：
+
+```shell
+yum -y --install-root=./code-server install gcc gcc-c++ kernel-devel make cmake  libstdc++-devel libstdc++-static glibc-devel openssl-devel gperftools-libs psmisc openssh-server sudo epel-release vim git ctags net-tools tcpdump protobuf-c protobuf-c-devel protobuf doxygen  java-1.8.0-openjdk java-1.8.0-openjdk-devel bison flex readline readline-devel icu libicu-devel yacc libxml2-devel libxml2
+cd code-sever
+tar -cvpf code-server.tar --directory=. --exclude=proc --exclude=sys --exclude=dev --exclude=boot .
+```
+
 ```dockfile
 FROM centos:centos7.6.1810
 
