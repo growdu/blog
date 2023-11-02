@@ -64,7 +64,9 @@ RUN yum -y --nogpgcheck install gcc gcc-c++ kernel-devel make cmake  libstdc++-d
 && sed -ri 's/^#PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
 && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
 && ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
-&& ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key \
+&& ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
+&& ssh-keygen -t ecdsa -f /etc/ssh/ssh_host_ecdsa_key \
+&& ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key \
 RUN curl  -fsSL https://code-server.dev/install.sh | sh
 CMD export  PASSWORD="code" && code-server --host 0.0.0.0
 CMD ["/usr/sbin/sshd", "-D"]
@@ -171,6 +173,14 @@ sudo docker run -d -it --name dev_server -p 8080:8080 -p 10024:22 \
             /usr/sbin/init
 ```
 
+## 查看容器日志
+
+有时候容器可能会启动失败，这个时候就需要查看日志分析启动失败的原因。
+
+```shell
+docker logs id
+```
+
 ## 基于当前容器构建镜像
 
 容器运行起来后,发现code-server未成功安装运行。寻找原因发现code-server未正确安装，进入容器内部手动安装。
@@ -266,3 +276,11 @@ docker load < name.tar
 
 - docker save 的应用场景：如果我们的应用是使用 docker-compose.yml 编排的多个镜像组合，
 但我们要部署的客户服务器并不能连外网。这时就可以使用 docker save 将用到的镜像打个包，然后拷贝到客户服务器上使用 docker load 载入。
+
+## docker web-ui 管理界面
+
+有时候命令行管理起来不方便，此时需要一个web-ui来管理docker。使用如下命令进行下载porttainer：
+
+```shell
+docker run -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock portainer/portainer
+```
