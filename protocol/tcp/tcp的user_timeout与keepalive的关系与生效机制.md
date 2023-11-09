@@ -38,7 +38,7 @@ tcp_user_timeout小于keepalive超时时间时，则当超时达到tcp_user_time
 
 ### tcp_user_timeout大于keepalive超时时间
 
-tcp_user_timeout小于keepalive超时时间时，只有当超时达到tcp_user_timeout才会断开连接，keep-alive未ack的报文可能会超过tcp_keepalive_count个数，即断开时间会大于keepalive的超时时间。
+tcp_user_timeout大于keepalive超时时间时，只有当超时达到tcp_user_timeout才会断开连接，keep-alive未ack的报文可能会超过tcp_keepalive_count个数，即断开时间会大于keepalive的超时时间。
 
 如tcp_user_timeout=15,tcp_keepalive_idle=2s,tcp_keepalive_interval=1s,tcp_keepalive_count=3时，此时15>(2+3*1),抓包实例如下：
 
