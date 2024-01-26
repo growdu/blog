@@ -123,5 +123,65 @@ vgextend vg_data /dev/sdb
 
 ## 关于lvm的一些疑问
 
-1. lvm创建的文件是如何分配到具体的物理磁盘上的
+### lvm创建的文件是如何分配到具体的物理磁盘上的
 
+lvm创建的文件分配到磁盘上有多个策略，具体如下：
+
+1. 线性分配（linear）
+
+这是默认的分配策略，无需特别设置，数据按顺序依次放到各个物理磁盘上，一个物理磁盘放满后才会放在另外一个物理磁盘。
+
+2. 条带分配（striped）
+
+需要在使用lvcreate时用-i指定条带数，存储文件时会将数据均匀地存储在各个磁盘上。比如有两个物理磁盘，创建lv时使用如下命令：
+
+```shell
+lvcreate -n lv_data -L 64M vg_data -i 2
+```
+
+3. 镜像分配(mirrored)
+
+每一份数据都会有多个镜像副本存储，提高数据容错性。需要在使用lvcreate时用-m指定镜像数。
+
+```
+lvcreate -n lv_data -L 64M vg_data -m 2
+```
+
+4. 条带镜像分配
+
+这个是条带分配和镜像分配的结合，需要使用lvcreate时用-m指定镜像数，用-i指定条带数
+
+```shell
+lvcreate -n lv_data -L 64M vg_data -i 2 -m 2
+```
+
+若要查看lvm当前的磁盘分配策略，可以使用如下命令查看：
+
+```shell
+lvdisplay type
+```
+比如下面的就是linear
+
+```shell
+ --- Segments ---
+  Logical extents 0 to 12800:
+    Type                linear
+    Physical volume     /dev/nvme0n1p3
+    Physical extents    475271 to 488071
+   
+  Logical extents 12801 to 537087:
+    Type                linear
+    Physical volume     /dev/sda1
+    Physical extents    0 to 524286
+```
+
+- 线性方式（linear）：以一块盘为基础进行读写。当数据写入到一个物理卷（盘）时，写满后才会开始写入下一个物理卷。这种方式的性能较低，因为它无法充分利用多个盘的并行读写能力。
+
+- 条带方式（striped）：以多块盘并行读写数据。数据被分成大小相等的条带，然后同时写入到多个物理卷中的相应条带位置。这样可以充分利用多个盘的并行读写能力，从而提高读写性能。
+
+<font color="red">一般来说，随机读写比较多的场景下，条带方式通常比线性方式具有更高的性能。顺序读写且文件较大的场景下，线性方式通常比条带方式具有更高的性能。 </font>
+
+### 是否可以将lvm的磁盘空间回收，创建新的lvm
+
+如果lvm创建时使用的是整块磁盘，那无法将未使用的空间回收回来重新重建vg，进而创建lv。
+因而在创建pv时尽量先创建分区，不要一开始就使用整个磁盘，后面再按需进行添加和扩展。
