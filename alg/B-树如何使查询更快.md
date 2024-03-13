@@ -1,6 +1,6 @@
 # B-树如何使查询更快
 
-本文翻译自[](https://blog.allegro.tech/2023/11/how-does-btree-make-your-queries-fast.html),部分内容翻译可能不准确，请以原文为准。
+本文翻译自[How does B-tree make your queries fast?](https://blog.allegro.tech/2023/11/how-does-btree-make-your-queries-fast.html),部分内容翻译可能不准确，请以原文为准。
 
 B树是一种有助于搜索大量数据的结构，B-树发明于 40 多年前发，现在仍然被大多数现代数据库使用。尽管出现了较新的索引结构，比如 LSM 树，但B-树在处理大多数数据库查询时依然非常高效。
 
