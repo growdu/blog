@@ -1583,3 +1583,311 @@ PostgreSQL 10及以上版本在pg_stat_replication中还提供了以下3个落�
 - replay_lag：备库已经应用过的日志目前落后主库的时间间隔。
 
 这几个参数都是“时间间隔（interval）”的类型。
+
+##### 4.4.3.2 检查同步流复制的情况
+
+同步流复制的环境中，在主库查询pg_stat_replication可以看到如下信息：
+
+```shell
+postgres=# select pid,state,client_addr, sync_priority,sync_state from pg_stat_replication;
+pid | state | client_addr | sync_priority | sync_state
+-----+-----------+-------------+---------------+------------
+599 | streaming | 10.0.3.102 | 1 | sync
+614 | streaming | 10.0.3.103 | 2 | potential
+(2 rows)
+```
+
+可以看到pg02的优先级是“1”，pg03的优先级是“2”，这个优先级是由synchronous_standby_names参数配置中的顺序决定的。目前主数据库与pg02处于同步“sync”，而pg03的状态为“potential”，表示它是一个潜在的同步Standby备库，当pg02损坏时，pg03会切换到同步状态，这时关掉pg02，可看到如下内容：
+
+```shell
+postgres=# select pid,state,client_addr, sync_priority,sync_state from pg_stat_replication;
+pid | state | client_addr | sync_priority | sync_state
+-----+-----------+-------------+---------------+------------
+614 | streaming | 10.0.3.103 | 2 | sync
+(1 row)
+```
+再次启动pg02，此时查看同步情况如下：
+
+```shell
+postgres=# select pid,state,client_addr, sync_priority,sync_state from pg_stat_replication;
+pid | state | client_addr | sync_priority | sync_state
+-----+-----------+-------------+---------------+------------
+650 | streaming | 10.0.3.102 | 1 | sync
+614 | streaming | 10.0.3.103 | 2 | potential
+(2 rows)
+```
+从中可以发现pg03又从“sync”状态变成了“potential”状态，pg02重新变成了“同步状态” 。
+
+##### 4.4.3.3 pg_stat_replication视图详解
+
+可以在主库上把WAL位置转换成WAL文件名和偏移量，命令如下：
+
+```shell
+postgres=# SELECT * FROM pg_walfile_name_offset('0/5F8862F0');
+file_name | file_offset
+--------------------------+-------------
+00000001000000000000005F | 8938224
+(1 row)
+```
+
+##### 4.4.3.4 查看备库的状态
+
+前面讲解了在主库上通过查看pg_stat_replication视图获得备库流复制状态的方法，在备库上也可以通过查看视“pg_stat_wal_receiver”来查看流复制的状态：
+
+```shell
+postgres=# \x
+Expanded display is on.
+postgres=# select * from pg_stat_wal_receiver;
+-[ RECORD 1 ]---------+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+pid                   | 31
+status                | streaming
+receive_start_lsn     | 0/7000000
+receive_start_tli     | 1
+received_lsn          | 0/70002E0
+received_tli          | 1
+last_msg_send_time    | 2024-03-15 06:54:56.238236+00
+last_msg_receipt_time | 2024-03-15 06:54:56.238333+00
+latest_end_lsn        | 0/70002E0
+latest_end_time       | 2024-03-14 06:44:35.202538+00
+slot_name             | 
+sender_host           | 192.168.80.20
+sender_port           | 5432
+conninfo              | user=postgres password=******** channel_binding=disable dbname=replication host=192.168.80.20 port=5432 fallback_application_name=walreceiver sslmode=disable sslcompression=0 sslsni=1 ssl_min_protocol_version=TLSv1.2 gssencmode=prefer krbsrvname=postgres target_session_attrs=any
+
+postgres=# 
+```
+
+从上面的示例中可以看出，这个视图实际上是显示备库上WAL接收进程的状态，其中的主要字段的说明如下。
+
+- pid：WAL接收进程的PID。
+- status：状态，只有“streaming”是正常状态。
+- receive_start_lsn：WAL接收进程启动时使用的第一个WAL日志的位置。
+- receive_start_tli：WAL接收进程启动时使用的第一个时间线编号。
+- received_lsn：已经接收到并且已经被写入磁盘的最后一个WAL日志的位置。
+- received_tli：已经接收到并且已经被写入磁盘的最后一个WAL日志的时间线编号。
+- last_msg_send_time：接收到最后一条WAL日志消息后，向主库发回确认消息的发送时间。
+- last_msg_receipt_time：备库接收到最后一条WAL日志消息的接收时间。
+- latest_end_lsn：报告给主库最后一个WAL日志的位置。
+- latest_end_time：报告给主库最后一个WAL日志的时间。
+- slot_name：使用的复制槽的名称。
+- conninfo：连接主库的连接串，密码等安全相关的信息会被隐去。
+
+如何判断数据库处于备库的状态？如果数据库处于Hot Standby状态，可以连接到数据库中执行pg_is_in_recovery()函数，如果是在主库上，此函数返回的值是“False”，如果是在备库上，返回的值是“True”，示例如下。
+
+在主库上执行select pg_is_in_recovery()函数的示例如下：
+
+```shell
+postgres=# select pg_is_in_recovery();
+ pg_is_in_recovery 
+-------------------
+ f
+(1 row)
+```
+
+在备库上执行pg_is_in_recovery()函数的示例如下：
+
+```shell
+postgres=# select pg_is_in_recovery();
+ pg_is_in_recovery 
+-------------------
+ t
+(1 row)
+```
+
+如果备库不是Hot Standby状态，不能直接连接上去，这时可以使用命令行工具“pg_controldata”来进行判断，在主库上看到“Database cluster state”为“in production”，命令如下：
+
+```shell
+root@eb2e0ae36696:/# pg_controldata 
+pg_control version number:            1201
+Catalog version number:               201909212
+Database system identifier:           7337595217489322023
+Database cluster state:               in production
+pg_control last modified:             Thu 14 Mar 2024 06:44:29 AM UTC
+...
+...
+```
+
+在备库上看到“Database cluster state”为“in archive recovery”，命令如下：
+
+```shell
+root@6f01eeed1bd5:/# pg_controldata 
+pg_control version number:            1201
+Catalog version number:               201909212
+Database system identifier:           7337595217489322023
+Database cluster state:               in archive recovery
+pg_control last modified:             Thu 14 Mar 2024 06:44:43 AM UTC
+...
+...
+```
+在Hot Standby备库上，还可以执行如下函数查看备库接收的WAL日志和应用WAL日志的状态：
+
+- pg_last_wal_receive_lsn()
+- pg_last_wal_replay_lsn()
+- pg_last_xact_replay_timestamp()
+
+实例如下：
+
+```shell
+postgres=# set timezone = 8;
+SET
+postgres=# select pg_last_wal_receive_lsn(),pg_last_wal_replay_lsn(),pg_last_xact_replay_timestamp();
+ pg_last_wal_receive_lsn | pg_last_wal_replay_lsn | pg_last_xact_replay_timestamp 
+-------------------------+------------------------+-------------------------------
+ 0/70002E0               | 0/70002E0              | 
+(1 row)
+```
+
+### 4.5 Hot Standby的限制
+
+前面已经说过，PostgreSQL支持在备库做只读查询，这样的备库就叫Hot Standby。在Hot Standby备库上执行查询时有一些限制。
+
+#### 4.5.1 Hot Standby的查询限制
+
+DML语句（如INSERT、UPDATE、DELETE、COPY FROM、TRUNCATE等）和DDL（如CREATE、DROP、ALTER、COMMENT等）都不能在Hot Standby备库上执行，这很好理解。另外，“SELECT...FOR SHARE|UPDATE”语句在Hot Standby备库中也不能执行，因为在PostgreSQL中，行锁是要更新数据行的。如果在Hot Standby备库执行上述SQL语句，会报如下错误：
+
+```shell
+postgres=# create table test(id int);
+ERROR:  cannot execute CREATE TABLE in a read-only transaction
+postgres=# select * from test for update;
+ERROR:  cannot execute SELECT FOR UPDATE in a read-only transaction
+```
+虽然在Hot Standby备库中行锁不能使用，但部分类型的表锁是可以使用的，但要注意，这部分表锁需要在BEGIN启动的事务块中使用，直接使用会报错.在Hot Standby备库上可以加以下类型的表锁：
+
+- ACCESS SHARE。
+- ROW SHARE。
+- ROW EXCLUSIVE MODE。
+
+也就是说，比ROW EXCLUSIVE MODE级别高的表锁都是不能执行的，或者说，自己和自己互斥的锁和SHARE类型的表锁都不能执行。
+
+在Hot Standby备库上，部分事务管理语句都可以执行，如上面示例中的BEGIN、END，但下面的语句不能执行：
+
+- BEGIN READ WRITE,START TRANSACTION READ WRITE。
+- SET TRANSACTION READ WRITE,SET SESSION CHARACTERISTICS AS TRANS
+ACTION READ WRITE。
+- SET transaction_read_only=off。
+
+在Hot Standby备库上，两阶段提交的命令也不能执行：
+
+- PREPARE TRANSACTION。
+- COMMIT PREPARED。
+- ROLLBACK PREPARED
+
+在Hot Standby备库中，序列中会导致更新的函数也不能执行：
+
+- nextval()。
+- setval()。
+
+在Hot Standby备库中，消息通知的语句也不能执行：
+
+- LISTEN。
+- UNLISTEN。
+- NOTIFY
+
+但在通常的只读事务中，序列的更新函数和消息通知的语句都是可以执行的，也就是说，在HOT Standby备库中执行SQL语句的限制比只读事务中的限制更多。
+
+在Hot Standby备库中，参数“transaction_read_only”总设置为“ON”，而且不能改变。可以使用“SHOW transaction_read_only”查看此参数的状态。
+
+#### 4.5.2 Hot Standby的查询冲突处理
+
+主库上的一些操作会与Hot Standby备库上的查询产生冲突，会导致正在执行的查询被取消并报如下错误：
+
+```shell
+ERROR：canceling statement due to conflict with recove
+```
+
+导致冲突的原因有以下几个：
+
+- 主库上运行的VACUUM清理掉了备库上的查询需要的多版本数据。
+- 主库上执行LOCK命令或各种DDL语句会在表上产生Exclusive锁，而在备库上对这些表进行查询时，这两个操作之间会有冲突。
+- 在主库上删除了一个表空间，而备库上的查询需要存放一些临时文件在此表空间中。
+- 在主库上删除了一个数据库，而备库上有很多session还连接在该数据库上。
+
+当发生冲突时，处理的方法有以下几种：
+
+- 让备库上的应用WAL日志的过程等待一段时间，等备库上的查询结束后再应用WAL
+日志。
+- 取消备库上正在执行的查询
+
+另外，在主库上删除一个数据库时，备库上连接到此数据库上的session都将被断开连接。
+
+如果备库上的查询运行的时间很短，可以让备库上WAL日志的应用过程等一会儿。但是如果备库上的查询是一个大查询，需要运行很长的时间，让应用WAL日志的过程一直等待，会导致备库延迟主库太多的问题，因此PostgreSQL在postgresql.conf中增加了两个参数用于控制应用WAL日志的最长等待时间，超过设定时间就会取消备库上正在执行的SQL查询。这两个参数的说明如下。
+
+- max_standby_archive_delay：备库从WAL归档中读取时的最大延迟。默认为30秒，如果设置为-1，则会一直等待。
+- max_standby_streaming_delay：备库从流复制中读取WAL时的最大延迟。默认为30秒，如果设置为-1，则会一直等待。
+
+如果备库用作主库的高可用切换，则可以把以上参数设置得小一些，这样可以保证备库不会落后主库太多；如果备库就是用来执行一些大查询的，可以把这两个参数设置成较大的值。
+
+大多数冲突发生的原因是主库上把备库需要的多版本数据给清理掉了，这时可以通过在备库上的postgresql.conf中设置参数“hot_standby_feedback”为“true”来解决此问题。设置此参数为“true”后，备库会通知主库，哪些多版本数据在备库上还需要，这样主库上的AutoVacuum就不会清理掉这些数据，就能大大减少冲突的发生。当然还有一个办法是把主库上的参数“vacuum_defer_cleanup_age”的值调得大一些，以延迟清理多版本数据。
+
+当然即使设置了hot_standby_feedback等参数，仍然会有一些查询因为冲突而被取消执行，所以连接到备库的应用程序最好能检测到这个错误并能再次执行被取消的查询。
+
+### 4.6 恢复配置详解
+
+#### 4.6.1 归档恢复配置项
+
+归档恢复配置项主要有以下3个:
+
+- restore_command：指定Standby如何获得WAL日志文件，通常是配置一个拷贝命令，从备份目录中把WAL日志文件拷贝过来。
+- archive_cleanup_command：清理Standby数据库机器上不需要的WAL日志文件。
+- recovery_end_command：恢复完成后，可以执行一个命令。
+
+使用这几个配置项就可以搭建起一个从归档日志文件中恢复的Standby数据库。例如，在主库上配置archive_command参数，把WAL文件复制到Standby库的一个目录中，命令如下：
+
+```shell
+archive_command = 'scp %p 192.168.1.52:/data/archivedir/%f.mid && ssh 192.168.1.52 "mv /data/archivedir/%
+f.mid /data/archivedir/%f"'
+```
+
+然后在Standby数据库中的postgresql.conf中配置restore_command参数，命令如下：
+
+```shell
+restore_command = 'cp /data/archivedir /%f "%p"'
+```
+
+另两个参数“archive_cleanup_command”“recovery_end_command”是可选的，其中archive_cleanup_command参数可以用来清理上面示例中“/data/archivedir”目录中的WAL日志文件。从上面的示例中可以知道，当主库不断地把WAL日志文件复制到Standby备库的“/data/archivedir”目录中时，一定要有清理机制，否则就会把此目录的空间填满。清理的原则通常是清除Standby已使用完的WAL日志文件。contrib目录中提供了一个命令行的工具“pg_archivecleanup”以便实现清理工作，archive_cleanup_comand参数的配置内容如下：
+
+```shell
+archive_cleanup_command = 'pg_archivecleanup /data/archivedir %r'
+```
+
+下面介绍主库上的归档配置项。主库上的归档配置项有如下3个，都是在postgresql.conf文件中配置。
+
+- archive_mode：是否开启归档。如果想以归档的方式搭建Standby数据库，则此参数设置为“on”。
+- archive_command：执行归档的命令。
+- archive_timeout：如果主库在某段时间内比较闲，可能会很长时间才产生WAL日志文件，这会导致主库和Standby库之间有较大的延迟，这时可以配置此参数。把此参数配置成一个整数（单位是秒），表示设定的秒数内会强制数据库切换一个WAL日志文件。
+
+注意，被强制切换的WAL文件和正常WAL文件一样大。因此把archive_timeout设置成很小的值是不明智的，会占用大量空间。
+
+#### 4.6.2 Recovery Target配置
+
+通常Standby备库的恢复是一直进行的，如果想让Standby恢复到一个指定的点后就暂停，需要使用以下配置参数：
+
+- recovery_target：目前此参数只能配置为空或“immediate”，配置为“immediate”，则Standby恢复到一个一致性的点时就立即停止恢复。该配置通常用在热备份中。完成一个热备份后，如果想使用这个热备份，希望在应用WAL日志把热备份恢复到一个可以打开的
+点时立即打开此数据库，就需要配置此参数。
+- recovery_target_name：这是9.1版本之后才提供的参数。在主库上可以创建一个恢复点，然后让Standby恢复到这个恢复点，此参数用来指定该恢复点的名称。创建恢复点是通过调用函数pg_create_restore_point()来完成的。
+- recovery_target_time：这是9.1版本之后才提供的参数，用于指定恢复到哪个时间点。恢复到设定时间点之前最近的一致点还是该时间点之后最近的一致点是由后面的参数“recovery_target_inclusive”来指定的。
+- recovery_target_xid：这是9.1版本之后才提供的参数，指定恢复到哪个指定的事务。注意，事务ID是按顺序分配的，但事务完成的顺序与分配的顺序是不一样的。后分配的ID的事务可能会先完成。
+- recovery_target_inclusive：指定恢复到恢复目标（recovery target）之后还是之前。默认为恢复目标之后，即值为“true”。
+- recovery_target_timeline：指定恢复的时间线。默认只恢复到当前的时间线，而不会切换到新的时间线。通常需要把此参数设置为“latest”，这样就会恢复到离当前最近的时间线。
+- pause_at_recovery_target：指定到达恢复目标后，Standby数据库恢复是否暂停。默认为“true”。该参数用于检查当前Standby是否恢复到了需要的点。在恢复暂停后，执行SQL语句来检查是否是需要的时间点，如果不是，可以停止Standby数据库，然后重新配置“recovery_target_*”参数指定新的恢复目标点，再进行恢复，直到把Standby推到需要的时间点。到达该时间点后，就可以使用pg_wal_replay_resume()继续进行恢复。
+
+#### 4.6.3 Standby Server配置
+
+备库中还有用于配置Standby Server的以下参数，各参数的说明如下。
+
+- standby_mode：是否运行在Standby模式下。只有PostgreSQL 12之前的版本中才有此配置项。PostgreSQL 12版本之后用文件“standby.signal”表示是否运行在Standby模式下。
+- primary_conninfo：在流复制中，指定如何连接主库，是一个标准的libpq连接串。
+- primary_slot_name：指定复制槽（Replication Slot）。这是PostgreSQL 9.4版本之后增加的参数，是一个可选参数。
+- promote_trigger_file：指定激活Standby的触发文件。Standby数据库发现存在此文件时，就会把Standby激活为主库。不配置此项也没有关系，可以使用pg_ctl promote来激活Standby数据库。在PostgreSQL12版本之前，此配置项的名称为“trigger_file”，配置在recovery.conf中。
+- recovery_min_apply_delay：PostgreSQL 9.4版本之后增加的参数，此参数可以让Standby落后主库一段时间。在PostgreSQL 9.4版本之前，很难让Standby落后主库指定的时间。例如，有如下场景，创建了一个Standby库用于防止逻辑误删除操作，如果该库被设置为即时与主库同步，而有人恰巧不小心删除了某一张表，那可能就会导致Standby上的这张表也很快被删除，这时如果让Standby延迟恢复一段时间，那就可以在设定的延迟时间内从Standby数据库中恢复这张表的数据。该参数指定一个时间值，如“5min”。设置此参数后，hot_standby_feedback也会相应被延迟。
+
+### 4.7 流复制的注意事项
+
+#### 4.7.1 min_wal_size参数的配置
+
+使用流复制建好备库后，如果由于各种原因备库接收日志的速度较慢，而主库产生日志的速度很快，这容易导致主库上的WAL日志还没有传递到备库就会被覆盖，如果被覆盖的WAL日志文件又没有归档备份，那么备库就再也无法与主库同步了，这会导致备库需要重新搭建。为了避免这种情况发生，PostgreSQL提供了一个配置参数“wal_keep_segments”。该参数的含义是，无论如何都要在主库上保留wal_keep_segements个WAL日志文件。默认此参数为“0”，表示并不专门为Standby保留WAL日志文件。通常需要把此参数配置成一个安全的值，如“64”，表示将为Standby保留64个WAL日志文件。当然保留WAL日志文件会占用一定的磁盘空间，每个WAL日志文件的大小通常是16MB，如果设置为“64”，就可能会多占用64×16MB=1G空间。所以如果磁盘空间允许，可以把此参数设置得大一些，这样，WAL日志来不及传输到备库导致的备库需要重新搭建的风险就会小一些。
+
+#### 4.7.2 vacuum_defer_cleanup_age参数的配置
+
+在主库上，Vacuum进程知道哪些旧版本的数据会被当前数据库中的查询使用，从而不清理这些数据。但对于Hot Standby上的查询的数据需要，主库是不知道的，所以主库上的Vacuum可能会把Hot Standby上的查询还需要的旧版本数据清理掉，这会导致Standby上的查询失败。为了降低Hot Standby因为这个原因失败的概率，可以设置vacuum_defer_cleanup_age参数，让主库延迟清理。该参数的含义是延迟清理多少个事务，当然也可以通过在备库上设置参数“hot_standby_feedback”为“true”来减少此问题的发生。
+
