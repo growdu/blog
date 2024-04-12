@@ -69,7 +69,7 @@ ___
 -   服务器端(使用cors库实现)：
 
 ```
- const express = require('express')
+const express = require('express')
 const app = express()
 const cors = require('cors')
 
