@@ -57,5 +57,18 @@ func main() {
 离线打包，
 
 ```shell
+go mod tidy
 go mod vendor
+```
+
+## 接口测试
+
+接口测试可以使用postman或者apifox（我搜索的是postman，推荐的是apifox）。
+
+## 前端发起请求
+
+引入axios库，用于发起http请求。
+
+```shell
+npm install axios
 ```

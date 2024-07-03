@@ -116,6 +116,8 @@ logc参数说明如下：
 git log --date=iso --pretty=format:'"%h","%an","%ad","%s"' branch1..branch >log.csv
 ```
 
+## rebase——解决
+
 # reference
 
 1. https://www.jianshu.com/p/413ea4c4ccf6
