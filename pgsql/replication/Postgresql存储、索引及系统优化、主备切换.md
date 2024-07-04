@@ -4,18 +4,239 @@
 
 ## 1 Postgresql存储
 
-### 1.1 数据（表）物理存储结构
+### 1.1 数据（表）逻辑结构
+
+#### 1.1.1 数据库逻辑结构介绍
+
+在一个PostgreSQL数据库系统中，数据的组织结构可以分为以下3层。
+
+- 数据库：一个PostgreSQL数据库服务可以管理多个数据库，当应用连接到一个数据库时，一般只能访问这个数据库中的数据，而不能访问其他数据库中的内容（除非使用DBLink等其他手段）。
+- 表、索引：一个数据库中有很多表、索引。一般来说，在PostgreSQL中表的术语为“Relation”，而在其他数据库中则叫“Table”。
+- 数据行：每张表中都有很多行数据。在PostgreSQL中行的术语一般为“Tuple”，而在其他数据库中则叫“Row”。
+
+在PostgreSQL中，逻辑对象是有层次关系的，数据库创建后，有一个叫数据库簇的概念，虽然数据库簇的英文为database cluster，但它并不是数据库集群的意思，故而翻译为数据库簇。在数据库簇中可以创建很多数据库（使用create database创建），也就是说，数据库簇相当于是一个数据库的容器。而PostgreSQL中的database与MySQL中的Database完全不是一个概念，PostgreSQL的Database是一个多租户的概念，与Oracle 12C的Pluggable Database类似，主要实现租户隔离。在Database下，可以有多个模式（Schema），数据库逻辑存储结构的层次关系下图所示。
+
+![](../pgsql_image/pg_logic_str.png)
+
+pg安装后，其安装目录如下：
+
+![](../pgsql_image/pg_install_dir.png)
+
+#### 1.1.2 磁盘文件
+
+一般使用环境变量PGDATA指向数据目录的根目录。该目录是在安装时指定的，所以在安装时需要指定一个合适的目录作为数据目录的根目录，而且每一个数据库实例都需要一个根目录。目录的初使化是使用initdb来完成的，初始化完成后，数据根目录下就会生成以下6个配置文件。
+
+- postgresql.conf：此数据库实例的主配置文件，基本上所有的配置参数都在此文件中。
+- postgresql.auto.conf：使用ALTER SYSTEM修改的配置参数存储在该文件中（PostgreSQL 9.4及更高版本）。
+- pg_hba.conf：认证配置文件，用于配置允许哪些IP的主机访问数据库、认证的方法是什么等信息。
+- pg_ident.conf：ident认证方式的用户映射文件。
+- PG_VERSION：存储PostgreSQL主版本号。
+- postmaster.opts：记录服务器上次启动的命令行参数。
+
+```shell
+root@eb2e0ae36696:/var/lib/postgresql/data# echo $PGDATA
+/var/lib/postgresql/data
+root@eb2e0ae36696:/var/lib/postgresql/data# ls -l /var/lib/postgresql/data | grep ^-
+-rw------- 1 postgres postgres  4924 Feb 21 08:01 pg_hba.conf
+-rw------- 1 postgres postgres  1636 Feb 20 08:16 pg_ident.conf
+-rw------- 1 postgres postgres     3 Feb 20 08:16 PG_VERSION
+-rw------- 1 postgres postgres    88 Feb 20 08:16 postgresql.auto.conf
+-rw------- 1 postgres postgres 26818 Feb 21 08:06 postgresql.conf
+-rw------- 1 postgres postgres    36 Mar 14 06:39 postmaster.opts
+-rw------- 1 postgres postgres    94 Mar 14 06:39 postmaster.pid       
+root@eb2e0ae36696:/var/lib/postgresql/data# cat postmaster.opts
+/usr/lib/postgresql/12/bin/postgres
+root@eb2e0ae36696:/var/lib/postgresql/data# cat postmaster.pid
+1
+/var/lib/postgresql/data
+1710398366
+5432
+/var/run/postgresql
+*
+  5432001         0
+ready   
+```
+
+数据目录的根目录下还会生成如下子目录。
+
+- base：默认表空间的目录。
+- global：一些共享系统表的目录。
+- log：程序日志目录，在查询一些系统错误时可查看此目录下的日志文件。在10版本之前此目录是“pg_log”。
+- pg_commit_ts：视图提交的时间戳数据（PostgreSQL 9.5及更高版本）。
+- pg_dynshmem：动态共享内存子系统使用的文件（PostgreSQL 9.4及更高版本）。
+- pg_logical：逻辑复制的状态数据（PostgreSQL 9.4及更高版本）。
+- pg_multixact：多事务状态数据。
+- pg_notify：LISTEN/NOTIFY状态数据。
+- pg_repslot：复制槽数据（PostgreSQL 9.4及更高版本）。
+- pg_serial：已提交的可串行化事务相关信息（PostgreSQL 9.1及更高版本）。
+- pg_snapshots：PostgreSQL函数“pg_export_snapshot”导出的快照信息文件（PostgreSQL 9.2及更高版本）。
+- pg_stat：统计子系统的永久文件。
+- pg_stat_tmp：统计子系统的永久文件。
+- pg_subtrans：子事务状态数据。
+- pg_tblsp：存储了指向各个用户自建表空间实际目录的链接文件。
+- pg_twophase：使用两阶段提交功能时分布式事务的存储目录。
+- pg_wal：WAL日志的目录，在PostgreSQL 10版本之前此目录是“pg_xlog”。
+- pg_xact：Commit Log的目录，在PostgreSQL 10版本之前此目录是“pg_clog”。
+
+```shell
+root@eb2e0ae36696:/var/lib/postgresql/data# ls -l /var/lib/postgresql/data | grep ^d
+drwx------ 5 postgres postgres    41 Feb 20 08:16 base
+drwx------ 2 postgres postgres  4096 Mar 14 06:40 global
+drwx------ 2 postgres postgres     6 Feb 20 08:16 pg_commit_ts
+drwx------ 2 postgres postgres     6 Feb 20 08:16 pg_dynshmem
+drwx------ 4 postgres postgres    68 Mar 14 06:44 pg_logical
+drwx------ 4 postgres postgres    36 Feb 20 08:16 pg_multixact
+drwx------ 2 postgres postgres    18 Mar 14 06:39 pg_notify
+drwx------ 2 postgres postgres     6 Mar  7 12:05 pg_replslot
+drwx------ 2 postgres postgres     6 Feb 20 08:16 pg_serial
+drwx------ 2 postgres postgres     6 Feb 20 08:16 pg_snapshots
+drwx------ 2 postgres postgres     6 Mar 14 06:39 pg_stat
+drwx------ 2 postgres postgres    63 Mar 18 06:18 pg_stat_tmp
+drwx------ 2 postgres postgres    18 Feb 20 08:16 pg_subtrans
+drwx------ 2 postgres postgres     6 Feb 20 08:16 pg_tblspc
+drwx------ 2 postgres postgres     6 Feb 20 08:16 pg_twophase
+drwx------ 3 postgres postgres   124 Mar  7 12:10 pg_wal
+drwx------ 2 postgres postgres    18 Feb 20 08:16 pg_xact
+```
+
+在默认表空间的base目录下有很多子目录，这些子目录的名称与相应数据库的OID相同。
+
+```shell
+root@eb2e0ae36696:/var/lib/postgresql/data# psql -U postgres
+psql (12.8 (Debian 12.8-1.pgdg110+1))
+Type "help" for help.
+
+postgres=# select oid, datname from pg_database;
+  oid  |  datname  
+-------+-----------
+ 13458 | postgres
+     1 | template1
+ 13457 | template0
+(3 rows)
+```
+比如我们新创建一个test数据库，它的oid为16405，此时在base目录下就会生成一个16405的目录。
+
+```shell
+postgres=# create database test;
+CREATE DATABASE
+postgres=# select oid, datname from pg_database;
+  oid  |  datname  
+-------+-----------
+ 13458 | postgres
+ 16405 | test
+     1 | template1
+ 13457 | template0
+(4 rows)
+postgres=# \c test;
+You are now connected to database "test" as user "postgres".
+```
+
+```shell
+root@eb2e0ae36696:/var/lib/postgresql/data# ls base -al
+total 52
+drwx------  6 postgres postgres   54 Mar 18 06:27 .
+drwx------ 19 postgres root     4096 Mar 14 06:39 ..
+drwx------  2 postgres postgres 8192 Feb 20 08:16 1
+drwx------  2 postgres postgres 8192 Feb 20 08:16 13457
+drwx------  2 postgres postgres 8192 Mar 14 06:40 13458
+drwx------  2 postgres postgres 8192 Mar 18 06:29 16405
+```
+
+在16405目录下，存放着“test”这个数据库的表、索引等数据文件。每个表或索引都会分配一个文件号relfilenode，数据文件格式则以“<relfilenode>[.顺序号]”命名，每个文件最大为1GB，当表或索引的内容大于1GB时，就会从1开始生成顺序号。所以一张表的数据文件的路径为：
+
+```shell
+<默认表空间的目录>/<database oid> /<relfilenode>[.顺序号]
+```
+我们在test数据库下面创建一张test表，同时创建一个索引。
+
+```shell
+test=# \d
+        List of relations
+ Schema | Name | Type  |  Owner   
+--------+------+-------+----------
+ public | test | table | postgres
+(1 row)
+
+test=# select * from test;
+ id | name 
+----+------
+(0 rows)
+test=# create index test_index on test(id);
+CREATE INDEX
+test=# \d
+        List of relations
+ Schema | Name | Type  |  Owner   
+--------+------+-------+----------
+ public | test | table | postgres
+(1 row)
+
+test=# \d test
+                Table "public.test"
+ Column |  Type   | Collation | Nullable | Default 
+--------+---------+-----------+----------+---------
+ id     | integer |           |          | 
+ name   | text    |           |          | 
+Indexes:
+    "test_index" btree (id)
+
+test=# 
+```
+
+而一张表或索引的“relfilenode”是记录在系统表pg_class的relfilenode字段中的。如果要查询数据库“tes”中表“test”的数据文件，根据前面已经查出的数据库“test”的oid（为16405）来查，假设表“test01”是在默认表空间下的，那么查询这张表的relfilenode的命令如下：
+
+```sql
+test=# select relnamespace, relname, relfilenode from pg_class where relname='test';
+ relnamespace | relname | relfilenode 
+--------------+---------+-------------
+         2200 | test    |       16406
+(1 row)
+```
+
+可以看出这个表的relfilenode为“33103”，则这张表的数据文件为“$PGDATA/base/16405/16406”：
+
+```shell
+root@eb2e0ae36696:/# ls $PGDATA/base/16405/16406 -al
+-rw------- 1 postgres postgres 0 Mar 18 06:35 /var/lib/postgresql/data/base/16405/16406
+```
+
+同样的查看索引文件test_index，
+
+```sql
+est=# \d test
+                Table "public.test"
+ Column |  Type   | Collation | Nullable | Default 
+--------+---------+-----------+----------+---------
+ id     | integer |           |          | 
+ name   | text    |           |          | 
+Indexes:
+    "test_index" btree (id)
+
+test=# select relnamespace, relname, relfilenode from pg_class where relname='test_index';
+ relnamespace |  relname   | relfilenode 
+--------------+------------+-------------
+         2200 | test_index |       16412
+(1 row)
+```
+
+可以看出这个索引的relfilenode为“16412”，则这张表的数据文件为“$PGDATA/base/16405/16412”：
+
+```shell
+root@eb2e0ae36696:/# ls $PGDATA/base/16405/16412 -al
+-rw------- 1 postgres postgres 8192 Mar 18 06:53 /var/lib/postgresql/data/base/16405/16412
+```
+
+### 1.2 数据（表）物理存储结构
 
 Postgresql当前不支持使用裸设备或者块设备，必须基于文件系统来存储。
 
-#### 1.1.1 关键概念
+#### 1.2.1 关键概念
 
 - Realation：表示表或索引。
 - Tuple：表示表中的行。
 - Page：表示在磁盘中的数据块。
 - Buffer：表示在内存中的数据块
 
-#### 1.1.2 数据块结构
+#### 1.2.2 数据块结构
 
 数据块是多行数据的存储结构。
 
@@ -25,7 +246,7 @@ Postgresql当前不支持使用裸设备或者块设备，必须基于文件系�
 
 ![](../pgsql_image/block_structure.png)
 
-##### 1.1.2.1 块头
+##### 1.2.2.1 块头
 块头主要记录了如下信息：
   - 块的checksum
   - 空闲空间的起始位置和结束位置
@@ -70,7 +291,7 @@ pd_upper - pd_lower是该页中剩余可用的空闲空间，随着元素的不�
 
 ![](../pgsql_image/page_header.png)
 
-##### 1.1.2.2 行指针
+##### 1.2.2.2 行指针
 
 行指针是一个32bit的数字，具体结构如下：
 
@@ -110,7 +331,7 @@ n = (pd_lower - sizeof(PageHeaderData))/4
 
 访问的时候先从页头的尾部开始依次访问行指针，根据lp_off确定行的起始位置，根据lp_off+lp_len确定行的结束位置。
 
-#### 1.1.3 tuple结构
+#### 1.2.3 tuple结构
 
 这里的tuple指的是数据行，就是前面提到的块（页）结构中行指针所指向的数据。
 
@@ -121,7 +342,7 @@ tuple的结构如下图：
 ![](../pgsql_image/tuple_structure.png)
 
 
-##### 1.1.3.1 行头
+##### 1.2.3.1 行头
 
 行头的结构体定义如下：
 
@@ -173,7 +394,7 @@ typedef struct HeapTupleFields
 } HeapTupleFields;
 ```
 
-##### 1.1.3.2 行头关键字段
+##### 1.2.3.2 行头关键字段
 
 - xmin
 插入数据行的事务ID。
@@ -301,9 +522,9 @@ comboHash = hash_create("Combo CIDs",
 下次再查询该行时，直接使用t_infomask中的HEAP_XMIN_COMMITTED和HEAP_XMAX_INVALID标志位就可以判断出行的可见性了，不再需要到CLOG中查询
 事务的状态。
 
-##### 1.1.3.3 MVCC实现原理
+##### 1.2.3.3 MVCC实现原理
 
-###### 1.1.3.3.1 事务内部的多版本一致
+###### 1.2.3.3.1 事务内部的多版本一致
 
 xmin、xmax、cmin、cmax这四个字段在MVCC中用于控制数据行是否对用户可见。PG会将修改前后的数据都存储在相同的结构中
 
@@ -315,7 +536,7 @@ xmin、xmax、cmin、cmax这四个字段在MVCC中用于控制数据行是否对
    - 若当前命令ID>=当前行的cmax且cmax不等于0，说明当前行对此命令不可见
    - 若当前命令ID>=当前行的cmin，说明当前行对此命令可见
 
-###### 1.1.3.3.2 不同事务间的多版本一致
+###### 1.2.3.3.2 不同事务间的多版本一致
 
 PG是通过数据行上的xmin和xmax来判断对某事务是否可见，那么只需要确认xmin和xmax对应的事务是提交了还是回滚了，就可以知道这些数据行是否可见。PG把事务状态记录在commit log中，简称clog，事物的状态有以下四种：
 
@@ -345,7 +566,7 @@ PG是通过数据行上的xmin和xmax来判断对某事务是否可见，那么�
 从这个公式中可以看出
 ，当事务ID没有回卷时，上面的公式相当于直接比较大小，在事务ID回卷后，如id1=4294967295，id2=5，id1-id2=4294967290，这是一个正数，但转换成有符号的int32时，由于超出了有符号数的取值范围，会转换成一个负数，说明id2的数据要新。
 
-#### 1.1.4 空闲空间管理
+#### 1.2.4 空闲空间管理
 
 PostgreSQL的MVCC机制中，更新和删除操作并不是对原有的数据空间进行操作，而是通过对元组（tuple）的多版本形式来实现的。而由此引发了过期数据的问题，即当一个版本的元组对所有事物都不可见时，那么它就是过期的，此时它占用的空间是可以被释放的。
 
@@ -408,13 +629,13 @@ postgres=# select * from pg_freespace('test');
 postgres=# 
 ```
 
-#### 1.1.5 可见性映射表文件
+#### 1.2.5 可见性映射表文件
 
 在PostgreSQL中更新、删除行后，数据行并不会马上从数据块中被清理掉，而是需要等VACUUM时清理。为了能加快VACUUM清理的速度并降低对系统I/O性能的影响，PostgreSQL在8.4.1版本之后为每个数据文件加了一个后缀为“_vm”的文件，此文件被称为可见性映射表文件，简称VM文件。VM文件中为每个数据块存储了一个标志位，用来标记数据块中是否存在需要清理的行。有该文件后，做VACUUM扫描此文件时，如果发现VM文件中该数据块上的位表示该数据块没有需要清理的行，VACUUM就可以跳过对这个数据块的扫描，从而加快VACUUM清理的速度。
 
 VACUUM有两种方式，一种被称为“Lazy VACUUM”，另一种被称为“Full VACUUM”，VM文件仅在Lazy VACUUM中使用，Full VACUUM操作则需要对整个数据文件进行扫描。
 
-#### 1.1.6 reference
+#### 1.2.6 reference
 
 1. https://blog.csdn.net/weixin_39540651/article/details/119139620
 2. https://zhuanlan.zhihu.com/p/67725967
