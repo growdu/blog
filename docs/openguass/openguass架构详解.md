@@ -1,0 +1,3 @@
+# openguass架构详解
+
+openguass从postgresql演化而来，最主要的区别为：openguass是多线程架构，postgresql是多进程架构。除此而外，openguass还支持paxos分布式一致性协议。

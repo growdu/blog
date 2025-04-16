@@ -1,0 +1,7 @@
+# yaml字典列表
+-
+ name: test
+ age: 18
+-
+ name: cest
+ age: 18

@@ -1,0 +1,6 @@
+[7787] Starts!
+[7787] Parent process.
+End
+[7787] Starts!
+[7788] Child process.
+End

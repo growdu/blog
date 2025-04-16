@@ -1,0 +1,9 @@
+# 字典中存放列表
+name:
+ - jack
+ - bob
+ - anne
+course:
+ - english
+ - math
+ - chinese
