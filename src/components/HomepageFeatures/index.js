@@ -17,16 +17,16 @@ const FeatureList = [
     Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
     description: (
       <>
-        从练气期开始，一步步了解k8s的修仙世界。
+        从练气期开始，一步步了解编程的修仙世界。
       </>
     ),
   },
   {
-    title: '主流的k8s使用技术',
+    title: '主流的编程技术',
     Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        使用k8s的跨界修仙之旅。
+        编程的跨界修仙之旅。
       </>
     ),
   },
