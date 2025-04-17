@@ -270,17 +270,17 @@ zookeeper搭建主备集群主要是利用zookeeper的临时节点和watch机制
 
    在 ZooKeeper 中，有一个目录用来存储多个主副本数据库组中所有节点的信息。 它是一个包含 4 种子目录类型的目录：
 
-   - /state/{DATABASE_GROUP_NAME}_{IPADDR}:{PORT}
+   - `/state/{DATABASE_GROUP_NAME}_{IPADDR}:{PORT}`
 
      这包含有关数据库集群节点的所有信息，无论是否健康。 它经常使用 WAL 日志重播状态等数据进行更新。 它是一个临时节点，如果与 zookeeper 的连接丢失，它将消失。临时的，由“deadman”守护进程创建/维护。
 
-   - /conn/{DATABASE_GROUP_NAME}_{IPADDR}:{PORT}
+   - `/conn/{DATABASE_GROUP_NAME}_{IPADDR}:{PORT}`
 
      此 znode 包含来自状态节点的信息子集。 它是关于单个健康（即可连接）集群的静态连接信息/元数据。 如果节点不是“健康”的，则该条目将不存在。 此 znode 中的信息不是易失性的，并且保证不会在 znode 的生命周期内发生变化。 短暂的，由“deadman”守护进程创建/维护。
 
-   - /lock/{DATABASE_GROUP_NAME}
+   - `/lock/{DATABASE_GROUP_NAME}`
 
-   - /static/{DATABASE_GROUP_NAME}-db-id
+   - `/static/{DATABASE_GROUP_NAME}-db-id`
 
    #### 依赖
 

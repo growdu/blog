@@ -1,6 +1,6 @@
 
 
-# <CENTER>java 基础</CENTER>
+# java 基础
 
 ## Java中final关键字
 

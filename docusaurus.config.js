@@ -24,7 +24,7 @@ const config = {
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
   organizationName: 'growdu', // Usually your GitHub org/user name.
-  projectName: 'k8s_god', // Usually your repo name.
+  projectName: 'blog', // Usually your repo name.
 
   onBrokenLinks: 'warn',
   onBrokenMarkdownLinks: 'warn',
@@ -71,7 +71,7 @@ const config = {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'k8s修仙指南',
+            label: '编程之路',
           },
           {
             href: 'https://github.com/growdu/k8s_god',

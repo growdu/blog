@@ -1,4 +1,4 @@
- # <center>2018-09-25</center>
+ # 2018-09-25
 
 ## pdf解析
 
@@ -54,7 +54,7 @@
 
 第一遍先计算节点数，当节点数符合条件，计算距离。当两者均满足条件时，确定表格，然后再根据起始点和距离去寻找表格边框。
 
-# <center>2018-09-26</center>
+# 2018-09-26
 
 ## pdf解析
 
@@ -97,7 +97,7 @@ final修饰类，表示这个类不能被继承。
 注：类的private方法会隐式地被指定为final方法。
 
 
-# <center>2018-09-27</center>
+# 2018-09-27
 
 ## java abstract关键字
 
@@ -163,7 +163,7 @@ Java采取的是类型擦除的方法来实现泛型，并通过extends和super�
 `<T extends Compatable<? super T\>\>`表示了上界为实现了Comparable接口的类，`<? super T\>`则表示实现Comparable接口的类的子类也可以，从而确定下界
 
 
-# <center>2018-09-28</center>
+# 2018-09-28
 
 ## pdfbox解析说明
 
@@ -268,7 +268,7 @@ public class TextPositonExtracter extends PDFTextStripper {
 </font>
 
 
-# <center>2018-09-29</center>
+# 2018-09-29
 
 ## pdf解析维护、调整、优化
 

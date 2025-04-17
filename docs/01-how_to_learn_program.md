@@ -1,6 +1,6 @@
 
 
-# <center>如何学习编程</center>
+# 如何学习编程
 
 ## 概要
 
@@ -112,6 +112,6 @@ cpu执行程序、读取文件到内存，操作系统和专门的编程语言�
 
 ## 数据库
 
-- [pgsql_repmgr](./pgsql/pgsql_repmgr.md)
+- pgsql_repmgr
 
 ## 内存

@@ -1,6 +1,6 @@
 
 
-# <center><font color="red">数据结构</font></center>
+# <font color="red">数据结构</font>
 
 ## 1 基本概念
 
