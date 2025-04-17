@@ -7,4 +7,6 @@ plan
 .pytest_cache
 .vscode
 __pycache__
-
+.docusaurus/
+build/
+node_modules/
