@@ -11,7 +11,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: '编程之路',
-  tagline: '大学毕业至今走过的足迹',
+  tagline: '一位资深后端研发工程师的编程学习之路',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
