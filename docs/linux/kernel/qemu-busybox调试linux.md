@@ -178,7 +178,7 @@ sudo apt-get install qemu-system-x86
 qemu-system-x86_64 \
   -kernel /root/linux-6.9/arch/x86/boot/bzImage \
   -initrd initramfs.cpio.gz \
-  -append "console=ttyS0 root=/dev/ram0 rdinit=/init" \
+  -append "nokaslr console=ttyS0 root=/dev/ram0 rdinit=/init" \
   -nographic
 ```
 
@@ -203,8 +203,8 @@ chmod +x start.sh
 qemu-system-x86_64 \
   -s -S \
   -kernel /root/linux-6.9/arch/x86/boot/bzImage \
-  -initrd initramfs.cpio.gz \
-  -append "console=ttyS0 root=/dev/ram0 rdinit=/init" \
+  -initrd /root/busybox-1.37.0/initramfs.cpio.gz \
+  -append "nokaslr console=ttyS0 root=/dev/ram0 rdinit=/init" \
   -nographic
 ```
 
@@ -220,3 +220,20 @@ gdb vmlinux
 (gdb) b start_kernel
 (gdb) c
 ```
+
+```shell
+#0  start_kernel () at init/main.c:1049
+#1  0xffffffff832d6de8 in x86_64_start_reservations (real_mode_data=real_mode_data@entry=0x147b0 <exception_stacks+34736> <error: Cannot access memory at address 0x147b0>)
+    at arch/x86/kernel/head64.c:507
+#2  0xffffffff832d6f2f in x86_64_start_kernel (real_mode_data=0x147b0 <exception_stacks+34736> <error: Cannot access memory at address 0x147b0>) at arch/x86/kernel/head64.c:488
+#3  0xffffffff81051b1d in secondary_startup_64 () at arch/x86/kernel/head_64.S:420
+#4  0x0000000000000000 in ?? ()
+```
+
+调试过程中，会遇到断点无法命中的问题，是因为linux默认会开启地址随机化。nokaslr 是 Linux 内核启动参数之一，作用是关闭内核地址空间布局随机化（KASLR）。
+
+KASLR（Kernel Address Space Layout Randomization）是内核的一种安全机制，启动时会随机化内核的加载地址，防止攻击者预测内核关键代码和数据的位置。
+
+在调试内核时，如果开启 KASLR，每次启动内核的加载地址都不同，GDB 加载符号表时地址会对不上，导致断点无法命中。因此，加上 nokaslr 参数可以让内核每次都加载到固定地址，方便调试和符号表匹配。
+
+泪目啊。
