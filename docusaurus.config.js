@@ -36,6 +36,17 @@ const config = {
     defaultLocale: 'zh-CN',
     locales: ['zh-CN'],
   },
+plugins: [
+  [
+    require.resolve("@easyops-cn/docusaurus-search-local"),
+    {
+      hashed: true,              // 生成 hashed 文件名以便缓存
+      language: ["en", "zh"],    // 支持的语言
+      highlightSearchTermsOnTargetPage: true,
+      explicitSearchResultPath: true
+    }
+  ]
+],
 
   presets: [
     [
