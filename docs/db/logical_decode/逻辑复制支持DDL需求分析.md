@@ -13,6 +13,36 @@ postgresql当前的逻辑复制仅支持复制DML，不支持复制DDL，需要�
 
 ## 需求分析
 
+### 初步结论
+
+pg10之后的逻辑复制参考了pglogical，PG10 的逻辑复制就是把 pglogical 的一部分能力合入内核。
+
+因而我们依然可以复用当前逻辑复制的接口，在其接口上进行扩展。比如：
+
+```sql
+CREATE PUBLICATION pub1
+FOR ALL TABLES
+WITH (
+    publish = 'insert, update, delete',
+    publish_ddl = true
+);
+```
+
+或者仿照opengauss的接口设计：
+
+```sql
+CREATE PUBLICATION pub_name FOR ALL TABLES with(publish='insert,update,delete,truncate',ddl='table');
+```
+
+在实现方式直接在内核里基于当前的逻辑复制来实现，需要补充完善：
+
+1. 捕获 DDL 
+2. 写wal
+3. ddl解码
+4. apply worker
+
+具体实现可以参考opengauss和polardb。
+
 ### 用户接口分析
 
 #### 方案一：复用当前用户接口
@@ -318,7 +348,23 @@ WITH (
 
 #### polardb-for-postgres分析
 
-#### gaussdb分析
+#### opengauss逻辑复制支持DDL分析
+
+```sql
+CREATE PUBLICATION pub_name FOR ALL TABLES with(publish='insert,update,delete,truncate',ddl='table');
+```
+
+- pub_name 
+
+创建的发布名称。
+
+- ddl='table'
+
+ddl='table'为语法扩充，表示支持TABLE相关的DDL语法。如果需要其他DDL语法，则设置ddl='all'。在设置ddl='all'时，只允许FOR ALL TABLES选项。
+
+opengauss直接在内核层面捕获DDL并解析，通过扩展原有的逻辑复制sql语句来定义用户接口。
+
+具体可以参考opengauss的[手册](https://docs.opengauss.org/zh/docs/latest/database_om_guide/logical_copy_support_ddl_operation.html)。
 
 ## 需求分解
 
