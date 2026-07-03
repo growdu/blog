@@ -9,7 +9,7 @@ meson setup build \
   -Dlibxml=enabled \
   -Dlibxslt=enabled \
   -Dzlib=enabled \
-  --prefix=`pwd`/debug \
+  --prefix=`pwd`/debug 
 
 ```
 
