@@ -10,3 +10,5 @@ __pycache__
 .docusaurus/
 build/
 node_modules/
+.DS_Store
+.obsidian
