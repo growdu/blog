@@ -28,7 +28,6 @@ jobs:
         with:
           hugo-version: 'latest'
           extended: true
-      - name: Setup Pages
       - name: Build with Hugo
         env:
           HUGO_ENVIRONMENT: production
