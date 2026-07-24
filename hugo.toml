@@ -1,0 +1,50 @@
+baseURL = "https://growdu.github.io/blog/"
+languageCode = "zh-CN"
+title = "编程之路"
+theme = "PaperMod"
+contentDir = "docs"
+enableGitInfo = true
+enableRobotsTXT = true
+paginate = 20
+
+[frontmatter]
+date = [":git", "lastmod", "date", "publishDate"]
+lastmod = [":git", "lastmod", "date", "publishDate"]
+publishDate = [":git", "lastmod", "date", "publishDate"]
+
+[params]
+env = "production"
+defaultTheme = "auto"
+ShowReadingTime = true
+ShowPostNavLinks = true
+ShowBreadCrumbs = true
+ShowCodeCopyButtons = true
+ShowWordCount = true
+ShowToc = true
+mainSections = ["ai", "alg", "base", "chatgpt", "cluster", "code", "computer_communication", "database", "db", "docker", "dpdk", "edit", "environment", "es", "faq", "go_web", "language", "linux", "mail", "network", "opc", "openguass", "page", "pcap", "pgsql", "programmer_self_cultivation", "protocol", "road", "src", "storage", "tools", "video_work", "vpp", "vue", "web", "wiki"]
+
+[params.homeInfoParams]
+Title = "编程之路"
+Content = "一位资深后端研发工程师的编程学习之路"
+
+[[params.socialIcons]]
+name = "github"
+url = "https://github.com/growdu/blog"
+
+[params.giscus]
+repo = ""
+repoID = ""
+category = "Announcements"
+categoryID = ""
+
+[params.busuanzi]
+enabled = true
+
+[markup]
+[markup.highlight]
+style = "dracula"
+lineNos = false
+codeFences = true
+guessSyntax = true
+[markup.goldmark.renderer]
+unsafe = true
