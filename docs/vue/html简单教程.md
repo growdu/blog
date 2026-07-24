@@ -62,8 +62,8 @@ margin-left:50px;
 <div class="login">
 <h1>登录</h1>
 <form action="" method="post">
-<input type="text" name="username" placeholder="请输入用户名"><br>
-<input type="password" name="password" placeholder="请输入密码"><br>
+<input type="text" name="username" placeholder="请输入用户名"><br/>
+<input type="password" name="password" placeholder="请输入密码"><br/>
 <input type="submit" value="登录">
 </form>
 </div>
@@ -132,9 +132,9 @@ $(document).ready(function(){
 <body>
 <form action="http://www.example.com/login" method="post">
 <label for="username">用户名:</label>
-<input type="text" id="username" name="username"><br><br>
+<input type="text" id="username" name="username"><br/><br/>
 <label for="password">密码:</label>
-<input type="password" id="password" name="password"><br><br>
+<input type="password" id="password" name="password"><br/><br/>
 <input type="submit" value="提交">
 </form>
 </body>

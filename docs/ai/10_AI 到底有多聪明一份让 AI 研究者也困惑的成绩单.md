@@ -324,22 +324,22 @@ AI 能通过考试，这可以用”模式匹配”解释。AI 会算错小数�
 
 # 参考资料
 
-  1. OpenAI. (2023). _GPT-4 Technical Report_. <https://openai.com/index/gpt-4-research/>
-  2. OpenAI. (2025). _Introducing GPT-5.2_. <https://openai.com/index/introducing-gpt-5-2/>
-  3. OpenAI Community. (2024). Why does ChatGPT say that 9.11 is bigger than 9.8? <https://community.openai.com/t/why-does-chatgpt-say-that-9-11-is-bigger-than-9-8/869489>
-  4. Maxwell, M. (2024). Why is ChatGPT so bad at math? _TechCrunch_. <https://techcrunch.com/2024/10/02/why-is-chatgpt-so-bad-at-math/>
-  5. Barshay, J. (2024). Researchers combat AI hallucinations in math. _The Hechinger Report_. <https://hechingerreport.org/proof-points-combat-ai-hallucinations-math/>
-  6. Martinez, E. (2024). Re-evaluating GPT-4’s bar exam performance. _Artificial Intelligence and Law_. <https://link.springer.com/article/10.1007/s10506-024-09396-9>
-  7. Ouyang, L., et al. (2022). Training language models to follow instructions with human feedback. _NeurIPS 2022_. <https://arxiv.org/abs/2203.02155>
-  8. OpenAI. (2022). Aligning language models to follow instructions. <https://openai.com/index/instruction-following/>
-  9. Apple Machine Learning Research. (2025). GSM-Symbolic: Understanding the Limitations of Mathematical Reasoning in Large Language Models. _ICLR 2025_. <https://machinelearning.apple.com/research/gsm-symbolic>
-  10. Apple Machine Learning Research. (2025). The Illusion of Thinking. _NeurIPS 2025_. <https://machinelearning.apple.com/research/illusion-of-thinking>
-  11. Stein, S. (2025). OpenAI’s new reasoning AI models hallucinate more. _TechCrunch_. <https://techcrunch.com/2025/04/18/openais-new-reasoning-ai-models-hallucinate-more/>
-  12. The Register. (2026). AI models still suck at math — ORCA benchmark. <https://www.theregister.com/2026/02/26/ai_models_get_better_at/>
-  13. ARC Prize. (2025). ARC Prize 2025 Results Analysis. <https://arcprize.org/blog/arc-prize-2025-results-analysis>
-  14. Artificial Analysis. (2025). MMLU-Pro Leaderboard. <https://artificialanalysis.ai/evaluations/mmlu-pro>
-  15. Vellum. (2026). Claude Opus 4.6 Benchmarks. <https://www.vellum.ai/blog/claude-opus-4-6-benchmarks>
-  16. AGI Safe. (2025). Humanity’s Last Exam. <https://agi.safe.ai/>
-  17. 9to5Mac. (2025). New paper pushes back on Apple’s LLM reasoning collapse study. <https://9to5mac.com/2025/06/13/new-paper-pushes-back-on-apples-llm-reasoning-collapse-study/>
-  18. arXiv. (2025). Rethinking the Illusion of Thinking. <https://arxiv.org/html/2507.01231v1>
-  19. Wikipedia. G factor (psychometrics). <https://en.wikipedia.org/wiki/G_factor_(psychometrics)>
+  1. OpenAI. (2023). _GPT-4 Technical Report_. https://openai.com/index/gpt-4-research/
+  2. OpenAI. (2025). _Introducing GPT-5.2_. https://openai.com/index/introducing-gpt-5-2/
+  3. OpenAI Community. (2024). Why does ChatGPT say that 9.11 is bigger than 9.8? https://community.openai.com/t/why-does-chatgpt-say-that-9-11-is-bigger-than-9-8/869489
+  4. Maxwell, M. (2024). Why is ChatGPT so bad at math? _TechCrunch_. https://techcrunch.com/2024/10/02/why-is-chatgpt-so-bad-at-math/
+  5. Barshay, J. (2024). Researchers combat AI hallucinations in math. _The Hechinger Report_. https://hechingerreport.org/proof-points-combat-ai-hallucinations-math/
+  6. Martinez, E. (2024). Re-evaluating GPT-4’s bar exam performance. _Artificial Intelligence and Law_. https://link.springer.com/article/10.1007/s10506-024-09396-9
+  7. Ouyang, L., et al. (2022). Training language models to follow instructions with human feedback. _NeurIPS 2022_. https://arxiv.org/abs/2203.02155
+  8. OpenAI. (2022). Aligning language models to follow instructions. https://openai.com/index/instruction-following/
+  9. Apple Machine Learning Research. (2025). GSM-Symbolic: Understanding the Limitations of Mathematical Reasoning in Large Language Models. _ICLR 2025_. https://machinelearning.apple.com/research/gsm-symbolic
+  10. Apple Machine Learning Research. (2025). The Illusion of Thinking. _NeurIPS 2025_. https://machinelearning.apple.com/research/illusion-of-thinking
+  11. Stein, S. (2025). OpenAI’s new reasoning AI models hallucinate more. _TechCrunch_. https://techcrunch.com/2025/04/18/openais-new-reasoning-ai-models-hallucinate-more/
+  12. The Register. (2026). AI models still suck at math — ORCA benchmark. https://www.theregister.com/2026/02/26/ai_models_get_better_at/
+  13. ARC Prize. (2025). ARC Prize 2025 Results Analysis. https://arcprize.org/blog/arc-prize-2025-results-analysis
+  14. Artificial Analysis. (2025). MMLU-Pro Leaderboard. https://artificialanalysis.ai/evaluations/mmlu-pro
+  15. Vellum. (2026). Claude Opus 4.6 Benchmarks. https://www.vellum.ai/blog/claude-opus-4-6-benchmarks
+  16. AGI Safe. (2025). Humanity’s Last Exam. https://agi.safe.ai/
+  17. 9to5Mac. (2025). New paper pushes back on Apple’s LLM reasoning collapse study. https://9to5mac.com/2025/06/13/new-paper-pushes-back-on-apples-llm-reasoning-collapse-study/
+  18. arXiv. (2025). Rethinking the Illusion of Thinking. https://arxiv.org/html/2507.01231v1
+  19. Wikipedia. G factor (psychometrics). https://en.wikipedia.org/wiki/G_factor_(psychometrics)

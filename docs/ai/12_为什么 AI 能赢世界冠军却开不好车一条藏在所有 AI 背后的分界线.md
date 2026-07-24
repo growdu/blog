@@ -377,16 +377,16 @@ AI 绘画 | Midjourney / SD | 看情况 | 获艺术比赛一等奖（第 10 篇�
 
 # 参考资料
 
-  1. AlphaGo versus Lee Sedol. _Wikipedia_. <https://en.wikipedia.org/wiki/AlphaGo_versus_Lee_Sedol>
-  2. Future of Go Summit. _Wikipedia_. <https://en.wikipedia.org/wiki/Future_of_Go_Summit>
-  3. AlphaGo. _Wikipedia_. <https://en.wikipedia.org/wiki/AlphaGo>
-  4. Jumper, J., et al. (2021). Highly accurate protein structure prediction with AlphaFold. _Nature_. <https://www.nature.com/articles/s41586-021-03819-2>
-  5. Nobel Prize in Chemistry 2024. <https://www.nobelprize.org/prizes/chemistry/2024/press-release/>
-  6. Tesla. Vehicle Safety Report (Q1 2025). <https://www.tesla.com/VehicleSafetyReport>
-  7. Waymo. Comparison of Waymo Rider-Only Crash Data to Human Benchmarks. <https://waymo.com/research/comparison-of-waymo-rider-only-crash-data-to-human/>
-  8. List of Tesla Autopilot crashes. _Wikipedia_. <https://en.wikipedia.org/wiki/List_of_Tesla_Autopilot_crashes>
-  9. Salinas, M.P., et al. (2024). A systematic review and meta-analysis of artificial intelligence versus clinicians for skin cancer diagnosis. _npj Digital Medicine_. <https://www.nature.com/articles/s41746-024-01103-x>
-  10. Schaefer, J., et al. (2022). AI in Medical Imaging and Rare Diseases. _PMC_. <https://pmc.ncbi.nlm.nih.gov/articles/PMC8764708/>
-  11. Xu, Y., et al. (2025). Bias in AI for medical imaging. _PMC_. <https://pmc.ncbi.nlm.nih.gov/articles/PMC11880872/>
-  12. Zech, J., et al. (2024). Limits of fair medical imaging AI. _Nature Medicine_. <https://www.nature.com/articles/s41591-024-03113-4>
-  13. Radford, A., et al. (2022). Robust Speech Recognition via Large-Scale Weak Supervision (Whisper). <https://arxiv.org/abs/2212.04356>
+  1. AlphaGo versus Lee Sedol. _Wikipedia_. https://en.wikipedia.org/wiki/AlphaGo_versus_Lee_Sedol
+  2. Future of Go Summit. _Wikipedia_. https://en.wikipedia.org/wiki/Future_of_Go_Summit
+  3. AlphaGo. _Wikipedia_. https://en.wikipedia.org/wiki/AlphaGo
+  4. Jumper, J., et al. (2021). Highly accurate protein structure prediction with AlphaFold. _Nature_. https://www.nature.com/articles/s41586-021-03819-2
+  5. Nobel Prize in Chemistry 2024. https://www.nobelprize.org/prizes/chemistry/2024/press-release/
+  6. Tesla. Vehicle Safety Report (Q1 2025). https://www.tesla.com/VehicleSafetyReport
+  7. Waymo. Comparison of Waymo Rider-Only Crash Data to Human Benchmarks. https://waymo.com/research/comparison-of-waymo-rider-only-crash-data-to-human/
+  8. List of Tesla Autopilot crashes. _Wikipedia_. https://en.wikipedia.org/wiki/List_of_Tesla_Autopilot_crashes
+  9. Salinas, M.P., et al. (2024). A systematic review and meta-analysis of artificial intelligence versus clinicians for skin cancer diagnosis. _npj Digital Medicine_. https://www.nature.com/articles/s41746-024-01103-x
+  10. Schaefer, J., et al. (2022). AI in Medical Imaging and Rare Diseases. _PMC_. https://pmc.ncbi.nlm.nih.gov/articles/PMC8764708/
+  11. Xu, Y., et al. (2025). Bias in AI for medical imaging. _PMC_. https://pmc.ncbi.nlm.nih.gov/articles/PMC11880872/
+  12. Zech, J., et al. (2024). Limits of fair medical imaging AI. _Nature Medicine_. https://www.nature.com/articles/s41591-024-03113-4
+  13. Radford, A., et al. (2022). Robust Speech Recognition via Large-Scale Weak Supervision (Whisper). https://arxiv.org/abs/2212.04356
