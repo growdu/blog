@@ -48,4 +48,6 @@ codeFences = true
 guessSyntax = true
 [markup.goldmark.renderer]
 unsafe = true
+[security]
+  allowContent = []
 comments = true
