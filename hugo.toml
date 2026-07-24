@@ -49,5 +49,5 @@ guessSyntax = true
 [markup.goldmark.renderer]
 unsafe = true
 [security]
-  allowContent = []
+  allowContent = ['^text/']
 comments = true
