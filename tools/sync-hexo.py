@@ -32,14 +32,33 @@ def read_section_categories():
     return cats
 
 
-def git_date(path):
-    try:
-        r = subprocess.run(['git','log','-1','--format=%ai','--',path],
-                           capture_output=True, text=True, check=True)
-        d = r.stdout.strip()
-        return d if d else '2024-01-01 00:00:00'
-    except Exception:
-        return '2024-01-01 00:00:00'
+def git_date(filepath):
+    """Get the earliest commit date across ALL branches.
+
+    Files migrated from repo root to docs/ and some were converted from
+    single .md files to page bundles (dir/index.md), so we search
+    multiple historical path candidates on every branch."""
+    rel = os.path.relpath(filepath, DOCS)
+    candidates = [f'docs/{rel}', rel]
+    if os.path.basename(filepath) == 'index.md':
+        parent = os.path.dirname(rel)
+        if parent:
+            candidates.append(f'docs/{parent}.md')
+            candidates.append(f'{parent}.md')
+    earliest = None
+    for path in candidates:
+        try:
+            r = subprocess.run(
+                ['git', 'log', '--all', '--reverse', '--format=%ai', '--', path],
+                capture_output=True, text=True,
+            )
+            if r.returncode == 0 and r.stdout.strip():
+                d = r.stdout.strip().split('\n')[0].strip()
+                if earliest is None or d < earliest:
+                    earliest = d
+        except Exception:
+            continue
+    return earliest if earliest else '2024-01-01 00:00:00'
 
 
 def extract_title(content):
