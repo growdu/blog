@@ -142,7 +142,7 @@ def process(filepath, cats):
     body_out = rewrite_images(src, fdir)
     body_out = re.sub(r'^#\s+.+\n?', '', body_out, count=1, flags=re.MULTILINE)
 
-    fm_out = f'---\ntitle: "{yaml_escape(title)}"\ndate: {date}\ncategories:\n  - {cat}\ntags:\n  - {cat}\n---\n'
+    fm_out = f'---\ntitle: "{yaml_escape(title)}"\ndate: {date}\nauthor: growdu\ncategories:\n  - {cat}\ntags:\n  - {cat}\n---\n'
 
     if os.path.basename(filepath) == 'index.md':
         name = os.path.basename(os.path.dirname(filepath))

@@ -37,15 +37,20 @@ jobs:
         run: python3 tools/sync-hexo.py
       - name: Build with Hexo
         run: npx hexo generate
-      - name: Debug - theme homepage and config
+      - name: Debug - check mermaid and author
         run: |
-          echo "=== Theme index.ejs ==="
-          cat themes/matery/layout/index.ejs 2>/dev/null
-          echo "=== Theme _config.yml top-level keys ==="
-          grep -E '^[a-zA-Z]' themes/matery/_config.yml 2>/dev/null
-          echo "=== Sample post dates ==="
-          find source/_posts -name "*.md" | head -10 | while read f; do
-            grep -m1 '^date:' "$f" | sed "s|^|$f: |"
+          echo "=== Pages with mermaid ==="
+          find public -name "index.html" -exec grep -l 'mermaid' {} \; 2>/dev/null | head -5
+          echo "=== Mermaid div + script check ==="
+          for f in $(find public -name "index.html" -exec grep -l 'mermaid' {} \; 2>/dev/null | head -3); do
+            echo "$f:"
+            echo "  divs: $(grep -c 'class=\"mermaid\"' "$f" 2>/dev/null)"
+            echo "  script: $(grep -c 'mermaid@10' "$f" 2>/dev/null)"
+            echo "  prism: $(grep -c 'prism-core' "$f" 2>/dev/null)"
+          done
+          echo "=== Author check ==="
+          find source/_posts -name "*.md" | head -3 | while read f; do
+            grep -m1 '^author:' "$f" | sed "s|^|$f: |"
           done
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4

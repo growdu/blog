@@ -89,7 +89,7 @@ code[class*="language-"]{font-family:Consolas,Monaco,'Source Code Pro',monospace
 inject_js = """<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-<script>if(window.mermaid){mermaid.initialize({startOnLoad:true,theme:'default'});}</script>"""
+<script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>"""
 
 for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
     for fname in files:
