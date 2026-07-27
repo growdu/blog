@@ -26,13 +26,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install dependencies
+      - name: Install Hexo dependencies
         run: npm install
-      - name: Ensure matery theme
+      - name: Install matery theme
         run: |
-          if [ ! -d node_modules/hexo-theme-matery ] && [ ! -d themes/matery ]; then
-            git clone --depth 1 https://github.com/blinkfox/hexo-theme-matery.git themes/matery
-          fi
+          mkdir -p themes
+          git clone --depth 1 https://github.com/blinkfox/hexo-theme-matery.git themes/matery
       - name: Sync content to Hexo
         run: python3 scripts/sync-hexo.py
       - name: Build with Hexo
