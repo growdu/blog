@@ -1,11 +1,12 @@
 baseURL = "https://growdu.github.io/blog/"
 defaultContentLanguage = "zh-cn"
 title = "编程之路"
-theme = "PaperMod"
+theme = "blowfish"
 contentDir = "docs"
 enableGitInfo = true
 enableRobotsTXT = true
-paginate = 20
+paginate = 12
+pluralizeListTitles = false
 
 [languages.zh-cn]
 languageCode = "zh-CN"
@@ -18,32 +19,47 @@ lastmod = [":git", "lastmod", "date", "publishDate"]
 publishDate = [":git", "lastmod", "date", "publishDate"]
 
 [params]
-env = "production"
-defaultTheme = "auto"
-ShowReadingTime = true
-ShowPostNavLinks = true
-ShowBreadCrumbs = true
-ShowCodeCopyButtons = true
-ShowWordCount = true
-ShowToc = true
+colorScheme = "blowfish"
+defaultAppearance = "light"
+autoSwitchAppearance = true
 mainSections = ["ai", "alg", "base", "chatgpt", "cluster", "code", "computer_communication", "database", "db", "docker", "dpdk", "edit", "environment", "es", "faq", "go_web", "language", "linux", "mail", "network", "opc", "openguass", "page", "pcap", "pgsql", "programmer_self_cultivation", "protocol", "road", "src", "storage", "tools", "video_work", "vpp", "vue", "web", "wiki"]
 
-[params.homeInfoParams]
-Title = "编程之路"
-Content = "一位资深后端研发工程师的编程学习之路"
+[params.homepage]
+layout = "hero"
+showRecent = true
+showRecentItems = 12
+cardView = true
+cardViewScreenWidth = false
 
-[[params.socialIcons]]
+[params.header]
+layout = "hybrid"
+
+[params.article]
+showBreadcrumbs = true
+showDate = true
+showReadingTime = true
+showWordCount = true
+showTableOfContents = true
+showPagination = true
+
+[params.list]
+showBreadcrumbs = true
+showTableOfContents = true
+groupByYear = true
+cardView = true
+showSummary = true
+
+[params.taxonomy]
+showTermCount = true
+cardView = true
+
+[params.footer]
+showCopyright = true
+showThemeAttribution = true
+
+[[params.social]]
 name = "github"
 url = "https://github.com/growdu/blog"
-
-[params.giscus]
-repo = ""
-repoID = ""
-category = "Announcements"
-categoryID = ""
-
-[params.busuanzi]
-enabled = true
 
 [markup]
 [markup.highlight]
@@ -51,30 +67,23 @@ style = "dracula"
 lineNos = false
 codeFences = true
 guessSyntax = true
+noClasses = true
 [markup.goldmark.renderer]
 unsafe = true
+
 [security]
-  allowContent = ['^text/']
-comments = true
+allowContent = ['^text/']
 
 [taxonomies]
 category = "categories"
 tag = "tags"
 
 [[menu.main]]
-identifier = "categories"
 name = "分类"
-url = "/categories/"
-weight = 1
+pageRef = "categories"
+weight = 10
 
 [[menu.main]]
-identifier = "tags"
 name = "标签"
-url = "/tags/"
-weight = 2
-
-[[menu.main]]
-identifier = "archives"
-name = "归档"
-url = "/archives/"
-weight = 3
+pageRef = "tags"
+weight = 20
