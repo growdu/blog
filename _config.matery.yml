@@ -33,3 +33,7 @@ fancybox:
 # Image lazy loading
 lazyload:
   enable: true
+
+# Disable the "dream" manifesto section on the homepage
+dream:
+  enable: false
