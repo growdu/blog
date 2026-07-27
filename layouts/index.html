@@ -1,77 +1,87 @@
 {{- define "main" }}
 <style>
-.home-hero{text-align:center;padding:3rem 1rem 1.5rem}
-.home-hero h1{font-size:2.4rem;margin:0 0 .5rem;color:var(--primary)}
-.home-hero p{opacity:.75;font-size:1.05rem;margin:0 auto 1rem;max-width:520px}
-.home-stats{display:flex;justify-content:center;gap:2.5rem;margin-top:1rem}
-.home-stats .stat b{font-size:1.4rem;color:var(--primary);display:block}
-.home-stats .stat span{font-size:.78rem;opacity:.6}
-.home-layout{display:grid;grid-template-columns:240px minmax(0,1fr) 220px;gap:2rem;max-width:1200px;margin:1.5rem auto;padding:0 1rem;align-items:start}
-.home-side{position:sticky;top:1rem;max-height:calc(100vh - 2rem);overflow:auto}
-.home-side h2{font-size:1rem;margin:0 0 .8rem;padding-bottom:.3rem;border-bottom:2px solid var(--border,#e5e5e5)}
-.cat-list{display:flex;flex-direction:column;gap:.35rem}
-.cat-list a{display:flex;justify-content:space-between;align-items:center;background:var(--code-bg,#f6f6f6);border:1px solid var(--border,#e5e5e5);border-radius:8px;padding:.4rem .7rem;font-size:.85rem;text-decoration:none;color:var(--primary);transition:border-color .15s}
-.cat-list a:hover{border-color:var(--primary)}
-.cat-list .count{background:var(--primary);color:var(--theme,#fff);border-radius:20px;padding:0 .4rem;font-size:.7rem;min-width:1.3rem;text-align:center}
+.home-hero{text-align:center;padding:2.5rem 1rem 1.5rem}
+.home-hero h1{font-size:2.2rem;font-weight:800;margin:0 0 .4rem;color:var(--primary);letter-spacing:-.02em}
+.home-hero .subtitle{color:var(--secondary);font-size:1rem;margin:0 auto 1.2rem;max-width:480px;line-height:1.6}
+.home-stats{display:flex;justify-content:center;gap:2.5rem;flex-wrap:wrap}
+.home-stats .stat{text-align:center}
+.home-stats .stat b{display:block;font-size:1.6rem;font-weight:800;color:var(--primary);line-height:1.2}
+.home-stats .stat span{font-size:.72rem;color:var(--secondary);text-transform:uppercase;letter-spacing:.05em}
+.home-layout{display:grid;grid-template-columns:220px minmax(0,1fr) 200px;gap:2rem;max-width:1080px;margin:1rem auto 3rem;padding:0 1rem;align-items:start}
+.home-side{position:sticky;top:calc(var(--header-height,60px) + 1rem);max-height:calc(100vh - var(--header-height,60px) - 2rem);overflow-y:auto;padding-right:4px}
+.home-side::-webkit-scrollbar{width:4px}
+.home-side::-webkit-scrollbar-thumb{background:var(--tertiary);border-radius:4px}
+.side-title{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--secondary);margin:0 0 .75rem;padding-bottom:.4rem;border-bottom:2px solid var(--border)}
+.cat-list{display:flex;flex-direction:column;gap:.3rem}
+.cat-list a{display:flex;justify-content:space-between;align-items:center;padding:.45rem .7rem;border-radius:var(--radius);font-size:.85rem;color:var(--primary);text-decoration:none;background:transparent;border:1px solid transparent;transition:background .15s,transform .1s,border-color .15s}
+.cat-list a:hover{background:var(--code-bg);border-color:var(--border);transform:translateX(2px)}
+.cat-list .count{background:var(--tertiary);color:var(--theme);border-radius:10px;padding:0 .4rem;font-size:.7rem;font-weight:600;min-width:1.4rem;text-align:center;line-height:1.5}
 .tag-cloud{display:flex;flex-wrap:wrap;gap:.35rem}
-.tag-cloud a{background:var(--code-bg,#f6f6f6);border-radius:12px;padding:.2rem .55rem;font-size:.78rem;text-decoration:none;color:var(--secondary,#555)}
-.tag-cloud a:hover{color:var(--primary)}
-.tag-cloud sup{font-size:.65rem;opacity:.6}
-.home-main h2{font-size:1.15rem;margin:0 0 1rem;padding-bottom:.3rem;border-bottom:2px solid var(--border,#e5e5e5)}
-.timeline{list-style:none;margin:0;padding:0}
-.timeline li{padding:.85rem 0;border-bottom:1px dashed var(--border,#e5e5e5)}
+.tag-cloud a{display:inline-flex;align-items:center;gap:.15rem;padding:.2rem .55rem;border-radius:12px;font-size:.78rem;color:var(--secondary);text-decoration:none;background:var(--code-bg);border:1px solid var(--border);transition:all .15s}
+.tag-cloud a:hover{color:var(--primary);border-color:var(--primary)}
+.tag-cloud sup{font-size:.6rem;opacity:.6;font-weight:600}
+.home-main .section-title{font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--secondary);margin:0 0 1rem;padding-bottom:.4rem;border-bottom:2px solid var(--border)}
+.timeline{list-style:none;margin:0;padding:0;position:relative}
+.timeline::before{content:'';position:absolute;left:4px;top:.5rem;bottom:.5rem;width:2px;background:var(--border)}
+.timeline li{position:relative;padding:.8rem 0 .8rem 1.5rem;border-bottom:1px solid var(--border)}
 .timeline li:last-child{border-bottom:none}
-.tl-date{font-size:.75rem;opacity:.5;font-variant-numeric:tabular-nums}
-.timeline h3{margin:.1rem 0 .25rem;font-size:1.05rem;font-weight:600;line-height:1.4}
-.timeline h3 a{color:var(--primary);text-decoration:none}
-.timeline h3 a:hover{text-decoration:underline}
-.tl-meta{font-size:.78rem;opacity:.65}
-.tl-meta a{color:inherit;text-decoration:none}
-.tl-meta a:hover{color:var(--primary)}
-@media (max-width:900px){.home-layout{grid-template-columns:1fr}.home-side{position:static;max-height:none}}
+.timeline li::before{content:'';position:absolute;left:0;top:1.15rem;width:10px;height:10px;border-radius:50%;background:var(--primary);border:2px solid var(--theme);box-shadow:0 0 0 2px var(--border);transition:transform .15s}
+.timeline li:hover::before{transform:scale(1.3)}
+.tl-date{font-size:.72rem;color:var(--tertiary);font-variant-numeric:tabular-nums;margin-bottom:.2rem}
+.tl-title{margin:0 0 .3rem;font-size:1.02rem;font-weight:600;line-height:1.45}
+.tl-title a{color:var(--primary);text-decoration:none;transition:color .15s}
+.tl-title a:hover{text-decoration:underline;text-underline-offset:3px}
+.tl-cats{display:flex;gap:.3rem;flex-wrap:wrap}
+.tl-cats a{font-size:.7rem;color:var(--secondary);text-decoration:none;padding:.1rem .4rem;border-radius:4px;background:var(--code-bg);transition:color .15s}
+.tl-cats a:hover{color:var(--primary)}
+.see-all{display:block;text-align:center;margin-top:1.5rem;padding:.6rem;font-size:.85rem;color:var(--secondary);text-decoration:none;border:1px solid var(--border);border-radius:var(--radius);transition:all .15s}
+.see-all:hover{color:var(--primary);border-color:var(--primary)}
+@media(max-width:960px){.home-layout{grid-template-columns:1fr}.home-side{position:static;max-height:none}.home-side .cat-list{flex-direction:row;flex-wrap:wrap}.cat-list a{flex:0 1 auto}}
+@media(max-width:520px){.home-hero h1{font-size:1.8rem}.home-stats{gap:1.5rem}}
 </style>
 
 <header class="home-hero">
   <h1>{{ .Site.Title }}</h1>
-  <p>{{ .Site.Params.homeInfoParams.Content }}</p>
+  <p class="subtitle">{{ .Site.Params.homeInfoParams.Content }}</p>
   <div class="home-stats">
-    <div class="stat"><b>{{ len .Site.RegularPages }}</b><span>篇文章</span></div>
-    <div class="stat"><b>{{ len .Site.Taxonomies.categories }}</b><span>个分类</span></div>
-    <div class="stat"><b>{{ len .Site.Taxonomies.tags }}</b><span>个标签</span></div>
+    <div class="stat"><b>{{ len .Site.RegularPages }}</b><span>文章</span></div>
+    <div class="stat"><b>{{ len .Site.Taxonomies.categories }}</b><span>分类</span></div>
+    <div class="stat"><b>{{ len .Site.Taxonomies.tags }}</b><span>标签</span></div>
   </div>
 </header>
 
 <div class="home-layout">
   <aside class="home-side">
-    <h2>📚 分类</h2>
+    <h2 class="side-title">📚 分类</h2>
     <div class="cat-list">
-    {{ range .Site.Taxonomies.categories.ByCount }}
+    {{- range .Site.Taxonomies.categories.ByCount }}
       <a href="{{ printf "/categories/%s/" (.Name | urlize) | relURL }}"><span>{{ .Name }}</span><span class="count">{{ len .Pages }}</span></a>
-    {{ end }}
+    {{- end }}
     </div>
   </aside>
 
   <main class="home-main">
-    <h2>🕐 最新文章</h2>
-    <ul class="timeline">
-    {{ range first 30 .Site.RegularPages.ByDate.Reverse }}
+    <h2 class="section-title">🕐 最新文章</h2>
+   <ul class="timeline">
+   {{- range first 30 (where .Site.RegularPages "Layout" "ne" "archives").ByDate.Reverse }}
       <li>
         <div class="tl-date">{{ .Date.Format "2006-01-02" }}</div>
-        <h3><a href="{{ .Permalink }}">{{ .Title }}</a></h3>
-        <div class="tl-meta">
-          {{ range .Params.categories }}<a href="{{ printf "/categories/%s/" (. | urlize) | relURL }}">#{{ . }}</a> {{ end }}
+        <h3 class="tl-title"><a href="{{ .RelPermalink }}">{{ .Title }}</a></h3>
+        <div class="tl-cats">
+          {{- range .Params.categories }}<a href="{{ printf "/categories/%s/" (. | urlize) | relURL }}">{{ . }}</a>{{- end }}
         </div>
       </li>
-    {{ end }}
+    {{- end }}
     </ul>
+    <a class="see-all" href="{{ "/archives/" | relURL }}">查看全部文章 →</a>
   </main>
 
   <aside class="home-side">
-    <h2>🏷 标签</h2>
+    <h2 class="side-title">🏷 标签</h2>
     <div class="tag-cloud">
-    {{ range .Site.Taxonomies.tags.ByCount }}
+    {{- range .Site.Taxonomies.tags.ByCount }}
       <a href="{{ printf "/tags/%s/" (.Name | urlize) | relURL }}">{{ .Name }}<sup>{{ len .Pages }}</sup></a>
-    {{ end }}
+    {{- end }}
     </div>
   </aside>
 </div>

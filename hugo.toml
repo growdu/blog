@@ -1,11 +1,16 @@
 baseURL = "https://growdu.github.io/blog/"
-languageCode = "zh-CN"
+defaultContentLanguage = "zh-cn"
 title = "编程之路"
 theme = "PaperMod"
 contentDir = "docs"
 enableGitInfo = true
 enableRobotsTXT = true
 paginate = 20
+
+[languages.zh-cn]
+languageCode = "zh-CN"
+languageName = "中文"
+weight = 1
 
 [frontmatter]
 date = [":git", "lastmod", "date", "publishDate"]
