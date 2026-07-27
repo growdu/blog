@@ -1,11 +1,19 @@
 # matery theme configuration overrides
 
-# Navigation menu (Chinese labels)
+# Navigation menu - matery expects objects with url + icon, not plain strings
 menu:
-  首页: /
-  归档: /archives/
-  分类: /categories/
-  标签: /tags/
+  首页:
+    url: /
+    icon: fa-solid fa-house
+  归档:
+    url: /archives/
+    icon: fa-solid fa-archive
+  分类:
+    url: /categories/
+    icon: fa-solid fa-bookmark
+  标签:
+    url: /tags/
+    icon: fa-solid fa-tags
 
 # Local search
 search:
