@@ -138,6 +138,22 @@ def process(filepath, cats):
     return True
 
 
+def create_theme_pages():
+    """Create Hexo pages that the matery theme expects for the
+    categories and tags overview pages.  hexo-generator-category/tag
+    only produce per-category/per-tag pages, not the index listing."""
+    pages = [
+        ('categories/index.md', '分类', 'categories'),
+        ('tags/index.md', '标签', 'tags'),
+    ]
+    for rel, title, layout in pages:
+        path = os.path.join(SRC, rel)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        fm = f'---\ntitle: {title}\ndate: 2024-01-01 00:00:00\ntype: "{layout}"\nlayout: "{layout}"\n---\n\n'
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(fm)
+
+
 def main():
     if os.path.exists(SRC):
         shutil.rmtree(SRC)
@@ -160,6 +176,9 @@ def main():
                 except Exception as e:
                     print(f'ERROR {fp}: {e}', file=sys.stderr)
     print(f'Posts: {n}')
+
+    create_theme_pages()
+    print('Theme pages created')
 
 
 if __name__ == '__main__':
