@@ -1,0 +1,52 @@
+# matery theme configuration
+
+# Navigation menu
+menu:
+  首页: /
+  分类: /categories/
+  标签: /tags/
+  归档: /archives/
+
+# Banner / hero
+siteFeature:
+  enable: true
+
+# Search
+search:
+  enable: true
+  path: search.xml
+  field: post
+
+# Code copy button
+code:
+  copy:
+    enable: true
+    title: 复制
+
+# Post card display
+postCard:
+  enable: true
+
+# Fancybox image zoom
+fancybox:
+  enable: true
+
+# Lazyload images
+lazyload:
+  enable: true
+
+# Music player (off)
+music:
+  enable: false
+
+# Click firework effect (off)
+clickEffect:
+  enable: false
+
+# Post detail
+post:
+  auto_suffix: true
+
+# Top navigation
+topNav:
+  enable: true

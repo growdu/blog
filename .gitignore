@@ -1,7 +1,9 @@
-# Hugo build output
+# Build output
 public/
-resources/
-.hugo_build.lock
+source/
+
+# Dependencies
+node_modules/
 
 # OS
 .DS_Store
@@ -9,9 +11,6 @@ resources/
 # Editor
 .vscode
 .obsidian
-
-# Dependencies
-node_modules/
 
 # Misc
 *.pdf

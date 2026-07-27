@@ -1,0 +1,21 @@
+{
+  "name": "blog",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "hexo generate",
+    "server": "hexo server",
+    "sync": "python3 scripts/sync-hexo.py"
+  },
+  "hexo": {
+    "version": "7.3.0"
+  },
+  "dependencies": {
+    "hexo": "^7.0.0",
+    "hexo-theme-matery": "^2.0.0",
+    "hexo-renderer-marked": "^6.0.0",
+    "hexo-renderer-stylus": "^3.0.0",
+    "hexo-renderer-ejs": "^2.0.0",
+    "hexo-generator-searchdb": "^1.4.0"
+  }
+}

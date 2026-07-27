@@ -1,4 +1,4 @@
-name: Deploy Hugo to GitHub Pages
+name: Deploy Hexo to GitHub Pages
 
 on:
   push:
@@ -22,25 +22,21 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Install Blowfish theme
-        run: git clone --depth 1 https://github.com/nunocoracao/blowfish.git themes/blowfish
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install theme CSS dependencies
-        run: cd themes/blowfish && npm install
-      - name: Setup Hugo
-        uses: peaceiris/actions-hugo@v3
-        with:
-          hugo-version: 'latest'
-          extended: true
-      - name: Auto-generate titles
-        run: python3 scripts/add-titles.py docs
-      - name: Build with Hugo
-        env:
-          HUGO_ENVIRONMENT: production
-        run: hugo --minify
+      - name: Install dependencies
+        run: npm install
+      - name: Ensure matery theme
+        run: |
+          if [ ! -d node_modules/hexo-theme-matery ] && [ ! -d themes/matery ]; then
+            git clone --depth 1 https://github.com/blinkfox/hexo-theme-matery.git themes/matery
+          fi
+      - name: Sync content to Hexo
+        run: python3 scripts/sync-hexo.py
+      - name: Build with Hexo
+        run: npx hexo generate
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
