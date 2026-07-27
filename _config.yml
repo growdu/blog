@@ -34,7 +34,7 @@ syntax_highlighter: highlight.js
 # Home page
 index_generator:
   path: ''
-  per_page: 12
+  per_page: 20
   order_by: -date
 
 # Category & Tag
@@ -43,7 +43,7 @@ category_map:
 tag_map:
 
 # Pagination
-per_page: 12
+per_page: 20
 pagination_dir: page
 
 # Extensions
