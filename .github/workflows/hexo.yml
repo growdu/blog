@@ -32,9 +32,9 @@ jobs:
         run: |
           mkdir -p themes
           git clone --depth 1 https://github.com/blinkfox/hexo-theme-matery.git themes/matery
-          python3 scripts/patch-theme.py
+          python3 tools/patch-theme.py
       - name: Sync content to Hexo
-        run: python3 scripts/sync-hexo.py
+        run: python3 tools/sync-hexo.py
       - name: Build with Hexo
         run: npx hexo generate
       - name: Debug - list generated pages
