@@ -37,16 +37,20 @@ jobs:
         run: python3 tools/sync-hexo.py
       - name: Build with Hexo
         run: npx hexo generate
-      - name: Debug - verify key pages and menu links
+      - name: Debug - verify pages, links, and theme templates
         run: |
           echo "=== Key pages ==="
           for p in index.html archives/index.html categories/index.html tags/index.html; do
-            if [ -f "public/$p" ]; then echo "OK   public/$p"; else echo "MISS public/$p"; fi
+            if [ -f "public/$p" ]; then echo "OK   public/$p ($(wc -c < public/$p) bytes)"; else echo "MISS public/$p"; fi
           done
-          echo "=== Menu links in homepage ==="
-          grep -oE 'href="[^"]*(archives|categories|tags)[^"]*"' public/index.html 2>/dev/null | sort -u | head -10
-          echo "=== Total index.html files ==="
-          find public -name "index.html" | wc -l
+          echo "=== Nav <a> tags with menu text ==="
+          grep -oE '<a [^>]*href="[^"]*"[^>]*>[^<]*(首页|归档|分类|标签)' public/index.html 2>/dev/null | head -20
+          echo "=== Internal links missing /blog/ prefix ==="
+          grep -oE 'href="/[^"]*"' public/index.html 2>/dev/null | grep -v '/blog/' | sort -u | head -20
+          echo "=== Theme files referencing theme.menu ==="
+          grep -rln 'theme.menu' themes/matery/layout/ 2>/dev/null
+          echo "=== Menu rendering code ==="
+          grep -rn 'theme.menu' themes/matery/layout/ 2>/dev/null | head -20
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
