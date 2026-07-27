@@ -37,8 +37,16 @@ jobs:
         run: python3 tools/sync-hexo.py
       - name: Build with Hexo
         run: npx hexo generate
-      - name: Debug - list generated pages
-        run: find public -name "index.html" | sort | head -80
+      - name: Debug - verify key pages and menu links
+        run: |
+          echo "=== Key pages ==="
+          for p in index.html archives/index.html categories/index.html tags/index.html; do
+            if [ -f "public/$p" ]; then echo "OK   public/$p"; else echo "MISS public/$p"; fi
+          done
+          echo "=== Menu links in homepage ==="
+          grep -oE 'href="[^"]*(archives|categories|tags)[^"]*"' public/index.html 2>/dev/null | sort -u | head -10
+          echo "=== Total index.html files ==="
+          find public -name "index.html" | wc -l
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
