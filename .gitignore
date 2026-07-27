@@ -1,14 +1,19 @@
-CNAME
-**/bin
-**/obj
-**/.vs
-plan
-*.pdf
-.pytest_cache
-.vscode
-__pycache__
-.docusaurus/
-build/
-node_modules/
+# Hugo build output
+public/
+resources/
+.hugo_build.lock
+
+# OS
 .DS_Store
+
+# Editor
+.vscode
 .obsidian
+
+# Dependencies
+node_modules/
+
+# Misc
+*.pdf
+__pycache__/
+.pytest_cache/
