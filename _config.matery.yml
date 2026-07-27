@@ -1,17 +1,13 @@
-# matery theme configuration
+# matery theme configuration overrides
 
-# Navigation menu
+# Navigation menu (Chinese labels)
 menu:
   首页: /
+  归档: /archives/
   分类: /categories/
   标签: /tags/
-  归档: /archives/
 
-# Banner / hero
-siteFeature:
-  enable: true
-
-# Search
+# Local search
 search:
   enable: true
   path: search.xml
@@ -21,32 +17,11 @@ search:
 code:
   copy:
     enable: true
-    title: 复制
 
-# Post card display
-postCard:
-  enable: true
-
-# Fancybox image zoom
+# Image lightbox
 fancybox:
   enable: true
 
-# Lazyload images
+# Image lazy loading
 lazyload:
-  enable: true
-
-# Music player (off)
-music:
-  enable: false
-
-# Click firework effect (off)
-clickEffect:
-  enable: false
-
-# Post detail
-post:
-  auto_suffix: true
-
-# Top navigation
-topNav:
   enable: true
