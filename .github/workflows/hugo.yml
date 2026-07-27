@@ -28,6 +28,8 @@ jobs:
         with:
           hugo-version: 'latest'
           extended: true
+      - name: Auto-generate titles
+        run: python3 scripts/add-titles.py docs
       - name: Build with Hugo
         env:
           HUGO_ENVIRONMENT: production

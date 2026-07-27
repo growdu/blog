@@ -1,0 +1,9 @@
+/* Widen article content from PaperMod default 720px */
+:root {
+    --main-width: 960px;
+}
+
+/* Hide duplicate first H1 in article body — title already shown in post header */
+.post-content > h1:first-child {
+    display: none;
+}
