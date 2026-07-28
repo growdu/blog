@@ -17,13 +17,14 @@ IMGS = os.path.join(SRC, 'images')
 IMG_EXT = {'.png','.jpg','.jpeg','.gif','.svg','.webp','.bmp','.ico'}
 
 # Posts to feature in the homepage recommend section (relative to docs/)
+# Higher top value = shown first in the recommend carousel
 FEATURED_POSTS = {
-    '00-intro.md',
-    '01-how_to_learn_program.md',
-    'cluster/分布式存储需要解决的问题.md',
-    'cluster/常用分布式解决方案.md',
-    'base/design-pattern.md',
-    'base/network.md',
+    '00-intro.md': 100,
+    '01-how_to_learn_program.md': 90,
+    'cluster/分布式存储需要解决的问题.md': 80,
+    'es/oh-my-search.md': 70,
+    'db/logical_decode/逻辑解码DDL-Replay框架设计/index.md': 60,
+    'cluster/DCF/一文读懂openguass dcf网络模块.md': 50,
 }
 
 
@@ -152,7 +153,8 @@ def process(filepath, cats):
     body_out = rewrite_images(src, fdir)
     body_out = re.sub(r'^#\s+.+\n?', '', body_out, count=1, flags=re.MULTILINE)
 
-    top_line = '\ntop: true' if rel in FEATURED_POSTS else ''
+    top_val = FEATURED_POSTS.get(rel)
+    top_line = f'\ntop: {top_val}' if top_val else ''
     fm_out = f'---\ntitle: "{yaml_escape(title)}"\ndate: {date}\nauthor: growdu{top_line}\ncategories:\n  - {cat}\ntags:\n  - {cat}\n---\n'
 
     if os.path.basename(filepath) == 'index.md':
