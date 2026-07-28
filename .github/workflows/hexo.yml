@@ -47,6 +47,20 @@ jobs:
           grep -rl '^top: true' source/_posts/ 2>/dev/null | head -5
           echo "=== indexCard in generated HTML ==="
           grep -c 'indexCard\|recommend-sections' public/index.html 2>/dev/null
+      - name: Debug - gitalk comments
+        run: |
+          echo "=== post.ejs exists? ==="
+          test -f themes/matery/layout/post.ejs && echo "YES" || echo "NO"
+          echo "=== gitalk references in layout ==="
+          grep -rn 'gitalk' themes/matery/layout/ 2>/dev/null | head -20
+          echo "=== gitalk-comments.ejs created? ==="
+          test -f themes/matery/layout/_partial/gitalk-comments.ejs && echo "YES" || echo "NO"
+          echo "=== gitalk in generated post HTML ==="
+          sample=$(find public -path '*/2025/*' -name 'index.html' | head -1)
+          echo "Sample: $sample"
+          grep -c 'gitalk\|评论系统' "$sample" 2>/dev/null || echo "0"
+          echo "=== files with gitalk-container or placeholder ==="
+          grep -rl 'gitalk-container\|评论系统待配置' public/ 2>/dev/null | head -10
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:

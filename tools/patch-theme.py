@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Prepare the matery theme:
 1. Remove the default menu so _config.matery.yml is the sole source.
-2. Inject a featured-posts section into the homepage.
-3. Inject prism.js CSS + Mermaid.js for code highlighting and diagrams.
+2. Inject prism.js CSS + Mermaid.js for code highlighting and diagrams.
+3. Inject Gitalk comments into post pages.
 """
 import os, re, sys
 
@@ -64,50 +64,86 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
 partial_dir = os.path.join(theme_dir, 'layout', '_partial')
 os.makedirs(partial_dir, exist_ok=True)
 
-gitalk_ejs = (
-    '<% if (theme.gitalk && theme.gitalk.enable && theme.gitalk.clientID) { %>\n'
-    '<div class="container" style="margin-top: 30px; margin-bottom: 30px;">\n'
-    '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">\n'
-    '  <div id="gitalk-container"></div>\n'
-    '  <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>\n'
-    '  <script>\n'
-    '    var pathHash = function(s) {\n'
-    '      var h = 0;\n'
-    '      for (var i = 0; i < s.length; i++) {\n'
-    '        h = ((h << 5) - h) + s.charCodeAt(i); h |= 0;\n'
-    '      }\n'
-    '      return \'p\' + Math.abs(h);\n'
-    '    };\n'
-    '    var gitalk = new Gitalk({\n'
-    '      clientID: \'<%= theme.gitalk.clientID %>\',\n'
-    '      clientSecret: \'<%= theme.gitalk.clientSecret %>\',\n'
-    '      repo: \'<%= theme.gitalk.repo %>\',\n'
-    '      owner: \'<%= theme.gitalk.owner %>\',\n'
-    '      admin: [\'<%= theme.gitalk.owner %>\'],\n'
-    '      id: pathHash(location.pathname),\n'
-    '      distractionFreeMode: false,\n'
-    '      language: \'zh-CN\'\n'
-    '    });\n'
-    '    gitalk.render(\'gitalk-container\');\n'
-    '  </script>\n'
-    '</div>\n'
-    '<% } %>'
-)
-with open(os.path.join(partial_dir, 'gitalk.ejs'), 'w', encoding='utf-8') as f:
-    f.write(gitalk_ejs)
-print('Created gitalk partial')
+# Use a unique partial name to avoid overwriting the theme's built-in gitalk.ejs
+gitalk_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
+<div class="container" style="margin-top: 30px; margin-bottom: 30px;">
+  <div class="card">
+    <div class="card-content">
+      <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
+      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+      <div id="gitalk-container"></div>
+      <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+      <script>
+        var pathHash = function(s) {
+          var h = 0;
+          for (var i = 0; i < s.length; i++) {
+            h = ((h << 5) - h) + s.charCodeAt(i); h |= 0;
+          }
+          return 'p' + Math.abs(h);
+        };
+        var gitalk = new Gitalk({
+          clientID: '<%= theme.gitalk.clientID %>',
+          clientSecret: '<%= theme.gitalk.clientSecret %>',
+          repo: '<%= theme.gitalk.repo %>',
+          owner: '<%= theme.gitalk.owner %>',
+          admin: ['<%= theme.gitalk.owner %>'],
+          id: pathHash(location.pathname),
+          language: 'zh-CN',
+          distractionFreeMode: false
+        });
+        gitalk.render('gitalk-container');
+      </script>
+      <% } else { %>
+      <div style="text-align: center; padding: 30px 20px; color: #999;">
+        <i class="fas fa-comments" style="font-size: 28px;"></i>
+        <p style="margin-top: 10px; font-size: 14px;">评论系统待配置 GitHub OAuth App</p>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+<% } %>"""
 
-post_detail_path = os.path.join(theme_dir, 'layout', 'post-detail.ejs')
-if os.path.isfile(post_detail_path):
-    with open(post_detail_path, encoding='utf-8') as f:
+gitalk_partial = os.path.join(partial_dir, 'gitalk-comments.ejs')
+with open(gitalk_partial, 'w', encoding='utf-8') as f:
+    f.write(gitalk_ejs)
+print('Created gitalk-comments.ejs partial')
+
+# Remove theme's built-in gitalk references to avoid duplicate comment sections
+post_detail = os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs')
+if os.path.isfile(post_detail):
+    with open(post_detail, encoding='utf-8') as f:
         pd = f.read()
-    if 'gitalk' not in pd and 'giscus' not in pd:
-        pd += '\n<%- partial("_partial/gitalk") %>\n'
-        with open(post_detail_path, 'w', encoding='utf-8') as f:
+    original = pd
+    for pat in ['<%- partial("_partial/gitalk") %>', "<%- partial('_partial/gitalk') %>"]:
+        pd = pd.replace(pat, '')
+    if pd != original:
+        with open(post_detail, 'w', encoding='utf-8') as f:
             f.write(pd)
-        print('Injected gitalk into post-detail.ejs')
-    elif 'giscus' in pd:
-        pd = pd.replace('<%- partial("_partial/giscus") %>', '<%- partial("_partial/gitalk") %>')
-        with open(post_detail_path, 'w', encoding='utf-8') as f:
+        print('Removed theme built-in gitalk from _partial/post-detail.ejs')
+
+# Inject our partial into the post layout.
+# matery uses layout/post.ejs as the post template (which includes _partial/post-detail.ejs).
+post_layout = os.path.join(theme_dir, 'layout', 'post.ejs')
+if os.path.isfile(post_layout):
+    with open(post_layout, encoding='utf-8') as f:
+        pl = f.read()
+    if 'gitalk-comments' not in pl:
+        pl = pl.rstrip() + '\n\n<%- partial("_partial/gitalk-comments") %>\n'
+        with open(post_layout, 'w', encoding='utf-8') as f:
+            f.write(pl)
+        print('Injected gitalk-comments into layout/post.ejs')
+    else:
+        print('gitalk-comments already present in layout/post.ejs')
+elif os.path.isfile(post_detail):
+    with open(post_detail, encoding='utf-8') as f:
+        pd = f.read()
+    if 'gitalk-comments' not in pd:
+        pd = pd.rstrip() + '\n\n<%- partial("_partial/gitalk-comments") %>\n'
+        with open(post_detail, 'w', encoding='utf-8') as f:
             f.write(pd)
-        print('Replaced giscus with gitalk in post-detail.ejs')
+        print('Injected gitalk-comments into _partial/post-detail.ejs')
+    else:
+        print('gitalk-comments already present in _partial/post-detail.ejs')
+else:
+    print('WARNING: could not find post layout to inject gitalk into')
