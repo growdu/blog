@@ -42,16 +42,16 @@ jobs:
         run: node tools/init-gitalk-issues.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Debug - github & social links
+      - name: Debug - customizations
         run: |
-          echo "=== theme _config.yml github section ==="
-          grep -A5 -i 'github' themes/matery/_config.yml 2>/dev/null | head -20
-          echo "=== github-link.ejs ==="
-          cat themes/matery/layout/_partial/github-link.ejs 2>/dev/null
-          echo "=== bg-cover-content.ejs (first 40 lines) ==="
-          head -40 themes/matery/layout/_partial/bg-cover-content.ejs 2>/dev/null
-          echo "=== all github hrefs in homepage ==="
-          grep -o 'href="[^"]*github[^"]*"' public/index.html 2>/dev/null | head -10
+          echo "=== custom-blog-style in layout.ejs? ==="
+          grep -c 'custom-blog-style' themes/matery/layout/layout.ejs 2>/dev/null
+          echo "=== stat-card in index.ejs? ==="
+          grep -c 'stat-card' themes/matery/layout/index.ejs 2>/dev/null
+          echo "=== homepage stats ==="
+          grep -o 'stat-card\|category-card\|reading-progress\|分类导航' public/index.html 2>/dev/null | sort | uniq -c
+          echo "=== github hrefs ==="
+          grep -o 'href="[^"]*github[^"]*"' public/index.html 2>/dev/null | head -5
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
