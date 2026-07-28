@@ -2,7 +2,7 @@
 """Prepare the matery theme:
 1. Remove the default menu so _config.matery.yml is the sole source.
 2. Inject prism.js CSS + Mermaid.js for code highlighting and diagrams.
-3. Inject Gitalk comments into post pages.
+3. Inject Gitalk comments into the post-detail gitalk block.
 """
 import os, re, sys
 
@@ -64,7 +64,8 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
 partial_dir = os.path.join(theme_dir, 'layout', '_partial')
 os.makedirs(partial_dir, exist_ok=True)
 
-# The inner card-only partial (for injection INSIDE an existing container)
+# Card-only partial — injected INSIDE #artDetail so it shares the article's
+# container width (post.ejs wraps everything in <main class="container content">).
 gitalk_card_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
 <div class="card" data-aos="fade-up">
   <div class="card-content">
@@ -107,87 +108,58 @@ gitalk_card_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
 
 with open(os.path.join(partial_dir, 'gitalk-card.ejs'), 'w', encoding='utf-8') as f:
     f.write(gitalk_card_ejs)
-print('Created gitalk-card.ejs (card-only)')
+print('Created gitalk-card.ejs')
 
-# The full-wrapper partial (for injection OUTSIDE any container)
-gitalk_full_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
-<main class="content">
-  <div class="container">
-    <%- partial('_partial/gitalk-card') %>
-  </div>
-</main>
-<% } %>"""
-
-with open(os.path.join(partial_dir, 'gitalk-comments.ejs'), 'w', encoding='utf-8') as f:
-    f.write(gitalk_full_ejs)
-print('Created gitalk-comments.ejs (full wrapper)')
-
-# Remove theme's built-in gitalk references to avoid duplicate comment sections
+# Inject into post-detail.ejs: fill the existing empty gitalk if-block.
+# post-detail.ejs structure:
+#   <div id="artDetail">
+#     <div class="card">...article...</div>
+#     <% if (theme.gitalk && theme.gitalk.enable) { %>   <-- EMPTY, fill this
+#     <% } %>
+#     ...other comment systems...
+#     <%- partial('_partial/prev-next') %>
+#   </div>
 post_detail = os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs')
 if os.path.isfile(post_detail):
     with open(post_detail, encoding='utf-8') as f:
         pd = f.read()
     original = pd
+
+    # Remove any old built-in gitalk partial includes first
     for pat in ['<%- partial("_partial/gitalk") %>', "<%- partial('_partial/gitalk') %>"]:
         pd = pd.replace(pat, '')
+
+    if 'gitalk-card' not in pd:
+        # Fill the existing gitalk if-block with our partial
+        new_pd, count = re.subn(
+            r"(<%\s*if\s*\(theme\.gitalk\s*&&\s*theme\.gitalk\.enable\)\s*\{\s*%>)(.*?)(<%\s*\}\s*%>)",
+            r"\1\n        <%- partial('_partial/gitalk-card') %>\n    \3",
+            pd,
+            flags=re.DOTALL,
+        )
+        if count > 0:
+            pd = new_pd
+            print(f'Injected gitalk-card into gitalk if-block ({count} match)')
+        else:
+            # Fallback: insert before prev-next
+            lines = pd.split('\n')
+            insert_idx = None
+            for i, line in enumerate(lines):
+                if 'prev-next' in line:
+                    insert_idx = i
+                    break
+            if insert_idx is not None:
+                lines.insert(insert_idx, "    <%- partial('_partial/gitalk-card') %>")
+                pd = '\n'.join(lines)
+                print('Injected gitalk-card before prev-next (fallback)')
+            else:
+                print('WARNING: no injection point found in post-detail.ejs')
+    else:
+        print('gitalk-card already present in post-detail.ejs')
+
     if pd != original:
         with open(post_detail, 'w', encoding='utf-8') as f:
             f.write(pd)
-        print('Removed theme built-in gitalk from _partial/post-detail.ejs')
-
-
-def inject_partial(filepath, partial_ref, markers):
-    """Insert partial_ref into filepath before the first line matching any marker.
-    markers: list of substrings to search for (tried in order).
-    Returns True if injected, False if file not found or already present."""
-    if not os.path.isfile(filepath):
-        print(f'  {os.path.relpath(filepath, theme_dir)} not found')
-        return False
-    with open(filepath, encoding='utf-8') as f:
-        raw = f.read()
-    if 'gitalk' in raw:
-        print(f'  gitalk already present in {os.path.relpath(filepath, theme_dir)}')
-        return True
-    lines = raw.split('\n')
-    insert_idx = None
-    for marker in markers:
-        for i, line in enumerate(lines):
-            if marker in line:
-                insert_idx = i
-                print(f'  Found "{marker}" at line {i+1} in {os.path.relpath(filepath, theme_dir)}')
-                break
-        if insert_idx is not None:
-            break
-    if insert_idx is None:
-        insert_idx = len(lines)
-        print(f'  No marker found, appending at end of {os.path.relpath(filepath, theme_dir)}')
-    lines.insert(insert_idx, partial_ref)
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(lines))
-    print(f'  Injected into {os.path.relpath(filepath, theme_dir)} at line {insert_idx+1}')
-    return True
-
-
-# Strategy: inject the card-only partial into post-detail.ejs (which contains
-# the article body and typically prev-next inside the same container).
-# This guarantees the comment card shares the article's container width.
-print('--- Injecting gitalk ---')
-card_ref = '<%- partial("_partial/gitalk-card") %>'
-full_ref = '<%- partial("_partial/gitalk-comments") %>'
-
-# Try post-detail.ejs first (article body lives here, inside main.content > container)
-done = inject_partial(
-    post_detail, card_ref,
-    ['prev-next', 'prev_next', 'post-prev', 'pager', 'paging']
-)
-
-if not done:
-    # Fallback: inject full-wrapper into post.ejs
-    post_layout = os.path.join(theme_dir, 'layout', 'post.ejs')
-    done = inject_partial(
-        post_layout, full_ref,
-        ['prev-next', 'prev_next', 'post-prev', 'pager', 'paging', 'post-detail']
-    )
-
-if not done:
-    print('WARNING: could not find a post layout to inject gitalk into')
+        print('Saved post-detail.ejs')
+else:
+    print('WARNING: post-detail.ejs not found')
