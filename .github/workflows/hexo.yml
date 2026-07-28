@@ -37,6 +37,12 @@ jobs:
         run: python3 tools/sync-hexo.py
       - name: Build with Hexo
         run: npx hexo generate
+      - name: Debug - theme structure
+        run: |
+          echo "=== Partials ==="
+          ls themes/matery/layout/_partial/ 2>/dev/null
+          echo "=== index.ejs ==="
+          cat themes/matery/layout/index.ejs 2>/dev/null
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
