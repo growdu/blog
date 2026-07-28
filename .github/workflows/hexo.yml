@@ -37,12 +37,16 @@ jobs:
         run: python3 tools/sync-hexo.py
       - name: Build with Hexo
         run: npx hexo generate
-      - name: Debug - theme structure
+      - name: Debug - recommend widget and config
         run: |
-          echo "=== Partials ==="
-          ls themes/matery/layout/_partial/ 2>/dev/null
-          echo "=== index.ejs ==="
-          cat themes/matery/layout/index.ejs 2>/dev/null
+          echo "=== _widget directory ==="
+          ls themes/matery/layout/_widget/ 2>/dev/null
+          echo "=== recommend widget ==="
+          cat themes/matery/layout/_widget/recommend.ejs 2>/dev/null
+          echo "=== top posts in source ==="
+          grep -rl '^top: true' source/_posts/ 2>/dev/null | head -5
+          echo "=== indexCard in generated HTML ==="
+          grep -c 'indexCard\|recommend-sections' public/index.html 2>/dev/null
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:

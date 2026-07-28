@@ -37,3 +37,13 @@ lazyload:
 # Disable the "dream" manifesto section on the homepage
 dream:
   enable: false
+
+# Featured posts section (theme's built-in recommend widget)
+recommend:
+  enable: true
+
+# Disable other homepage widgets
+music:
+  enable: false
+video:
+  enable: false
