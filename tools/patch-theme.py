@@ -60,41 +60,54 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
                 f.write(c)
             print(f'Injected CSS/JS into {os.path.relpath(fpath, theme_dir)}')
 
-# --- 3. Inject Giscus comments into post pages ---
+# --- 3. Inject Gitalk comments into post pages ---
 partial_dir = os.path.join(theme_dir, 'layout', '_partial')
 os.makedirs(partial_dir, exist_ok=True)
 
-giscus_ejs = (
-    '<% if (theme.giscus && theme.giscus.enable && theme.giscus.repo_id) { %>\n'
+gitalk_ejs = (
+    '<% if (theme.gitalk && theme.gitalk.enable && theme.gitalk.clientID) { %>\n'
     '<div class="container" style="margin-top: 30px; margin-bottom: 30px;">\n'
-    '  <script src="https://giscus.app/client.js"\n'
-    '    data-repo="<%= theme.giscus.repo %>"\n'
-    '    data-repo-id="<%= theme.giscus.repo_id %>"\n'
-    '    data-category="<%= theme.giscus.category %>"\n'
-    '    data-category-id="<%= theme.giscus.category_id %>"\n'
-    '    data-mapping="pathname"\n'
-    '    data-strict="0"\n'
-    '    data-reactions-enabled="1"\n'
-    '    data-emit-metadata="0"\n'
-    '    data-input-position="top"\n'
-    '    data-theme="light"\n'
-    '    data-lang="zh-CN"\n'
-    '    crossorigin="anonymous"\n'
-    '    async>\n'
+    '  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">\n'
+    '  <div id="gitalk-container"></div>\n'
+    '  <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>\n'
+    '  <script>\n'
+    '    var pathHash = function(s) {\n'
+    '      var h = 0;\n'
+    '      for (var i = 0; i < s.length; i++) {\n'
+    '        h = ((h << 5) - h) + s.charCodeAt(i); h |= 0;\n'
+    '      }\n'
+    '      return \'p\' + Math.abs(h);\n'
+    '    };\n'
+    '    var gitalk = new Gitalk({\n'
+    '      clientID: \'<%= theme.gitalk.clientID %>\',\n'
+    '      clientSecret: \'<%= theme.gitalk.clientSecret %>\',\n'
+    '      repo: \'<%= theme.gitalk.repo %>\',\n'
+    '      owner: \'<%= theme.gitalk.owner %>\',\n'
+    '      admin: [\'<%= theme.gitalk.owner %>\'],\n'
+    '      id: pathHash(location.pathname),\n'
+    '      distractionFreeMode: false,\n'
+    '      language: \'zh-CN\'\n'
+    '    });\n'
+    '    gitalk.render(\'gitalk-container\');\n'
     '  </script>\n'
     '</div>\n'
     '<% } %>'
 )
-with open(os.path.join(partial_dir, 'giscus.ejs'), 'w', encoding='utf-8') as f:
-    f.write(giscus_ejs)
-print('Created giscus partial')
+with open(os.path.join(partial_dir, 'gitalk.ejs'), 'w', encoding='utf-8') as f:
+    f.write(gitalk_ejs)
+print('Created gitalk partial')
 
 post_detail_path = os.path.join(theme_dir, 'layout', 'post-detail.ejs')
 if os.path.isfile(post_detail_path):
     with open(post_detail_path, encoding='utf-8') as f:
         pd = f.read()
-    if 'giscus' not in pd:
-        pd += '\n<%- partial("_partial/giscus") %>\n'
+    if 'gitalk' not in pd and 'giscus' not in pd:
+        pd += '\n<%- partial("_partial/gitalk") %>\n'
         with open(post_detail_path, 'w', encoding='utf-8') as f:
             f.write(pd)
-        print('Injected giscus into post-detail.ejs')
+        print('Injected gitalk into post-detail.ejs')
+    elif 'giscus' in pd:
+        pd = pd.replace('<%- partial("_partial/giscus") %>', '<%- partial("_partial/gitalk") %>')
+        with open(post_detail_path, 'w', encoding='utf-8') as f:
+            f.write(pd)
+        print('Replaced giscus with gitalk in post-detail.ejs')

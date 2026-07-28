@@ -48,13 +48,15 @@ music:
 video:
   enable: false
 
-# Giscus comments (https://giscus.app)
-# Setup: 1) Enable Discussions on growdu/blog repo
-#        2) Install giscus app: https://github.com/apps/giscus
-#        3) Get repo_id & category_id from https://giscus.app
-giscus:
+# Gitalk comments (https://github.com/gitalk/gitalk)
+# Uses GitHub Issues - no extra services needed
+# Setup: 1) Go to GitHub Settings > Developer settings > OAuth Apps > New OAuth App
+#        2) Homepage URL: https://growdu.github.io/blog/
+#        3) Callback URL: https://growdu.github.io/blog/
+#        4) Copy Client ID and generate Client Secret
+gitalk:
   enable: true
-  repo: growdu/blog
-  repo_id: ""
-  category: Announcements
-  category_id: ""
+  clientID: ""
+  clientSecret: ""
+  repo: blog
+  owner: growdu
