@@ -44,10 +44,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Debug - customizations
         run: |
-          echo "=== custom-blog-style in layout.ejs? ==="
-          grep -c 'custom-blog-style' themes/matery/layout/layout.ejs 2>/dev/null
+          echo "=== custom-blog-style in layout files? ==="
+          grep -rl 'custom-blog-style' themes/matery/layout/ 2>/dev/null || echo "NOT FOUND"
           echo "=== stat-card in index.ejs? ==="
-          grep -c 'stat-card' themes/matery/layout/index.ejs 2>/dev/null
+          grep -c 'stat-card' themes/matery/layout/index.ejs 2>/dev/null || echo "0"
+          echo "=== custom-blog-script in layout files? ==="
+          grep -rl 'custom-blog-script' themes/matery/layout/ 2>/dev/null || echo "NOT FOUND"
           echo "=== homepage stats ==="
           grep -o 'stat-card\|category-card\|reading-progress\|分类导航' public/index.html 2>/dev/null | sort | uniq -c
           echo "=== github hrefs ==="

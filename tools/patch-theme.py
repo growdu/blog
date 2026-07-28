@@ -224,23 +224,24 @@ custom_js = """<script id="custom-blog-script">
 })();
 </script>"""
 
-layout_path = os.path.join(theme_dir, 'layout', 'layout.ejs')
-if os.path.isfile(layout_path):
-    with open(layout_path, encoding='utf-8') as f:
-        c = f.read()
-    changed = False
-    if 'custom-blog-style' not in c:
-        c = c.replace('</head>', custom_css + '\n</head>', 1)
-        changed = True
-    if 'custom-blog-script' not in c:
-        c = c.replace('</body>', custom_js + '\n</body>', 1)
-        changed = True
-    if changed:
-        with open(layout_path, 'w', encoding='utf-8') as f:
-            f.write(c)
-        print('Injected custom CSS/JS into layout.ejs')
-else:
-    print('WARNING: layout.ejs not found')
+for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
+    for fname in files:
+        if not fname.endswith('.ejs'):
+            continue
+        fpath = os.path.join(root, fname)
+        with open(fpath, encoding='utf-8') as f:
+            c = f.read()
+        changed = False
+        if '</head>' in c and 'custom-blog-style' not in c:
+            c = c.replace('</head>', custom_css + '\n</head>', 1)
+            changed = True
+        if '</body>' in c and 'custom-blog-script' not in c:
+            c = c.replace('</body>', custom_js + '\n</body>', 1)
+            changed = True
+        if changed:
+            with open(fpath, 'w', encoding='utf-8') as f:
+                f.write(c)
+            print(f'Injected custom CSS/JS into {os.path.relpath(fpath, theme_dir)}')
 
 # --- 5. Homepage statistics + category navigation ---
 index_path = os.path.join(theme_dir, 'layout', 'index.ejs')
