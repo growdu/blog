@@ -69,10 +69,10 @@ socialLink:
     name: GitHub
     icon: fab fa-github
   email:
-    link:
+    link: mailto:growdu@gmail.com
     name: Email
     icon: fas fa-envelope
   qq:
-    link:
+    link: http://wpa.qq.com/msgrd?v=3&uin=2689304284&site=qq&menu=yes
     name: QQ
     icon: fab fa-qq
