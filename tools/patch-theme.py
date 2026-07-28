@@ -59,3 +59,42 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
             with open(fpath, 'w', encoding='utf-8') as f:
                 f.write(c)
             print(f'Injected CSS/JS into {os.path.relpath(fpath, theme_dir)}')
+
+# --- 3. Inject Giscus comments into post pages ---
+partial_dir = os.path.join(theme_dir, 'layout', '_partial')
+os.makedirs(partial_dir, exist_ok=True)
+
+giscus_ejs = (
+    '<% if (theme.giscus && theme.giscus.enable && theme.giscus.repo_id) { %>\n'
+    '<div class="container" style="margin-top: 30px; margin-bottom: 30px;">\n'
+    '  <script src="https://giscus.app/client.js"\n'
+    '    data-repo="<%= theme.giscus.repo %>"\n'
+    '    data-repo-id="<%= theme.giscus.repo_id %>"\n'
+    '    data-category="<%= theme.giscus.category %>"\n'
+    '    data-category-id="<%= theme.giscus.category_id %>"\n'
+    '    data-mapping="pathname"\n'
+    '    data-strict="0"\n'
+    '    data-reactions-enabled="1"\n'
+    '    data-emit-metadata="0"\n'
+    '    data-input-position="top"\n'
+    '    data-theme="light"\n'
+    '    data-lang="zh-CN"\n'
+    '    crossorigin="anonymous"\n'
+    '    async>\n'
+    '  </script>\n'
+    '</div>\n'
+    '<% } %>'
+)
+with open(os.path.join(partial_dir, 'giscus.ejs'), 'w', encoding='utf-8') as f:
+    f.write(giscus_ejs)
+print('Created giscus partial')
+
+post_detail_path = os.path.join(theme_dir, 'layout', 'post-detail.ejs')
+if os.path.isfile(post_detail_path):
+    with open(post_detail_path, encoding='utf-8') as f:
+        pd = f.read()
+    if 'giscus' not in pd:
+        pd += '\n<%- partial("_partial/giscus") %>\n'
+        with open(post_detail_path, 'w', encoding='utf-8') as f:
+            f.write(pd)
+        print('Injected giscus into post-detail.ejs')
