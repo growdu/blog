@@ -60,3 +60,19 @@ gitalk:
   clientSecret: "0b6a22638f15a739479a28a276c745056866d44d"
   repo: blog
   owner: growdu
+
+# Social links (displayed on homepage cover and footer)
+# Fill in link for each platform you want to show; leave empty to hide.
+socialLink:
+  github:
+    link: https://github.com/growdu
+    name: GitHub
+    icon: fab fa-github
+  email:
+    link:
+    name: Email
+    icon: fas fa-envelope
+  qq:
+    link:
+    name: QQ
+    icon: fab fa-qq
