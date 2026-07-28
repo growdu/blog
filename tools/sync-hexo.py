@@ -16,6 +16,16 @@ POSTS = os.path.join(SRC, '_posts')
 IMGS = os.path.join(SRC, 'images')
 IMG_EXT = {'.png','.jpg','.jpeg','.gif','.svg','.webp','.bmp','.ico'}
 
+# Posts to feature in the homepage recommend section (relative to docs/)
+FEATURED_POSTS = {
+    '00-intro.md',
+    '01-how_to_learn_program.md',
+    'cluster/分布式存储需要解决的问题.md',
+    'cluster/常用分布式解决方案.md',
+    'base/design-pattern.md',
+    'base/network.md',
+}
+
 
 def read_section_categories():
     """Map section dir -> Chinese display name from _index.md."""
@@ -142,7 +152,7 @@ def process(filepath, cats):
     body_out = rewrite_images(src, fdir)
     body_out = re.sub(r'^#\s+.+\n?', '', body_out, count=1, flags=re.MULTILINE)
 
-    top_line = '\ntop: true' if rel.startswith(('00-', '01-')) else ''
+    top_line = '\ntop: true' if rel in FEATURED_POSTS else ''
     fm_out = f'---\ntitle: "{yaml_escape(title)}"\ndate: {date}\nauthor: growdu{top_line}\ncategories:\n  - {cat}\ntags:\n  - {cat}\n---\n'
 
     if os.path.basename(filepath) == 'index.md':
