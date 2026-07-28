@@ -62,17 +62,8 @@ gitalk:
   owner: growdu
 
 # Social links (displayed on homepage cover and footer)
-# Fill in link for each platform you want to show; leave empty to hide.
+# Format: key: url  (icon is auto-derived from key name by the theme)
 socialLink:
-  github:
-    link: https://github.com/growdu
-    name: GitHub
-    icon: fab fa-github
-  email:
-    link: mailto:growdu@gmail.com
-    name: Email
-    icon: fas fa-envelope
-  qq:
-    link: http://wpa.qq.com/msgrd?v=3&uin=2689304284&site=qq&menu=yes
-    name: QQ
-    icon: fab fa-qq
+  github: https://github.com/growdu
+  email: mailto:growdu@gmail.com
+  qq: http://wpa.qq.com/msgrd?v=3&uin=2689304284&site=qq&menu=yes
