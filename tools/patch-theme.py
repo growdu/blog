@@ -64,47 +64,51 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
 partial_dir = os.path.join(theme_dir, 'layout', '_partial')
 os.makedirs(partial_dir, exist_ok=True)
 
-# Use a unique partial name to avoid overwriting the theme's built-in gitalk.ejs
+# Use a unique partial name to avoid overwriting the theme's built-in gitalk.ejs.
+# Wrap in the same main.content > container > card > card-content structure as the
+# article body so the comment section has identical width and sits flush below it.
 gitalk_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
-<div class="container" style="margin-top: 30px; margin-bottom: 30px;">
-  <div class="card">
-    <div class="card-content">
-      <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
-      <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
-      <div id="gitalk-container"></div>
-      <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
-      <script>
-        var pathHash = function(s) {
-          var h = 0;
-          for (var i = 0; i < s.length; i++) {
-            h = ((h << 5) - h) + s.charCodeAt(i); h |= 0;
-          }
-          return 'p' + Math.abs(h);
-        };
-        var gitalk = new Gitalk({
-          clientID: '<%= theme.gitalk.clientID %>',
-          clientSecret: '<%= theme.gitalk.clientSecret %>',
-          repo: '<%= theme.gitalk.repo %>',
-          owner: '<%= theme.gitalk.owner %>',
-          admin: ['<%= theme.gitalk.owner %>'],
-          id: pathHash(location.pathname),
-          language: 'zh-CN',
-          distractionFreeMode: false,
-          createIssueManually: false,
-          labels: ['Gitalk', 'Comment'],
-          perPage: 10
-        });
-        gitalk.render('gitalk-container');
-      </script>
-      <% } else { %>
-      <div style="text-align: center; padding: 30px 20px; color: #999;">
-        <i class="fas fa-comments" style="font-size: 28px;"></i>
-        <p style="margin-top: 10px; font-size: 14px;">评论系统待配置 GitHub OAuth App</p>
+<main class="content">
+  <div class="container">
+    <div class="card" data-aos="fade-up">
+      <div class="card-content">
+        <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+        <div id="gitalk-container"></div>
+        <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+        <script>
+          var pathHash = function(s) {
+            var h = 0;
+            for (var i = 0; i < s.length; i++) {
+              h = ((h << 5) - h) + s.charCodeAt(i); h |= 0;
+            }
+            return 'p' + Math.abs(h);
+          };
+          var gitalk = new Gitalk({
+            clientID: '<%= theme.gitalk.clientID %>',
+            clientSecret: '<%= theme.gitalk.clientSecret %>',
+            repo: '<%= theme.gitalk.repo %>',
+            owner: '<%= theme.gitalk.owner %>',
+            admin: ['<%= theme.gitalk.owner %>'],
+            id: pathHash(location.pathname),
+            language: 'zh-CN',
+            distractionFreeMode: false,
+            createIssueManually: false,
+            labels: ['Gitalk', 'Comment'],
+            perPage: 10
+          });
+          gitalk.render('gitalk-container');
+        </script>
+        <% } else { %>
+        <div style="text-align: center; padding: 30px 20px; color: #999;">
+          <i class="fas fa-comments" style="font-size: 28px;"></i>
+          <p style="margin-top: 10px; font-size: 14px;">评论系统待配置 GitHub OAuth App</p>
+        </div>
+        <% } %>
       </div>
-      <% } %>
     </div>
   </div>
-</div>
+</main>
 <% } %>"""
 
 gitalk_partial = os.path.join(partial_dir, 'gitalk-comments.ejs')
@@ -166,8 +170,7 @@ for target in [
     lines.insert(insert_idx, insert_line)
     with open(target, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
-    where = 'before prev-next' if any('prev-next' in l for l in lines[:insert_idx + 1]) else 'at end'
-    print(f'Injected gitalk-comments into {os.path.relpath(target, theme_dir)} ({where})')
+    print(f'Injected gitalk-comments into {os.path.relpath(target, theme_dir)}')
     injected = True
     break
 

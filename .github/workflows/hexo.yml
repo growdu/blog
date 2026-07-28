@@ -39,8 +39,6 @@ jobs:
         run: npx hexo generate
       - name: Debug - recommend widget and config
         run: |
-          echo "=== _widget directory ==="
-          ls themes/matery/layout/_widget/ 2>/dev/null
           echo "=== top posts in source ==="
           grep -rl '^top: true' source/_posts/ 2>/dev/null | head -5
           echo "=== indexCard in generated HTML ==="
@@ -49,6 +47,10 @@ jobs:
         run: |
           echo "=== post.ejs (full) ==="
           cat themes/matery/layout/post.ejs 2>/dev/null
+          echo "=== post-detail.ejs (first 30 lines) ==="
+          head -30 themes/matery/layout/_partial/post-detail.ejs 2>/dev/null
+          echo "=== gitalk-comments.ejs (first 10 lines) ==="
+          head -10 themes/matery/layout/_partial/gitalk-comments.ejs 2>/dev/null
           echo "=== gitalk-comments before prev-next? ==="
           postejs=$(cat themes/matery/layout/post.ejs 2>/dev/null)
           gkline=$(echo "$postejs" | grep -n 'gitalk-comments' | head -1 | cut -d: -f1)
@@ -62,7 +64,7 @@ jobs:
           echo "=== gitalk in generated post HTML ==="
           sample=$(find public -path '*/2025/*' -name 'index.html' | head -1)
           echo "Sample: $sample"
-          grep -c 'gitalk-container\|createIssueManually' "$sample" 2>/dev/null || echo "0"
+          grep -o 'class="content"\|class="container"\|gitalk-container\|class="card"' "$sample" 2>/dev/null | sort | uniq -c
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
