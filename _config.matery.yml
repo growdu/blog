@@ -56,7 +56,7 @@ video:
 #        4) Copy Client ID and generate Client Secret
 gitalk:
   enable: true
-  clientID: ""
-  clientSecret: ""
+  clientID: "Ov23liyvdyO0U0lfqI2u"
+  clientSecret: "0b6a22638f15a739479a28a276c745056866d44d"
   repo: blog
   owner: growdu
