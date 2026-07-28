@@ -64,30 +64,34 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
 partial_dir = os.path.join(theme_dir, 'layout', '_partial')
 os.makedirs(partial_dir, exist_ok=True)
 
-# Card-only partial — injected INSIDE #artDetail so it shares the article's
-# container width (post.ejs wraps everything in <main class="container content">).
+# Card-only partial - injected INSIDE #artDetail so it shares the article's
+# container width. The gitalk id is computed server-side from page.path so
+# it's deterministic and can be batch-created by tools/init-gitalk-issues.js.
 gitalk_card_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
+<%
+  var hashCode = function(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) {
+      h = ((h << 5) - h) + s.charCodeAt(i); h |= 0;
+    }
+    return 'p' + Math.abs(h);
+  };
+  var gitalkId = hashCode(page.path);
+%>
 <div class="card" data-aos="fade-up">
   <div class="card-content">
     <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
-    <div id="gitalk-container"></div>
+    <div id="gitalk-container" data-gitalk-id="<%= gitalkId %>" data-gitalk-title="<%= page.title %>"></div>
     <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
     <script>
-      var pathHash = function(s) {
-        var h = 0;
-        for (var i = 0; i < s.length; i++) {
-          h = ((h << 5) - h) + s.charCodeAt(i); h |= 0;
-        }
-        return 'p' + Math.abs(h);
-      };
       var gitalk = new Gitalk({
         clientID: '<%= theme.gitalk.clientID %>',
         clientSecret: '<%= theme.gitalk.clientSecret %>',
         repo: '<%= theme.gitalk.repo %>',
         owner: '<%= theme.gitalk.owner %>',
         admin: ['<%= theme.gitalk.owner %>'],
-        id: pathHash(location.pathname),
+        id: '<%= gitalkId %>',
         language: 'zh-CN',
         distractionFreeMode: false,
         createIssueManually: false,
@@ -108,29 +112,19 @@ gitalk_card_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
 
 with open(os.path.join(partial_dir, 'gitalk-card.ejs'), 'w', encoding='utf-8') as f:
     f.write(gitalk_card_ejs)
-print('Created gitalk-card.ejs')
+print('Created gitalk-card.ejs (id computed from page.path)')
 
 # Inject into post-detail.ejs: fill the existing empty gitalk if-block.
-# post-detail.ejs structure:
-#   <div id="artDetail">
-#     <div class="card">...article...</div>
-#     <% if (theme.gitalk && theme.gitalk.enable) { %>   <-- EMPTY, fill this
-#     <% } %>
-#     ...other comment systems...
-#     <%- partial('_partial/prev-next') %>
-#   </div>
 post_detail = os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs')
 if os.path.isfile(post_detail):
     with open(post_detail, encoding='utf-8') as f:
         pd = f.read()
     original = pd
 
-    # Remove any old built-in gitalk partial includes first
     for pat in ['<%- partial("_partial/gitalk") %>', "<%- partial('_partial/gitalk') %>"]:
         pd = pd.replace(pat, '')
 
     if 'gitalk-card' not in pd:
-        # Fill the existing gitalk if-block with our partial
         new_pd, count = re.subn(
             r"(<%\s*if\s*\(theme\.gitalk\s*&&\s*theme\.gitalk\.enable\)\s*\{\s*%>)(.*?)(<%\s*\}\s*%>)",
             r"\1\n        <%- partial('_partial/gitalk-card') %>\n    \3",
@@ -141,7 +135,6 @@ if os.path.isfile(post_detail):
             pd = new_pd
             print(f'Injected gitalk-card into gitalk if-block ({count} match)')
         else:
-            # Fallback: insert before prev-next
             lines = pd.split('\n')
             insert_idx = None
             for i, line in enumerate(lines):
