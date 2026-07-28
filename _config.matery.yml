@@ -67,3 +67,8 @@ socialLink:
   github: https://github.com/growdu
   email: mailto:growdu@gmail.com
   qq: http://wpa.qq.com/msgrd?v=3&uin=2689304284&site=qq&menu=yes
+
+# GitHub link on homepage cover (next to "开始阅读" button)
+github:
+  enable: true
+  url: https://github.com/growdu
