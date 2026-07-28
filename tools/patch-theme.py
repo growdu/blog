@@ -2,7 +2,7 @@
 """Prepare the matery theme:
 1. Remove the default menu so _config.matery.yml is the sole source.
 2. Inject prism.js CSS + Mermaid.js for code highlighting and diagrams.
-3. Inject Gitalk comments into post pages.
+3. Inject Gitalk comments into post pages (before prev-next navigation).
 """
 import os, re, sys
 
@@ -89,7 +89,10 @@ gitalk_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
           admin: ['<%= theme.gitalk.owner %>'],
           id: pathHash(location.pathname),
           language: 'zh-CN',
-          distractionFreeMode: false
+          distractionFreeMode: false,
+          createIssueManually: false,
+          labels: ['Gitalk', 'Comment'],
+          perPage: 10
         });
         gitalk.render('gitalk-container');
       </script>
@@ -122,28 +125,51 @@ if os.path.isfile(post_detail):
             f.write(pd)
         print('Removed theme built-in gitalk from _partial/post-detail.ejs')
 
-# Inject our partial into the post layout.
-# matery uses layout/post.ejs as the post template (which includes _partial/post-detail.ejs).
-post_layout = os.path.join(theme_dir, 'layout', 'post.ejs')
-if os.path.isfile(post_layout):
-    with open(post_layout, encoding='utf-8') as f:
-        pl = f.read()
-    if 'gitalk-comments' not in pl:
-        pl = pl.rstrip() + '\n\n<%- partial("_partial/gitalk-comments") %>\n'
-        with open(post_layout, 'w', encoding='utf-8') as f:
-            f.write(pl)
-        print('Injected gitalk-comments into layout/post.ejs')
-    else:
-        print('gitalk-comments already present in layout/post.ejs')
-elif os.path.isfile(post_detail):
-    with open(post_detail, encoding='utf-8') as f:
-        pd = f.read()
-    if 'gitalk-comments' not in pd:
-        pd = pd.rstrip() + '\n\n<%- partial("_partial/gitalk-comments") %>\n'
-        with open(post_detail, 'w', encoding='utf-8') as f:
-            f.write(pd)
-        print('Injected gitalk-comments into _partial/post-detail.ejs')
-    else:
-        print('gitalk-comments already present in _partial/post-detail.ejs')
-else:
+# Inject our partial into the post layout, positioned BEFORE prev-next navigation
+# so comments appear between the article body and the prev/next links.
+injected = False
+for target in [
+    os.path.join(theme_dir, 'layout', 'post.ejs'),
+    os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs'),
+]:
+    if not os.path.isfile(target):
+        print(f'{os.path.relpath(target, theme_dir)} not found')
+        continue
+    with open(target, encoding='utf-8') as f:
+        raw = f.read()
+    if 'gitalk-comments' in raw:
+        print(f'gitalk-comments already present in {os.path.relpath(target, theme_dir)}')
+        injected = True
+        break
+
+    lines = raw.split('\n')
+    insert_line = '<%- partial("_partial/gitalk-comments") %>'
+    insert_idx = None
+
+    # Preferred: insert right before the prev-next partial
+    for i, line in enumerate(lines):
+        if 'prev-next' in line:
+            insert_idx = i
+            break
+
+    # Fallback: insert right after the post-detail partial
+    if insert_idx is None:
+        for i, line in enumerate(lines):
+            if 'post-detail' in line:
+                insert_idx = i + 1
+                break
+
+    # Last resort: append at end
+    if insert_idx is None:
+        insert_idx = len(lines)
+
+    lines.insert(insert_idx, insert_line)
+    with open(target, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(lines))
+    where = 'before prev-next' if any('prev-next' in l for l in lines[:insert_idx + 1]) else 'at end'
+    print(f'Injected gitalk-comments into {os.path.relpath(target, theme_dir)} ({where})')
+    injected = True
+    break
+
+if not injected:
     print('WARNING: could not find post layout to inject gitalk into')
