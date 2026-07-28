@@ -37,34 +37,28 @@ jobs:
         run: python3 tools/sync-hexo.py
       - name: Build with Hexo
         run: npx hexo generate
-      - name: Debug - recommend widget and config
+      - name: Debug - post layout structure
         run: |
-          echo "=== top posts in source ==="
-          grep -rl '^top: true' source/_posts/ 2>/dev/null | head -5
-          echo "=== indexCard in generated HTML ==="
-          grep -c 'indexCard\|recommend-sections' public/index.html 2>/dev/null
-      - name: Debug - gitalk comments
-        run: |
-          echo "=== post.ejs (full) ==="
+          echo "========== post.ejs (FULL) =========="
           cat themes/matery/layout/post.ejs 2>/dev/null
-          echo "=== post-detail.ejs (first 30 lines) ==="
-          head -30 themes/matery/layout/_partial/post-detail.ejs 2>/dev/null
-          echo "=== gitalk-comments.ejs (first 10 lines) ==="
-          head -10 themes/matery/layout/_partial/gitalk-comments.ejs 2>/dev/null
-          echo "=== gitalk-comments before prev-next? ==="
-          postejs=$(cat themes/matery/layout/post.ejs 2>/dev/null)
-          gkline=$(echo "$postejs" | grep -n 'gitalk-comments' | head -1 | cut -d: -f1)
-          pnline=$(echo "$postejs" | grep -n 'prev-next' | head -1 | cut -d: -f1)
-          echo "gitalk-comments at line: $gkline, prev-next at line: $pnline"
-          if [ -n "$gkline" ] && [ -n "$pnline" ] && [ "$gkline" -lt "$pnline" ]; then
-            echo "OK: gitalk-comments is BEFORE prev-next"
-          else
-            echo "WARNING: gitalk-comments is NOT before prev-next"
-          fi
-          echo "=== gitalk in generated post HTML ==="
+          echo ""
+          echo "========== _partial/post-detail.ejs (FULL) =========="
+          cat themes/matery/layout/_partial/post-detail.ejs 2>/dev/null
+          echo ""
+          echo "========== _partial/gitalk-card.ejs (first 5 lines) =========="
+          head -5 themes/matery/layout/_partial/gitalk-card.ejs 2>/dev/null
+          echo ""
+          echo "========== _partial/prev-next.ejs (first 10 lines) =========="
+          head -10 themes/matery/layout/_partial/prev-next.ejs 2>/dev/null
+      - name: Debug - generated post HTML
+        run: |
           sample=$(find public -path '*/2025/*' -name 'index.html' | head -1)
-          echo "Sample: $sample"
-          grep -o 'class="content"\|class="container"\|gitalk-container\|class="card"' "$sample" 2>/dev/null | sort | uniq -c
+          echo "Sample post: $sample"
+          echo "========== gitalk-container context (20 lines) =========="
+          grep -n -A20 'gitalk-container\|gitalk-card\|评论系统' "$sample" 2>/dev/null | head -40
+          echo ""
+          echo "========== container/card/main structure =========="
+          grep -n 'class="content"\|class="container"\|class="card"\|class="card-content"\|prev-next\|gitalk' "$sample" 2>/dev/null | head -30
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:

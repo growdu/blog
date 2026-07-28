@@ -2,7 +2,7 @@
 """Prepare the matery theme:
 1. Remove the default menu so _config.matery.yml is the sole source.
 2. Inject prism.js CSS + Mermaid.js for code highlighting and diagrams.
-3. Inject Gitalk comments into post pages (before prev-next navigation).
+3. Inject Gitalk comments into post pages.
 """
 import os, re, sys
 
@@ -64,57 +64,63 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
 partial_dir = os.path.join(theme_dir, 'layout', '_partial')
 os.makedirs(partial_dir, exist_ok=True)
 
-# Use a unique partial name to avoid overwriting the theme's built-in gitalk.ejs.
-# Wrap in the same main.content > container > card > card-content structure as the
-# article body so the comment section has identical width and sits flush below it.
-gitalk_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
+# The inner card-only partial (for injection INSIDE an existing container)
+gitalk_card_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
+<div class="card" data-aos="fade-up">
+  <div class="card-content">
+    <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+    <div id="gitalk-container"></div>
+    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+    <script>
+      var pathHash = function(s) {
+        var h = 0;
+        for (var i = 0; i < s.length; i++) {
+          h = ((h << 5) - h) + s.charCodeAt(i); h |= 0;
+        }
+        return 'p' + Math.abs(h);
+      };
+      var gitalk = new Gitalk({
+        clientID: '<%= theme.gitalk.clientID %>',
+        clientSecret: '<%= theme.gitalk.clientSecret %>',
+        repo: '<%= theme.gitalk.repo %>',
+        owner: '<%= theme.gitalk.owner %>',
+        admin: ['<%= theme.gitalk.owner %>'],
+        id: pathHash(location.pathname),
+        language: 'zh-CN',
+        distractionFreeMode: false,
+        createIssueManually: false,
+        labels: ['Gitalk', 'Comment'],
+        perPage: 10
+      });
+      gitalk.render('gitalk-container');
+    </script>
+    <% } else { %>
+    <div style="text-align: center; padding: 30px 20px; color: #999;">
+      <i class="fas fa-comments" style="font-size: 28px;"></i>
+      <p style="margin-top: 10px; font-size: 14px;">评论系统待配置 GitHub OAuth App</p>
+    </div>
+    <% } %>
+  </div>
+</div>
+<% } %>"""
+
+with open(os.path.join(partial_dir, 'gitalk-card.ejs'), 'w', encoding='utf-8') as f:
+    f.write(gitalk_card_ejs)
+print('Created gitalk-card.ejs (card-only)')
+
+# The full-wrapper partial (for injection OUTSIDE any container)
+gitalk_full_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
 <main class="content">
   <div class="container">
-    <div class="card" data-aos="fade-up">
-      <div class="card-content">
-        <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
-        <div id="gitalk-container"></div>
-        <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
-        <script>
-          var pathHash = function(s) {
-            var h = 0;
-            for (var i = 0; i < s.length; i++) {
-              h = ((h << 5) - h) + s.charCodeAt(i); h |= 0;
-            }
-            return 'p' + Math.abs(h);
-          };
-          var gitalk = new Gitalk({
-            clientID: '<%= theme.gitalk.clientID %>',
-            clientSecret: '<%= theme.gitalk.clientSecret %>',
-            repo: '<%= theme.gitalk.repo %>',
-            owner: '<%= theme.gitalk.owner %>',
-            admin: ['<%= theme.gitalk.owner %>'],
-            id: pathHash(location.pathname),
-            language: 'zh-CN',
-            distractionFreeMode: false,
-            createIssueManually: false,
-            labels: ['Gitalk', 'Comment'],
-            perPage: 10
-          });
-          gitalk.render('gitalk-container');
-        </script>
-        <% } else { %>
-        <div style="text-align: center; padding: 30px 20px; color: #999;">
-          <i class="fas fa-comments" style="font-size: 28px;"></i>
-          <p style="margin-top: 10px; font-size: 14px;">评论系统待配置 GitHub OAuth App</p>
-        </div>
-        <% } %>
-      </div>
-    </div>
+    <%- partial('_partial/gitalk-card') %>
   </div>
 </main>
 <% } %>"""
 
-gitalk_partial = os.path.join(partial_dir, 'gitalk-comments.ejs')
-with open(gitalk_partial, 'w', encoding='utf-8') as f:
-    f.write(gitalk_ejs)
-print('Created gitalk-comments.ejs partial')
+with open(os.path.join(partial_dir, 'gitalk-comments.ejs'), 'w', encoding='utf-8') as f:
+    f.write(gitalk_full_ejs)
+print('Created gitalk-comments.ejs (full wrapper)')
 
 # Remove theme's built-in gitalk references to avoid duplicate comment sections
 post_detail = os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs')
@@ -129,50 +135,59 @@ if os.path.isfile(post_detail):
             f.write(pd)
         print('Removed theme built-in gitalk from _partial/post-detail.ejs')
 
-# Inject our partial into the post layout, positioned BEFORE prev-next navigation
-# so comments appear between the article body and the prev/next links.
-injected = False
-for target in [
-    os.path.join(theme_dir, 'layout', 'post.ejs'),
-    os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs'),
-]:
-    if not os.path.isfile(target):
-        print(f'{os.path.relpath(target, theme_dir)} not found')
-        continue
-    with open(target, encoding='utf-8') as f:
+
+def inject_partial(filepath, partial_ref, markers):
+    """Insert partial_ref into filepath before the first line matching any marker.
+    markers: list of substrings to search for (tried in order).
+    Returns True if injected, False if file not found or already present."""
+    if not os.path.isfile(filepath):
+        print(f'  {os.path.relpath(filepath, theme_dir)} not found')
+        return False
+    with open(filepath, encoding='utf-8') as f:
         raw = f.read()
-    if 'gitalk-comments' in raw:
-        print(f'gitalk-comments already present in {os.path.relpath(target, theme_dir)}')
-        injected = True
-        break
-
+    if 'gitalk' in raw:
+        print(f'  gitalk already present in {os.path.relpath(filepath, theme_dir)}')
+        return True
     lines = raw.split('\n')
-    insert_line = '<%- partial("_partial/gitalk-comments") %>'
     insert_idx = None
-
-    # Preferred: insert right before the prev-next partial
-    for i, line in enumerate(lines):
-        if 'prev-next' in line:
-            insert_idx = i
-            break
-
-    # Fallback: insert right after the post-detail partial
-    if insert_idx is None:
+    for marker in markers:
         for i, line in enumerate(lines):
-            if 'post-detail' in line:
-                insert_idx = i + 1
+            if marker in line:
+                insert_idx = i
+                print(f'  Found "{marker}" at line {i+1} in {os.path.relpath(filepath, theme_dir)}')
                 break
-
-    # Last resort: append at end
+        if insert_idx is not None:
+            break
     if insert_idx is None:
         insert_idx = len(lines)
-
-    lines.insert(insert_idx, insert_line)
-    with open(target, 'w', encoding='utf-8') as f:
+        print(f'  No marker found, appending at end of {os.path.relpath(filepath, theme_dir)}')
+    lines.insert(insert_idx, partial_ref)
+    with open(filepath, 'w', encoding='utf-8') as f:
         f.write('\n'.join(lines))
-    print(f'Injected gitalk-comments into {os.path.relpath(target, theme_dir)}')
-    injected = True
-    break
+    print(f'  Injected into {os.path.relpath(filepath, theme_dir)} at line {insert_idx+1}')
+    return True
 
-if not injected:
-    print('WARNING: could not find post layout to inject gitalk into')
+
+# Strategy: inject the card-only partial into post-detail.ejs (which contains
+# the article body and typically prev-next inside the same container).
+# This guarantees the comment card shares the article's container width.
+print('--- Injecting gitalk ---')
+card_ref = '<%- partial("_partial/gitalk-card") %>'
+full_ref = '<%- partial("_partial/gitalk-comments") %>'
+
+# Try post-detail.ejs first (article body lives here, inside main.content > container)
+done = inject_partial(
+    post_detail, card_ref,
+    ['prev-next', 'prev_next', 'post-prev', 'pager', 'paging']
+)
+
+if not done:
+    # Fallback: inject full-wrapper into post.ejs
+    post_layout = os.path.join(theme_dir, 'layout', 'post.ejs')
+    done = inject_partial(
+        post_layout, full_ref,
+        ['prev-next', 'prev_next', 'post-prev', 'pager', 'paging', 'post-detail']
+    )
+
+if not done:
+    print('WARNING: could not find a post layout to inject gitalk into')
