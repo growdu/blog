@@ -37,7 +37,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Install Hexo dependencies
         run: npm install
       - name: Install matery theme
@@ -45,17 +45,11 @@ jobs:
           mkdir -p themes
           git clone --depth 1 https://github.com/blinkfox/hexo-theme-matery.git themes/matery
           python3 tools/patch-theme.py
+          python3 tools/localize-cdn.py
       - name: Sync content to Hexo
         run: python3 tools/sync-hexo.py
       - name: Copy vendor assets
-        run: |
-          mkdir -p source/lib/prism source/lib/mermaid source/lib/gitalk
-          cp node_modules/prismjs/themes/prism-tomorrow.min.css source/lib/prism/
-          cp node_modules/prismjs/components/prism-core.min.js source/lib/prism/
-          cp node_modules/prismjs/plugins/autoloader/prism-autoloader.min.js source/lib/prism/
-          cp node_modules/mermaid/dist/mermaid.min.js source/lib/mermaid/
-          cp node_modules/gitalk/dist/gitalk.css source/lib/gitalk/
-          cp node_modules/gitalk/dist/gitalk.min.js source/lib/gitalk/
+        run: python3 tools/copy-vendor.py
       - name: Build with Hexo
         run: npx hexo generate
       - name: Fix XML escaping in sitemap and feed
@@ -79,6 +73,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Debug - customizations
         run: |
+          echo "=== CDN manifest ==="
+          cat tools/cdn-manifest.json 2>/dev/null || echo "NOT FOUND"
+          echo "=== Localized lib files ==="
+          find source/lib -type f 2>/dev/null | sort | head -30
+          echo "=== Theme libs section ==="
+          grep -A 30 '^libs:' themes/matery/_config.yml 2>/dev/null || echo "NOT FOUND"
+          echo "=== jsDelivr setting ==="
+          grep -A 2 '^jsDelivr:' themes/matery/_config.yml 2>/dev/null || echo "NOT FOUND"
           echo "=== custom-blog-style in layout files? ==="
           grep -rl 'custom-blog-style' themes/matery/layout/ 2>/dev/null || echo "NOT FOUND"
           echo "=== post-detail-toc.ejs (first 15 lines) ==="

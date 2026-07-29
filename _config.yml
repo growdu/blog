@@ -1,10 +1,11 @@
 # Site
 title: 编程之路
 subtitle: 一位资深后端研发工程师的编程学习之路
-description: 编程学习之路
 author: growdu
 language: zh-CN
 timezone: Asia/Shanghai
+description: 资深后端研发工程师的技术博客，专注数据库内核（PostgreSQL/openGauss）、分布式系统（Raft/DCF）、高性能网络（DPDK/VPP）等领域的技术分享与实践笔记。
+keywords: PostgreSQL,openGauss,数据库,分布式系统,Raft,DCF,DPDK,VPP,C语言,后端开发,编程,存储,高可用
 
 # URL
 url: https://growdu.github.io/blog
@@ -70,7 +71,7 @@ search:
   path: search.xml
   field: post
   content: true
-  format: html
+  format: strip
 
 # Markdown
 marked:

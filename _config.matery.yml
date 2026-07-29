@@ -1,5 +1,9 @@
 # matery theme configuration overrides
 
+# Serve theme assets locally (no CDN) for faster China access
+jsDelivr:
+  url:
+
 # Navigation menu - matery expects objects with url + icon, not plain strings
 menu:
   首页:

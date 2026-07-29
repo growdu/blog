@@ -32,6 +32,12 @@ print('Removed default menu from theme config')
 
 # --- 2. Inject prism.js CSS + Mermaid.js ---
 inject_css = """<meta property="og:title" content="<%= page.title || config.title %>">
+<link rel="preconnect" href="https://api.counterapi.dev">
+<link rel="dns-prefetch" href="https://api.counterapi.dev">
+<link rel="preconnect" href="https://busuanzi.ibruce.info">
+<link rel="dns-prefetch" href="https://busuanzi.ibruce.info">
+<link rel="preconnect" href="https://api.github.com">
+<link rel="dns-prefetch" href="https://api.github.com">
 <meta property="og:site_name" content="<%= config.title %>">
 <meta property="og:type" content="<%= page.layout === 'post' ? 'article' : 'website' %>">
 <meta property="og:url" content="<%- config.url %><%- url_for(page.path) %>">
