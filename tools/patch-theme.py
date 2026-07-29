@@ -170,17 +170,17 @@ custom_css = """<style id="custom-blog-style">
 ::-webkit-scrollbar-track{background:#f5f5f5}
 ::-webkit-scrollbar-thumb{background:#bbb;border-radius:4px}
 ::-webkit-scrollbar-thumb:hover{background:#999}
-/* Statistics bar (top, compact) */
-.stats-bar{display:flex;justify-content:center;gap:48px;padding:14px 0;background:#fff;border-bottom:1px solid #f0f0f0}
-.stats-bar .stat-item{text-align:center}
-.stats-bar .stat-num{font-size:26px;font-weight:800;color:#333}
-.stats-bar .stat-label{font-size:13px;color:#999;margin-top:2px}
+/* Hero statistics (inside cover, white on dark bg) */
+.hero-stats{display:flex;justify-content:center;gap:48px;margin-top:28px}
+.hero-stats .hero-stat{text-align:center;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.hero-stats .hero-stat-num{font-size:32px;font-weight:800}
+.hero-stats .hero-stat-label{font-size:14px;opacity:.85;margin-top:2px}
 /* Category sidebar (left, fixed, desktop only) */
-.cat-sidebar{position:fixed;left:12px;top:80px;width:180px;max-height:78vh;overflow-y:auto;z-index:100;background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:8px 0}
-.cat-sidebar .cat-title{font-size:14px;font-weight:700;padding:6px 14px 8px;color:#333;border-bottom:1px solid #f0f0f0;margin-bottom:4px}
-.cat-sidebar a{display:block;padding:5px 14px;font-size:13px;color:#666;transition:all .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-sidebar{position:fixed;left:12px;top:80px;width:200px;max-height:78vh;overflow-y:auto;z-index:100;background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:8px 0}
+.cat-sidebar .cat-title{font-size:16px;font-weight:700;padding:6px 14px 8px;color:#333;border-bottom:1px solid #f0f0f0;margin-bottom:4px}
+.cat-sidebar a{display:block;padding:6px 14px;font-size:14px;color:#666;transition:all .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cat-sidebar a:hover{background:#f5f5f5;color:#009688;padding-left:18px}
-.cat-sidebar .cat-count{float:right;color:#bbb;font-size:12px}
+.cat-sidebar .cat-count{float:right;color:#bbb;font-size:13px}
 @media(max-width:1400px){.cat-sidebar{display:none}}
 </style>"""
 
@@ -212,26 +212,34 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
             print(f'Injected custom CSS/JS into {os.path.relpath(fpath, theme_dir)}')
 
 # --- 5. Statistics bar (top of homepage) + category sidebar (fixed left) ---
-# Compact statistics bar above main content (not inside article area)
-index_path = os.path.join(theme_dir, 'layout', 'index.ejs')
-if os.path.isfile(index_path):
-    with open(index_path, encoding='utf-8') as f:
-        idx = f.read()
-    if 'stats-bar' not in idx:
-        stats_ejs = """<% if (is_home() && page.current === 1) { %>
-<div class="stats-bar">
-    <div class="stat-item"><div class="stat-num"><%= site.posts.length %></div><div class="stat-label">文章</div></div>
-    <div class="stat-item"><div class="stat-num"><%= site.categories.length %></div><div class="stat-label">分类</div></div>
-    <div class="stat-item"><div class="stat-num"><%= site.tags.length %></div><div class="stat-label">标签</div></div>
+# Hero statistics inside the cover section (next to "开始阅读" button)
+hero_ejs = """<% if (is_home() && page.current === 1) { %>
+<div class="hero-stats">
+    <div class="hero-stat"><div class="hero-stat-num"><%= site.posts.length %></div><div class="hero-stat-label">文章</div></div>
+    <div class="hero-stat"><div class="hero-stat-num"><%= site.categories.length %></div><div class="hero-stat-label">分类</div></div>
+    <div class="hero-stat"><div class="hero-stat-num"><%= site.tags.length %></div><div class="hero-stat-label">标签</div></div>
 </div>
 <% } %>
 """
-        idx = idx.replace('<main class="content">', stats_ejs + '<main class="content">', 1)
-        with open(index_path, 'w', encoding='utf-8') as f:
-            f.write(idx)
-        print('Injected statistics bar into index.ejs (above content)')
-    else:
-        print('Statistics bar already in index.ejs')
+hero_injected = False
+for hero_file in ['_partial/bg-cover-content.ejs', '_partial/index-cover.ejs', '_partial/bg-cover.ejs']:
+    hero_path = os.path.join(theme_dir, 'layout', hero_file)
+    if not os.path.isfile(hero_path):
+        continue
+    with open(hero_path, encoding='utf-8') as f:
+        hc = f.read()
+    if 'hero-stats' in hc:
+        print(f'hero-stats already in {hero_file}')
+        hero_injected = True
+        break
+    hc = hc.rstrip() + '\n' + hero_ejs
+    with open(hero_path, 'w', encoding='utf-8') as f:
+        f.write(hc)
+    print(f'Injected hero-stats into {hero_file}')
+    hero_injected = True
+    break
+if not hero_injected:
+    print('WARNING: could not find hero partial for statistics')
 
 # Fixed category sidebar on all pages (desktop only)
 sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
