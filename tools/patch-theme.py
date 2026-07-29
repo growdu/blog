@@ -147,38 +147,38 @@ if os.path.isfile(post_detail):
 else:
     print('WARNING: post-detail.ejs not found')
 
-# --- 3b. Replace TOC layout with floating button + slide-out panel ---
+# --- 3b. Replace TOC layout with compact button + dropdown ---
 toc_layout_path = os.path.join(theme_dir, 'layout', '_partial', 'post-detail-toc.ejs')
 custom_toc_ejs = """<div class="container">
     <%- partial('_partial/post-detail') %>
 </div>
 <% if (theme.toc && theme.toc.enable && String(page.toc) !== 'false') { %>
-<div id="toc-fab" class="toc-fab" title="文章目录">
+<div id="toc-btn" class="toc-btn" title="目录">
     <i class="fas fa-list-ul"></i>
 </div>
-<div id="toc-panel" class="toc-panel">
-    <div class="toc-panel-header">
-        <span><i class="fas fa-list-ul"></i> 文章目录</span>
-        <i class="fas fa-times toc-panel-close"></i>
-    </div>
-    <div class="toc-panel-body">
+<div id="toc-box" class="toc-box">
+    <div class="toc-box-title">文章目录</div>
+    <div class="toc-box-body">
         <%- toc(page.content, { list_number: false, class: 'toc-nav' }) %>
     </div>
 </div>
-<div id="toc-backdrop" class="toc-backdrop"></div>
 <script>
 (function(){
-    var fab=document.getElementById('toc-fab');
-    var panel=document.getElementById('toc-panel');
-    if(!fab||!panel)return;
-    var backdrop=document.getElementById('toc-backdrop');
-    var closeBtn=panel.querySelector('.toc-panel-close');
-    function open(){panel.classList.add('open');if(backdrop)backdrop.classList.add('open');}
-    function close(){panel.classList.remove('open');if(backdrop)backdrop.classList.remove('open');}
-    fab.addEventListener('click',open);
-    if(closeBtn)closeBtn.addEventListener('click',close);
-    if(backdrop)backdrop.addEventListener('click',close);
-    var links=panel.querySelectorAll('.toc-nav a');
+    var btn=document.getElementById('toc-btn');
+    var box=document.getElementById('toc-box');
+    if(!btn||!box)return;
+    btn.addEventListener('click',function(e){
+        e.stopPropagation();
+        btn.classList.toggle('active');
+        box.classList.toggle('show');
+    });
+    document.addEventListener('click',function(e){
+        if(!box.contains(e.target)&&!btn.contains(e.target)){
+            btn.classList.remove('active');
+            box.classList.remove('show');
+        }
+    });
+    var links=box.querySelectorAll('.toc-nav a');
     var heads=[];
     links.forEach(function(l){var h=l.getAttribute('href');if(h&&h.charAt(0)==='#'){var el=document.getElementById(h.slice(1));if(el)heads.push({el:el,link:l});}});
     function spy(){var y=window.scrollY+120;var cur=null;heads.forEach(function(it){if(it.el.offsetTop<=y)cur=it;});links.forEach(function(l){l.classList.remove('active');});if(cur)cur.link.classList.add('active');}
@@ -188,7 +188,7 @@ custom_toc_ejs = """<div class="container">
 <% } %>"""
 with open(toc_layout_path, 'w', encoding='utf-8') as f:
     f.write(custom_toc_ejs)
-print('Replaced post-detail-toc.ejs with floating TOC button + slide-out panel')
+print('Replaced post-detail-toc.ejs with compact TOC button + dropdown')
 
 # --- 4. Custom blog styling (subtle, keep original theme colors) ---
 custom_css = """<style id="custom-blog-style">
@@ -246,23 +246,18 @@ custom_css = """<style id="custom-blog-style">
 .hot-sidebar .hot-views i{font-size:10px}
 /* Post page padding so content clears both fixed sidebars */
 @media(min-width:1400px){.post-container.content{padding-right:300px!important}}
-/* Floating TOC button (bottom-right, below hot sidebar) + slide-out panel */
-.toc-fab{position:fixed;left:18px;bottom:28px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#009688,#00bcd4);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:200;font-size:20px;transition:transform .2s,box-shadow .2s}
-.toc-fab:hover{transform:scale(1.08);box-shadow:0 6px 18px rgba(0,0,0,.35)}
-.toc-panel{position:fixed;top:0;right:0;height:100vh;width:330px;max-width:86vw;background:#fff;box-shadow:-4px 0 24px rgba(0,0,0,.18);transform:translateX(105%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:300;display:flex;flex-direction:column}
-.toc-panel.open{transform:translateX(0)}
-.toc-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#009688,#00bcd4);color:#fff;font-size:17px;font-weight:700;flex-shrink:0}
-.toc-panel-header span{display:flex;align-items:center;gap:8px}
-.toc-panel-close{cursor:pointer;font-size:18px;opacity:.85;transition:opacity .2s}
-.toc-panel-close:hover{opacity:1}
-.toc-panel-body{padding:12px 16px;overflow-y:auto;flex:1}
-.toc-panel-body .toc-nav,.toc-panel-body .toc-nav ol,.toc-panel-body .toc-nav ul{list-style:none;padding:0;margin:0}
-.toc-panel-body .toc-nav ol,.toc-panel-body .toc-nav ul{padding-left:16px}
-.toc-panel-body .toc-nav a{display:block;padding:7px 10px;color:#555;font-size:14px;line-height:1.4;border-radius:6px;transition:all .15s;text-decoration:none;border-left:3px solid transparent}
-.toc-panel-body .toc-nav a:hover{background:#f5f5f5;color:#009688}
-.toc-panel-body .toc-nav a.active{background:rgba(0,150,136,.1);color:#009688;font-weight:600;border-left-color:#009688}
-.toc-backdrop{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:opacity .3s;z-index:250}
-.toc-backdrop.open{opacity:1;visibility:visible}
+/* TOC compact button (between hot sidebar and back-to-top) + dropdown */
+.toc-btn{position:fixed;right:18px;bottom:80px;width:44px;height:44px;border-radius:50%;background:#fff;border:2px solid #009688;color:#009688;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12);z-index:200;font-size:16px;transition:all .2s}
+.toc-btn:hover,.toc-btn.active{background:#009688;color:#fff}
+.toc-box{position:fixed;right:18px;bottom:132px;width:300px;max-height:420px;display:none;flex-direction:column;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.15);z-index:200;overflow:hidden}
+.toc-box.show{display:flex}
+.toc-box-title{font-size:14px;font-weight:700;color:#009688;padding:10px 14px;border-bottom:1px solid #eee;flex-shrink:0}
+.toc-box-body{padding:8px 10px;overflow-y:auto;flex:1}
+.toc-box-body .toc-nav,.toc-box-body .toc-nav ol,.toc-box-body .toc-nav ul{list-style:none;padding:0;margin:0}
+.toc-box-body .toc-nav ol,.toc-box-body .toc-nav ul{padding-left:14px}
+.toc-box-body .toc-nav a{display:block;padding:4px 8px;color:#555;font-size:13px;line-height:1.4;border-radius:4px;transition:all .15s;text-decoration:none}
+.toc-box-body .toc-nav a:hover{background:#f5f5f5;color:#009688}
+.toc-box-body .toc-nav a.active{color:#009688;font-weight:600}
 @media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
 </style>"""
 
@@ -341,8 +336,9 @@ sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
     return 'p' + Math.abs(h);
   };
   var getDate = function(p) { return p.date ? new Date(p.date).getTime() : 0; };
+  var wcOf = function(p) { return p.content ? String(p.content).replace(/<[^>]+>/g, '').length : 0; };
   var allPosts = site.posts.data.slice().sort(function(a, b) {
-    return (b.top || 0) - (a.top || 0) || getDate(b) - getDate(a);
+    return wcOf(b) - wcOf(a);
   });
   var hotPosts = allPosts.slice(0, 50);
   var hotData = hotPosts.map(function(p) {
@@ -355,7 +351,7 @@ sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
   <div class="hot-title"><i class="fas fa-fire"></i> 热门文章</div>
   <div class="hot-list" id="hot-posts-list">
     <% hotPosts.slice(0, 20).forEach(function(post, i) { %>
-    <a href="<%- url_for(post.path) %>"><span class="hot-rank rank-<%= i+1 %>"><%= i+1 %></span><div class="hot-content"><span class="hot-name"><%= post.title %></span><div class="hot-meta"><% var _cats = (post.categories && post.categories.data) || []; if (_cats.length > 0) { %><span class="hot-cat"><%= _cats[0].name %></span><% } %><% var _wc = post.content ? String(post.content).replace(/<[^>]+>/g, "").length : 0; %><span class="hot-views">热度 <%= Math.max(5, Math.floor(_wc / 50)) %></span></div></div></a>
+    <a href="<%- url_for(post.path) %>"><span class="hot-rank rank-<%= i+1 %>"><%= i+1 %></span><div class="hot-content"><span class="hot-name"><%= post.title %></span><div class="hot-meta"><% var _cats = (post.categories && post.categories.data) || []; if (_cats.length > 0) { %><span class="hot-cat"><%= _cats[0].name %></span><% } %><% var _wc = post.content ? String(post.content).replace(/<[^>]+>/g, "").length : 0; %><span class="hot-views">🔥 <%= Math.max(5, Math.floor(_wc / 50)) %></span></div></div></a>
     <% }); %>
   </div>
 </div>
@@ -400,7 +396,7 @@ sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
       if(p.c>0){
         var v=document.createElement('span');
         v.className='hot-views';
-        v.textContent='\u70ed\u5ea6 '+p.c;
+        v.textContent='🔥 '+p.c;
         meta.appendChild(v);
       }
       content.appendChild(meta);
