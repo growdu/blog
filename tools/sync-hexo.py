@@ -185,6 +185,42 @@ def create_theme_pages():
         with open(path, 'w', encoding='utf-8') as f:
             f.write(fm)
 
+    # About page
+    about_path = os.path.join(SRC, 'about', 'index.md')
+    os.makedirs(os.path.dirname(about_path), exist_ok=True)
+    about_md = """---
+title: "关于我"
+date: 2026-07-29 00:00:00
+---
+
+# 关于我
+
+资深后端研发工程师，专注数据库内核与分布式系统。深耕 PostgreSQL/openGauss 内核开发，熟悉 DCF、Raft 等一致性协议，对 DPDK/VPP 高性能数据面有丰富实践经验。热爱技术分享，记录编程之路的每一步。
+
+## 技术领域
+
+- **数据库内核**: 深耕 PostgreSQL/openGauss 内核开发，涉及存储引擎、查询优化、事务管理、逻辑解码等
+- **分布式系统**: 熟悉 DCF、Raft 等一致性协议，设计并实现高可用集群方案
+- **高性能网络**: 对 DPDK/VPP 数据面有丰富实践经验
+- **编程语言**: C/C++ 为主，兼顾 Python、Shell 等
+
+## 技能标签
+
+PostgreSQL | openGauss | 分布式系统 | Raft/DCF | C/C++ | DPDK | VPP | Linux | 高可用架构
+
+## 联系方式
+
+- GitHub: https://github.com/growdu
+- Email: growdu@gmail.com
+- QQ: 2689304284
+
+## 关于本博客
+
+本博客记录编程之路的学习笔记和技术实践，涵盖数据库、分布式系统、高性能网络等领域。文章通过 Git 提交自动发布，使用 Hexo + matery 主题构建，部署在 GitHub Pages。
+"""
+    with open(about_path, 'w', encoding='utf-8') as f:
+        f.write(about_md)
+
 
 def main():
     if os.path.exists(SRC):

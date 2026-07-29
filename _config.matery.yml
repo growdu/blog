@@ -14,6 +14,9 @@ menu:
   标签:
     url: /tags/
     icon: fa-solid fa-tags
+  关于:
+    url: /about/
+    icon: fa-solid fa-user
 
 # Local search
 search:
