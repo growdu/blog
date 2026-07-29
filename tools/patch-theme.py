@@ -43,6 +43,12 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <meta property="og:url" content="<%- config.url %><%- url_for(page.path) %>">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="<%= page.title || config.title %>">
+<link rel="canonical" href="<%- config.url %><%- url_for(page.path) %>">
+<% if (page.layout === 'post') { %>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"<%= page.title %>","datePublished":"<%- date(page.date, 'YYYY-MM-DD') %>","author":{"@type":"Person","name":"<%= config.author %>"},"publisher":{"@type":"Organization","name":"<%= config.title %>"},"mainEntityOfPage":{"@type":"WebPage","@id":"<%- config.url %><%- url_for(page.path) %>"}}</script>
+<% } else { %>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"<%= config.title %>","url":"<%- config.url %>"}</script>
+<% } %>
 <link href="/blog/lib/prism/prism-tomorrow.min.css" rel="stylesheet"/>
 <style>
 pre[class*="language-"]{background:#282c34!important;border-radius:8px;padding:16px;font-size:14px;margin:16px 0;overflow-x:auto}
