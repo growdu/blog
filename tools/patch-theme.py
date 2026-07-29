@@ -6,7 +6,7 @@
 4. Inject custom blog styling (colors, typography, effects).
 5. Inject homepage statistics + category navigation.
 """
-import os, re, sys
+import os, re, shutil, sys
 
 theme_dir = 'themes/matery'
 
@@ -29,6 +29,20 @@ new_content = re.sub(
 with open(path, 'w', encoding='utf-8') as f:
     f.write(new_content)
 print('Removed default menu from theme config')
+
+# --- 1.5. Replace default fox logo with custom image ---
+# The header.ejs partial in the theme renders `theme.logo` (default
+# `/medias/logo.png`, the fox).  _config.matery.yml overrides it to
+# `/medias/logo.jpg`, so we just need to publish the new image under
+# that path inside the theme's source tree.
+src_logo = '1.jpg'
+dst_logo = os.path.join(theme_dir, 'source', 'medias', 'logo.jpg')
+if os.path.isfile(src_logo):
+    os.makedirs(os.path.dirname(dst_logo), exist_ok=True)
+    shutil.copy2(src_logo, dst_logo)
+    print(f'Copied {src_logo} -> {os.path.relpath(dst_logo, theme_dir)}')
+else:
+    print(f'WARNING: {src_logo} not found, logo not replaced', file=sys.stderr)
 
 # --- 2. Inject prism.js CSS + Mermaid.js ---
 inject_css = """<meta property="og:title" content="<%= page.title || config.title %>">
@@ -300,6 +314,21 @@ a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2p
 .project-card{display:flex;gap:12px;padding:14px;margin:8px 0;background:#f9f9f9;border-radius:8px;border-left:3px solid #009688}
 .project-card .proj-name{font-weight:600;font-size:15px}
 .project-card .proj-desc{font-size:13px;color:#666;margin-top:4px}
+/* Projects page - grid of repo cards */
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin:24px 0}
+.proj-grid-card{display:flex;flex-direction:column;padding:18px;background:#fff;border-radius:12px;border:1px solid #eee;box-shadow:0 2px 8px rgba(0,0,0,.04);transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;text-decoration:none;color:inherit;overflow:hidden}
+.proj-grid-card:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(0,150,136,.15);border-color:#009688}
+.proj-grid-card .proj-grid-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.proj-grid-card .proj-grid-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#009688,#00bcd4);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+.proj-grid-card .proj-grid-name{font-size:16px;font-weight:700;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj-grid-card .proj-grid-lang{font-size:12px;color:#fff;background:#009688;padding:2px 8px;border-radius:10px;margin-left:auto;flex-shrink:0}
+.proj-grid-card .proj-grid-desc{font-size:13px;color:#666;line-height:1.6;margin:6px 0 10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.proj-grid-card .proj-grid-foot{display:flex;align-items:center;gap:14px;font-size:12px;color:#999;margin-top:auto;padding-top:8px;border-top:1px dashed #eee}
+.proj-grid-card .proj-grid-foot .pg-stat{display:flex;align-items:center;gap:4px}
+.proj-grid-card .proj-grid-foot .pg-stat i{font-size:11px;color:#ee5a24}
+.proj-grid-card .proj-grid-foot .pg-link{margin-left:auto;color:#009688;text-decoration:none;font-weight:600}
+.proj-grid-card .proj-grid-foot .pg-link:hover{text-decoration:underline}
+.proj-empty{padding:20px;text-align:center;color:#999;background:#f9f9f9;border-radius:8px}
 /* Timeline */
 .timeline-item{position:relative;padding-left:24px;margin:12px 0;border-left:2px solid #e0e0e0}
 .timeline-item::before{content:'';position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:#009688}

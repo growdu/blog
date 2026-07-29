@@ -4,6 +4,11 @@
 jsDelivr:
   url:
 
+# Custom site logo (replaces the default fox).  The image is copied
+# from <repo-root>/1.jpg into themes/matery/source/medias/logo.jpg by
+# tools/patch-theme.py on every build, so this single path is enough.
+logo: /medias/logo.jpg
+
 # Navigation menu - matery expects objects with url + icon, not plain strings
 menu:
   首页:
@@ -12,6 +17,9 @@ menu:
   归档:
     url: /archives/
     icon: fa-solid fa-archive
+  项目:
+    url: /projects/
+    icon: fa-solid fa-rocket
   分类:
     url: /categories/
     icon: fa-solid fa-bookmark

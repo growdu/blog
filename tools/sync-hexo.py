@@ -391,9 +391,77 @@ type: "database"
         f.write(db_md)
     print('Created database landing page')
 
+    # Projects page (custom page with card grid for growdu's GitHub projects)
+    create_projects_page()
+    print('Created projects landing page')
+
     create_theme_pages()
     print('Theme pages created')
 
 
+def create_projects_page():
+    """Generate the /projects/ page as a card grid of growdu's repos."""
+    projects = [
+        # (name, description, language, stars, url)
+        ('db021',    '从零开始写数据库。手写存储引擎、SQL 解析、执行器，深入理解数据库内核原理。',                 'C',         0, 'https://github.com/growdu/db021'),
+        ('db_god',   '数据库修仙之路。系统梳理数据库内核知识图谱，从单机存储到分布式事务的全景式笔记。',         'JavaScript', 0, 'https://github.com/growdu/db_god'),
+        ('dbk',      'database kernel ai cli。让 AI 直接参与数据库内核开发、调试与性能分析的命令行工具。',       'Python',    0, 'https://github.com/growdu/dbk'),
+        ('dbt',      'db tool。常用数据库诊断与运维小工具合集，覆盖 PostgreSQL / openGauss 日常排障场景。',    'C',         0, 'https://github.com/growdu/dbt'),
+        ('learn_pg', 'learn postgres kernel。边读源码边写注释，逐步吃透 PostgreSQL 内核关键模块。',           'Go',        1, 'https://github.com/growdu/learn_pg'),
+        ('ebpf_all', 'ebpf everything。一站式 eBPF 学习与实验仓库，覆盖内核观测、网络、安全、性能等场景。',    'Rust',      0, 'https://github.com/growdu/ebpf_all'),
+        ('anycode',  'database developer program anywhere。基于 Web 的在线数据库开发环境，浏览器即开即用。',   'Vue',       0, 'https://github.com/growdu/anycode'),
+        ('aistock',  '面向个人的 AI 量化交易。集成大模型的选股、回测与策略生成实验。',                          'Python',    1, 'https://github.com/growdu/aistock'),
+        ('ai_all_in_one', '面向普通人的 AI 工具集合。封装所有主流大模型与办公 AI，一条命令就能跑起来。',       'Go',        0, 'https://github.com/growdu/ai_all_in_one'),
+        ('ai_toubiao', 'AI 招投标。让大模型自动解析招标文件、生成应答方案，提升售前效率。',                     'Go',        1, 'https://github.com/growdu/ai_toubiao'),
+        ('auto_email', '自动收发邮件机器人。基于规则与 AI 的邮件自动分类、回复与提醒。',                       'Python',    0, 'https://github.com/growdu/auto_email'),
+        ('easy_blog', '将 GitHub 仓库一键变成可阅读的博客，自动生成 Markdown 文章索引。',                       'Python',    1, 'https://github.com/growdu/easy_blog'),
+        ('docsify-blog', 'docsify 风格的博客模板，自动渲染 Markdown 目录，开箱即用。',                       'HTML',      0, 'https://github.com/growdu/docsify-blog'),
+        ('leetcode', 'LeetCode 刷题笔记与模板代码，按专题整理常见套路与高频题解。',                            'C',         0, 'https://github.com/growdu/leetcode'),
+    ]
+
+    def card(name, desc, lang, stars, url):
+        initial = name[0].upper()
+        lang_badge = ('<span class="proj-grid-lang">' + lang + '</span>') if lang else ''
+        star = ('<span class="pg-stat"><i class="fa-solid fa-star"></i>' + str(stars) + '</span>') if stars > 0 else ''
+        return (''.join([
+            '<a class="proj-grid-card" href="' + url + '" target="_blank" rel="noopener">',
+            '<div class="proj-grid-head">',
+            '<div class="proj-grid-icon">' + initial + '</div>',
+            '<div class="proj-grid-name">' + name + '</div>',
+            lang_badge,
+            '</div>',
+            '<div class="proj-grid-desc">' + desc + '</div>',
+            '<div class="proj-grid-foot">',
+            star,
+            '<span class="pg-link">查看仓库 →</span>',
+            '</div>',
+            '</a>'
+        ]))
+
+    cards_html = chr(10).join(card(*p) for p in projects)
+
+    fm = '---\ntitle: 我的开源项目\ndate: 2026-07-29 00:00:00\ntype: "projects"\nlayout: "page"\n---\n\n'
+    intro = chr(10).join([
+        '# 我的开源项目',
+        '',
+        '这里收录了我在 GitHub 上开源的主要项目，覆盖数据库内核、eBPF、AI 工具、博客系统等多个方向。每个项目都配有独立仓库，欢迎前往围观、Star 或 Fork。',
+        '',
+        '> 数据来自 [github.com/growdu](https://github.com/growdu)，共 ' + str(len(projects)) + ' 个项目。',
+        '',
+        '<div class="proj-grid">',
+        cards_html,
+        '</div>',
+        '',
+        '更多小实验和练手项目可以在 [GitHub 个人主页](https://github.com/growdu) 上翻到，欢迎一起交流。',
+    ])
+
+    proj_path = os.path.join(SRC, 'projects', 'index.md')
+    os.makedirs(os.path.dirname(proj_path), exist_ok=True)
+    with open(proj_path, 'w', encoding='utf-8') as f:
+        f.write(fm + intro + chr(10))
+    print('Created ' + os.path.relpath(proj_path, '.') + ' (' + str(len(projects)) + ' cards)')
+
+
 if __name__ == '__main__':
     main()
+
