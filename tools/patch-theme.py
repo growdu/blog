@@ -151,12 +151,12 @@ else:
 toc_layout_path = os.path.join(theme_dir, 'layout', '_partial', 'post-detail-toc.ejs')
 custom_toc_ejs = """<div class="container">
     <div class="row">
-        <div class="col s12 m8 l8">
+        <div class="col s12 m9 l9">
             <%- partial('_partial/post-detail') %>
         </div>
-        <div class="col s12 m4 l4">
+        <div class="col s12 m3 l3">
             <div class="toc-widget" id="toc-widget">
-                <div class="toc-widget-title">文章目录</div>
+                <div class="toc-widget-title"><i class="fas fa-list-ul"></i> 文章目录</div>
                 <div class="toc-widget-body">
                     <%- toc(page.content, { list_number: false, class: 'toc-nav' }) %>
                 </div>
@@ -237,10 +237,11 @@ custom_css = """<style id="custom-blog-style">
 .hot-sidebar .hot-views i{font-size:10px}
 /* Post page padding so content clears both fixed sidebars */
 @media(min-width:1400px){.post-container.content{padding-left:300px!important;padding-right:300px!important}}
+.post-container.content .container{width:100%!important}
 /* TOC sticky sidebar column (flush against article, scrolls with content) */
 .toc-widget{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:0;max-height:calc(100vh - 100px);overflow-y:auto}
 @media(min-width:993px){.toc-widget{position:sticky;top:80px}}
-.toc-widget-title{font-size:15px;font-weight:700;color:#009688;padding:12px 16px;border-bottom:1px solid #eee}
+.toc-widget-title{font-size:15px;font-weight:700;color:#009688;padding:12px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:6px}
 .toc-widget-body{padding:8px 12px}
 .toc-widget-body .toc-nav,.toc-widget-body .toc-nav ol,.toc-widget-body .toc-nav ul{list-style:none;padding:0;margin:0}
 .toc-widget-body .toc-nav ol,.toc-widget-body .toc-nav ul{padding-left:14px}
