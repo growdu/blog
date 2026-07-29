@@ -329,6 +329,14 @@ a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2p
 .proj-grid-card .proj-grid-foot .pg-link{margin-left:auto;color:#009688;text-decoration:none;font-weight:600}
 .proj-grid-card .proj-grid-foot .pg-link:hover{text-decoration:underline}
 .proj-empty{padding:20px;text-align:center;color:#999;background:#f9f9f9;border-radius:8px}
+/* Database landing page - skill grid */
+.db-skill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:18px 0 24px}
+.db-skill-card{padding:16px 18px;background:#f9f9f9;border-radius:10px;border-left:3px solid #009688;transition:transform .2s ease,box-shadow .2s ease}
+.db-skill-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,150,136,.12)}
+.db-skill-card .db-skill-name{font-size:15px;font-weight:700;color:#333;margin-bottom:6px}
+.db-skill-card .db-skill-bar{height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden;margin-bottom:8px}
+.db-skill-card .db-skill-fill{height:100%;background:linear-gradient(90deg,#009688,#00bcd4);border-radius:3px;transition:width .6s ease}
+.db-skill-card .db-skill-meta{font-size:12px;color:#777;line-height:1.5}
 /* Timeline */
 .timeline-item{position:relative;padding-left:24px;margin:12px 0;border-left:2px solid #e0e0e0}
 .timeline-item::before{content:'';position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:#009688}
