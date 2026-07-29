@@ -401,23 +401,48 @@ type: "database"
 
 def create_projects_page():
     """Generate the /projects/ page as a card grid of growdu's repos."""
+    # All non-fork, non-archived growdu repos, sorted by latest commit.
+    # Tuple: (name, description, language, stars, url).
     projects = [
-        # (name, description, language, stars, url)
-        ('db021',    '从零开始写数据库。手写存储引擎、SQL 解析、执行器，深入理解数据库内核原理。',                 'C',         0, 'https://github.com/growdu/db021'),
-        ('db_god',   '数据库修仙之路。系统梳理数据库内核知识图谱，从单机存储到分布式事务的全景式笔记。',         'JavaScript', 0, 'https://github.com/growdu/db_god'),
-        ('dbk',      'database kernel ai cli。让 AI 直接参与数据库内核开发、调试与性能分析的命令行工具。',       'Python',    0, 'https://github.com/growdu/dbk'),
-        ('dbt',      'db tool。常用数据库诊断与运维小工具合集，覆盖 PostgreSQL / openGauss 日常排障场景。',    'C',         0, 'https://github.com/growdu/dbt'),
-        ('learn_pg', 'learn postgres kernel。边读源码边写注释，逐步吃透 PostgreSQL 内核关键模块。',           'Go',        1, 'https://github.com/growdu/learn_pg'),
-        ('ebpf_all', 'ebpf everything。一站式 eBPF 学习与实验仓库，覆盖内核观测、网络、安全、性能等场景。',    'Rust',      0, 'https://github.com/growdu/ebpf_all'),
-        ('anycode',  'database developer program anywhere。基于 Web 的在线数据库开发环境，浏览器即开即用。',   'Vue',       0, 'https://github.com/growdu/anycode'),
-        ('aistock',  '面向个人的 AI 量化交易。集成大模型的选股、回测与策略生成实验。',                          'Python',    1, 'https://github.com/growdu/aistock'),
-        ('ai_all_in_one', '面向普通人的 AI 工具集合。封装所有主流大模型与办公 AI，一条命令就能跑起来。',       'Go',        0, 'https://github.com/growdu/ai_all_in_one'),
-        ('ai_toubiao', 'AI 招投标。让大模型自动解析招标文件、生成应答方案，提升售前效率。',                     'Go',        1, 'https://github.com/growdu/ai_toubiao'),
-        ('auto_email', '自动收发邮件机器人。基于规则与 AI 的邮件自动分类、回复与提醒。',                       'Python',    0, 'https://github.com/growdu/auto_email'),
-        ('easy_blog', '将 GitHub 仓库一键变成可阅读的博客，自动生成 Markdown 文章索引。',                       'Python',    1, 'https://github.com/growdu/easy_blog'),
-        ('docsify-blog', 'docsify 风格的博客模板，自动渲染 Markdown 目录，开箱即用。',                       'HTML',      0, 'https://github.com/growdu/docsify-blog'),
-        ('leetcode', 'LeetCode 刷题笔记与模板代码，按专题整理常见套路与高频题解。',                            'C',         0, 'https://github.com/growdu/leetcode'),
+        ('ai_all_in_one', '面向普通人的 AI 工具集合，封装主流大模型与办公 AI，一条命令跑起来。',                      'Go',        0, 'https://github.com/growdu/ai_all_in_one'),
+        ('blog',         '博客站点源码，本仓库 Hexo + matery 主题的构建来源。',                                      'Python',    0, 'https://github.com/growdu/blog'),
+        ('ai_toubiao',   'AI 招投标助手，自动解析招标文件、生成应答方案，提升售前效率。',                          'Go',        1, 'https://github.com/growdu/ai_toubiao'),
+        ('growdu',       '个人 GitHub profile README 配置仓库。',                                                  '',          1, 'https://github.com/growdu/growdu'),
+        ('ai_teacher',   'AI 教师视频工作室，自动生成教学视频、字幕与讲稿。',                                     'Java',      0, 'https://github.com/growdu/ai_teacher'),
+        ('learn_pg',     'PostgreSQL 内核学习笔记，边读源码边注释，吃透关键模块。',                               'Go',        1, 'https://github.com/growdu/learn_pg'),
+        ('dbt',          '日常数据库诊断与运维小工具合集，覆盖 PostgreSQL / openGauss 等场景。',                  'C',         0, 'https://github.com/growdu/dbt'),
+        ('ebpf_all',     'eBPF 一站式学习与实验仓库，覆盖内核观测、网络、安全、性能等场景。',                    'Rust',      0, 'https://github.com/growdu/ebpf_all'),
+        ('loving',       '提升生育率的小工具集合。',                                                              'Vue',       0, 'https://github.com/growdu/loving'),
+        ('aistock',      '面向个人的 AI 量化交易，集成大模型的选股、回测与策略生成实验。',                         'Python',    1, 'https://github.com/growdu/aistock'),
+        ('dbk',          'database kernel ai cli：让 AI 直接参与数据库内核开发、调试与性能分析的 CLI。',           'Python',    0, 'https://github.com/growdu/dbk'),
+        ('Ace',          '千分/腰子分/百分等常见纸牌游戏的脚本与统计工具。',                                     'Makefile',  0, 'https://github.com/growdu/Ace'),
+        ('ebpf_dev',     'eBPF 开发环境 Dockerfile，开箱即用的内核观测调试容器。',                                'Dockerfile',0, 'https://github.com/growdu/ebpf_dev'),
+        ('children_study_guide', '孩子学习调优指南，整理从小学到高中各阶段的学习方法与资源。',                    'HTML',      0, 'https://github.com/growdu/children_study_guide'),
+        ('db_god',       '数据库修仙之路，系统梳理数据库内核知识图谱，从单机存储到分布式事务。',                  'JavaScript',0, 'https://github.com/growdu/db_god'),
+        ('docker-compose-home', '常用服务的 docker-compose 配置合集，可直接被 Dockge 等面板挂载。',               '',          0, 'https://github.com/growdu/docker-compose-home'),
+        ('k8s_god',      'k8s 修仙指南，从零搭建、调优到生产化部署的全景实战笔记。',                             'JavaScript',0, 'https://github.com/growdu/k8s_god'),
+        ('autotest',     '自动化测试脚本与样例合集，覆盖前后端常见场景。',                                        'JavaScript',0, 'https://github.com/growdu/autotest'),
+        ('docusaurus_custom_table_width', 'Docusaurus 表格列宽自定义小插件，解决表格列内容截断问题。',           'JavaScript',0, 'https://github.com/growdu/docusaurus_custom_table_width'),
+        ('java-work',    'Java 学习与测试代码，按专题整理常见用法与踩坑记录。',                                   'Java',      0, 'https://github.com/growdu/java-work'),
+        ('docsify-blog', 'docsify 风格的博客模板，自动渲染 Markdown 目录，开箱即用。',                          'HTML',      0, 'https://github.com/growdu/docsify-blog'),
+        ('anycode',      'database developer program anywhere：基于 Web 的在线数据库开发环境。',                  'Vue',       0, 'https://github.com/growdu/anycode'),
+        ('dockerfile',   '日常 Dockerfile 集合，按用途分类便于复用。',                                           'Dockerfile',0, 'https://github.com/growdu/dockerfile'),
+        ('db021',        '从零开始写数据库，手写存储引擎、SQL 解析与执行器。',                                   'C',         0, 'https://github.com/growdu/db021'),
+        ('ctest',        'C 语言函数测试合集，涵盖常见系统调用与库函数的单元测试。',                             '',          0, 'https://github.com/growdu/ctest'),
+        ('growdu.github.io', 'GitHub Pages 上的早期博客版本，hexo-renderer 与 matery 主题实践。',                  'JavaScript',1, 'https://github.com/growdu/growdu.github.io'),
+        ('deploy_vps',   '一键部署 shadowsocks 的安装脚本与运维工具。',                                          'Shell',     0, 'https://github.com/growdu/deploy_vps'),
+        ('auto_email',   '自动收发邮件机器人，基于规则与 AI 的邮件分类、回复与提醒。',                            'Python',    0, 'https://github.com/growdu/auto_email'),
+        ('growdu.io',    'Hexo + matery 主题的博客源码，配套 GitHub Pages 部署实践。',                            'JavaScript',1, 'https://github.com/growdu/growdu.io'),
+        ('easy_blog',    '将 GitHub 仓库一键变成可阅读博客，自动生成 Markdown 文章索引。',                         'Python',    1, 'https://github.com/growdu/easy_blog'),
+        ('mofang',       '魔方相关的小实验与可视化页面。',                                                        'HTML',      0, 'https://github.com/growdu/mofang'),
+        ('namer',        '随机起名小工具，支持多场景多风格。',                                                    'CSS',       0, 'https://github.com/growdu/namer'),
+        ('leetcode',     'LeetCode 刷题笔记与模板代码，按专题整理常见套路与高频题解。',                          'C',         0, 'https://github.com/growdu/leetcode'),
+        ('install-guide','开发工具的安装与配置指南，覆盖 macOS / Linux 常见环境。',                              '',          0, 'https://github.com/growdu/install-guide'),
+        ('go-work',      'Go 语言学习与练习代码。',                                                               'Go',        0, 'https://github.com/growdu/go-work'),
+        ('CSharpTest',   'C# 语言的测试与示例代码。',                                                             'C#',        1, 'https://github.com/growdu/CSharpTest'),
     ]
+
+
 
     def card(name, desc, lang, stars, url):
         initial = name[0].upper()
@@ -446,7 +471,7 @@ def create_projects_page():
         '',
         '这里收录了我在 GitHub 上开源的主要项目，覆盖数据库内核、eBPF、AI 工具、博客系统等多个方向。每个项目都配有独立仓库，欢迎前往围观、Star 或 Fork。',
         '',
-        '> 数据来自 [github.com/growdu](https://github.com/growdu)，共 ' + str(len(projects)) + ' 个项目。',
+        '> 数据来自 [github.com/growdu](https://github.com/growdu)，共 ' + str(len(projects)) + ' 个非 fork 项目，按最近提交时间排序。',
         '',
         '<div class="proj-grid">',
         cards_html,
