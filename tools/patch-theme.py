@@ -147,6 +147,49 @@ if os.path.isfile(post_detail):
 else:
     print('WARNING: post-detail.ejs not found')
 
+# --- 3b. Replace TOC layout with floating button + slide-out panel ---
+toc_layout_path = os.path.join(theme_dir, 'layout', '_partial', 'post-detail-toc.ejs')
+custom_toc_ejs = """<div class="container">
+    <%- partial('_partial/post-detail') %>
+</div>
+<% if (theme.toc && theme.toc.enable && String(page.toc) !== 'false') { %>
+<div id="toc-fab" class="toc-fab" title="文章目录">
+    <i class="fas fa-list-ul"></i>
+</div>
+<div id="toc-panel" class="toc-panel">
+    <div class="toc-panel-header">
+        <span><i class="fas fa-list-ul"></i> 文章目录</span>
+        <i class="fas fa-times toc-panel-close"></i>
+    </div>
+    <div class="toc-panel-body">
+        <%- toc(page.content, { list_number: false, class: 'toc-nav' }) %>
+    </div>
+</div>
+<div id="toc-backdrop" class="toc-backdrop"></div>
+<script>
+(function(){
+    var fab=document.getElementById('toc-fab');
+    var panel=document.getElementById('toc-panel');
+    if(!fab||!panel)return;
+    var backdrop=document.getElementById('toc-backdrop');
+    var closeBtn=panel.querySelector('.toc-panel-close');
+    function open(){panel.classList.add('open');if(backdrop)backdrop.classList.add('open');}
+    function close(){panel.classList.remove('open');if(backdrop)backdrop.classList.remove('open');}
+    fab.addEventListener('click',open);
+    if(closeBtn)closeBtn.addEventListener('click',close);
+    if(backdrop)backdrop.addEventListener('click',close);
+    var links=panel.querySelectorAll('.toc-nav a');
+    var heads=[];
+    links.forEach(function(l){var h=l.getAttribute('href');if(h&&h.charAt(0)==='#'){var el=document.getElementById(h.slice(1));if(el)heads.push({el:el,link:l});}});
+    function spy(){var y=window.scrollY+120;var cur=null;heads.forEach(function(it){if(it.el.offsetTop<=y)cur=it;});links.forEach(function(l){l.classList.remove('active');});if(cur)cur.link.classList.add('active');}
+    window.addEventListener('scroll',spy,{passive:true});spy();
+})();
+</script>
+<% } %>"""
+with open(toc_layout_path, 'w', encoding='utf-8') as f:
+    f.write(custom_toc_ejs)
+print('Replaced post-detail-toc.ejs with floating TOC button + slide-out panel')
+
 # --- 4. Custom blog styling (subtle, keep original theme colors) ---
 custom_css = """<style id="custom-blog-style">
 /* Article typography */
@@ -176,7 +219,7 @@ custom_css = """<style id="custom-blog-style">
 .hero-stats .hero-stat-num{font-size:32px;font-weight:800}
 .hero-stats .hero-stat-label{font-size:14px;opacity:.85;margin-top:2px}
 /* Category sidebar (left) */
-.cat-sidebar{position:fixed;left:12px;top:80px;width:240px;max-height:82vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
+.cat-sidebar{position:fixed;left:12px;top:80px;width:270px;max-height:75vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
 .cat-sidebar .cat-title{font-size:18px;font-weight:700;padding:12px 16px;color:#fff;background:linear-gradient(135deg,#009688,#00bcd4);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px}
 .cat-sidebar .cat-list{padding:6px 0}
 .cat-sidebar a{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:15px;color:#555;transition:all .2s;border-left:3px solid transparent}
@@ -185,7 +228,7 @@ custom_css = """<style id="custom-blog-style">
 .cat-sidebar .cat-count{margin-left:auto;color:#999;font-size:13px;background:#f0f0f0;padding:1px 8px;border-radius:10px;flex-shrink:0}
 .cat-sidebar a:hover .cat-count{background:#009688;color:#fff}
 /* Hot posts sidebar (right) - matched width with cat-sidebar */
-.hot-sidebar{position:fixed;right:12px;top:80px;width:240px;max-height:82vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
+.hot-sidebar{position:fixed;right:12px;top:80px;width:270px;max-height:75vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
 .hot-sidebar .hot-title{font-size:18px;font-weight:700;padding:12px 16px;color:#fff;background:linear-gradient(135deg,#ee5a24,#ff6b6b);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px}
 .hot-sidebar .hot-list{padding:6px 0}
 .hot-sidebar a{display:flex;align-items:flex-start;gap:8px;padding:9px 14px;font-size:14px;color:#555;transition:all .2s;border-left:3px solid transparent;border-bottom:1px solid #f5f5f5}
@@ -201,6 +244,25 @@ custom_css = """<style id="custom-blog-style">
 .hot-sidebar .hot-cat{font-size:11px;color:#888;background:#f5f5f5;padding:1px 6px;border-radius:4px}
 .hot-sidebar .hot-views{font-size:12px;color:#ee5a24;margin-left:auto;display:flex;align-items:center;gap:2px}
 .hot-sidebar .hot-views i{font-size:10px}
+/* Post page padding so content clears both fixed sidebars */
+@media(min-width:1400px){.post-container.content{padding-left:300px!important;padding-right:300px!important}}
+/* Floating TOC button (bottom-right, below hot sidebar) + slide-out panel */
+.toc-fab{position:fixed;right:18px;bottom:28px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#009688,#00bcd4);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:200;font-size:20px;transition:transform .2s,box-shadow .2s}
+.toc-fab:hover{transform:scale(1.08);box-shadow:0 6px 18px rgba(0,0,0,.35)}
+.toc-panel{position:fixed;top:0;right:0;height:100vh;width:330px;max-width:86vw;background:#fff;box-shadow:-4px 0 24px rgba(0,0,0,.18);transform:translateX(105%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:300;display:flex;flex-direction:column}
+.toc-panel.open{transform:translateX(0)}
+.toc-panel-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;background:linear-gradient(135deg,#009688,#00bcd4);color:#fff;font-size:17px;font-weight:700;flex-shrink:0}
+.toc-panel-header span{display:flex;align-items:center;gap:8px}
+.toc-panel-close{cursor:pointer;font-size:18px;opacity:.85;transition:opacity .2s}
+.toc-panel-close:hover{opacity:1}
+.toc-panel-body{padding:12px 16px;overflow-y:auto;flex:1}
+.toc-panel-body .toc-nav,.toc-panel-body .toc-nav ol,.toc-panel-body .toc-nav ul{list-style:none;padding:0;margin:0}
+.toc-panel-body .toc-nav ol,.toc-panel-body .toc-nav ul{padding-left:16px}
+.toc-panel-body .toc-nav a{display:block;padding:7px 10px;color:#555;font-size:14px;line-height:1.4;border-radius:6px;transition:all .15s;text-decoration:none;border-left:3px solid transparent}
+.toc-panel-body .toc-nav a:hover{background:#f5f5f5;color:#009688}
+.toc-panel-body .toc-nav a.active{background:rgba(0,150,136,.1);color:#009688;font-weight:600;border-left-color:#009688}
+.toc-backdrop{position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.35);opacity:0;visibility:hidden;transition:opacity .3s;z-index:250}
+.toc-backdrop.open{opacity:1;visibility:visible}
 @media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
 </style>"""
 
@@ -338,7 +400,7 @@ sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
       if(p.c>0){
         var v=document.createElement('span');
         v.className='hot-views';
-        v.innerHTML='<i class="fas fa-eye"></i> '+p.c;
+        v.textContent='\u70ed\u5ea6 '+p.c;
         meta.appendChild(v);
       }
       content.appendChild(meta);

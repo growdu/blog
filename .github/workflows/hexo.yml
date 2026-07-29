@@ -46,6 +46,12 @@ jobs:
         run: |
           echo "=== custom-blog-style in layout files? ==="
           grep -rl 'custom-blog-style' themes/matery/layout/ 2>/dev/null || echo "NOT FOUND"
+          echo "=== post-detail-toc.ejs (first 15 lines) ==="
+          head -15 themes/matery/layout/_partial/post-detail-toc.ejs 2>/dev/null || echo "NOT FOUND"
+          echo "=== TOC elements in generated posts ==="
+          FIRST_POST=$(find public -name "index.html" -path "*/202[0-9]/*" 2>/dev/null | head -1)
+          echo "Checking: $FIRST_POST"
+          grep -oE 'toc-fab|toc-panel|toc-backdrop' "$FIRST_POST" 2>/dev/null | sort | uniq -c || echo "NO TOC ELEMENTS"
           echo "=== hero-stats in cover files? ==="
           grep -rl 'hero-stats' themes/matery/layout/ 2>/dev/null || echo "NOT FOUND"
           echo "=== custom-blog-script in layout files? ==="

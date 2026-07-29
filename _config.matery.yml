@@ -81,3 +81,7 @@ busuanziStatistics:
   enable: true
 postInfo:
   readCount: true
+
+# Table of contents on post pages (floating button + slide-out panel)
+toc:
+  enable: true
