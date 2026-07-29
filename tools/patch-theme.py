@@ -175,13 +175,27 @@ custom_css = """<style id="custom-blog-style">
 .hero-stats .hero-stat{text-align:center;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)}
 .hero-stats .hero-stat-num{font-size:32px;font-weight:800}
 .hero-stats .hero-stat-label{font-size:14px;opacity:.85;margin-top:2px}
-/* Category sidebar (left, fixed, desktop only) */
-.cat-sidebar{position:fixed;left:12px;top:80px;width:200px;max-height:78vh;overflow-y:auto;z-index:100;background:#fff;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.06);padding:8px 0}
-.cat-sidebar .cat-title{font-size:16px;font-weight:700;padding:6px 14px 8px;color:#333;border-bottom:1px solid #f0f0f0;margin-bottom:4px}
-.cat-sidebar a{display:block;padding:6px 14px;font-size:14px;color:#666;transition:all .15s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cat-sidebar a:hover{background:#f5f5f5;color:#009688;padding-left:18px}
-.cat-sidebar .cat-count{float:right;color:#bbb;font-size:13px}
-@media(max-width:1400px){.cat-sidebar{display:none}}
+/* Category sidebar (left, beautified) */
+.cat-sidebar{position:fixed;left:12px;top:80px;width:210px;max-height:78vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
+.cat-sidebar .cat-title{font-size:16px;font-weight:700;padding:12px 16px;color:#fff;background:linear-gradient(135deg,#009688,#00bcd4);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px}
+.cat-sidebar .cat-list{padding:6px 0}
+.cat-sidebar a{display:flex;align-items:center;gap:8px;padding:7px 16px;font-size:14px;color:#555;transition:all .2s;border-left:3px solid transparent}
+.cat-sidebar a:hover{background:linear-gradient(90deg,rgba(0,150,136,.08),transparent);color:#009688;border-left-color:#009688}
+.cat-sidebar a i{font-size:13px;color:#009688;width:16px;flex-shrink:0}
+.cat-sidebar .cat-count{margin-left:auto;color:#999;font-size:12px;background:#f0f0f0;padding:1px 8px;border-radius:10px;flex-shrink:0}
+.cat-sidebar a:hover .cat-count{background:#009688;color:#fff}
+/* Hot posts sidebar (right) */
+.hot-sidebar{position:fixed;right:12px;top:80px;width:240px;max-height:78vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
+.hot-sidebar .hot-title{font-size:16px;font-weight:700;padding:12px 16px;color:#fff;background:linear-gradient(135deg,#ee5a24,#ff6b6b);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px}
+.hot-sidebar .hot-list{padding:6px 0}
+.hot-sidebar a{display:flex;align-items:flex-start;gap:8px;padding:8px 16px;font-size:13px;color:#555;transition:all .2s;border-left:3px solid transparent}
+.hot-sidebar a:hover{background:linear-gradient(90deg,rgba(238,90,36,.06),transparent);color:#ee5a24;border-left-color:#ee5a24}
+.hot-sidebar .hot-rank{display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#e0e0e0;color:#888;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.hot-sidebar .rank-1{background:#ffd700;color:#856404}
+.hot-sidebar .rank-2{background:#c0c0c0;color:#555}
+.hot-sidebar .rank-3{background:#cd7f32;color:#fff}
+.hot-sidebar .hot-name{line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+@media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
 </style>"""
 
 custom_js = """<script id="custom-blog-script">
@@ -211,7 +225,7 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
                 f.write(c)
             print(f'Injected custom CSS/JS into {os.path.relpath(fpath, theme_dir)}')
 
-# --- 5. Statistics bar (top of homepage) + category sidebar (fixed left) ---
+# --- 5. Hero statistics + dual sidebars (categories left, hot posts right) ---
 # Hero statistics inside the cover section (next to "开始阅读" button)
 hero_ejs = """<% if (is_home() && page.current === 1) { %>
 <div class="hero-stats">
@@ -241,13 +255,32 @@ for hero_file in ['_partial/bg-cover-content.ejs', '_partial/index-cover.ejs', '
 if not hero_injected:
     print('WARNING: could not find hero partial for statistics')
 
-# Fixed category sidebar on all pages (desktop only)
+# Fixed sidebars: categories (left) + hot posts ranking (right)
 sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
 <div class="cat-sidebar">
-  <div class="cat-title">分类导航</div>
-  <% site.categories.each(function(category) { %>
-  <a href="<%- url_for(category.path) %>"><%- category.name %><span class="cat-count"><%= category.posts.length %></span></a>
-  <% }); %>
+  <div class="cat-title"><i class="fas fa-folder-tree"></i> 分类导航</div>
+  <div class="cat-list">
+    <% site.categories.each(function(category) { %>
+    <a href="<%- url_for(category.path) %>"><i class="fas fa-folder"></i><span><%- category.name %></span><span class="cat-count"><%= category.posts.length %></span></a>
+    <% }); %>
+  </div>
+</div>
+<% } %>
+<%
+  var getDate = function(p) { return p.date ? new Date(p.date).getTime() : 0; };
+  var allPosts = site.posts.data.slice().sort(function(a, b) {
+    return (b.top || 0) - (a.top || 0) || getDate(b) - getDate(a);
+  });
+  var hotPosts = allPosts.slice(0, 10);
+%>
+<% if (hotPosts.length > 0) { %>
+<div class="hot-sidebar">
+  <div class="hot-title"><i class="fas fa-fire"></i> 热门文章</div>
+  <div class="hot-list">
+    <% hotPosts.forEach(function(post, i) { %>
+    <a href="<%- url_for(post.path) %>"><span class="hot-rank rank-<%= i+1 %>"><%= i+1 %></span><span class="hot-name"><%= post.title %></span></a>
+    <% }); %>
+  </div>
 </div>
 <% } %>
 """
@@ -265,8 +298,8 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
             c = c.replace('</body>', sidebar_ejs + '\n</body>', 1)
             with open(fpath, 'w', encoding='utf-8') as f:
                 f.write(c)
-            print(f'Injected category sidebar into {os.path.relpath(fpath, theme_dir)}')
+            print(f'Injected sidebars into {os.path.relpath(fpath, theme_dir)}')
             sidebar_done = True
             break
 if not sidebar_done:
-    print('WARNING: could not inject category sidebar')
+    print('WARNING: could not inject sidebars')
