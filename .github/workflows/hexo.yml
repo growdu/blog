@@ -58,6 +58,21 @@ jobs:
           cp node_modules/gitalk/dist/gitalk.min.js source/lib/gitalk/
       - name: Build with Hexo
         run: npx hexo generate
+      - name: Fix XML escaping in sitemap and feed
+        run: |
+          python3 -c "
+          import re
+          for fpath in ['public/sitemap.xml', 'public/atom.xml']:
+              try:
+                  with open(fpath, 'r', encoding='utf-8') as f:
+                      content = f.read()
+                  content = re.sub(r'&(?!amp;|lt;|gt;|quot;|apos;|#\\d+;|#x[0-9a-fA-F]+;)', '&amp;', content)
+                  with open(fpath, 'w', encoding='utf-8') as f:
+                      f.write(content)
+                  print(f'Fixed XML escaping in {fpath}')
+              except FileNotFoundError:
+                  print(f'{fpath} not found, skipping')
+          "
       - name: Initialize Gitalk issues
         run: node tools/init-gitalk-issues.js
         env:
