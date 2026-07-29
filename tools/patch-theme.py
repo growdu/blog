@@ -264,6 +264,8 @@ custom_css = """<style id="custom-blog-style">
 ::-webkit-scrollbar-track{background:#f5f5f5}
 ::-webkit-scrollbar-thumb{background:#bbb;border-radius:4px}
 ::-webkit-scrollbar-thumb:hover{background:#999}
+/* Print styles */
+@media print{.cat-sidebar,.hot-sidebar,.reading-progress,.nav-wrapper,.bg-cover,footer,.prev-next,.gitalk-card,.related-posts-card,#back-top{display:none!important}#articleContent{font-size:12pt;line-height:1.5}main.content{margin:0!important;width:100%!important}.card{box-shadow:none!important;border:1px solid #ddd}}
 /* Hero statistics */
 .hero-stats{display:flex;justify-content:center;gap:48px;margin-top:28px}
 .hero-stats .hero-stat{text-align:center;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)}
