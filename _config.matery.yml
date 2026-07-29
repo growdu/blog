@@ -9,6 +9,19 @@ jsDelivr:
 # tools/patch-theme.py on every build, so this single path is enough.
 logo: /medias/logo.jpg
 
+
+# Hero typing animation strings (overrides theme defaults like
+# "从来没有真正的绝境, 只有心灵的迷途" with database-kernel content).
+subtitle:
+  enable: true
+  sub1: '读一行内核源码，写一段生产代码'
+  sub2: 'Read kernel source, ship production code'
+  startDelay: 300
+  typeSpeed: 80
+  backSpeed: 30
+  loop: true
+  showCursor: true
+
 # Navigation menu - matery expects objects with url + icon, not plain strings
 menu:
   首页:

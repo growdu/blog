@@ -422,7 +422,7 @@ hero_ejs = """<% if (is_home() && page.current === 1) { %>
 <% if (is_home() && page.current === 1) { %>
 <script>
 (function(){
-  var texts=['数据库内核开发','分布式系统设计','高性能网络编程','PostgreSQL / openGauss','Raft / DCF 一致性协议'];
+  var texts=['PostgreSQL / openGauss 内核','Raft / DCF 分布式一致性','逻辑解码与 DDL-Replay','数据库性能调优','eBPF / DPDK 数据面'];
   var idx=0,ci=0,del=false;
   function type(){
     var el=document.getElementById('typing-text');
