@@ -72,3 +72,9 @@ socialLink:
 github:
   enable: true
   url: https://github.com/growdu
+
+# Busuanzi visitor statistics (site-level PV/UV)
+busuanziStatistics:
+  enable: true
+postInfo:
+  readCount: true

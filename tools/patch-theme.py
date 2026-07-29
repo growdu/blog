@@ -185,7 +185,7 @@ custom_css = """<style id="custom-blog-style">
 .cat-sidebar .cat-count{margin-left:auto;color:#999;font-size:12px;background:#f0f0f0;padding:1px 8px;border-radius:10px;flex-shrink:0}
 .cat-sidebar a:hover .cat-count{background:#009688;color:#fff}
 /* Hot posts sidebar (right) */
-.hot-sidebar{position:fixed;right:12px;top:80px;width:240px;max-height:78vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
+.hot-sidebar{position:fixed;right:12px;top:80px;width:240px;max-height:85vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
 .hot-sidebar .hot-title{font-size:16px;font-weight:700;padding:12px 16px;color:#fff;background:linear-gradient(135deg,#ee5a24,#ff6b6b);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px}
 .hot-sidebar .hot-list{padding:6px 0}
 .hot-sidebar a{display:flex;align-items:flex-start;gap:8px;padding:8px 16px;font-size:13px;color:#555;transition:all .2s;border-left:3px solid transparent}
@@ -195,6 +195,7 @@ custom_css = """<style id="custom-blog-style">
 .hot-sidebar .rank-2{background:#c0c0c0;color:#555}
 .hot-sidebar .rank-3{background:#cd7f32;color:#fff}
 .hot-sidebar .hot-name{line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hot-sidebar .hot-views{font-size:11px;color:#ee5a24;margin-left:auto;flex-shrink:0;white-space:nowrap;background:#fff0ed;padding:1px 6px;border-radius:8px}
 @media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
 </style>"""
 
@@ -267,21 +268,71 @@ sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
 </div>
 <% } %>
 <%
+  var hashCode = function(s) {
+    var h = 0;
+    for (var i = 0; i < s.length; i++) { h = ((h << 5) - h) + s.charCodeAt(i); h |= 0; }
+    return 'p' + Math.abs(h);
+  };
   var getDate = function(p) { return p.date ? new Date(p.date).getTime() : 0; };
   var allPosts = site.posts.data.slice().sort(function(a, b) {
     return (b.top || 0) - (a.top || 0) || getDate(b) - getDate(a);
   });
-  var hotPosts = allPosts.slice(0, 10);
+  var hotPosts = allPosts.slice(0, 50);
+  var hotData = hotPosts.map(function(p) {
+    return {h: hashCode(p.path), t: p.title, u: p.path.replace('index.html', ''), c: 0};
+  });
 %>
-<% if (hotPosts.length > 0) { %>
 <div class="hot-sidebar">
   <div class="hot-title"><i class="fas fa-fire"></i> 热门文章</div>
-  <div class="hot-list">
-    <% hotPosts.forEach(function(post, i) { %>
-    <a href="<%- url_for(post.path) %>"><span class="hot-rank rank-<%= i+1 %>"><%= i+1 %></span><span class="hot-name"><%= post.title %></span></a>
+  <div class="hot-list" id="hot-posts-list">
+    <% hotPosts.slice(0, 20).forEach(function(post, i) { %>
+    <a href="<%- url_for(post.path) %>"><span class="hot-rank rank-<%= i+1 %>"><%= i+1 %></span><span class="hot-name"><%= post.title %></span><span class="hot-views"></span></a>
     <% }); %>
   </div>
 </div>
+<% if (is_home()) { %>
+<script id="hot-posts-json" type="application/json"><%- JSON.stringify(hotData) %></script>
+<script>
+(function(){
+  var data=JSON.parse(document.getElementById('hot-posts-json').textContent);
+  if(!data||!data.length)return;
+  var NS='growdu-blog',ROOT='<%- config.root %>';
+  Promise.all(data.map(function(p){
+    return fetch('https://api.counterapi.dev/v1/'+NS+'/'+p.h)
+      .then(function(r){return r.json();})
+      .then(function(d){p.c=(d&&d.count)||0;return p;})
+      .catch(function(){return p;});
+  })).then(function(results){
+    results.sort(function(a,b){return b.c-a.c;});
+    var list=document.getElementById('hot-posts-list');
+    if(!list)return;
+    list.innerHTML='';
+    results.slice(0,20).forEach(function(p,i){
+      var a=document.createElement('a');
+      a.href=ROOT+p.u;
+      var r=document.createElement('span');
+      r.className='hot-rank rank-'+(i+1);
+      r.textContent=i+1;
+      var n=document.createElement('span');
+      n.className='hot-name';
+      n.textContent=p.t;
+      a.appendChild(r);a.appendChild(n);
+      if(p.c>0){
+        var v=document.createElement('span');
+        v.className='hot-views';
+        v.textContent=p.c;
+        a.appendChild(v);
+      }
+      list.appendChild(a);
+    });
+  }).catch(function(){});
+})();
+</script>
+<% } %>
+<% if (page.layout === 'post') { %>
+<script>
+(function(){var h=0,s='<%= page.path %>';for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}fetch('https://api.counterapi.dev/v1/growdu-blog/p'+Math.abs(h)+'/up').catch(function(){});})();
+</script>
 <% } %>
 """
 sidebar_done = False
