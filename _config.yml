@@ -19,6 +19,7 @@ public_dir: public
 skip_render:
   - lib/**/*
   - 404.html
+  - manifest.json
 
 # Writing
 new_post_name: :title.md

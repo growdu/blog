@@ -253,6 +253,13 @@ def main():
     print('Created robots.txt')
 
 
+    # PWA manifest
+    manifest_path = os.path.join(SRC, 'manifest.json')
+    with open(manifest_path, 'w', encoding='utf-8') as f:
+        f.write('{"name":"编程之路","short_name":"编程之路","description":"资深后端研发工程师的技术博客","start_url":"/blog/","display":"standalone","background_color":"#ffffff","theme_color":"#009688","lang":"zh-CN"}')
+    print('Created manifest.json')
+
+
     # 404 page
     notfound_path = os.path.join(SRC, '404.html')
     with open(notfound_path, 'w', encoding='utf-8') as f:

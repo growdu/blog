@@ -43,6 +43,9 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <meta property="og:url" content="<%- config.url %><%- url_for(page.path) %>">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="<%= page.title || config.title %>">
+<meta property="og:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
+<meta name="twitter:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
+<link rel="manifest" href="/blog/manifest.json">
 <link rel="canonical" href="<%- config.url %><%- url_for(page.path) %>">
 <% if (page.layout === 'post') { %>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"<%= page.title %>","datePublished":"<%- date(page.date, 'YYYY-MM-DD') %>","author":{"@type":"Person","name":"<%= config.author %>"},"publisher":{"@type":"Organization","name":"<%= config.title %>"},"mainEntityOfPage":{"@type":"WebPage","@id":"<%- config.url %><%- url_for(page.path) %>"}}</script>
