@@ -146,41 +146,6 @@ if os.path.isfile(post_detail):
         print('Saved post-detail.ejs')
 else:
     print('WARNING: post-detail.ejs not found')
-
-# --- 3b. Replace TOC layout with sticky sidebar column (flush against article) ---
-toc_layout_path = os.path.join(theme_dir, 'layout', '_partial', 'post-detail-toc.ejs')
-custom_toc_ejs = """<div class="container">
-    <div class="row">
-        <div class="col s12 m9 l9">
-            <%- partial('_partial/post-detail') %>
-        </div>
-        <div class="col s12 m3 l3">
-            <div class="toc-widget" id="toc-widget">
-                <div class="toc-widget-title"><i class="fas fa-list-ul"></i> 文章目录</div>
-                <div class="toc-widget-body">
-                    <%- toc(page.content, { list_number: false, class: 'toc-nav' }) %>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-<% if (theme.toc && theme.toc.enable && String(page.toc) !== 'false') { %>
-<script>
-(function(){
-    var widget=document.getElementById('toc-widget');
-    if(!widget)return;
-    var links=widget.querySelectorAll('.toc-nav a');
-    var heads=[];
-    links.forEach(function(l){var h=l.getAttribute('href');if(h&&h.charAt(0)==='#'){var el=document.getElementById(h.slice(1));if(el)heads.push({el:el,link:l});}});
-    function spy(){var y=window.scrollY+120;var cur=null;heads.forEach(function(it){if(it.el.offsetTop<=y)cur=it;});links.forEach(function(l){l.classList.remove('active');});if(cur)cur.link.classList.add('active');}
-    window.addEventListener('scroll',spy,{passive:true});spy();
-})();
-</script>
-<% } %>"""
-with open(toc_layout_path, 'w', encoding='utf-8') as f:
-    f.write(custom_toc_ejs)
-print('Replaced post-detail-toc.ejs with sticky TOC sidebar column')
-
 # --- 4. Custom blog styling (subtle, keep original theme colors) ---
 custom_css = """<style id="custom-blog-style">
 /* Article typography */
@@ -235,19 +200,6 @@ custom_css = """<style id="custom-blog-style">
 .hot-sidebar .hot-cat{font-size:11px;color:#888;background:#f5f5f5;padding:1px 6px;border-radius:4px}
 .hot-sidebar .hot-views{font-size:12px;color:#ee5a24;margin-left:auto;display:flex;align-items:center;gap:2px}
 .hot-sidebar .hot-views i{font-size:10px}
-/* Post page padding so content clears both fixed sidebars */
-@media(min-width:1400px){.post-container.content{padding-left:300px!important;padding-right:300px!important}}
-.post-container.content .container{width:100%!important}
-/* TOC sticky sidebar column (flush against article, scrolls with content) */
-.toc-widget{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:0;max-height:calc(100vh - 100px);overflow-y:auto}
-@media(min-width:993px){.toc-widget{position:sticky;top:80px}}
-.toc-widget-title{font-size:15px;font-weight:700;color:#009688;padding:12px 16px;border-bottom:1px solid #eee;display:flex;align-items:center;gap:6px}
-.toc-widget-body{padding:8px 12px}
-.toc-widget-body .toc-nav,.toc-widget-body .toc-nav ol,.toc-widget-body .toc-nav ul{list-style:none;padding:0;margin:0}
-.toc-widget-body .toc-nav ol,.toc-widget-body .toc-nav ul{padding-left:14px}
-.toc-widget-body .toc-nav a{display:block;padding:5px 8px;color:#555;font-size:13px;line-height:1.4;border-radius:4px;transition:all .15s;text-decoration:none;border-left:2px solid transparent}
-.toc-widget-body .toc-nav a:hover{background:#f5f5f5;color:#009688}
-.toc-widget-body .toc-nav a.active{color:#009688;font-weight:600;border-left-color:#009688;background:rgba(0,150,136,.05)}
 @media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
 </style>"""
 
