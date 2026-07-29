@@ -50,13 +50,23 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <% if (page.layout === 'post') { %>
 <meta property="article:author" content="<%= config.author %>">
 <meta property="article:published_time" content="<%- date(page.date, 'YYYY-MM-DD') %>">
+<% if (page.categories && page.categories.data && page.categories.data.length > 0) { %>
+<meta property="article:section" content="<%= page.categories.data[0].name %>">
+<% } %>
+<% if (page.tags && page.tags.data) { %>
+<% page.tags.data.forEach(function(tag) { %>
+<meta property="article:tag" content="<%= tag.name %>">
+<% }); %>
+<% } %>
 <% } %>
 <meta property="og:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
 <meta name="twitter:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
 <link rel="manifest" href="/blog/manifest.json">
 <link rel="canonical" href="<%- config.url %><%- url_for(page.path) %>">
 <% if (page.layout === 'post') { %>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"<%= page.title %>","datePublished":"<%- date(page.date, 'YYYY-MM-DD') %>","author":{"@type":"Person","name":"<%= config.author %>"},"publisher":{"@type":"Organization","name":"<%= config.title %>"},"mainEntityOfPage":{"@type":"WebPage","@id":"<%- config.url %><%- url_for(page.path) %>"}}</script>
+<% var _cat = (page.categories && page.categories.data && page.categories.data.length > 0) ? page.categories.data[0].name : ''; %>
+<% var _tags = (page.tags && page.tags.data) ? page.tags.data.map(function(t) { return t.name; }).join(', ') : ''; %>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"<%= page.title %>","datePublished":"<%- date(page.date, 'YYYY-MM-DD') %>","author":{"@type":"Person","name":"<%= config.author %>"},"publisher":{"@type":"Organization","name":"<%= config.title %>"},"mainEntityOfPage":{"@type":"WebPage","@id":"<%- config.url %><%- url_for(page.path) %>"}<% if (_cat) { %>,"articleSection":"<%= _cat %>"<% } %><% if (_tags) { %>,"keywords":"<%= _tags %>"<% } %>}</script>
 <% } else { %>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"<%= config.title %>","url":"<%- config.url %>"}</script>
 <% } %>
