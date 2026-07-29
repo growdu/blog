@@ -281,6 +281,8 @@ html{scroll-behavior:smooth}
 a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2px}
 /* Print styles */
 @media print{.cat-sidebar,.hot-sidebar,.reading-progress,.nav-wrapper,.bg-cover,footer,.prev-next,.gitalk-card,.related-posts-card,#back-top{display:none!important}#articleContent{font-size:12pt;line-height:1.5}main.content{margin:0!important;width:100%!important}.card{box-shadow:none!important;border:1px solid #ddd}}
+/* Hero typing effect */
+.hero-typing{text-align:center;color:#fff;font-size:18px;margin-top:14px;min-height:27px;text-shadow:0 2px 8px rgba(0,0,0,.4);font-weight:500}
 /* Hero tech badges */
 .hero-tech{display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap}
 .hero-badge{background:rgba(255,255,255,.15);color:#fff;padding:5px 14px;border-radius:20px;font-size:13px;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.2)}
@@ -378,6 +380,23 @@ hero_ejs = """<% if (is_home() && page.current === 1) { %>
     <span class="hero-badge"><i class="fas fa-bolt"></i> DPDK</span>
     <span class="hero-badge"><i class="fas fa-bolt"></i> VPP</span>
 </div>
+<div class="hero-typing" id="typing-text"></div>
+<% } %>
+<% if (is_home() && page.current === 1) { %>
+<script>
+(function(){
+  var texts=['数据库内核开发','分布式系统设计','高性能网络编程','PostgreSQL / openGauss','Raft / DCF 一致性协议'];
+  var idx=0,ci=0,del=false;
+  function type(){
+    var el=document.getElementById('typing-text');
+    if(!el)return;
+    var t=texts[idx];
+    if(del){ci--;el.textContent=t.substring(0,ci);if(ci===0){del=false;idx=(idx+1)%texts.length;setTimeout(type,500);return;}setTimeout(type,40);}
+    else{ci++;el.textContent=t.substring(0,ci);if(ci===t.length){del=true;setTimeout(type,2000);return;}setTimeout(type,90);}
+  }
+  setTimeout(type,1000);
+})();
+</script>
 <% } %>
 """
 hero_injected = False
