@@ -147,38 +147,29 @@ if os.path.isfile(post_detail):
 else:
     print('WARNING: post-detail.ejs not found')
 
-# --- 3b. Replace TOC layout with compact button + dropdown ---
+# --- 3b. Replace TOC layout with sticky sidebar column (flush against article) ---
 toc_layout_path = os.path.join(theme_dir, 'layout', '_partial', 'post-detail-toc.ejs')
 custom_toc_ejs = """<div class="container">
-    <%- partial('_partial/post-detail') %>
-</div>
-<% if (theme.toc && theme.toc.enable && String(page.toc) !== 'false') { %>
-<div id="toc-btn" class="toc-btn" title="目录">
-    <i class="fas fa-list-ul"></i>
-</div>
-<div id="toc-box" class="toc-box">
-    <div class="toc-box-title">文章目录</div>
-    <div class="toc-box-body">
-        <%- toc(page.content, { list_number: false, class: 'toc-nav' }) %>
+    <div class="row">
+        <div class="col s12 m8 l8">
+            <%- partial('_partial/post-detail') %>
+        </div>
+        <div class="col s12 m4 l4">
+            <div class="toc-widget" id="toc-widget">
+                <div class="toc-widget-title">文章目录</div>
+                <div class="toc-widget-body">
+                    <%- toc(page.content, { list_number: false, class: 'toc-nav' }) %>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+<% if (theme.toc && theme.toc.enable && String(page.toc) !== 'false') { %>
 <script>
 (function(){
-    var btn=document.getElementById('toc-btn');
-    var box=document.getElementById('toc-box');
-    if(!btn||!box)return;
-    btn.addEventListener('click',function(e){
-        e.stopPropagation();
-        btn.classList.toggle('active');
-        box.classList.toggle('show');
-    });
-    document.addEventListener('click',function(e){
-        if(!box.contains(e.target)&&!btn.contains(e.target)){
-            btn.classList.remove('active');
-            box.classList.remove('show');
-        }
-    });
-    var links=box.querySelectorAll('.toc-nav a');
+    var widget=document.getElementById('toc-widget');
+    if(!widget)return;
+    var links=widget.querySelectorAll('.toc-nav a');
     var heads=[];
     links.forEach(function(l){var h=l.getAttribute('href');if(h&&h.charAt(0)==='#'){var el=document.getElementById(h.slice(1));if(el)heads.push({el:el,link:l});}});
     function spy(){var y=window.scrollY+120;var cur=null;heads.forEach(function(it){if(it.el.offsetTop<=y)cur=it;});links.forEach(function(l){l.classList.remove('active');});if(cur)cur.link.classList.add('active');}
@@ -188,7 +179,7 @@ custom_toc_ejs = """<div class="container">
 <% } %>"""
 with open(toc_layout_path, 'w', encoding='utf-8') as f:
     f.write(custom_toc_ejs)
-print('Replaced post-detail-toc.ejs with compact TOC button + dropdown')
+print('Replaced post-detail-toc.ejs with sticky TOC sidebar column')
 
 # --- 4. Custom blog styling (subtle, keep original theme colors) ---
 custom_css = """<style id="custom-blog-style">
@@ -245,19 +236,17 @@ custom_css = """<style id="custom-blog-style">
 .hot-sidebar .hot-views{font-size:12px;color:#ee5a24;margin-left:auto;display:flex;align-items:center;gap:2px}
 .hot-sidebar .hot-views i{font-size:10px}
 /* Post page padding so content clears both fixed sidebars */
-@media(min-width:1400px){.post-container.content{padding-right:300px!important}}
-/* TOC compact button (between hot sidebar and back-to-top) + dropdown */
-.toc-btn{position:fixed;right:18px;bottom:80px;width:44px;height:44px;border-radius:50%;background:#fff;border:2px solid #009688;color:#009688;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.12);z-index:200;font-size:16px;transition:all .2s}
-.toc-btn:hover,.toc-btn.active{background:#009688;color:#fff}
-.toc-box{position:fixed;right:18px;bottom:132px;width:300px;max-height:420px;display:none;flex-direction:column;background:#fff;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.15);z-index:200;overflow:hidden}
-.toc-box.show{display:flex}
-.toc-box-title{font-size:14px;font-weight:700;color:#009688;padding:10px 14px;border-bottom:1px solid #eee;flex-shrink:0}
-.toc-box-body{padding:8px 10px;overflow-y:auto;flex:1}
-.toc-box-body .toc-nav,.toc-box-body .toc-nav ol,.toc-box-body .toc-nav ul{list-style:none;padding:0;margin:0}
-.toc-box-body .toc-nav ol,.toc-box-body .toc-nav ul{padding-left:14px}
-.toc-box-body .toc-nav a{display:block;padding:4px 8px;color:#555;font-size:13px;line-height:1.4;border-radius:4px;transition:all .15s;text-decoration:none}
-.toc-box-body .toc-nav a:hover{background:#f5f5f5;color:#009688}
-.toc-box-body .toc-nav a.active{color:#009688;font-weight:600}
+@media(min-width:1400px){.post-container.content{padding-left:300px!important;padding-right:300px!important}}
+/* TOC sticky sidebar column (flush against article, scrolls with content) */
+.toc-widget{background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.06);padding:0;max-height:calc(100vh - 100px);overflow-y:auto}
+@media(min-width:993px){.toc-widget{position:sticky;top:80px}}
+.toc-widget-title{font-size:15px;font-weight:700;color:#009688;padding:12px 16px;border-bottom:1px solid #eee}
+.toc-widget-body{padding:8px 12px}
+.toc-widget-body .toc-nav,.toc-widget-body .toc-nav ol,.toc-widget-body .toc-nav ul{list-style:none;padding:0;margin:0}
+.toc-widget-body .toc-nav ol,.toc-widget-body .toc-nav ul{padding-left:14px}
+.toc-widget-body .toc-nav a{display:block;padding:5px 8px;color:#555;font-size:13px;line-height:1.4;border-radius:4px;transition:all .15s;text-decoration:none;border-left:2px solid transparent}
+.toc-widget-body .toc-nav a:hover{background:#f5f5f5;color:#009688}
+.toc-widget-body .toc-nav a.active{color:#009688;font-weight:600;border-left-color:#009688;background:rgba(0,150,136,.05)}
 @media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
 </style>"""
 
