@@ -176,6 +176,63 @@ if os.path.isfile(post_detail):
         print('Saved post-detail.ejs')
 else:
     print('WARNING: post-detail.ejs not found')
+# --- 3.5. Related posts by category ---
+related_ejs = """<%
+  var related = [];
+  var pageCats = {};
+  if (page.categories && page.categories.data) {
+    page.categories.data.forEach(function(c) { pageCats[c.name] = true; });
+  }
+  if (Object.keys(pageCats).length > 0) {
+    site.posts.data.forEach(function(p) {
+      if (p.path === page.path) return;
+      if (p.categories && p.categories.data) {
+        for (var i = 0; i < p.categories.data.length; i++) {
+          if (pageCats[p.categories.data[i].name]) { related.push(p); break; }
+        }
+      }
+    });
+    related.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+    related = related.slice(0, 6);
+  }
+%>
+<% if (related.length > 0) { %>
+<div class="card related-posts-card" data-aos="fade-up">
+  <div class="card-content">
+    <div class="related-posts-title"><i class="fas fa-link"></i> 相关文章</div>
+    <div class="related-posts-grid">
+      <% related.forEach(function(post) { %>
+      <a href="<%- url_for(post.path) %>" class="related-post-item">
+        <span class="related-post-name"><%= post.title %></span>
+        <span class="related-post-date"><%- date(post.date, 'YYYY-MM-DD') %></span>
+      </a>
+      <% }); %>
+    </div>
+  </div>
+</div>
+<% } %>"""
+
+with open(os.path.join(partial_dir, 'related-posts.ejs'), 'w', encoding='utf-8') as f:
+    f.write(related_ejs)
+print('Created related-posts.ejs')
+
+post_detail = os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs')
+if os.path.isfile(post_detail):
+    with open(post_detail, encoding='utf-8') as f:
+        pd = f.read()
+    if 'related-posts' not in pd:
+        pd = pd.replace(
+            "partial('_partial/gitalk-card')",
+            "partial('_partial/related-posts') %>\n    <%- partial('_partial/gitalk-card')",
+            1,
+        )
+        with open(post_detail, 'w', encoding='utf-8') as f:
+            f.write(pd)
+        print('Injected related-posts before gitalk-card')
+    else:
+        print('related-posts already present')
+else:
+    print('WARNING: post-detail.ejs not found for related-posts')
 # --- 4. Custom blog styling (subtle, keep original theme colors) ---
 custom_css = """<style id="custom-blog-style">
 /* Article typography */
@@ -194,6 +251,14 @@ custom_css = """<style id="custom-blog-style">
 /* Card hover */
 .card{transition:transform .25s ease,box-shadow .25s ease}
 .card:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(0,0,0,.1)}
+/* Related posts */
+.related-posts-card{margin:20px 0}
+.related-posts-title{font-size:18px;font-weight:700;margin-bottom:12px;color:#333}
+.related-posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.related-post-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f9f9f9;border-radius:8px;text-decoration:none;color:#555;transition:background .2s}
+.related-post-item:hover{background:#e8f5e9}
+.related-post-name{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.related-post-date{font-size:12px;color:#aaa;white-space:nowrap;margin-left:8px}
 /* Scrollbar */
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-track{background:#f5f5f5}
