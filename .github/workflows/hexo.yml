@@ -40,6 +40,8 @@ jobs:
           node-version: '22'
       - name: Install Hexo dependencies
         run: npm install
+      - name: Security audit
+        run: npm audit --audit-level=high || true
       - name: Install matery theme
         run: |
           mkdir -p themes

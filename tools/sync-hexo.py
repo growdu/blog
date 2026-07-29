@@ -260,6 +260,13 @@ def main():
     print('Created manifest.json')
 
 
+    # Service worker for offline reading
+    sw_path = os.path.join(SRC, 'sw.js')
+    with open(sw_path, 'w', encoding='utf-8') as f:
+        f.write("""const CACHE='blog-v1';self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));self.addEventListener('fetch',e=>{if(e.request.method!=='GET')return;const u=new URL(e.request.url);if(u.origin!==location.origin)return;if(e.request.headers.get('accept')&&e.request.headers.get('accept').includes('text/html')){e.respondWith(fetch(e.request).then(r=>{const c=r.clone();caches.open(CACHE).then(c=>c.put(e.request,c));return r}).catch(()=>caches.match(e.request)))}else{e.respondWith(caches.match(e.request).then(c=>c||fetch(e.request).then(r=>{const c=r.clone();caches.open(CACHE).then(c=>c.put(e.request,c));return r}).catch(()=>caches.match(e.request))))}});""")
+    print('Created sw.js')
+
+
     # 404 page
     notfound_path = os.path.join(SRC, '404.html')
     with open(notfound_path, 'w', encoding='utf-8') as f:

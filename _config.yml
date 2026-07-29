@@ -20,6 +20,7 @@ skip_render:
   - lib/**/*
   - 404.html
   - manifest.json
+  - sw.js
 
 # Writing
 new_post_name: :title.md
@@ -55,6 +56,12 @@ tag_map:
 # Pagination
 per_page: 20
 pagination_dir: page
+
+# Archive pagination (473 posts - paginate for performance)
+archive_generator:
+  per_page: 20
+  yearly: true
+  monthly: true
 
 # RSS Feed
 feed:

@@ -32,6 +32,7 @@ print('Removed default menu from theme config')
 
 # --- 2. Inject prism.js CSS + Mermaid.js ---
 inject_css = """<meta property="og:title" content="<%= page.title || config.title %>">
+<meta name="theme-color" content="#009688">
 <link rel="preconnect" href="https://api.counterapi.dev">
 <link rel="dns-prefetch" href="https://api.counterapi.dev">
 <link rel="preconnect" href="https://busuanzi.ibruce.info">
@@ -41,8 +42,15 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <meta property="og:site_name" content="<%= config.title %>">
 <meta property="og:type" content="<%= page.layout === 'post' ? 'article' : 'website' %>">
 <meta property="og:url" content="<%- config.url %><%- url_for(page.path) %>">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:description" content="<%= (page.description || config.description || '').replace(/"/g, '&quot;') %>">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="<%= page.title || config.title %>">
+<meta name="twitter:description" content="<%= (page.description || config.description || '').replace(/"/g, '&quot;') %>">
+<% if (page.layout === 'post') { %>
+<meta property="article:author" content="<%= config.author %>">
+<meta property="article:published_time" content="<%- date(page.date, 'YYYY-MM-DD') %>">
+<% } %>
 <meta property="og:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
 <meta name="twitter:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
 <link rel="manifest" href="/blog/manifest.json">
@@ -62,7 +70,8 @@ code[class*="language-"]{font-family:Consolas,Monaco,'Source Code Pro',monospace
 inject_js = """<script src="/blog/lib/prism/prism-core.min.js"></script>
 <script src="/blog/lib/prism/prism-autoloader.min.js"></script>
 <script src="/blog/lib/mermaid/mermaid.min.js"></script>
-<script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>"""
+<script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/blog/sw.js').catch(function(){})}</script>"""
 
 for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
     for fname in files:
