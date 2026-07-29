@@ -2,6 +2,9 @@
 """Localize CDN dependencies in the matery theme for faster China access.
 
 Replaces CDN URLs (jsdelivr/cdnjs/unpkg) with local paths under /blog/lib/.
+Only replaces URLs whose files actually exist in node_modules/ — if a package
+isn't installed, the original CDN URL is kept (graceful fallback).
+
 Generates tools/cdn-manifest.json listing files to copy from node_modules.
 
 Run AFTER patch-theme.py and theme clone, BEFORE sync-hexo.py.
@@ -18,10 +21,7 @@ copies = []  # list of [node_modules_path, source_lib_path]
 
 
 def extract_pkg_file(url_or_path):
-    """Extract (npm_package, file_path) from a CDN URL or versioned npm path.
-
-    Returns None if not a CDN URL or versioned path.
-    """
+    """Extract (npm_package, file_path) from a CDN URL or versioned npm path."""
     s = url_or_path.strip().strip('"\'').strip()
     if not s:
         return None
@@ -84,13 +84,22 @@ def make_copy_instruction(pkg, file_path):
     return [f'node_modules/{pkg}/{file_path}', f'source/lib/{local_name(pkg)}/{file_path}']
 
 
+def file_installed(pkg, file_path):
+    """Check if the file exists in node_modules."""
+    return os.path.isfile(f'node_modules/{pkg}/{file_path}')
+
+
 def process_value(val):
+    """Returns (new_value, changed). Only replaces if file is installed."""
     if not val:
         return val, False
     result = extract_pkg_file(val)
     if not result:
         return val, False
     pkg, file_path = result
+    if not file_installed(pkg, file_path):
+        print(f'  SKIP (not installed): {pkg}/{file_path}')
+        return val, False
     local_url = make_local_url(pkg, file_path)
     ci = make_copy_instruction(pkg, file_path)
     if ci not in copies:
@@ -173,6 +182,8 @@ for root_dir, dirs, files in os.walk(os.path.join(THEME, 'layout')):
                 if not result:
                     return m.group(0)
                 pkg, file_path = result
+                if not file_installed(pkg, file_path):
+                    return m.group(0)
                 local = make_local_url(pkg, file_path)
                 ci = make_copy_instruction(pkg, file_path)
                 if ci not in copies:
