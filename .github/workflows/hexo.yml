@@ -23,6 +23,17 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      - name: Inject Gitalk secret
+        env:
+          GITALK_SECRET: ${{ secrets.GITALK_CLIENT_SECRET }}
+        run: |
+          python3 -c "
+          import os
+          with open('_config.matery.yml','r') as f: c=f.read()
+          c=c.replace('__GITALK_CLIENT_SECRET__',os.environ.get('GITALK_SECRET',''))
+          with open('_config.matery.yml','w') as f: f.write(c)
+          print('Gitalk secret injected' if os.environ.get('GITALK_SECRET') else 'WARNING: GITALK_CLIENT_SECRET not set')
+          "
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -36,6 +47,15 @@ jobs:
           python3 tools/patch-theme.py
       - name: Sync content to Hexo
         run: python3 tools/sync-hexo.py
+      - name: Copy vendor assets
+        run: |
+          mkdir -p source/lib/prism source/lib/mermaid source/lib/gitalk
+          cp node_modules/prismjs/themes/prism-tomorrow.min.css source/lib/prism/
+          cp node_modules/prismjs/components/prism-core.min.js source/lib/prism/
+          cp node_modules/prismjs/plugins/autoloader/prism-autoloader.min.js source/lib/prism/
+          cp node_modules/mermaid/dist/mermaid.min.js source/lib/mermaid/
+          cp node_modules/gitalk/dist/gitalk.css source/lib/gitalk/
+          cp node_modules/gitalk/dist/gitalk.min.js source/lib/gitalk/
       - name: Build with Hexo
         run: npx hexo generate
       - name: Initialize Gitalk issues

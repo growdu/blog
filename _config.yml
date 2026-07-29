@@ -16,6 +16,8 @@ permalink_defaults:
 source_dir: source
 public_dir: public
 skip_render:
+  - lib/**/*
+  - 404.html
 
 # Writing
 new_post_name: :title.md
@@ -52,6 +54,14 @@ tag_map:
 per_page: 20
 pagination_dir: page
 
+# RSS Feed
+feed:
+  enable: true
+  type: atom
+  path: atom.xml
+  limit: 20
+  content: true
+
 # Extensions
 theme: matery
 
@@ -66,7 +76,7 @@ search:
 marked:
   prependRoot: true
   postAsset: false
-  lazyload: false
+  lazyload: true
 
 # Include/Exclude
 include:

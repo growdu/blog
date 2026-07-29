@@ -245,6 +245,51 @@ def main():
                     print(f'ERROR {fp}: {e}', file=sys.stderr)
     print(f'Posts: {n}')
 
+
+    # robots.txt for SEO
+    robots_path = os.path.join(SRC, 'robots.txt')
+    with open(robots_path, 'w', encoding='utf-8') as f:
+        f.write('User-agent: *\nAllow: /\n\nSitemap: https://growdu.github.io/blog/sitemap.xml\n')
+    print('Created robots.txt')
+
+
+    # 404 page
+    notfound_path = os.path.join(SRC, '404.html')
+    with open(notfound_path, 'w', encoding='utf-8') as f:
+        f.write("""<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>404</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#f5f7fa,#c3cfe2);font-family:sans-serif}.box{text-align:center;padding:48px 40px;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.1)}h1{font-size:80px;color:#009688;font-weight:800}p{color:#666;margin:16px 0 24px}a{display:inline-block;padding:10px 28px;background:#009688;color:#fff;text-decoration:none;border-radius:24px;font-weight:600}</style>
+</head><body><div class="box"><h1>404</h1><p>抱歉，您访问的页面不存在</p><a href="/blog/">返回首页</a></div></body></html>""")
+    print('Created 404.html')
+
+    # Database landing page
+    db_path = os.path.join(SRC, 'database', 'index.md')
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    db_md = """---
+title: 数据库专题
+date: 2025-04-16 00:00:00
+type: "database"
+---
+
+# 数据库专题
+
+本站数据库方向文章涵盖以下领域：
+
+| 方向 | 说明 |
+|------|------|
+| [数据库深入](/blog/categories/数据库深入/) | 数据库原理、架构与深度分析 |
+| [PostgreSQL](/blog/categories/PostgreSQL/) | PostgreSQL 内核与运维 |
+| [openGauss](/blog/categories/openGauss/) | openGauss DCF、逻辑解码等 |
+| [存储](/blog/categories/存储/) | 存储引擎与分布式存储 |
+| [OPC](/blog/categories/OPC/) | OPC 相关技术 |
+
+> 后续将持续更新数据库内核、性能优化、分布式架构等方向的文章。
+"""
+    with open(db_path, 'w', encoding='utf-8') as f:
+        f.write(db_md)
+    print('Created database landing page')
+
     create_theme_pages()
     print('Theme pages created')
 

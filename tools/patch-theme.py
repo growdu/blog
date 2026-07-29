@@ -31,16 +31,22 @@ with open(path, 'w', encoding='utf-8') as f:
 print('Removed default menu from theme config')
 
 # --- 2. Inject prism.js CSS + Mermaid.js ---
-inject_css = """<link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet"/>
+inject_css = """<meta property="og:title" content="<%= page.title || config.title %>">
+<meta property="og:site_name" content="<%= config.title %>">
+<meta property="og:type" content="<%= page.layout === 'post' ? 'article' : 'website' %>">
+<meta property="og:url" content="<%- config.url %><%- url_for(page.path) %>">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="<%= page.title || config.title %>">
+<link href="/blog/lib/prism/prism-tomorrow.min.css" rel="stylesheet"/>
 <style>
 pre[class*="language-"]{background:#282c34!important;border-radius:8px;padding:16px;font-size:14px;margin:16px 0;overflow-x:auto}
 code[class*="language-"]{font-family:Consolas,Monaco,'Source Code Pro',monospace}
 .mermaid{text-align:center;margin:16px 0}
 </style>"""
 
-inject_js = """<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-core.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+inject_js = """<script src="/blog/lib/prism/prism-core.min.js"></script>
+<script src="/blog/lib/prism/prism-autoloader.min.js"></script>
+<script src="/blog/lib/mermaid/mermaid.min.js"></script>
 <script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>"""
 
 for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
@@ -54,7 +60,7 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
         if '</head>' in c and 'prism-tomorrow' not in c:
             c = c.replace('</head>', inject_css + '\n</head>', 1)
             changed = True
-        if '</body>' in c and 'mermaid@10' not in c:
+        if '</body>' in c and 'mermaid.min.js' not in c:
             c = c.replace('</body>', inject_js + '\n</body>', 1)
             changed = True
         if changed:
@@ -80,9 +86,9 @@ gitalk_card_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
 <div class="card" data-aos="fade-up">
   <div class="card-content">
     <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.css">
+    <link rel="stylesheet" href="/blog/lib/gitalk/gitalk.css">
     <div id="gitalk-container" data-gitalk-id="<%= gitalkId %>" data-gitalk-title="<%= page.title %>"></div>
-    <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>
+    <script src="/blog/lib/gitalk/gitalk.min.js"></script>
     <script>
       var gitalk = new Gitalk({
         clientID: '<%= theme.gitalk.clientID %>',

@@ -11,6 +11,9 @@ menu:
   分类:
     url: /categories/
     icon: fa-solid fa-bookmark
+  数据库:
+    url: /database/
+    icon: fa-solid fa-database
   标签:
     url: /tags/
     icon: fa-solid fa-tags
@@ -60,7 +63,7 @@ video:
 gitalk:
   enable: true
   clientID: "Ov23liyvdyO0U0lfqI2u"
-  clientSecret: "0b6a22638f15a739479a28a276c745056866d44d"
+  clientSecret: "__GITALK_CLIENT_SECRET__"
   repo: blog
   owner: growdu
 
