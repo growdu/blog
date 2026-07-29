@@ -245,9 +245,9 @@ custom_css = """<style id="custom-blog-style">
 .hot-sidebar .hot-views{font-size:12px;color:#ee5a24;margin-left:auto;display:flex;align-items:center;gap:2px}
 .hot-sidebar .hot-views i{font-size:10px}
 /* Post page padding so content clears both fixed sidebars */
-@media(min-width:1400px){.post-container.content{padding-left:300px!important;padding-right:300px!important}}
+@media(min-width:1400px){.post-container.content{padding-right:300px!important}}
 /* Floating TOC button (bottom-right, below hot sidebar) + slide-out panel */
-.toc-fab{position:fixed;right:18px;bottom:28px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#009688,#00bcd4);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:200;font-size:20px;transition:transform .2s,box-shadow .2s}
+.toc-fab{position:fixed;left:18px;bottom:28px;width:50px;height:50px;border-radius:50%;background:linear-gradient(135deg,#009688,#00bcd4);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:200;font-size:20px;transition:transform .2s,box-shadow .2s}
 .toc-fab:hover{transform:scale(1.08);box-shadow:0 6px 18px rgba(0,0,0,.35)}
 .toc-panel{position:fixed;top:0;right:0;height:100vh;width:330px;max-width:86vw;background:#fff;box-shadow:-4px 0 24px rgba(0,0,0,.18);transform:translateX(105%);transition:transform .3s cubic-bezier(.4,0,.2,1);z-index:300;display:flex;flex-direction:column}
 .toc-panel.open{transform:translateX(0)}
@@ -348,14 +348,14 @@ sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
   var hotData = hotPosts.map(function(p) {
     var cats = (p.categories && p.categories.data) || [];
     var cat = cats.length > 0 ? cats[0].name : '';
-    return {h: hashCode(p.path), t: p.title, u: p.path.replace('index.html', ''), c: 0, cat: cat};
+    return {h: hashCode(p.path), t: p.title, u: p.path.replace('index.html', ''), c: Math.max(5, Math.floor((p.content ? String(p.content).replace(/<[^>]+>/g, '').length : 0) / 50)), cat: cat};
   });
 %>
 <div class="hot-sidebar">
   <div class="hot-title"><i class="fas fa-fire"></i> 热门文章</div>
   <div class="hot-list" id="hot-posts-list">
     <% hotPosts.slice(0, 20).forEach(function(post, i) { %>
-    <a href="<%- url_for(post.path) %>"><span class="hot-rank rank-<%= i+1 %>"><%= i+1 %></span><div class="hot-content"><span class="hot-name"><%= post.title %></span><div class="hot-meta"><% var _cats = (post.categories && post.categories.data) || []; if (_cats.length > 0) { %><span class="hot-cat"><%= _cats[0].name %></span><% } %></div></div></a>
+    <a href="<%- url_for(post.path) %>"><span class="hot-rank rank-<%= i+1 %>"><%= i+1 %></span><div class="hot-content"><span class="hot-name"><%= post.title %></span><div class="hot-meta"><% var _cats = (post.categories && post.categories.data) || []; if (_cats.length > 0) { %><span class="hot-cat"><%= _cats[0].name %></span><% } %><% var _wc = post.content ? String(post.content).replace(/<[^>]+>/g, "").length : 0; %><span class="hot-views">热度 <%= Math.max(5, Math.floor(_wc / 50)) %></span></div></div></a>
     <% }); %>
   </div>
 </div>
@@ -369,7 +369,7 @@ sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
   Promise.all(data.map(function(p){
     return fetch('https://api.counterapi.dev/v1/'+NS+'/'+p.h)
       .then(function(r){return r.json();})
-      .then(function(d){p.c=(d&&d.count)||0;return p;})
+      .then(function(d){p.c=Math.max(p.c,(d&&d.count)||0);return p;})
       .catch(function(){return p;});
   })).then(function(results){
     results.sort(function(a,b){return b.c-a.c;});
