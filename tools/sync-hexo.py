@@ -197,22 +197,103 @@ date: 2026-07-29 00:00:00
 
 资深后端研发工程师，专注数据库内核与分布式系统。深耕 PostgreSQL/openGauss 内核开发，熟悉 DCF、Raft 等一致性协议，对 DPDK/VPP 高性能数据面有丰富实践经验。热爱技术分享，记录编程之路的每一步。
 
-## 技术领域
+## GitHub 数据
 
-- **数据库内核**: 深耕 PostgreSQL/openGauss 内核开发，涉及存储引擎、查询优化、事务管理、逻辑解码等
-- **分布式系统**: 熟悉 DCF、Raft 等一致性协议，设计并实现高可用集群方案
-- **高性能网络**: 对 DPDK/VPP 数据面有丰富实践经验
-- **编程语言**: C/C++ 为主，兼顾 Python、Shell 等
+<div id="gh-stats" class="gh-stats">
+  <div class="gh-stat"><div class="gh-stat-num">--</div><div class="gh-stat-label">加载中</div></div>
+</div>
+<script>
+fetch('https://api.github.com/users/growdu')
+  .then(function(r){return r.json()})
+  .then(function(d){
+    var el=document.getElementById('gh-stats');
+    if(el&&d) el.innerHTML=
+      '<div class="gh-stat"><div class="gh-stat-num">'+d.public_repos+'</div><div class="gh-stat-label">公开仓库</div></div>'+
+      '<div class="gh-stat"><div class="gh-stat-num">'+d.followers+'</div><div class="gh-stat-label">关注者</div></div>'+
+      '<div class="gh-stat"><div class="gh-stat-num">'+d.following+'</div><div class="gh-stat-label">关注中</div></div>'+
+      '<div class="gh-stat"><div class="gh-stat-num">'+(d.created_at?d.created_at.substring(0,4):'--')+'</div><div class="gh-stat-label">加入GitHub</div></div>';
+  })
+  .catch(function(){});
+</script>
 
-## 技能标签
+## 技术栈
 
-PostgreSQL | openGauss | 分布式系统 | Raft/DCF | C/C++ | DPDK | VPP | Linux | 高可用架构
+<div class="skill-bar">
+  <div class="skill-row"><span>PostgreSQL / openGauss 内核开发</span><span>95%</span></div>
+  <div class="skill-track"><div class="skill-fill" style="width:95%"></div></div>
+</div>
+<div class="skill-bar">
+  <div class="skill-row"><span>分布式一致性协议 (Raft / DCF)</span><span>90%</span></div>
+  <div class="skill-track"><div class="skill-fill" style="width:90%"></div></div>
+</div>
+<div class="skill-bar">
+  <div class="skill-row"><span>C / C++ 系统编程</span><span>90%</span></div>
+  <div class="skill-track"><div class="skill-fill" style="width:90%"></div></div>
+</div>
+<div class="skill-bar">
+  <div class="skill-row"><span>DPDK / VPP 高性能数据面</span><span>85%</span></div>
+  <div class="skill-track"><div class="skill-fill" style="width:85%"></div></div>
+</div>
+<div class="skill-bar">
+  <div class="skill-row"><span>Linux 系统与网络编程</span><span>88%</span></div>
+  <div class="skill-track"><div class="skill-fill" style="width:88%"></div></div>
+</div>
+<div class="skill-bar">
+  <div class="skill-row"><span>高可用集群架构设计</span><span>85%</span></div>
+  <div class="skill-track"><div class="skill-fill" style="width:85%"></div></div>
+</div>
+<div class="skill-bar">
+  <div class="skill-row"><span>Python / Shell 自动化</span><span>80%</span></div>
+  <div class="skill-track"><div class="skill-fill" style="width:80%"></div></div>
+</div>
+
+## 重点项目
+
+<div class="project-card">
+  <div>
+    <div class="proj-name">openGauss DCF 分布式一致性框架</div>
+    <div class="proj-desc">深度参与 openGauss DCF (Distributed Consensus Framework) 模块开发，涉及投票系统、写入机制、运行机制等核心组件</div>
+  </div>
+</div>
+<div class="project-card">
+  <div>
+    <div class="proj-name">逻辑解码 DDL Replay 框架</div>
+    <div class="proj-desc">设计并实现逻辑解码 DDL 重放框架，支持 DDL 操作的逻辑复制</div>
+  </div>
+</div>
+<div class="project-card">
+  <div>
+    <div class="proj-name">oh-my-search 搜索引擎</div>
+    <div class="proj-desc">基于 Elasticsearch 构建的搜索解决方案</div>
+  </div>
+</div>
+<div class="project-card">
+  <div>
+    <div class="proj-name">Corosync / Pacemaker 高可用集群</div>
+    <div class="proj-desc">深入研究并实践 Corosync 仲裁系统、Pacemaker 集群资源管理，涉及 QDevice、Totem 协议等</div>
+  </div>
+</div>
+
+## 编程之路
+
+<div class="timeline-item">
+  <div class="timeline-date">持续更新</div>
+  <div>数据库内核开发、分布式系统设计、高性能网络编程的持续学习与实践</div>
+</div>
+<div class="timeline-item">
+  <div class="timeline-date">核心技术方向</div>
+  <div>PostgreSQL/openGauss 内核、DCF/Raft 一致性协议、DPDK/VPP 数据面、高可用架构</div>
+</div>
+<div class="timeline-item">
+  <div class="timeline-date">知识沉淀</div>
+  <div>473+ 篇技术笔记，涵盖数据库、分布式系统、算法、网络、编程基础等领域</div>
+</div>
 
 ## 联系方式
 
-- GitHub: https://github.com/growdu
-- Email: growdu@gmail.com
-- QQ: 2689304284
+- **GitHub**: https://github.com/growdu
+- **Email**: growdu@gmail.com
+- **QQ**: 2689304284
 
 ## 关于本博客
 

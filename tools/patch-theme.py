@@ -276,6 +276,27 @@ custom_css = """<style id="custom-blog-style">
 ::-webkit-scrollbar-thumb:hover{background:#999}
 /* Print styles */
 @media print{.cat-sidebar,.hot-sidebar,.reading-progress,.nav-wrapper,.bg-cover,footer,.prev-next,.gitalk-card,.related-posts-card,#back-top{display:none!important}#articleContent{font-size:12pt;line-height:1.5}main.content{margin:0!important;width:100%!important}.card{box-shadow:none!important;border:1px solid #ddd}}
+/* Hero tech badges */
+.hero-tech{display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+.hero-badge{background:rgba(255,255,255,.15);color:#fff;padding:5px 14px;border-radius:20px;font-size:13px;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.2)}
+/* Skill bars */
+.skill-bar{margin:10px 0}
+.skill-bar .skill-row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
+.skill-bar .skill-track{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+.skill-bar .skill-fill{height:100%;background:linear-gradient(90deg,#009688,#00bcd4);border-radius:4px;transition:width .8s ease}
+/* GitHub stats card */
+.gh-stats{display:flex;gap:16px;margin:20px 0;flex-wrap:wrap}
+.gh-stat{flex:1;min-width:100px;text-align:center;padding:16px;background:#f5f5f5;border-radius:10px}
+.gh-stat-num{font-size:24px;font-weight:700;color:#009688}
+.gh-stat-label{font-size:13px;color:#666;margin-top:4px}
+/* About page project cards */
+.project-card{display:flex;gap:12px;padding:14px;margin:8px 0;background:#f9f9f9;border-radius:8px;border-left:3px solid #009688}
+.project-card .proj-name{font-weight:600;font-size:15px}
+.project-card .proj-desc{font-size:13px;color:#666;margin-top:4px}
+/* Timeline */
+.timeline-item{position:relative;padding-left:24px;margin:12px 0;border-left:2px solid #e0e0e0}
+.timeline-item::before{content:'';position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:#009688}
+.timeline-date{font-size:13px;color:#009688;font-weight:600}
 /* Hero statistics */
 .hero-stats{display:flex;justify-content:center;gap:48px;margin-top:28px}
 .hero-stats .hero-stat{text-align:center;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)}
@@ -345,6 +366,13 @@ hero_ejs = """<% if (is_home() && page.current === 1) { %>
     <div class="hero-stat"><div class="hero-stat-num"><%= site.categories.length %></div><div class="hero-stat-label">分类</div></div>
     <div class="hero-stat"><div class="hero-stat-num"><%= site.tags.length %></div><div class="hero-stat-label">标签</div></div>
 </div>
+<div class="hero-tech">
+    <span class="hero-badge"><i class="fas fa-database"></i> PostgreSQL</span>
+    <span class="hero-badge"><i class="fas fa-database"></i> openGauss</span>
+    <span class="hero-badge"><i class="fas fa-sitemap"></i> 分布式系统</span>
+    <span class="hero-badge"><i class="fas fa-bolt"></i> DPDK</span>
+    <span class="hero-badge"><i class="fas fa-bolt"></i> VPP</span>
+</div>
 <% } %>
 """
 hero_injected = False
@@ -372,8 +400,9 @@ sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
 <div class="cat-sidebar">
   <div class="cat-title"><i class="fas fa-folder-tree"></i> 分类导航</div>
   <div class="cat-list">
+    <% var _ci={'数据库':'fa-database','数据库深入':'fa-database','PostgreSQL':'fa-database','openGauss':'fa-database','存储':'fa-hard-drive','分布式':'fa-sitemap','算法':'fa-calculator','集群':'fa-server','网络':'fa-network-wired','AI':'fa-robot','ChatGPT':'fa-comments','DPDK':'fa-bolt','VPP':'fa-bolt','编程基础':'fa-code','Linux':'fa-terminal','Docker':'fab fa-docker','工具':'fa-toolbox','协议':'fa-handshake','C语言':'fa-code','Python':'fa-code','Go':'fa-code','前端':'fa-laptop-code','汇编':'fa-microchip','GUI':'fa-window-restore','视频':'fa-video','邮件':'fa-envelope','环境':'fa-cog','FAQ':'fa-question-circle','路径':'fa-road','wiki':'fa-book','股票':'fa-chart-line','OPC':'fa-microchip','page':'fa-file','pcap':'fa-wireshark','web':'fa-globe'}; %>
     <% site.categories.each(function(category) { %>
-    <a href="<%- url_for(category.path) %>"><i class="fas fa-folder"></i><span><%- category.name %></span><span class="cat-count"><%= category.posts.length %></span></a>
+    <a href="<%- url_for(category.path) %>"><i class="fas <%- _ci[category.name] || 'fa-folder' %>"></i><span><%- category.name %></span><span class="cat-count"><%= category.posts.length %></span></a>
     <% }); %>
   </div>
 </div>
