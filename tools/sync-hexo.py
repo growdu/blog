@@ -340,6 +340,12 @@ def main():
         f.write('{"name":"编程之路","short_name":"编程之路","description":"资深后端研发工程师的技术博客","start_url":"/blog/","display":"standalone","background_color":"#ffffff","theme_color":"#009688","lang":"zh-CN"}')
     print('Created manifest.json')
 
+    # Custom SVG favicon (database icon)
+    favicon_path = os.path.join(SRC, 'favicon.svg')
+    with open(favicon_path, 'w', encoding='utf-8') as f:
+        f.write('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="#009688"/><ellipse cx="32" cy="18" rx="16" ry="6" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M16 18v14a16 6 0 0 0 32 0V18" fill="none" stroke="#fff" stroke-width="2.5"/><path d="M16 32v14a16 6 0 0 0 32 0V32" fill="none" stroke="#fff" stroke-width="2.5"/></svg>')
+    print('Created favicon.svg')
+
 
     # Service worker for offline reading
     sw_path = os.path.join(SRC, 'sw.js')

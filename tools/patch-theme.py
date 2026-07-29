@@ -62,6 +62,7 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <meta property="og:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
 <meta name="twitter:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
 <link rel="manifest" href="/blog/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/blog/favicon.svg">
 <link rel="canonical" href="<%- config.url %><%- url_for(page.path) %>">
 <% if (page.layout === 'post') { %>
 <% var _cat = (page.categories && page.categories.data && page.categories.data.length > 0) ? page.categories.data[0].name : ''; %>
@@ -274,6 +275,10 @@ custom_css = """<style id="custom-blog-style">
 ::-webkit-scrollbar-track{background:#f5f5f5}
 ::-webkit-scrollbar-thumb{background:#bbb;border-radius:4px}
 ::-webkit-scrollbar-thumb:hover{background:#999}
+/* Selection & scroll polish */
+::selection{background:#009688;color:#fff}
+html{scroll-behavior:smooth}
+a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2px}
 /* Print styles */
 @media print{.cat-sidebar,.hot-sidebar,.reading-progress,.nav-wrapper,.bg-cover,footer,.prev-next,.gitalk-card,.related-posts-card,#back-top{display:none!important}#articleContent{font-size:12pt;line-height:1.5}main.content{margin:0!important;width:100%!important}.card{box-shadow:none!important;border:1px solid #ddd}}
 /* Hero tech badges */
