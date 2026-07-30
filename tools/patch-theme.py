@@ -116,6 +116,7 @@ code[class*="language-"]{font-family:Consolas,Monaco,'Source Code Pro',monospace
 
 inject_js = """<script src="/blog/lib/prism/prism-core.min.js"></script>
 <script src="/blog/lib/prism/prism-autoloader.min.js"></script>
+<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/blog/lib/prism/components/';}</script>
 <script src="/blog/lib/mermaid/mermaid.min.js"></script>
 <script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/blog/sw.js').catch(function(){})}</script>"""

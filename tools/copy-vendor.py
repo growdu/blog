@@ -25,6 +25,8 @@ FIXED = [
 
 # Directories to copy (fontawesome webfonts referenced by all.min.css)
 FIXED_DIRS = [
+    ('node_modules/prismjs/components', f'{LIB}/prism/components'),
+
     ('node_modules/@fortawesome/fontawesome-free/webfonts', f'{LIB}/fontawesome-free/webfonts'),
 ]
 
