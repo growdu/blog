@@ -44,6 +44,28 @@ if os.path.isfile(src_logo):
 else:
     print(f'WARNING: {src_logo} not found, logo not replaced', file=sys.stderr)
 
+# --- 1.6. Publish computer-themed cover/banner/feature images ---
+# The default matery theme ships nature photos (pegasi, snow mountains,
+# deserts, ...).  We replace them with computer-industry images generated
+# into ./theme-assets/ so the hero, banner rotation and post thumbnails
+# fit the database-kernel focus of the blog.
+THEME_ASSETS_DIR = 'theme-assets'
+MEDIAS = os.path.join(theme_dir, 'source', 'medias')
+if os.path.isdir(THEME_ASSETS_DIR):
+    os.makedirs(MEDIAS, exist_ok=True)
+    n_copied = 0
+    for root, _, files in os.walk(THEME_ASSETS_DIR):
+        for f in files:
+            src = os.path.join(root, f)
+            rel = os.path.relpath(src, THEME_ASSETS_DIR)
+            dst = os.path.join(MEDIAS, rel)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            shutil.copy2(src, dst)
+            n_copied += 1
+    print(f'Published {n_copied} theme assets into {os.path.relpath(MEDIAS, theme_dir)}')
+else:
+    print(f'WARNING: {THEME_ASSETS_DIR} not found, theme assets not published', file=sys.stderr)
+
 # --- 2. Inject prism.js CSS + Mermaid.js ---
 inject_css = """<meta property="og:title" content="<%= page.title || config.title %>">
 <meta name="theme-color" content="#009688">
