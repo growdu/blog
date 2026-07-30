@@ -131,7 +131,7 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
         if '</head>' in c and 'prism-tomorrow' not in c:
             c = c.replace('</head>', inject_css + '\n</head>', 1)
             changed = True
-        if '</body>' in c and 'mermaid.min.js' not in c:
+        if '</body>' in c and '/blog/lib/prism/prism-core.min.js' not in c:
             c = c.replace('</body>', inject_js + '\n</body>', 1)
             changed = True
         if changed:
