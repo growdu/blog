@@ -109,8 +109,9 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <% } %>
 <link href="/blog/lib/prism/prism-tomorrow.min.css" rel="stylesheet"/>
 <style>
-pre[class*="language-"]{background:#282c34!important;border-radius:8px;padding:16px;font-size:14px;margin:16px 0;overflow-x:auto}
-code[class*="language-"]{font-family:Consolas,Monaco,'Source Code Pro',monospace}
+pre[class*="language-"]{background:#263238!important;border-radius:6px;padding:14px 16px;font-size:14px;margin:16px 0;overflow-x:auto;line-height:1.55}
+code[class*="language-"]{background:transparent!important;padding:0;font-family:Consolas,Monaco,'Source Code Pro',monospace;font-size:14px}
+:not(pre)>code[class*="language-"]{background:#f5f5f5!important;padding:2px 6px;border-radius:4px}
 .mermaid{text-align:center;margin:16px 0}
 </style>"""
 
@@ -289,7 +290,8 @@ custom_css = """<style id="custom-blog-style">
 #articleContent h2{margin-top:1.8em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:2px solid #e0e0e0;font-weight:700}
 #articleContent h3{margin-top:1.5em;margin-bottom:.6em;font-weight:600}
 #articleContent blockquote{border-left:4px solid #009688;background:#f5f5f5;padding:12px 20px;margin:16px 0;border-radius:0 8px 8px 0;color:#666}
-#articleContent code{background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:.9em}
+#articleContent :not(pre)>code{background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:.9em}
+#articleContent pre>code{background:transparent;padding:0;font-size:inherit;border-radius:0}
 #articleContent table{width:100%;border-collapse:collapse;margin:16px 0;display:block;overflow-x:auto}
 #articleContent th,#articleContent td{border:1px solid #e0e0e0;padding:8px 12px;text-align:left}
 #articleContent th{background:#f5f5f5;font-weight:600}
