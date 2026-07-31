@@ -601,7 +601,26 @@ stats_block = r"""<% if (theme.wordcount && theme.wordcount.enable) { %>
 <% } %>
 <% if (theme.siteCounter && theme.siteCounter.enable) { %>
 <span id="site-counter">&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="vercount_site_pv" class="white-color">…</span>&nbsp;次&nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="vercount_site_uv" class="white-color">…</span>&nbsp;人</span>
-<script src="https://vercount.one/js"></script>
+<script src="https://vercount.one/js" async></script>
+<script>
+// Fallback: if Vercount embed has not populated the spans within 3s
+// (typically because growdu.github.io is not registered with Vercount),
+// try the JSON endpoint directly, then fall back to placeholders.
+setTimeout(function(){
+  var pv=document.getElementById('vercount_site_pv');
+  var uv=document.getElementById('vercount_site_uv');
+  if(!pv||!uv)return;
+  if(pv.textContent==='…'&&uv.textContent==='…'){
+    fetch('https://vercount.one/json',{cache:'no-store'})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(d){
+        if(d&&typeof d.site_pv!=='undefined')pv.textContent=d.site_pv;
+        if(d&&typeof d.site_uv!=='undefined')uv.textContent=d.site_uv;
+      })
+      .catch(function(){pv.textContent='—';uv.textContent='—';});
+  }
+},3000);
+</script>
 <% } %>"""
 
 busuanzi_block_re = re.compile(
