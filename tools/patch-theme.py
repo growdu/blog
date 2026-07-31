@@ -596,3 +596,64 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
             break
 if not sidebar_done:
     print('WARNING: could not inject sidebars')
+
+
+# --- 6. Replace busuanzi counter with self-hosted PV/UV ---
+# matery's default footer.ejs loads //busuanzi.ibruce.info/... which is
+# frequently blocked or returns empty data from mainland China networks.
+# We strip the busuanzi conditional block and inject a self-contained
+# counter backed by api.counterapi.dev.  PV increments on every page
+# load; UV increments once per visitor per day (keyed by UTC date in
+# localStorage).  Word-count total is handled separately by the
+# hexo-wordcount plugin (configured in _config.matery.yml).
+site_counter_block = r'''<% if (theme.siteCounter && theme.siteCounter.enable) { %>
+<div id="site-counter">
+    &nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="site-pv" class="white-color">…</span>&nbsp;次
+    &nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="site-uv" class="white-color">…</span>&nbsp;人
+</div>
+<script>
+(function(){
+    var NS=<%- JSON.stringify(theme.siteCounter.namespace || 'growdu-blog') %>;
+    var PV_KEY=<%- JSON.stringify(theme.siteCounter.pvKey || 'site-pv') %>;
+    var UV_KEY=<%- JSON.stringify(theme.siteCounter.uvKey || 'site-uv') %>;
+    var API='https://api.counterapi.dev/v1/'+NS+'/';
+    function setVal(id,v){var el=document.getElementById(id);if(el)el.textContent=(v==null||isNaN(v))?'0':v;}
+    fetch(API+PV_KEY+'/up',{method:'POST'}).catch(function(){});
+    fetch(API+PV_KEY).then(function(r){return r.json();}).then(function(d){setVal('site-pv',d&&d.count);}).catch(function(){setVal('site-pv',0);});
+    var stamp='growdu-blog-uv-'+new Date().toISOString().slice(0,10);
+    var fresh=false;
+    try{if(!localStorage.getItem(stamp)){localStorage.setItem(stamp,'1');fresh=true;}}catch(e){}
+    if(fresh)fetch(API+UV_KEY+'/up',{method:'POST'}).catch(function(){});
+    fetch(API+UV_KEY).then(function(r){return r.json();}).then(function(d){setVal('site-uv',d&&d.count);}).catch(function(){setVal('site-uv',0);});
+})();
+</script>
+<% } %>'''
+
+counter_done = False
+busuanzi_block_re = re.compile(
+    r'<%\s*if\s*\(\s*theme\.busuanziStatistics[\s\S]*?%>[\s\S]*?<%\s*}\s*%>',
+    flags=re.MULTILINE,
+)
+for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
+    if counter_done:
+        break
+    for fname in files:
+        if not fname.endswith('.ejs'):
+            continue
+        fpath = os.path.join(root, fname)
+        with open(fpath, encoding='utf-8') as f:
+            c = f.read()
+        if 'site-counter' in c:
+            counter_done = True
+            break
+        new_c = busuanzi_block_re.sub('', c)
+        if new_c == c and 'busuanzi' not in c.lower():
+            continue
+        new_c = new_c.rstrip() + '\n' + site_counter_block
+        with open(fpath, 'w', encoding='utf-8') as f:
+            f.write(new_c)
+        print(f'Replaced busuanzi with site-counter in {os.path.relpath(fpath, theme_dir)}')
+        counter_done = True
+        break
+if not counter_done:
+    print('WARNING: could not install site-counter')

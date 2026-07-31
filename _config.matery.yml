@@ -104,9 +104,26 @@ github:
   enable: true
   url: https://github.com/growdu
 
-# Busuanzi visitor statistics (site-level PV/UV)
-busuanziStatistics:
+# Hexo word count plugin (provides 站点总字数 in the footer)
+wordcount:
   enable: true
+  post_wordcount: true
+
+# Site-level PV/UV via api.counterapi.dev (replaces busuanzi.ibruce.info
+# which is frequently blocked / slow from mainland China networks).
+# PV increments on every page load; UV increments once per visitor per day
+# via localStorage.
+siteCounter:
+  enable: true
+  namespace: growdu-blog
+  pvKey: site-pv
+  uvKey: site-uv
+
+# Backwards-compatible flag kept so the theme's default footer.ejs does not
+# try to load the busuanzi.pure.mini.js script (we inject our own counter).
+busuanziStatistics:
+  enable: false
+
 postInfo:
   readCount: true
 
