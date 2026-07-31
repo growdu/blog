@@ -675,4 +675,21 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
         counter_done = True
         break
 if not counter_done:
-    print('WARNING: could not inject wordcount + site-counter into any .ejs file')
+    # Fallback: if we didn't find any busuanzi reference, the theme may
+    # have dropped it (or uses an unusual key).  Inject the stats block
+    # into the conventional footer location directly so the user still
+    # sees 总字数 / PV / UV regardless.
+    fallback = os.path.join(theme_dir, 'layout', '_partial', 'footer.ejs')
+    if os.path.isfile(fallback):
+        with open(fallback, encoding='utf-8') as f:
+            c2 = f.read()
+        if 'site-counter' not in c2:
+            c2 = c2.rstrip() + '\n' + stats_block
+            with open(fallback, 'w', encoding='utf-8') as f:
+                f.write(c2)
+            print(f'Fallback: injected stats into {os.path.relpath(fallback, theme_dir)}')
+            counter_done = True
+        else:
+            print('Fallback skipped: site-counter already present')
+    else:
+        print('WARNING: could not inject stats into any .ejs file (no footer.ejs)')
