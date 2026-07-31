@@ -124,6 +124,8 @@ busuanziStatistics:
 
 postInfo:
   readCount: true
+  wordCount: true
+  min2read: true
 
 # Table of contents on post pages (floating button + slide-out panel)
 toc:

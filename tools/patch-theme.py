@@ -677,3 +677,96 @@ else:
 if busuanzi_removed:
     print('Removed busuanzi from: ' + ', '.join(busuanzi_removed))
 
+
+# --- 7. Per-post wordcount + reading time + single-page PV ---
+# matery's default post-detail.ejs calls partial('_partial/post-meta')
+# which by default renders date / categories / tags / readCount, but
+# does NOT print the article word count or estimated reading time —
+# hexo-wordcount's README explicitly tells users to add those manually.
+# We:
+#   (a) Write a new partial _partial/post-wordcount.ejs that calls
+#       hexo-wordcount's wordcount() / min2read() helpers and renders
+#       a Vercount span for the per-page PV, with a 3-second JSON
+#       fallback (same pattern as the site-level counter in section 6).
+#   (b) Inject a single <%- partial('_partial/post-wordcount') %> line
+#       into post-detail.ejs right after the post-meta include.
+# Both edits are idempotent via a 'post-wordcount-ejs' marker.
+post_wordcount_ejs = r"""<% if ((page.layout === 'post') &&
+     ((theme.postInfo && (theme.postInfo.wordCount || theme.postInfo.min2read)) ||
+      (theme.siteCounter && theme.siteCounter.enable))) { %>
+<div class="post-wordcount-info">
+  <% if (theme.postInfo && theme.postInfo.wordCount) { %>
+    <i class="fa fa-file-word-o"></i>&nbsp;字数统计:&nbsp;<span class="white-color"><%= wordcount(page.content) %></span>&nbsp;字
+  <% } %>
+  <% if (theme.postInfo && theme.postInfo.min2read) { %>
+    <% if (theme.postInfo.wordCount) { %>&nbsp;|&nbsp;<% } %>
+    <i class="fa fa-clock-o"></i>&nbsp;阅读时长:&nbsp;<span class="white-color"><%= min2read(page.content) %></span>&nbsp;分钟
+  <% } %>
+  <% if (theme.siteCounter && theme.siteCounter.enable) { %>
+    <% if (theme.postInfo.wordCount || theme.postInfo.min2read) { %>&nbsp;|&nbsp;<% } %>
+    <i class="fa fa-eye"></i>&nbsp;阅读次数:&nbsp;<span id="vercount_value_page_pv" class="white-color">…</span>
+  <% } %>
+</div>
+<script>
+// Fallback: if Vercount embed has not populated the per-page span
+// within 3s (e.g. namespace not yet registered), hit the JSON
+// endpoint directly.  Same pattern as the site-level counter.
+setTimeout(function(){
+  var pv=document.getElementById('vercount_value_page_pv');
+  if(!pv)return;
+  if(pv.textContent==='…'){
+    fetch('https://vercount.one/json',{cache:'no-store'})
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(d){
+        if(d&&typeof d.page_pv!=='undefined')pv.textContent=d.page_pv;
+        else pv.textContent='—';
+      })
+      .catch(function(){pv.textContent='—';});
+  }
+},3000);
+</script>
+<% } %>"""
+
+post_wordcount_partial = os.path.join(theme_dir, 'layout', '_partial', 'post-wordcount.ejs')
+with open(post_wordcount_partial, 'w', encoding='utf-8') as f:
+    f.write(post_wordcount_ejs)
+print(f'Wrote {os.path.relpath(post_wordcount_partial, theme_dir)}')
+
+post_detail_path = os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs')
+if os.path.isfile(post_detail_path):
+    with open(post_detail_path, encoding='utf-8') as f:
+        pdc = f.read()
+    if 'post-wordcount-ejs' in pdc or "_partial/post-wordcount')" in pdc:
+        print('post-wordcount partial already wired into post-detail.ejs')
+    else:
+        # Try a series of known anchors where post-meta is invoked.
+        injected = False
+        for pat in [
+            ("<%- partial('_partial/post-meta') %>",
+             "<%- partial('_partial/post-meta') %>\n<%- partial('_partial/post-wordcount') %>"),
+            ('<%- partial("_partial/post-meta") %>',
+             '<%- partial("_partial/post-meta") %>\n<%- partial("_partial/post-wordcount") %>'),
+            ("partial('post-meta')",
+             "partial('post-meta') %>\n<%- partial('_partial/post-wordcount') %>"),
+            ('partial("post-meta")',
+             'partial("post-meta") %>\n<%- partial("_partial/post-wordcount") %>'),
+        ]:
+            if pat[0] in pdc:
+                pdc = pdc.replace(pat[0], pat[1], 1)
+                injected = True
+                print(f'Injected post-wordcount partial after post-meta include')
+                break
+        if not injected:
+            # Fallback: append right before </article> in post-detail.ejs.
+            art_re = re.compile(r'(</article>)')
+            if art_re.search(pdc):
+                pdc = art_re.sub("<%- partial('_partial/post-wordcount') %>\n\\1", pdc, count=1)
+                print('Injected post-wordcount partial before </article> (fallback)')
+            else:
+                # Last resort: append to end of file.
+                pdc = pdc.rstrip() + "\n<%- partial('_partial/post-wordcount') %>\n"
+                print('Appended post-wordcount partial at end of post-detail.ejs (fallback)')
+        with open(post_detail_path, 'w', encoding='utf-8') as f:
+            f.write(pdc)
+else:
+    print('WARNING: post-detail.ejs not found — post-wordcount partial written but not wired in')
