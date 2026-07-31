@@ -56,7 +56,6 @@ EMHOST会将元数据保存到oracle数据库中，这个数据库被称为EM Re
 
 oracle site Guard的详细架构如下图所示：
 
- ![](./img/oracle_site_guard_arch.png)
 
 ### 结论
 

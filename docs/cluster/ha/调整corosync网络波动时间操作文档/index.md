@@ -15,7 +15,6 @@
 ```shell
 ./repmgr cluster show
 ```
-![](./img/cluster_status_in_observer.png)
 
 如上图所示，可以看到生产中心和灾备中心的信息均能查询到，其各节点状态均正常，此时可以进行后续步骤。
 
@@ -28,7 +27,6 @@
 ./ha_ctl.sh observer stop
 ```
 
-![](./img/stop_observer.png)
 
 ## 修改生产中心配置，并重启kbha服务和repmgrd服务
 
@@ -55,7 +53,6 @@ reconnect_interval=10
 vim etc/repmgr.conf
 ```
 
-![](./img/change_config.png)
 
 2. 停止kbha服务
 
@@ -72,14 +69,12 @@ kill pid
 ```
 注意：非数据库节点没有repmgrd进程，则不需要结束repmgrd进程，仅重启kbha即可。
 
-![](./img/stop_kbha.png)
 
 repmgrd停止后，使用如下命令确认repmgrd服务已停止。
 
 ```shell
 ./repmgr service status
 ```
-![](./img/check_repmgrd_not_running.png)
 
 3. 重启kbha服务
 
@@ -95,7 +90,6 @@ repmgrd进程无需手动重启，kbha会自动启动repmgrd进程。
 ```shell
 ./repmgr service status
 ```
-![](./img/check_repmgrd_running.png)
 
 如上图所示repmgrd状态为running，且有有效的pid时，表面repmgrd已正常启动。
 
@@ -105,7 +99,6 @@ kbha和repmgrd重启成功后，查看本中心集群状态，确保集群状态
 ```shell
 ./repmgr cluster show
 ```
-![](./img/start_kbha.png)
 
 ### 对中心内的其他节点按顺序重复以上步骤
 
@@ -134,7 +127,6 @@ tptc_corosync_reconnect_attempts=6
 tptc_corosync_reconnect_interval=10
 ```
 
-![](./img/change_observer.png)
 
 配置修改完成后，使用如下命令重启observer。
 
@@ -142,6 +134,5 @@ tptc_corosync_reconnect_interval=10
 ./ha_ctl.sh observer start
 ```
 
-![](./img/start_observer.png)
 
 能正常查询到各中心集群信息，且各节点正常，则本次配置修改完成。

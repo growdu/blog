@@ -16,11 +16,9 @@
 
 在PostgreSQL中，逻辑对象是有层次关系的，数据库创建后，有一个叫数据库簇的概念，虽然数据库簇的英文为database cluster，但它并不是数据库集群的意思，故而翻译为数据库簇。在数据库簇中可以创建很多数据库（使用create database创建），也就是说，数据库簇相当于是一个数据库的容器。而PostgreSQL中的database与MySQL中的Database完全不是一个概念，PostgreSQL的Database是一个多租户的概念，与Oracle 12C的Pluggable Database类似，主要实现租户隔离。在Database下，可以有多个模式（Schema），数据库逻辑存储结构的层次关系下图所示。
 
-![](./pgsql_image/pg_logic_str.png)
 
 pg安装后，其安装目录如下：
 
-![](./pgsql_image/pg_install_dir.png)
 
 #### 1.1.2 磁盘文件
 
@@ -244,7 +242,6 @@ Postgresql当前不支持使用裸设备或者块设备，必须基于文件系�
 最前面是块头，块头后面记录了各个数据行的指针，数据行从块尾向中间排列，直到和行指针相遇（即没有空间存放新的行数据）。
 行数据指针与行数据之间的部分就是空闲空间。数据块存储结构如下图所示：
 
-![](./pgsql_image/block_structure.png)
 
 ##### 1.2.2.1 块头
 块头主要记录了如下信息：
@@ -289,7 +286,6 @@ pd_flags可取值如下：
 当没有行数据时，pd_upper指向可用空间（空闲空间）的末尾，而pd_lower指向页头(PageHeaderData)之后的第一个空闲空间的起始位置。
 pd_upper - pd_lower是该页中剩余可用的空闲空间，随着元素的不断插入，pd_upper和pd_lower变量会不断地随着更新。
 
-![](./pgsql_image/page_header.png)
 
 ##### 1.2.2.2 行指针
 
@@ -312,7 +308,6 @@ typedef struct ItemIdData
 
 当不断向页中插入数据时候，其元组、行指针以及可用空间的变化如下图所示：
 
-![](./pgsql_image/row_item.png)
 
 当向页中插入一行数据时，需要做如下几件事情：
  
@@ -339,7 +334,6 @@ tuple的物理结构同样是先有一个行头，后面跟了各项数据。
 
 tuple的结构如下图：
 
-![](./pgsql_image/tuple_structure.png)
 
 
 ##### 1.2.3.1 行头
@@ -587,13 +581,11 @@ FSM的存在的意义就是为了管理空闲资源，并且让它们可以快�
 
 为了快速查找到满足要求的数据块，PostgreSQL使用了树型结构组织FSM文件,FSM中将每个页的空余空间信息通过一个大根堆的形式组织的, <font color="red"> 想要知道是否有满足需求的空间，只需要从堆的根获取到当前最大的空余空间就可以快速的判断，减少了整体的判断次数，提高效率 </font>。其结构如下：
 
-![](./pgsql_image/fsm0.png)
 
 堆中的每个叶子节点都对应一个数据页，叶子节点上记录的是数据页的可用单元的个数，例如，上图中P1中当前包含了6个空闲单元。每个非叶子节点上的记录的则是它的子节点中较大的可用数目。
 
 FSM文件固定使用3层树型结构，第0层和第1层为查找辅助层，第2层中每个块的每个字节代表其对应的数据块中的空闲空间。fsm示意图如下(实际的fsm块每层由多个)：
 
-![](./pgsql_image/fsm_exam.png)
 
 为什么fsm的文件大小一般是24KB？
 
@@ -760,7 +752,6 @@ Latest checkpoint's newestCommitTsXid:0
 
 checkpoint写入wal日志的流程如下：
 
-![](./pgsql_image/checkpoint_flow.png)
 
 1. checkpoint 操作首先记录下 checkpoint 的开始位置，记录为 Latest checkpoint's REDO location（重做位点） 
 2. checkpoint 将 shared buffer 中的数据刷到磁盘里面去 
@@ -770,7 +761,6 @@ checkpoint写入wal日志的流程如下：
 6. 将最新的 checkpoint 位点记录在 pg_control 文件中
 
 
-![](./pgsql_image/recovery.png)
 
 根据checkpoint恢复的流程如下：
 1. 从 pg_control 文件中找到最新的 checkpoint 位置
@@ -828,7 +818,6 @@ drwx------  2 postgres postgres    6 Feb 20 08:16 archive_status
 
 #### 1.3.2 wal文件构成
 
-![](./pgsql_image/wal.png)
 
 WAL文件名的24个字符由三部分组成:
 
@@ -1028,7 +1017,6 @@ postgresql 按照一定的数目（默认 128， 可以通过 pages_per_range �
 
 CPU、内存、网络、硬盘的响应时间和吞吐量都是不一样的，其响应时间和吞吐量如下图所示：
 
-![](./pgsql_image/computer_delay.png)
 
 ##### 3.3.1.1 cpu及服务器体系结构
 
@@ -1051,7 +1039,6 @@ CPU、内存、网络、硬盘的响应时间和吞吐量都是不一样的，�
 
 目前，Intel的X86架构属于NUMA架构，kunpeng920 也属于numa架构。Intel的Nehalem的架构如下图所示：
 
-![](./pgsql_image/intel_nehalem.png)
 
 两颗4核的CPU通过总线连接，内存分别连接到各自的CPU上。所以从一个CPU的内存访问挂在另一个CPU上的内存，速度会慢一些。
 
