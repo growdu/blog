@@ -13,7 +13,7 @@ oracle maa架构分为青铜、白银、黄金、铂金四个级别，其中黄�
 | 铂金                              | primary Database | standby database              | data guard fsfo   | primary Database              | standby database | data guard fsfo   | 有                    | 有                    | oracle goldengate replication |
 
 上面的表格可能有所缺失，可以查看下图：
-![](./img/oracle_maa.png)
+> **Oracle MAA架构对比表**：列出青铜、白银、黄金(remote standby/multiple standby databases/Standby Reader Farm/Cross-Region Far Sync Standby)、铂金七个等级在region1 az1、region1 az2、region1 az关系维护工具、region2 az1、region2 az2、region2 az关系维护工具、region1 local backup、region2 local backup、region同关系维护九个维度上的部署差异。
 ## 青铜
 
 
@@ -55,7 +55,7 @@ RMAN 在备份和恢复操作期间提供数据验证，并提供高级功能，
 
 MAA Silver 参考体系结构专为无法等待冷重启或从备份还原的数据库而设计，以防出现不可恢复的数据库实例或服务器故障。此体系结构可能适用于业务关键型的生产应用程序，并且需要减少本地故障和最常见的计划内维护活动的停机时间。其架构如下所示：
 
-![](./img/baiying.png)
+> **白银架构**：Primary Data Center内通过Oracle RAC Database + Database Files存储主数据；通过Data Guard将变更同步至Remote Data Center的Replicated Backups，实现跨数据中心数据保护。
 
 白银架构基于青铜架构，只是把主库所在的位置换为了rac集群。其高可用能力有所增强，
 
@@ -94,7 +94,7 @@ MAA Silver 参考体系结构专为无法等待冷重启或从备份还原的数
 
 远程备用模式包括使用 Oracle Active Data Guard 消除单点故障的生产数据库（备用数据库）的远程同步副本。活动备用数据库提供针对计划外停机的高级保护，并减少计划内维护活动（如数据库升级）的停机时间。最值得注意的属性是，在发生数据库、集群或站点故障等灾难时，备用数据库可提供较低的 RTO（恢复时间）和 RPO（数据丢失可能性）。其架构如下所示：
 
-![](./img/huangjin_remote_standby.png)
+> **黄金Remote Standby架构**：Primary Region内包含Primary Oracle RAC Cluster（AD1）+ Local Backup（AD2），通过Data Guard FSFO同步至Secondary Region的Remote Standby Oracle RAC Cluster（AD1）+ Local Backup（AD2），两Region间跨城市部署形成站点级灾备。
 
 与白银架构相比，remote standby在两个region里面，主region与白银架构的主库架构相同，采用oracle rac集群，同时还有一份本region的物理备份。除了主region外，还有一个远程region，这两个region一般处于不同的城市。远程region采用的是普通的oracle数据库节点，一般有两个节点，同时还有一份本region的物理备份。
 
@@ -120,7 +120,7 @@ MAA Silver 参考体系结构专为无法等待冷重启或从备份还原的数
 
 跨区域远程同步备库架构如下：
 
-![](./img/huangjin_far_sync_standby.png)
+> **黄金Cross-Region Far Sync Standby架构**：可用区从3个扩展为4个（每Region两个可用区），数据库所在可用区采用Oracle RAC集群，另一个可用区部署Far Sync in HA Configuration作为级联Standby中转。每个Region各保留一份本地物理备份。
 
 可以看到跨区域远程同步备库架构的可用区从之前的3个增加到了4个，每个region两个可用区。并且每个region的数据库所在可用区均使用oracle rac集群架构，而非数据库可用区都是 far sync in ha configuration，再加上每个region都有一个本region的物理备份。
 

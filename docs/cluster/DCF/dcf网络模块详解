@@ -28,11 +28,11 @@ mec消息处理采用多线程加队列来实现，队列的访问采用锁加�
 
 mec网络通信采用epoll I/O多路复用来实现，并使用[reactor模型](https://blog.csdn.net/u013256816/article/details/115388239)来实现服务端监听机制。其架构与下图（图片来自https://blog.csdn.net/u013256816/article/details/115388239）类似，采用主从reactor多线程模型只不过在mec中将mainreactor称作listener（acceptor）。
 
-![](./img/reactor_flow.jpg)
+> **reactor主从多线程模型**：Client请求 → Reactor主线程(MainReactor: select + dispatch) → 建立连接 → Acceptor(accept)；同时分发给Reactor子线程(SubReactor: select + dispatch) → 处理请求 → Handler1/Handler2(read + send) → Worker线程池(Worker线程1/线程2: 业务处理)
 
 mec使用tcp监听链路来接收消息，消息接收采用reactor模型实现，最终交给agent来执行。实际流程与上图的reactor主从模型类似，消息接收执行流程如下：
 
-![](./img/execute_flow.jpg)
+> **mec消息接收执行流程**：左侧acceptor包含三个Socket，通过Pipe (RECV_MODE) `add fd to reactor` 提交给中间reactor pool；reactor pool中三个Reactor负责监听处理事件，再通过 `attach agent` / `dattach agent` 与右侧agent pool通信；每个agent绑定一个job执行具体处理。
 
 mec的消息处理主要依靠如下四个组件来完成，而channel主要是用来传输，因而在下图中未体现。
 
@@ -226,7 +226,7 @@ channel是对pipe的封装，每个channel有它自己的id标识。
 
 一个channel有两个pipe，一个高优先级，一个低优先级。
 
-![](./img/channel.jpg)
+> **Channel结构**：每个Channel封装两个Pipe，分别为高优先级(high pipe)和低优先级(low pipe)，每个Pipe内部包含socket1（处理send）和socket2（处理recv）；两端节点各通过send/recv连接实现双向通信。
 
 ```c
 /// @brief channel

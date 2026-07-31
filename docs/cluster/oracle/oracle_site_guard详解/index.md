@@ -6,7 +6,7 @@ Oracle Site Guard 是一个数据保护解决方案，用于实现数据中心�
 
 oracle site guard是运行在服务器上的一组服务，SGCS服务一般被集成到EMCC中，其位置如下：
 
-![](./img/oracle_site_guard.png)
+> **Oracle Site Guard架构**：SGCS作为核心集成在EMCC中运行，通过Global redirector接收Client请求；Web Tier部署WEBHOST1/2（OHS+EM agent），Application Tier部署APPHOST1/2（EM Agent + BI Managed Server）；Database Tier部署DBHOST1/2（EM agent）通过RAC Cluster访问BI Database (Primary)；同步由Enterprise Manager Cloud Control (EMCCHOST) 配合ZFS Storage Appliance（Primary/Standby）和Active Data Guard Redo Transport实现，最终从Primary site切换至Standby site。
 
 这组服务包含以下基础服务：
 
