@@ -601,13 +601,12 @@ if not sidebar_done:
 # --- 6. Footer statistics: wordcount + self-hosted PV/UV ---
 # matery's default footer.ejs loads //busuanzi.ibruce.info/... which is
 # frequently blocked from mainland China networks.  We:
-#   (a) Strip the busuanzi conditional block (and its <script> tag).
-#   (b) Inject a 站点总字数 block backed by the hexo-wordcount plugin.
-#       matery itself has NO wordcount placeholder, so we must add one.
-#   (c) Inject a site-counter block backed by api.counterapi.dev.  PV
-#       increments on every page load; UV uses localStorage to track
-#       one increment per visitor per day.
-stats_block = r'''<% if (theme.wordcount && theme.wordcount.enable) { %>
+#   (a) Best-effort: strip any busuanzi conditional block + script tag.
+#   (b) ALWAYS inject a stats block into layout/_partial/footer.ejs so
+#       the user always sees 总字数 / PV / UV, regardless of whether
+#       we recognised the theme's busuanzi format.
+#   Step (b) is the actual guarantee — step (a) is cosmetic cleanup.
+stats_block = r"""<% if (theme.wordcount && theme.wordcount.enable) { %>
 &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color"><%= totalcount(site) %></span>&nbsp;字
 <% } %>
 <% if (theme.siteCounter && theme.siteCounter.enable) { %>
@@ -631,65 +630,47 @@ stats_block = r'''<% if (theme.wordcount && theme.wordcount.enable) { %>
     fetch(API+UV_KEY).then(function(r){return r.json();}).then(function(d){setVal('site-uv',d&&d.count);}).catch(function(){setVal('site-uv',0);});
 })();
 </script>
-<% } %>'''
+<% } %>"""
 
-# Two regexes to handle common busuanzi block shapes:
-#   <% if (theme.busuanziStatistics && theme.busuanziStatistics.enable) { %>
-#   <% if(theme.busuanziStatistics && theme.busuanziStatistics.enable){ %>
 busuanzi_block_re = re.compile(
     r'<%\s*if\s*\(\s*theme\.busuanziStatistics[^%]*%>[\s\S]*?<%\s*}\s*%>',
     flags=re.MULTILINE,
 )
-# Fallback for any stragglers: drop the standalone <script> tag that
-# pulls in busuanzi.pure.mini.js.
 busuanzi_script_re = re.compile(
     r'<script[^>]*busuanzi\.pure\.mini\.js[^>]*>\s*</script>\s*',
 )
 
-counter_done = False
+busuanzi_removed = []
 for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
-    if counter_done:
-        break
     for fname in files:
         if not fname.endswith('.ejs'):
             continue
         fpath = os.path.join(root, fname)
         with open(fpath, encoding='utf-8') as f:
-            c = f.read()
-        if 'site-counter' in c:
-            counter_done = True
-            break
-        # Skip files that don't reference busuanzi at all (likely not footer).
-        if 'busuanzi' not in c.lower():
-            continue
-        new_c = busuanzi_block_re.sub('', c)
-        new_c = busuanzi_script_re.sub('', new_c)
-        # Only treat as the footer if the file's content actually had
-        # busuanzi to remove (otherwise we'd be polluting unrelated files).
-        if new_c == c:
-            continue
-        new_c = new_c.rstrip() + '\n' + stats_block
-        with open(fpath, 'w', encoding='utf-8') as f:
-            f.write(new_c)
-        print(f'Injected wordcount + site-counter into {os.path.relpath(fpath, theme_dir)}')
-        counter_done = True
-        break
-if not counter_done:
-    # Fallback: if we didn't find any busuanzi reference, the theme may
-    # have dropped it (or uses an unusual key).  Inject the stats block
-    # into the conventional footer location directly so the user still
-    # sees 总字数 / PV / UV regardless.
-    fallback = os.path.join(theme_dir, 'layout', '_partial', 'footer.ejs')
-    if os.path.isfile(fallback):
-        with open(fallback, encoding='utf-8') as f:
             c2 = f.read()
-        if 'site-counter' not in c2:
-            c2 = c2.rstrip() + '\n' + stats_block
-            with open(fallback, 'w', encoding='utf-8') as f:
-                f.write(c2)
-            print(f'Fallback: injected stats into {os.path.relpath(fallback, theme_dir)}')
-            counter_done = True
-        else:
-            print('Fallback skipped: site-counter already present')
+        if 'busuanzi' not in c2.lower():
+            continue
+        new_c = busuanzi_block_re.sub('', c2)
+        new_c = busuanzi_script_re.sub('', new_c)
+        if new_c != c2:
+            with open(fpath, 'w', encoding='utf-8') as f:
+                f.write(new_c)
+            busuanzi_removed.append(os.path.relpath(fpath, theme_dir))
+
+footer_path = os.path.join(theme_dir, 'layout', '_partial', 'footer.ejs')
+if os.path.isfile(footer_path):
+    with open(footer_path, encoding='utf-8') as f:
+        fc = f.read()
+    if 'site-counter' not in fc:
+        fc = fc.rstrip() + '\n' + stats_block
+        with open(footer_path, 'w', encoding='utf-8') as f:
+            f.write(fc)
+        print(f'Injected stats into {os.path.relpath(footer_path, theme_dir)}')
     else:
-        print('WARNING: could not inject stats into any .ejs file (no footer.ejs)')
+        print('Stats block already present')
+else:
+    print('WARNING: footer.ejs not found at ' + footer_path)
+
+if busuanzi_removed:
+    print('Removed busuanzi from: ' + ', '.join(busuanzi_removed))
+
