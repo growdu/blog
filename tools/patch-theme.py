@@ -598,15 +598,19 @@ if not sidebar_done:
     print('WARNING: could not inject sidebars')
 
 
-# --- 6. Replace busuanzi counter with self-hosted PV/UV ---
+# --- 6. Footer statistics: wordcount + self-hosted PV/UV ---
 # matery's default footer.ejs loads //busuanzi.ibruce.info/... which is
-# frequently blocked or returns empty data from mainland China networks.
-# We strip the busuanzi conditional block and inject a self-contained
-# counter backed by api.counterapi.dev.  PV increments on every page
-# load; UV increments once per visitor per day (keyed by UTC date in
-# localStorage).  Word-count total is handled separately by the
-# hexo-wordcount plugin (configured in _config.matery.yml).
-site_counter_block = r'''<% if (theme.siteCounter && theme.siteCounter.enable) { %>
+# frequently blocked from mainland China networks.  We:
+#   (a) Strip the busuanzi conditional block (and its <script> tag).
+#   (b) Inject a 站点总字数 block backed by the hexo-wordcount plugin.
+#       matery itself has NO wordcount placeholder, so we must add one.
+#   (c) Inject a site-counter block backed by api.counterapi.dev.  PV
+#       increments on every page load; UV uses localStorage to track
+#       one increment per visitor per day.
+stats_block = r'''<% if (theme.wordcount && theme.wordcount.enable) { %>
+&nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color"><%= totalcount(site) %></span>&nbsp;字
+<% } %>
+<% if (theme.siteCounter && theme.siteCounter.enable) { %>
 <div id="site-counter">
     &nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="site-pv" class="white-color">…</span>&nbsp;次
     &nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="site-uv" class="white-color">…</span>&nbsp;人
@@ -629,11 +633,20 @@ site_counter_block = r'''<% if (theme.siteCounter && theme.siteCounter.enable) {
 </script>
 <% } %>'''
 
-counter_done = False
+# Two regexes to handle common busuanzi block shapes:
+#   <% if (theme.busuanziStatistics && theme.busuanziStatistics.enable) { %>
+#   <% if(theme.busuanziStatistics && theme.busuanziStatistics.enable){ %>
 busuanzi_block_re = re.compile(
-    r'<%\s*if\s*\(\s*theme\.busuanziStatistics[\s\S]*?%>[\s\S]*?<%\s*}\s*%>',
+    r'<%\s*if\s*\(\s*theme\.busuanziStatistics[^%]*%>[\s\S]*?<%\s*}\s*%>',
     flags=re.MULTILINE,
 )
+# Fallback for any stragglers: drop the standalone <script> tag that
+# pulls in busuanzi.pure.mini.js.
+busuanzi_script_re = re.compile(
+    r'<script[^>]*busuanzi\.pure\.mini\.js[^>]*>\s*</script>\s*',
+)
+
+counter_done = False
 for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
     if counter_done:
         break
@@ -646,14 +659,20 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
         if 'site-counter' in c:
             counter_done = True
             break
-        new_c = busuanzi_block_re.sub('', c)
-        if new_c == c and 'busuanzi' not in c.lower():
+        # Skip files that don't reference busuanzi at all (likely not footer).
+        if 'busuanzi' not in c.lower():
             continue
-        new_c = new_c.rstrip() + '\n' + site_counter_block
+        new_c = busuanzi_block_re.sub('', c)
+        new_c = busuanzi_script_re.sub('', new_c)
+        # Only treat as the footer if the file's content actually had
+        # busuanzi to remove (otherwise we'd be polluting unrelated files).
+        if new_c == c:
+            continue
+        new_c = new_c.rstrip() + '\n' + stats_block
         with open(fpath, 'w', encoding='utf-8') as f:
             f.write(new_c)
-        print(f'Replaced busuanzi with site-counter in {os.path.relpath(fpath, theme_dir)}')
+        print(f'Injected wordcount + site-counter into {os.path.relpath(fpath, theme_dir)}')
         counter_done = True
         break
 if not counter_done:
-    print('WARNING: could not install site-counter')
+    print('WARNING: could not inject wordcount + site-counter into any .ejs file')
