@@ -54,6 +54,10 @@ jobs:
         run: python3 tools/copy-vendor.py
       - name: Build with Hexo
         run: npx hexo generate
+      - name: Publish Vercount verification file
+        run: |
+          mkdir -p public/.well-known
+          cp source/.well-known/vercount-verify-zd5pj09shdfkbm6h83ra5zzk.txt public/.well-known/
       - name: Fix XML escaping in sitemap and feed
         run: |
           python3 -c "

@@ -308,6 +308,15 @@ def main():
         shutil.rmtree(SRC)
     os.makedirs(POSTS)
 
+    verification_dir = os.path.join(SRC, '.well-known')
+    os.makedirs(verification_dir, exist_ok=True)
+    verification_path = os.path.join(
+        verification_dir, 'vercount-verify-zd5pj09shdfkbm6h83ra5zzk.txt'
+    )
+    with open(verification_path, 'w', encoding='utf-8') as f:
+        f.write('vercount-domain-verify=growdu.github.io,zd5pj09shdfkbm6h83ra5zzk')
+    print('Created Vercount verification file')
+
     cats = read_section_categories()
     print(f'Categories: {len(cats)}')
 
@@ -679,4 +688,3 @@ def create_projects_page():
 
 if __name__ == '__main__':
     main()
-
