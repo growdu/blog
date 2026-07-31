@@ -597,10 +597,12 @@ if not sidebar_done:
 #       we recognised the theme's busuanzi format.
 #   Step (b) is the actual guarantee — step (a) is cosmetic cleanup.
 stats_block = r"""<% if (theme.wordcount && theme.wordcount.enable) { %>
+<br>
 &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color"><%= totalcount(site) %></span>&nbsp;字
 <% } %>
 <% if (theme.siteCounter && theme.siteCounter.enable) { %>
-<span id="site-counter">&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="vercount_site_pv" class="white-color">…</span>&nbsp;次&nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="vercount_site_uv" class="white-color">…</span>&nbsp;人</span>
+<span id="site-counter-pv">&nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="vercount_site_pv" class="white-color">…</span>&nbsp;次</span>
+<span id="site-counter-uv">&nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="vercount_site_uv" class="white-color">…</span>&nbsp;人</span>
 <script src="https://vercount.one/js" async></script>
 <script>
 // Fallback: if Vercount embed has not populated the spans within 3s
@@ -652,13 +654,23 @@ footer_path = os.path.join(theme_dir, 'layout', '_partial', 'footer.ejs')
 if os.path.isfile(footer_path):
     with open(footer_path, encoding='utf-8') as f:
         fc = f.read()
-    if 'site-counter' not in fc:
-        fc = fc.rstrip() + '\n' + stats_block
-        with open(footer_path, 'w', encoding='utf-8') as f:
-            f.write(fc)
-        print(f'Injected stats into {os.path.relpath(footer_path, theme_dir)}')
-    else:
+    if 'vercount_site_pv' in fc:
         print('Stats block already present')
+    else:
+        # Insert stats block right BEFORE the sitetime span so it stays
+        # inside the .copy-right container (matches blinkfox layout).
+        sitetime_re = re.compile(r'(<span id="sitetime">)')
+        if sitetime_re.search(fc):
+            fc = sitetime_re.sub(stats_block + '\n\\t\\t' + r'\1', fc, count=1)
+            with open(footer_path, 'w', encoding='utf-8') as f:
+                f.write(fc)
+            print(f'Injected stats into {os.path.relpath(footer_path, theme_dir)} (before sitetime)')
+        else:
+            # Fallback: append at end (older footer.ejs without sitetime)
+            fc = fc.rstrip() + '\n' + stats_block
+            with open(footer_path, 'w', encoding='utf-8') as f:
+                f.write(fc)
+            print(f'Injected stats at end of {os.path.relpath(footer_path, theme_dir)} (no sitetime found)')
 else:
     print('WARNING: footer.ejs not found at ' + footer_path)
 
