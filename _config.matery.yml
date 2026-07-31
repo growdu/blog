@@ -109,15 +109,13 @@ wordcount:
   enable: true
   post_wordcount: true
 
-# Site-level PV/UV via api.counterapi.dev (replaces busuanzi.ibruce.info
-# which is frequently blocked / slow from mainland China networks).
-# PV increments on every page load; UV increments once per visitor per day
-# via localStorage.
+# Site-level PV/UV via Vercount (https://vercount.one), a Chinese-friendly
+# counter designed for static blogs.  The embed script auto-populates the
+# spans <span id="vercount_site_pv"> and <span id="vercount_site_uv"> in
+# the footer.  No CORS issues, no per-namespace registration needed for
+# common use cases.
 siteCounter:
   enable: true
-  namespace: growdu-blog
-  pvKey: site-pv
-  uvKey: site-uv
 
 # Backwards-compatible flag kept so the theme's default footer.ejs does not
 # try to load the busuanzi.pure.mini.js script (we inject our own counter).

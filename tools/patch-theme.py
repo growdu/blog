@@ -69,10 +69,8 @@ else:
 # --- 2. Inject prism.js CSS + Mermaid.js ---
 inject_css = """<meta property="og:title" content="<%= page.title || config.title %>">
 <meta name="theme-color" content="#009688">
-<link rel="preconnect" href="https://api.counterapi.dev">
-<link rel="dns-prefetch" href="https://api.counterapi.dev">
-<link rel="preconnect" href="https://busuanzi.ibruce.info">
-<link rel="dns-prefetch" href="https://busuanzi.ibruce.info">
+<link rel="preconnect" href="https://vercount.one">
+<link rel="dns-prefetch" href="https://vercount.one">
 <link rel="preconnect" href="https://api.github.com">
 <link rel="dns-prefetch" href="https://api.github.com">
 <meta property="og:site_name" content="<%= config.title %>">
@@ -525,14 +523,10 @@ sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
 (function(){
   var data=JSON.parse(document.getElementById('hot-posts-json').textContent);
   if(!data||!data.length)return;
-  var NS='growdu-blog',ROOT='<%- config.root %>';
-  Promise.all(data.map(function(p){
-    return fetch('https://api.counterapi.dev/v1/'+NS+'/'+p.h)
-      .then(function(r){return r.json();})
-      .then(function(d){p.c=Math.max(p.c,(d&&d.count)||0);return p;})
-      .catch(function(){return p;});
-  })).then(function(results){
-    results.sort(function(a,b){return b.c-a.c;});
+  var ROOT='<%- config.root %>';
+  // Sort by locally-computed popularity (already weighted by word count).
+  data.sort(function(a,b){return b.c-a.c;});
+  Promise.resolve(data).then(function(results){
     var list=document.getElementById('hot-posts-list');
     if(!list)return;
     list.innerHTML='';
@@ -571,11 +565,7 @@ sidebar_ejs = """<% if (site.categories && site.categories.length) { %>
 })();
 </script>
 <% } %>
-<% if (page.layout === 'post') { %>
-<script>
-(function(){var h=0,s='<%= page.path %>';for(var i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}fetch('https://api.counterapi.dev/v1/growdu-blog/p'+Math.abs(h)+'/up').catch(function(){});})();
-</script>
-<% } %>
+<%# Per-page view counter is handled by Vercount embed below. %>
 """
 sidebar_done = False
 for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
@@ -610,26 +600,8 @@ stats_block = r"""<% if (theme.wordcount && theme.wordcount.enable) { %>
 &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color"><%= totalcount(site) %></span>&nbsp;字
 <% } %>
 <% if (theme.siteCounter && theme.siteCounter.enable) { %>
-<div id="site-counter">
-    &nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="site-pv" class="white-color">…</span>&nbsp;次
-    &nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="site-uv" class="white-color">…</span>&nbsp;人
-</div>
-<script>
-(function(){
-    var NS=<%- JSON.stringify(theme.siteCounter.namespace || 'growdu-blog') %>;
-    var PV_KEY=<%- JSON.stringify(theme.siteCounter.pvKey || 'site-pv') %>;
-    var UV_KEY=<%- JSON.stringify(theme.siteCounter.uvKey || 'site-uv') %>;
-    var API='https://api.counterapi.dev/v1/'+NS+'/';
-    function setVal(id,v){var el=document.getElementById(id);if(el)el.textContent=(v==null||isNaN(v))?'0':v;}
-    fetch(API+PV_KEY+'/up',{method:'POST'}).catch(function(){});
-    fetch(API+PV_KEY).then(function(r){return r.json();}).then(function(d){setVal('site-pv',d&&d.count);}).catch(function(){setVal('site-pv',0);});
-    var stamp='growdu-blog-uv-'+new Date().toISOString().slice(0,10);
-    var fresh=false;
-    try{if(!localStorage.getItem(stamp)){localStorage.setItem(stamp,'1');fresh=true;}}catch(e){}
-    if(fresh)fetch(API+UV_KEY+'/up',{method:'POST'}).catch(function(){});
-    fetch(API+UV_KEY).then(function(r){return r.json();}).then(function(d){setVal('site-uv',d&&d.count);}).catch(function(){setVal('site-uv',0);});
-})();
-</script>
+<span id="site-counter">&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="vercount_site_pv" class="white-color">…</span>&nbsp;次&nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="vercount_site_uv" class="white-color">…</span>&nbsp;人</span>
+<script src="https://vercount.one/js"></script>
 <% } %>"""
 
 busuanzi_block_re = re.compile(
