@@ -99,62 +99,41 @@ if reward_copied:
 # and closes on backdrop click, X button, or Escape.
 reward_ejs = r"""<% if (theme.reward && theme.reward.enable) { %>
 <div class="reward-row">
-  <button type="button" class="reward-open-btn" data-reward-open aria-label="打赏">
-    <i class="fa fa-heart"></i>&nbsp;<span>打赏支持</span>
+  <button type="button" class="reward-open-btn" data-reward-toggle aria-expanded="false" aria-controls="reward-content">
+    <i class="fa fa-heart"></i>&nbsp;<span class="reward-open-text">打赏支持</span>
   </button>
 </div>
 
-<div id="reward-modal" class="reward-modal" role="dialog" aria-modal="true" aria-hidden="true">
-  <div class="reward-modal-backdrop" data-reward-close></div>
-  <div class="reward-modal-content">
-    <button type="button" class="reward-modal-close" data-reward-close aria-label="关闭">
-      <i class="fa fa-times"></i>
-    </button>
-    <h3 class="reward-modal-title"><%= theme.reward.title || '您的支持是我持续更新的最大动力' %></h3>
-    <div class="reward-modal-qrs">
-      <% if (theme.reward.wechat) { %>
-      <div class="reward-modal-qr">
-        <img src="<%= config.root %>medias/reward/weixin.jpg" alt="微信支付">
-        <p><i class="fab fa-weixin"></i>&nbsp;微信支付</p>
-      </div>
-      <% } %>
-      <% if (theme.reward.alipay) { %>
-      <div class="reward-modal-qr">
-        <img src="<%= config.root %>medias/reward/zhifubao.jpg" alt="支付宝">
-        <p><i class="fab fa-alipay"></i>&nbsp;支付宝</p>
-      </div>
-      <% } %>
+<div id="reward-content" class="reward-content" hidden>
+  <h4 class="reward-title"><%= theme.reward.title || '您的支持是我持续更新的最大动力' %></h4>
+  <div class="reward-qrs">
+    <div class="reward-qr">
+      <img src="<%= url_for('/medias/reward/weixin.jpg') %>" alt="微信支付">
+      <p><i class="fab fa-weixin"></i>&nbsp;微信支付</p>
+    </div>
+    <div class="reward-qr">
+      <img src="<%= url_for('/medias/reward/zhifubao.jpg') %>" alt="支付宝">
+      <p><i class="fab fa-alipay"></i>&nbsp;支付宝</p>
     </div>
   </div>
 </div>
 
 <script>
 (function(){
-  var modal = document.getElementById('reward-modal');
-  if (!modal) return;
-  function positionNearTrigger(){
-    var btn = document.querySelector('[data-reward-open]');
-    if (!btn) return;
-    var rect = btn.getBoundingClientRect();
-    var pageY = window.pageYOffset || document.documentElement.scrollTop;
-    modal.style.top = (pageY + rect.top - 60) + 'px';
-  }
-  function open(){
-    positionNearTrigger();
-    modal.classList.add('show');
-    modal.setAttribute('aria-hidden','false');
-  }
-  function close(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
-  document.querySelectorAll('[data-reward-open]').forEach(function(b){
-    b.addEventListener('click', function(e){ e.preventDefault(); open(); });
-  });
-  modal.addEventListener('click', function(e){
-    if (e.target && e.target.closest && e.target.closest('[data-reward-close]')) {
-      close();
+  var btn = document.querySelector('[data-reward-toggle]');
+  var content = document.getElementById('reward-content');
+  if (!btn || !content) return;
+  btn.addEventListener('click', function(){
+    var label = btn.querySelector('.reward-open-text');
+    if (content.hasAttribute('hidden')) {
+      content.removeAttribute('hidden');
+      btn.setAttribute('aria-expanded', 'true');
+      if (label) label.textContent = '收起打赏';
+    } else {
+      content.setAttribute('hidden', '');
+      btn.setAttribute('aria-expanded', 'false');
+      if (label) label.textContent = '打赏支持';
     }
-  });
-  document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape' && modal.classList.contains('show')) close();
   });
 })();
 </script>
@@ -496,23 +475,20 @@ a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2p
 .hot-sidebar .hot-views i{font-size:10px}
 @media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
 
-/* --- Reward modal: centered fixed-position popup with 200x200 QRs --- */
-/* No backdrop-filter / body overflow toggles — both can flicker the
-   fixed sidebars / reading-progress bar in the surrounding page. */
-.reward-row{text-align:center;margin:30px 0 10px}
+/* --- Reward: button + inline-expand.  No modal/fixed positioning
+       so it sits as a plain sibling of related-posts below the article
+       body and never collides with sidebars / scripts. --- */
+.reward-row{text-align:center;margin:30px 0 0}
 .reward-open-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 22px;background:linear-gradient(135deg,#ff6b6b,#ee5a52);color:#fff;border:none;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 2px 8px rgba(238,90,82,.35)}
 .reward-open-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(238,90,82,.5)}
-.reward-modal{position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:9999;display:none;align-items:center;justify-content:center;width:100%}
-.reward-modal.show{display:flex}
-.reward-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55)}
-.reward-modal-content{position:relative;background:#fff;border-radius:12px;padding:28px 36px 24px;max-width:92vw;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center}
-.reward-modal-close{position:absolute;top:10px;right:12px;background:transparent;border:none;font-size:18px;color:#888;cursor:pointer;padding:4px 8px;line-height:1}
-.reward-modal-close:hover{color:#333}
-.reward-modal-title{margin:0 0 18px;font-size:16px;font-weight:600;color:#333}
-.reward-modal-qrs{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
-.reward-modal-qr p{margin:8px 0 0;font-size:13px;color:#666}
-.reward-modal-qr img{display:block;width:200px;height:200px;max-width:45vw;max-height:45vw;object-fit:contain;border:1px solid #eee;border-radius:6px;background:#fff}
-@media(prefers-color-scheme:dark){.reward-modal-content{background:#1f1f1f}.reward-modal-title{color:#eee}.reward-modal-qr p{color:#bbb}.reward-modal-qr img{background:#fff;border-color:#444}.reward-modal-close{color:#aaa}.reward-modal-close:hover{color:#fff}}
+.reward-content{display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 16px;background:#fafafa;border-radius:12px;margin:16px 0 32px;border:1px solid #eee}
+.reward-content[hidden]{display:none}
+.reward-title{margin:0;font-size:14px;color:#666;font-weight:500}
+.reward-qrs{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.reward-qr{display:flex;flex-direction:column;align-items:center}
+.reward-qr img{display:block;width:200px;height:200px;max-width:60vw;max-height:60vw;object-fit:contain;border:1px solid #e0e0e0;border-radius:8px;background:#fff}
+.reward-qr p{margin:8px 0 0;font-size:13px;color:#666}
+@media(prefers-color-scheme:dark){.reward-content{background:#1f1f1f;border-color:#333}.reward-title{color:#bbb}.reward-qr p{color:#aaa}.reward-qr img{background:#fff;border-color:#444}}
 </style>"""
 
 custom_js = """<script id="custom-blog-script">
