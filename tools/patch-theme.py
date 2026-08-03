@@ -644,3 +644,40 @@ if os.path.isfile(footer_path):
 else:
     print('WARNING: footer.ejs not found at ' + footer_path)
 
+
+# --- 7. Per-page busuanzi reading count in post-meta.ejs ---
+# matery's default post-meta.ejs only renders date / categories / tags.
+# We append a busuanzi_value_page_pv span; the value is filled by the
+# busuanzi.pure.mini.js script that's already loaded in section 6 (we
+# don't load a second script — busuanzi is idempotent but the network
+# round-trip is wasted).  busuanzi keys the page PV by location.path,
+# so this works on the home page, archives, tags, etc. too.
+post_meta_path = os.path.join(theme_dir, 'layout', '_partial', 'post-meta.ejs')
+if os.path.isfile(post_meta_path):
+    with open(post_meta_path, encoding='utf-8') as f:
+        pmc = f.read()
+    if 'busuanzi-page-pv-injected' in pmc:
+        print('Busuanzi per-page PV already in post-meta.ejs')
+    else:
+        # Inject right BEFORE the closing </div> of post-meta.ejs so
+        # the span sits at the end of the existing meta line.  If the
+        # file ends without a </div>, fall back to appending at EOF.
+        inject = (
+            '<%# busuanzi-page-pv-injected %>\n'
+            '<% if (theme.siteCounter && theme.siteCounter.enable) { %>\n'
+            '&nbsp;<i class="fa fa-eye"></i>&nbsp;阅读:&nbsp;'
+            '<span id="busuanzi_value_page_pv">…</span>\n'
+            '<% } %>\n'
+        )
+        m = re.search(r'</div>\s*\Z', pmc)
+        if m:
+            pmc = pmc[:m.start()] + inject + pmc[m.start():]
+            with open(post_meta_path, 'w', encoding='utf-8') as f:
+                f.write(pmc)
+            print('Inserted busuanzi per-page PV before </div> in post-meta.ejs')
+        else:
+            with open(post_meta_path, 'w', encoding='utf-8') as f:
+                f.write(pmc.rstrip() + '\n' + inject)
+            print('Appended busuanzi per-page PV at end of post-meta.ejs (no trailing </div>)')
+else:
+    print('WARNING: post-meta.ejs not found — per-page PV not wired')
