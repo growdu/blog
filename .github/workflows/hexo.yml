@@ -95,11 +95,12 @@ jobs:
           head -20 themes/matery/layout/_partial/post-wordcount.ejs 2>/dev/null || echo "NOT FOUND"
           echo "=== post-wordcount wired into post-detail.ejs? ==="
           grep -n "post-wordcount')" themes/matery/layout/_partial/post-detail.ejs 2>/dev/null || echo "NOT WIRED"
-          echo "=== vercount page-pv in generated posts? ==="
+          echo "=== goatcounter spans in footer + posts? ==="
+          grep -nE 'goatcounter-site-pv|goatcounter-site-uv|goatcounter-page-pv|gc.zgo.at/count.js' themes/matery/layout/_partial/footer.ejs themes/matery/layout/_partial/post-wordcount.ejs 2>/dev/null || echo "NOT FOUND"
           FIRST_POST=$(find public -name 'index.html' -path '*/202[0-9]/*' 2>/dev/null | head -1)
           if [ -n "$FIRST_POST" ]; then
             echo "Checking: $FIRST_POST"
-            grep -oE 'vercount_value_page_pv|wordcount-info|wordcount\(page|min2read\(page' "$FIRST_POST" 2>/dev/null | sort | uniq -c
+            grep -oE 'goatcounter-(site|page)-(pv|uv)|wordcount-info|wordcount\(page|min2read\(page|gc.zgo.at/count.js' "$FIRST_POST" 2>/dev/null | sort | uniq -c
           else
             echo "NO POSTS FOUND"
           fi

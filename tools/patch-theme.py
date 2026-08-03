@@ -600,29 +600,54 @@ stats_block = r"""<% if (theme.wordcount && theme.wordcount.enable) { %>
 <br>
 &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color"><%= totalcount(site) %></span>&nbsp;字
 <% } %>
-<% if (theme.siteCounter && theme.siteCounter.enable) { %>
-<span id="site-counter-pv">&nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="vercount_site_pv" class="white-color">…</span>&nbsp;次</span>
-<span id="site-counter-uv">&nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="vercount_site_uv" class="white-color">…</span>&nbsp;人</span>
-<script src="https://vercount.one/js" async></script>
+<% if (theme.siteCounter && theme.siteCounter.enable && theme.goatcounter && theme.goatcounter.code) { %>
+<span id="site-counter-pv">&nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="goatcounter-site-pv" class="white-color">…</span>&nbsp;次</span>
+<span id="site-counter-uv">&nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="goatcounter-site-uv" class="white-color">…</span>&nbsp;人</span>
 <script>
-// Fallback: if Vercount embed has not populated the spans within 3s
-// (typically because growdu.github.io is not registered with Vercount),
-// try the JSON endpoint directly, then fall back to placeholders.
-setTimeout(function(){
-  var pv=document.getElementById('vercount_site_pv');
-  var uv=document.getElementById('vercount_site_uv');
-  if(!pv||!uv)return;
-  if(pv.textContent==='…'&&uv.textContent==='…'){
-    fetch('https://vercount.one/json',{cache:'no-store'})
-      .then(function(r){return r.ok?r.json():null;})
-      .then(function(d){
-        if(d&&typeof d.site_pv!=='undefined')pv.textContent=d.site_pv;
-        if(d&&typeof d.site_uv!=='undefined')uv.textContent=d.site_uv;
-      })
-      .catch(function(){pv.textContent='—';uv.textContent='—';});
+// GoatCounter: prefer JSON endpoint (controllable typography); fall back
+// to the SVG image counter when the API path returns 404 (e.g. before any
+// hits are recorded for that namespace, or on private/self-hosted
+// instances that don't expose the JSON API).
+(function(){
+  var CODE = '<%= theme.goatcounter.code %>';
+  function gcImage(el, path, unique){
+    var u = 'https://' + CODE + '.goatcounter.com/counter/'
+          + encodeURIComponent(path) + '.svg'
+          + (unique ? '?unique' : '');
+    el.innerHTML = '<img src="' + u + '" alt="counter" '
+      + 'style="display:inline;vertical-align:middle;height:1em">';
   }
-},3000);
+  function gcFill(id, path, unique){
+    var el = document.getElementById(id);
+    if (!el) return;
+    fetch('https://' + CODE + '.goatcounter.com/counter/'
+          + encodeURIComponent(path) + '.json', {cache: 'no-store'})
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        if (d && typeof d.count !== 'undefined') {
+          el.textContent = unique ? (d.count_unique || '—') : d.count;
+        } else {
+          gcImage(el, path, unique);
+        }
+      })
+      .catch(function(){ gcImage(el, path, unique); });
+  }
+  gcFill('goatcounter-site-pv', '', false);
+  gcFill('goatcounter-site-uv', '', true);
+  // Absolute timeout: if neither JSON nor image succeeds within 5s
+  // (offline / blocked / unconfigured), show em-dashes so the footer
+  // never displays an unresolved ellipsis.
+  setTimeout(function(){
+    ['goatcounter-site-pv','goatcounter-site-uv'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el && (el.textContent === '…' || el.textContent === '')) {
+        el.textContent = '—';
+      }
+    });
+  }, 5000);
+})();
 </script>
+<script src="//gc.zgo.at/count.js" data-goatcounter="https://<%= theme.goatcounter.code %>.goatcounter.com/count" async></script>
 <% } %>"""
 
 busuanzi_block_re = re.compile(
@@ -654,7 +679,7 @@ footer_path = os.path.join(theme_dir, 'layout', '_partial', 'footer.ejs')
 if os.path.isfile(footer_path):
     with open(footer_path, encoding='utf-8') as f:
         fc = f.read()
-    if 'vercount_site_pv' in fc:
+    if 'goatcounter-site-pv' in fc:
         print('Stats block already present')
     else:
         # Insert stats block right BEFORE the sitetime span so it stays
@@ -702,29 +727,45 @@ post_wordcount_ejs = r"""<% if ((page.layout === 'post') &&
     <% if (theme.postInfo.wordCount) { %>&nbsp;|&nbsp;<% } %>
     <i class="fa fa-clock-o"></i>&nbsp;阅读时长:&nbsp;<span class="white-color"><%= min2read(page.content) %></span>&nbsp;分钟
   <% } %>
-  <% if (theme.siteCounter && theme.siteCounter.enable) { %>
+  <% if (theme.siteCounter && theme.siteCounter.enable && theme.goatcounter && theme.goatcounter.code) { %>
     <% if (theme.postInfo.wordCount || theme.postInfo.min2read) { %>&nbsp;|&nbsp;<% } %>
-    <i class="fa fa-eye"></i>&nbsp;阅读次数:&nbsp;<span id="vercount_value_page_pv" class="white-color">…</span>
+    <i class="fa fa-eye"></i>&nbsp;阅读次数:&nbsp;<span id="goatcounter-page-pv" class="white-color">…</span>
   <% } %>
 </div>
+<% if (theme.siteCounter && theme.siteCounter.enable && theme.goatcounter && theme.goatcounter.code) { %>
 <script>
-// Fallback: if Vercount embed has not populated the per-page span
-// within 3s (e.g. namespace not yet registered), hit the JSON
-// endpoint directly.  Same pattern as the site-level counter.
-setTimeout(function(){
-  var pv=document.getElementById('vercount_value_page_pv');
-  if(!pv)return;
-  if(pv.textContent==='…'){
-    fetch('https://vercount.one/json',{cache:'no-store'})
-      .then(function(r){return r.ok?r.json():null;})
-      .then(function(d){
-        if(d&&typeof d.page_pv!=='undefined')pv.textContent=d.page_pv;
-        else pv.textContent='—';
-      })
-      .catch(function(){pv.textContent='—';});
+// GoatCounter per-page PV: same JSON-prefer / SVG-image-fallback
+// pattern as the site-level counter in section 6, but for the current
+// post's path.
+(function(){
+  var CODE = '<%= theme.goatcounter.code %>';
+  function gcImage(el, path){
+    el.innerHTML = '<img src="https://' + CODE + '.goatcounter.com/counter/'
+      + encodeURIComponent(path) + '.svg" alt="counter" '
+      + 'style="display:inline;vertical-align:middle;height:1em">';
   }
-},3000);
+  var el = document.getElementById('goatcounter-page-pv');
+  if (!el) return;
+  var path = location.pathname;
+  fetch('https://' + CODE + '.goatcounter.com/counter/'
+        + encodeURIComponent(path) + '.json', {cache: 'no-store'})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (d && typeof d.count !== 'undefined') {
+        el.textContent = d.count;
+      } else {
+        gcImage(el, path);
+      }
+    })
+    .catch(function(){ gcImage(el, path); });
+  setTimeout(function(){
+    if (el && (el.textContent === '…' || el.textContent === '')) {
+      el.textContent = '—';
+    }
+  }, 5000);
+})();
 </script>
+<% } %>
 <% } %>"""
 
 post_wordcount_partial = os.path.join(theme_dir, 'layout', '_partial', 'post-wordcount.ejs')

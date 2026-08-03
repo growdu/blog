@@ -109,11 +109,13 @@ wordcount:
   enable: true
   post_wordcount: true
 
-# Site-level PV/UV via Vercount (https://vercount.one), a Chinese-friendly
-# counter designed for static blogs.  The embed script auto-populates the
-# spans <span id="vercount_site_pv"> and <span id="vercount_site_uv"> in
-# the footer.  No CORS issues, no per-namespace registration needed for
-# common use cases.
+# Site-level + per-page PV/UV via GoatCounter (https://www.goatcounter.com).
+# Register a free account, point it at https://growdu.github.io/blog/, and
+# paste your personal code (the slug in your *.goatcounter.com URL) below.
+# Leave empty to disable.
+goatcounter:
+  code: 'growdu'
+# Toggles the counter block in patch-theme.py section 6 / 7.
 siteCounter:
   enable: true
 
