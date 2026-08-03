@@ -123,11 +123,18 @@ siteCounter:
 # try to load the busuanzi.pure.mini.js script (we inject our own counter).
 busuanziStatistics:
   enable: false
+  # Render the PV / UV spans inside <div class="copy-right"> right after
+  # the copyright line.  The actual busuanzi.pure.mini.js loader is
+  # injected by patch-theme.py section 6 — keep `enable: false` above so
+  # we don't double-load the script.
+  totalTraffic: true
+  totalNumberOfvisitors: true
 
 postInfo:
   readCount: true
   wordCount: true
   min2read: true
+  totalCount: true   # 站点总字数（在 footer.ejs copy-right 容器内显示）
 
 # Table of contents on post pages (floating button + slide-out panel)
 toc:
