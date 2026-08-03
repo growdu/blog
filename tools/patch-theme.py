@@ -588,75 +588,59 @@ if not sidebar_done:
     print('WARNING: could not inject sidebars')
 
 
-# --- 6. Footer statistics: wordcount + self-hosted PV/UV ---
-# matery's default footer.ejs loads //busuanzi.ibruce.info/... which is
-# frequently blocked from mainland China networks.  We:
-#   (a) Best-effort: strip any busuanzi conditional block + script tag.
-#   (b) ALWAYS inject a stats block into layout/_partial/footer.ejs so
-#       the user always sees 总字数 / PV / UV, regardless of whether
-#       we recognised the theme's busuanzi format.
-#   Step (b) is the actual guarantee — step (a) is cosmetic cleanup.
-stats_block = r"""<%# GoatCounter SaaS (growdu.goatcounter.com) does not expose the JSON
-    counter endpoint across origins — every fetch hits CORS + 403, and
-    the SVG image counter is also blocked.  We therefore only embed the
-    tracker script (which silently records pageviews) and do NOT show
-    site-wide PV/UV numbers on the page.  Counts are visible in the
-    GoatCounter dashboard.  The per-post word count + reading time and
-    the site total word count are already rendered in the article header
-    by matery's default post-meta.ejs, so this block contains nothing
-    else. %>
+# --- 6. Footer statistics: PV/UV via busuanzi + GoatCounter embed ---
+# Visitor counts (PV/UV) and the per-page reading count are rendered by
+# busuanzi (busuanzi.ibruce.info), the standard Chinese-friendly counter
+# used by most matery deployments.  Busuanzi writes into spans with the
+# well-known IDs busuanzi_value_site_pv / busuanzi_value_site_uv /
+# busuanzi_value_page_pv; we just place the spans + script and busuanzi
+# fills them in.
+#
+# In parallel, GoatCounter (gc.zgo.at/count.js) is embedded so we have
+# an independent second counter visible at growdu.goatcounter.com.
+# GoatCounter is used as a silent tracker here (we don't display its
+# numbers, since SaaS doesn't expose the JSON endpoint across origins);
+# busuanzi does the front-end display.
+#
+# Layout: busuanzi PV/UV row + GoatCounter embed script are placed
+# DIRECTLY BELOW the <footer> element (i.e. visually below the
+# copyright container), not inside it.  The block is idempotent via
+# the 'busuanzi-footer-injected' marker comment.
+stats_block = r"""<%# busuanzi-footer-injected %>
+<% if (theme.siteCounter && theme.siteCounter.enable) { %>
+<div class="busuanzi-footer-count" style="text-align:center;padding:8px 0 0;font-size:13px;color:#888;">
+  &nbsp;<i class="far fa-eye"></i>&nbsp;本站总访问量:&nbsp;<span id="busuanzi_value_site_pv">…</span>&nbsp;次
+  &nbsp;|&nbsp;
+  <i class="fas fa-users"></i>&nbsp;本站总访客数:&nbsp;<span id="busuanzi_value_site_uv">…</span>&nbsp;人
+</div>
+<script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+<% } %>
+<%# Silent GoatCounter tracker (no front-end display; view counts at
+    growdu.goatcounter.com).  Kept as a second, independent counter. %>
 <% if (theme.siteCounter && theme.siteCounter.enable && theme.goatcounter && theme.goatcounter.code) { %>
 <script src="//gc.zgo.at/count.js" data-goatcounter="https://<%= theme.goatcounter.code %>.goatcounter.com/count" async></script>
 <% } %>"""
-
-busuanzi_block_re = re.compile(
-    r'<%\s*if\s*\(\s*theme\.busuanziStatistics[^%]*%>[\s\S]*?<%\s*}\s*%>',
-    flags=re.MULTILINE,
-)
-busuanzi_script_re = re.compile(
-    r'<script[^>]*busuanzi\.pure\.mini\.js[^>]*>\s*</script>\s*',
-)
-
-busuanzi_removed = []
-for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
-    for fname in files:
-        if not fname.endswith('.ejs'):
-            continue
-        fpath = os.path.join(root, fname)
-        with open(fpath, encoding='utf-8') as f:
-            c2 = f.read()
-        if 'busuanzi' not in c2.lower():
-            continue
-        new_c = busuanzi_block_re.sub('', c2)
-        new_c = busuanzi_script_re.sub('', new_c)
-        if new_c != c2:
-            with open(fpath, 'w', encoding='utf-8') as f:
-                f.write(new_c)
-            busuanzi_removed.append(os.path.relpath(fpath, theme_dir))
 
 footer_path = os.path.join(theme_dir, 'layout', '_partial', 'footer.ejs')
 if os.path.isfile(footer_path):
     with open(footer_path, encoding='utf-8') as f:
         fc = f.read()
-    if 'goatcounter-site-pv' in fc:
-        print('Stats block already present')
+    if 'busuanzi-footer-injected' in fc:
+        print('Busuanzi footer block already present')
     else:
-        # Insert stats block right BEFORE the sitetime span so it stays
-        # inside the .copy-right container (matches blinkfox layout).
-        sitetime_re = re.compile(r'(<span id="sitetime">)')
-        if sitetime_re.search(fc):
-            fc = sitetime_re.sub(stats_block + '\n\\t\\t' + r'\1', fc, count=1)
+        # Place the block right after </footer> so it renders BELOW the
+        # copyright container, not inside it.
+        if '</footer>' in fc:
+            fc = fc.replace('</footer>', '</footer>\n' + stats_block, 1)
             with open(footer_path, 'w', encoding='utf-8') as f:
                 f.write(fc)
-            print(f'Injected stats into {os.path.relpath(footer_path, theme_dir)} (before sitetime)')
+            print(f'Injected busuanzi footer block after </footer> in {os.path.relpath(footer_path, theme_dir)}')
         else:
-            # Fallback: append at end (older footer.ejs without sitetime)
+            # Fallback: append at end of file.
             fc = fc.rstrip() + '\n' + stats_block
             with open(footer_path, 'w', encoding='utf-8') as f:
                 f.write(fc)
-            print(f'Injected stats at end of {os.path.relpath(footer_path, theme_dir)} (no sitetime found)')
+            print(f'Appended busuanzi footer block at end of {os.path.relpath(footer_path, theme_dir)} (no </footer> found)')
 else:
     print('WARNING: footer.ejs not found at ' + footer_path)
 
-if busuanzi_removed:
-    print('Removed busuanzi from: ' + ', '.join(busuanzi_removed))
