@@ -132,3 +132,13 @@ postInfo:
 # Table of contents on post pages (floating button + slide-out panel)
 toc:
   enable: true
+
+# Reward / 打赏
+# WeChat and Alipay QR codes live at repo root (weixin.jpg, zhifubao.jpg)
+# and are published into themes/matery/source/medias/reward/ by
+# patch-theme.py section 1.7 on every build.
+reward:
+  enable: true
+  title: 您的支持是我持续更新的最大动力
+  wechat: /medias/reward/weixin.jpg
+  alipay: /medias/reward/zhifubao.jpg

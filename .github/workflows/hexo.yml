@@ -95,6 +95,8 @@ jobs:
           grep -nE 'busuanzi-footer-injected|busuanzi_value_site_pv|busuanzi_value_site_uv|gc.zgo.at/count.js' themes/matery/layout/_partial/footer.ejs 2>/dev/null || echo "NOT FOUND"
           echo "=== per-page PV in post-meta? ==="
           grep -n 'busuanzi_value_page_pv' themes/matery/layout/_partial/post-meta.ejs 2>/dev/null || echo "NOT INJECTED"
+          echo "=== reward QR images published? ==="
+          ls -la themes/matery/source/medias/reward/ 2>/dev/null || echo "NOT FOUND"
           FIRST_POST=$(find public -name 'index.html' -path '*/202[0-9]/*' 2>/dev/null | head -1)
           if [ -n "$FIRST_POST" ]; then
             echo "Checking: $FIRST_POST"

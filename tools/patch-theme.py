@@ -66,6 +66,30 @@ if os.path.isdir(THEME_ASSETS_DIR):
 else:
     print(f'WARNING: {THEME_ASSETS_DIR} not found, theme assets not published', file=sys.stderr)
 
+# --- 1.7. Publish reward QR codes from repo root ---
+# matery's default reward.ejs partial reads theme.reward.wechat /
+# theme.reward.alipay and renders the corresponding /medias/reward/*
+# images next to the article body.  Copy the user's weixin.jpg /
+# zhifubao.jpg from the repo root into themes/matery/source/medias/reward/
+# so that the configured paths resolve at build time.
+REWARD_DIR = os.path.join(theme_dir, 'source', 'medias', 'reward')
+reward_pairs = [
+    ('weixin.jpg',   'weixin.jpg'),
+    ('zhifubao.jpg', 'zhifubao.jpg'),
+]
+reward_copied = []
+for src_name, dst_name in reward_pairs:
+    src = src_name
+    if not os.path.isfile(src):
+        print(f'WARNING: {src} not found, skipping', file=sys.stderr)
+        continue
+    os.makedirs(REWARD_DIR, exist_ok=True)
+    dst = os.path.join(REWARD_DIR, dst_name)
+    shutil.copy2(src, dst)
+    reward_copied.append(dst_name)
+if reward_copied:
+    print(f'Published {len(reward_copied)} reward QR(s) into {os.path.relpath(REWARD_DIR, theme_dir)}: {", ".join(reward_copied)}')
+
 # --- 2. Inject prism.js CSS + Mermaid.js ---
 inject_css = """<meta property="og:title" content="<%= page.title || config.title %>">
 <meta name="theme-color" content="#009688">
