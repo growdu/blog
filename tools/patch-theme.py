@@ -114,13 +114,13 @@ reward_ejs = r"""<% if (theme.reward && theme.reward.enable) { %>
     <div class="reward-modal-qrs">
       <% if (theme.reward.wechat) { %>
       <div class="reward-modal-qr">
-        <img src="<%= theme.reward.wechat %>" alt="微信支付">
+        <img src="<%= config.root %>medias/reward/weixin.jpg" alt="微信支付">
         <p><i class="fab fa-weixin"></i>&nbsp;微信支付</p>
       </div>
       <% } %>
       <% if (theme.reward.alipay) { %>
       <div class="reward-modal-qr">
-        <img src="<%= theme.reward.alipay %>" alt="支付宝">
+        <img src="<%= config.root %>medias/reward/zhifubao.jpg" alt="支付宝">
         <p><i class="fab fa-alipay"></i>&nbsp;支付宝</p>
       </div>
       <% } %>
@@ -132,13 +132,24 @@ reward_ejs = r"""<% if (theme.reward && theme.reward.enable) { %>
 (function(){
   var modal = document.getElementById('reward-modal');
   if (!modal) return;
-  function open(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
+  function positionNearTrigger(){
+    var btn = document.querySelector('[data-reward-open]');
+    if (!btn) return;
+    var rect = btn.getBoundingClientRect();
+    var pageY = window.pageYOffset || document.documentElement.scrollTop;
+    modal.style.top = (pageY + rect.top - 60) + 'px';
+  }
+  function open(){
+    positionNearTrigger();
+    modal.classList.add('show');
+    modal.setAttribute('aria-hidden','false');
+  }
   function close(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
   document.querySelectorAll('[data-reward-open]').forEach(function(b){
     b.addEventListener('click', function(e){ e.preventDefault(); open(); });
   });
   modal.addEventListener('click', function(e){
-    if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-reward-close')) {
+    if (e.target && e.target.closest && e.target.closest('[data-reward-close]')) {
       close();
     }
   });
@@ -491,7 +502,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2p
 .reward-row{text-align:center;margin:30px 0 10px}
 .reward-open-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 22px;background:linear-gradient(135deg,#ff6b6b,#ee5a52);color:#fff;border:none;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 2px 8px rgba(238,90,82,.35)}
 .reward-open-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(238,90,82,.5)}
-.reward-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center}
+.reward-modal{position:absolute;left:50%;top:0;transform:translateX(-50%);z-index:9999;display:none;align-items:center;justify-content:center;width:100%}
 .reward-modal.show{display:flex}
 .reward-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55)}
 .reward-modal-content{position:relative;background:#fff;border-radius:12px;padding:28px 36px 24px;max-width:92vw;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center}
