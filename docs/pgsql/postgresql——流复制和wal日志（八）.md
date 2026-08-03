@@ -375,7 +375,7 @@ pg_basebackup命令中的参数说明：
 -D 指定把备份写到哪个目录，这里尤其要注意一点就是做基础备份之前从库的数据目录（/data/postgresql/data）目录需要手动清空。
 -l 表示指定个备份的标识，运行命令后可以看到进度提示。
 ```text
-#### 修改recovery.conf,以上备份命令中生成了recovery.conf 文件,因此简单修改即可。
+### 修改recovery.conf,以上备份命令中生成了recovery.conf 文件,因此简单修改即可。
 
 ```text
 standby_mode = 'on'
@@ -406,7 +406,7 @@ pg_basebackup命令中的参数说明：
 -D 指定把备份写到哪个目录，这里尤其要注意一点就是做基础备份之前从库的数据目录（/data/postgresql/data）目录需要手动清空。
 -l 表示指定个备份的标识，运行命令后可以看到进度提示。
 ```text
-#### 修改recovery.conf,以上备份命令中生成了recovery.conf 文件,因此简单修改即可。
+### 修改recovery.conf,以上备份命令中生成了recovery.conf 文件,因此简单修改即可。
 
 ```text
 standby_mode = 'on'

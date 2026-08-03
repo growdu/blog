@@ -1,6 +1,6 @@
 # [kali](https://so.csdn.net/so/search?q=kali&spm=1001.2101.3001.7020)搭建docker
 
-### 更新kali源
+## 更新kali源
 
 ```text
 sudo apt update

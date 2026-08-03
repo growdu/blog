@@ -386,7 +386,7 @@ CREATE TABLE t1
 
 主要涉及以下模块：
 
-### SQL接口
+## SQL接口
 
 ```text
 publicationcmds.c
@@ -469,7 +469,7 @@ worker.c
 
 在 PostgreSQL 的逻辑复制中：
 
-### 1 表结构不要求完全一致
+## 1 表结构不要求完全一致
 
 例如：
 
@@ -659,7 +659,7 @@ DDL replication = strict schema mode
 
 可以在 **CREATE SUBSCRIPTION** 中增加模式。
 
-### 新参数
+## 新参数
 
 ```sql
 CREATE SUBSCRIPTION sub1
@@ -689,7 +689,7 @@ disabled
 
 在 strict 模式下：
 
-### 1 publisher / subscriber schema 必须一致
+## 1 publisher / subscriber schema 必须一致
 
 在 subscription 建立时检查：
 
@@ -854,7 +854,7 @@ ProcessUtility
 
 实现两种模式：
 
-### 1 标准模式（默认）
+## 1 标准模式（默认）
 
 ```text
 DML replication only

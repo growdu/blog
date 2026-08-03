@@ -35,7 +35,7 @@ lsmod | grep 8021q
 # 若没有需先加载
 modprobe 8021q
 ```text
-### 安装vconfig
+## 安装vconfig
 
 ```shell
 wget https://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/v/vconfig-1.9-16.el7.x86_64.rpm
@@ -86,7 +86,7 @@ ifconfig ens33.200 172.168.1.200/24 up
 cat /proc/net/vlan/ens33.100
 cat /proc/net/vlan/ens33.200
 ```text
-### 设置vlan优先级
+## 设置vlan优先级
 
 ```shell
 # 将vlan出口包的优先级改为2

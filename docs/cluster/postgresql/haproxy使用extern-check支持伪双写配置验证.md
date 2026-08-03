@@ -24,7 +24,7 @@ hot_standby = on
 ```shell
 pg_ctl -D data -l logfile start
 ```text
-### cloen备库
+## cloen备库
 
 ```shell
 pg_basebackup -h localhost -p 5432 -D data1 -U repl -P -v -R -X stream -C -S standby1_slot

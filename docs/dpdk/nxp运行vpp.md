@@ -360,7 +360,7 @@ Packet 1
 00:00:50:840561: error-drop
   ip4-input: ip4 source lookup miss
 ```text
-#### 抓包
+## 抓包
 
 ```shell
  # 抓包
@@ -374,7 +374,7 @@ pcap rx trace on max 1000 intfc TenGigabitEthernet0 file vppTest.pcap
 pcap rx trace status
 pcap rx trace off
 ```text
-#### 启动时丢包
+### 启动时丢包
 
 ```shell
 

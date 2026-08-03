@@ -71,7 +71,7 @@ LICENSE.txt  NOTICE.txt  README.asciidoc  bin  config  data  jdk  lib  logs  mod
 elasticsearch@4c37fcfb6f13:~$ bin/elasticsearch-reset-password --username elastic -i
 bin/elasticsearch-reset-password --username kibana -i
 ```text
-#### 搭建kibana
+## 搭建kibana
 
 ```shell
 mkdir kibana

@@ -198,7 +198,7 @@ ifconfig eno2 192.168.8.26/16
 
 # NXP
 
-### 编译
+## 编译
 
 ```shell
 export CROSS=/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-

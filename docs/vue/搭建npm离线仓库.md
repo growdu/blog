@@ -2,7 +2,7 @@
 
 要在离线环境下使用 Docker 和 Verdaccio 搭建私有的 npm 镜像仓库，你可以按照以下步骤进行操作：
 
-### 1. 安装 Docker
+## 1. 安装 Docker
 确保你的系统上已经安装了 Docker。如果没有安装，请参考 Docker 的官方文档进行安装。
 
 ### 2. 拉取 Verdaccio 镜像
@@ -98,7 +98,7 @@ done
 ```text
 这个脚本会遍历 `node_modules` 目录下的所有依赖包，并使用 `npm pack` 将它们打包到 `npm-packages` 文件夹中。
 
-### 3. 传输依赖包到离线环境
+## 3. 传输依赖包到离线环境
 将 `npm-packages` 文件夹传输到离线环境中。在离线环境中，进入该文件夹并逐个安装 `.tgz` 文件：
 
 ```bash
@@ -174,7 +174,7 @@ done
 - 该脚本仅发布顶级依赖（非嵌套依赖包），如果你需要发布嵌套依赖包，也可以调整脚本递归遍历。
 - 使用 `npm version patch --no-git-tag-version` 确保每次发布时包的版本号都递增，避免重复发布相同版本的包。
 
-### 4. 发布 Scoped Packages （如果有）
+## 4. 发布 Scoped Packages （如果有）
 
 如果你的项目使用了 Scoped Packages（如 `@scope/package-name`），它们会存储在 `node_modules/@scope/` 目录下。可以通过修改脚本来处理这部分包：
 
@@ -195,7 +195,7 @@ done
 ```text
 这个部分脚本会处理 `node_modules` 目录中的 Scoped Packages。
 
-### 5. 检查发布结果
+## 5. 检查发布结果
 
 完成后，你可以通过访问 Verdaccio Web 界面或使用 `npm view` 命令来验证发布的包：
 

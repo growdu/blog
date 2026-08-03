@@ -16,7 +16,7 @@ Linux Kernel在设计配置和编译体系时至少应该有如下几点考虑�
 
 Kconfig，顾名思义，用于辅助2.6以后版本Linux内核的配置(**K**ernel **config**)；Kbuild，也物如其名，用于辅助2.6以后版本Linux内核的编译(**K**ernel **build**)。这里索性将Kconfig和Kbuild称作辅助工具(不单纯叫脚本或配置文件)，因为它们自身既有逻辑概念，又有物理存在。如果你曾在Linux Kernel的源码目录中徜徉过，你就会知道Kconfig文件散布在核心源码的各个角落；Kbuild文件还好，只在顶层目录、include目录下子目录、drivers下子目录以及各个arch/$ARCH/include的子目录中分布。
 
-### make *config阶段
+## make *config阶段
 
 # reference
 

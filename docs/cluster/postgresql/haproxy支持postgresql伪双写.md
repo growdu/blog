@@ -271,7 +271,7 @@ HAProxy 在 **TCP/HTTP 或 external 脚本层面**都有实现机制。
 
 # **2️⃣ TCP 健康检查**
 
-### **原理**
+## **原理**
 
 * HAProxy 只在 **TCP 层**建立连接
 * 检查 server **端口是否可达**
@@ -312,7 +312,7 @@ backend pg_primary
 
 # **3️⃣ HTTP 健康检查**
 
-### **原理**
+## **原理**
 
 * 在 **HTTP 层**发起请求（GET/HEAD/POST 等）
 * 根据返回状态码判断 server 健康：
@@ -354,7 +354,7 @@ backend web_app
 
 # **4️⃣ External-check 健康检查**
 
-### **原理**
+## **原理**
 
 * `external-check` 允许 HAProxy **调用外部脚本**判断节点健康
 * 脚本返回 **exit code** 控制节点状态：

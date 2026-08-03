@@ -84,22 +84,43 @@ def check_file(p):
                               f'jump from H{prev_level} to H{lvl}: {line.strip()[:40]}'))
             prev_level = lvl
 
-    # 7. Table format: check pipe-table separator rows
+    # 7. Table format: only flag mismatches when the separator line is
+    # actually bracketed by real table rows on both sides.  A bare
+    # "---|---|" between blank paragraphs (often used as a visual rule,
+    # not a table) used to flag false-positives in 148 places.
+    def is_table_row(ln):
+        s = ln.rstrip()
+        return s.startswith('|') and s.count('|') >= 2
+    def is_separator(ln):
+        return bool(re.match(r'^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$', ln))
     for i, line in enumerate(raw_lines, 1):
-        if re.match(r'^\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)+\|?\s*$', line):
-            stats['tables'] += 1
-            # Check column count matches previous & next rows
-            this_cols = line.count('|')
-            if i >= 2:
-                prev_cols = raw_lines[i-2].count('|')
-                if prev_cols != this_cols:
-                    issues.append((i, 'table-col-mismatch',
-                                  f'separator has {this_cols} cols, row above has {prev_cols}'))
-            if i < len(raw_lines):
-                next_cols = raw_lines[i].count('|') if i < len(raw_lines) else 0
-                if next_cols != this_cols:
-                    issues.append((i, 'table-col-mismatch',
-                                  f'separator has {this_cols} cols, row below has {next_cols}'))
+        if not is_separator(line):
+            continue
+        # Walk back for a real table row (skip blank lines)
+        prev_cols = None
+        for j in range(i-2, max(-1, i-6), -1):
+            if raw_lines[j].strip() == '':
+                continue
+            if is_table_row(raw_lines[j]):
+                prev_cols = raw_lines[j].count('|')
+            break
+        next_cols = None
+        for j in range(i, min(len(raw_lines), i+4)):
+            if raw_lines[j].strip() == '':
+                continue
+            if is_table_row(raw_lines[j]):
+                next_cols = raw_lines[j].count('|')
+            break
+        if prev_cols is None and next_cols is None:
+            continue  # separator is isolated — not a real table
+        stats['tables'] += 1
+        this_cols = line.count('|')
+        if prev_cols is not None and prev_cols != this_cols:
+            issues.append((i, 'table-col-mismatch',
+                          f'separator has {this_cols} cols, row above has {prev_cols}'))
+        if next_cols is not None and next_cols != this_cols:
+            issues.append((i, 'table-col-mismatch',
+                          f'separator has {this_cols} cols, row below has {next_cols}'))
 
     # 8. Triple-or-more blank lines
     blank_run = 0

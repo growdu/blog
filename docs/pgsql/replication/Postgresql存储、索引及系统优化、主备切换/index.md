@@ -1581,7 +1581,7 @@ primary_conninfo = 'user=postgres password=postgres channel_binding=disable host
 ```text
 如果没有加“-R”参数，我们也可以手动添加上面的内容。
 
-#### 4.3.4 启动Standby数据库
+## 4.3.4 启动Standby数据库
 
 在启动Standby数据库之前，检查standby数据库postgresql.conf中的参数“hot_standby”是否为“on”，设置该参数是为了让备库是Hot Standby，即可以对外提供只读服务。当然该参数在较新版本的PostgreSQL中默认已经被设置成“on”。
 
@@ -1603,7 +1603,7 @@ postgres=# select client_addr,client_port,state,sync_state from pg_stat_replicat
 
 因为Hot Standby是只读的，所以如果在Standby上做修改，会操作失败。
 
-#### 4.3.5 switchover（交换主备库的角色）
+### 4.3.5 switchover（交换主备库的角色）
 
 对于Oracle数据库的DBA来说，切换Oracle数据库的主备库之间的角色的过程叫“switchover”，Oracle提供了相应的“switchover”的一些较复杂的命令和过程。对于PostgreSQL数据库来说，切换操作的步骤比较简单：
 

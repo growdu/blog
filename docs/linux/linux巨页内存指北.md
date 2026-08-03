@@ -261,7 +261,7 @@ int main(int argc, char *argv[])
 
   可以发现巨页个数又恢复到了最开始配置的16个。
 
-### shmget
+## shmget
 
 shmget属于**XSI共享内存**，是X/Open组织对UNIX定义的一套接口标准（X/Open System Interface）。其底层实现与mmap一致。
 

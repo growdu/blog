@@ -68,7 +68,7 @@ VFIO是一个可以安全的把设备I/O、中断、DMA等暴露到用户空间�
 
 ## VFIO主要概念
 
-#### group
+### group
 
 group 是IOMMU能够进行DMA隔离的最小硬件单元，一个group内可能只有一个device，也可能有多个device，这取决于物理平台上硬件的IOMMU拓扑结构。
 

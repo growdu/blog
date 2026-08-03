@@ -270,7 +270,7 @@ kni [EAL options] -- -p PORTMASK --config="(port,lcore_rx,lcore_tx[,lcore_kthrea
 
 ifconfig vEth0 121.168.1.12/24
 ```text
-### 定位追踪
+## 定位追踪
 
 在kni_net.c的kni_rx_normal中的382行添加如下代码：
 

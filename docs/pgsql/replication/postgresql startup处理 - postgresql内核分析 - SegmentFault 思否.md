@@ -696,14 +696,14 @@ database postgres, application_name psql, client_encoding UTF8
 'K' : secret 
 'Z' : ready 
 ```text
-##### 结语
+## 结语
 
 本文分析了startup的主要流程，并且以application_name为线索，帮助更连贯的理解整体流程。在这个过程中，对backend process有了更深入理解，其process管理，signal，semaphore，GUC，与client间的通信模型，消息结构等等。
 
-##### Q&A
+### Q&A
 
 暂无
 
-##### 遗留问题
+#### 遗留问题
 
 还有很多地方没有进行详细分析(特别是mark TODO的)，后续再做进一步分析。

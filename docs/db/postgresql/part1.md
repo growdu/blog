@@ -26,7 +26,7 @@ src/backend/main/main.c
 ```text
 这个代码片段的主要目的是在程序启动时进行一些特定平台的初始化，并保存原始的 `argv[]` 数组以便在设置进程标题时使用。以下是详细解析：
 
-### 1. 获取程序名称
+## 1. 获取程序名称
 ```c
 progname = get_progname(argv[0]);
 ```text

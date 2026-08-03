@@ -301,7 +301,7 @@ local0                            0     down          0/0/0/0
 vpp#set int state TenGigabitEthernet0 up
 
 ```text
-### 配置详解
+## 配置详解
 
 - unix
 - api-trace

@@ -54,7 +54,7 @@ sudo systemctl restart postgresql-15
 # 或
 pg_ctl restart -D /var/lib/pgsql/15/data
 ```text
-### 2. 创建测试数据库和用户
+## 2. 创建测试数据库和用户
 
 ```sql
 -- 创建测试数据库
@@ -229,7 +229,7 @@ pg_waldump 000000010000000000000001 -p
 # 如果要查看特定 LSN 范围的 WAL
 pg_waldump 000000010000000000000001 -s 0/1000000 -e 0/2000000
 ```text
-### 3.3 分析 DDL 的 WAL 记录
+## 3.3 分析 DDL 的 WAL 记录
 
 DDL 操作在 WAL 中通常记录为：
 1. **XLOG_SMGR_CREATE**：创建文件
@@ -281,7 +281,7 @@ pg_waldump 000000010000000000000001 -s 0/3000000 -e 0/4000000 -r heap
 ```text
 `-r heap` 参数只显示堆表相关的 WAL 记录。
 
-### 4.3 WAL 记录结构分析
+## 4.3 WAL 记录结构分析
 
 一个典型的 INSERT WAL 记录包含：
 - **事务ID**（xid）
@@ -428,7 +428,7 @@ du -sh /var/lib/pgsql/15/data/pg_wal/
 # 查看当前正在使用的WAL文件
 psql -c "SELECT pg_walfile_name(pg_current_wal_lsn());"
 ```text
-### 7.2 数据文件追踪
+## 7.2 数据文件追踪
 
 每个表对应一个或多个数据文件（在 `base` 目录中）。
 
@@ -496,7 +496,7 @@ log_timezone = 'UTC'
 # 启动 PostgreSQL 服务
 sudo systemctl start postgresql-15
 ```text
-#### 步骤2：初始化测试环境
+## 步骤2：初始化测试环境
 ```sql
 -- 创建测试数据库
 DROP DATABASE IF EXISTS logical_test;
@@ -516,7 +516,7 @@ CREATE TABLE experiment_table (
 -- 创建发布
 CREATE PUBLICATION experiment_pub FOR TABLE experiment_table;
 ```text
-#### 步骤3：监控脚本准备
+### 步骤3：监控脚本准备
 创建一个监控脚本 `monitor_replication.sh`：
 
 ```bash
@@ -552,7 +552,7 @@ while true; do
     sleep 2
 done
 ```text
-#### 步骤4：执行 DDL 操作并观察
+## 步骤4：执行 DDL 操作并观察
 ```sql
 -- 记录开始LSN
 SELECT pg_current_wal_lsn() AS start_lsn \gset
@@ -566,7 +566,7 @@ SELECT pg_current_wal_lsn() AS end_lsn \gset
 -- 计算DDL产生的WAL大小
 SELECT pg_wal_lsn_diff(:'end_lsn', :'start_lsn') AS ddl_wal_size;
 ```text
-#### 步骤5：执行 DML 操作并观察
+### 步骤5：执行 DML 操作并观察
 ```sql
 -- 批量插入数据
 INSERT INTO experiment_table (operation_type, data, ddl_marker)
@@ -623,7 +623,7 @@ pg_waldump /var/lib/pgsql/15/data/pg_wal/$WAL_FILE -s :'start_lsn' -e :'current_
 # 查看解析结果
 head -100 experiment_wal_dump.txt
 ```text
-#### 步骤8：验证数据一致性
+## 步骤8：验证数据一致性
 ```sql
 -- 在发布者和订阅者比较数据
 \c logical_test
@@ -853,11 +853,11 @@ log_connections = on
 log_disconnections = on
 log_replication_commands = on
 ```text
-### C. WAL 日志实际示例分析
+## C. WAL 日志实际示例分析
 
 以下是使用 `pg_waldump` 工具解析的实际 WAL 日志示例，展示了不同操作对应的 WAL 记录。
 
-#### 示例1：INSERT 操作的 WAL 记录
+### 示例1：INSERT 操作的 WAL 记录
 
 ```plaintext
 rmgr: Heap        len (rec/tot):     70/   114, tx:       1234, lsn: 0/1512345, prev 0/1512000, desc: INSERT+INIT

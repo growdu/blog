@@ -34,7 +34,7 @@ with open("list.yaml", encoding="utf-8") as f:
     for d in data:
         print(d)
 ```text
-### yaml列表字典
+## yaml列表字典
 
 ```shell
 -
