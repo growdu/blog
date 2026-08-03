@@ -681,35 +681,26 @@ if not sidebar_done:
     print('WARNING: could not inject sidebars')
 
 
-# --- 6. Footer statistics: PV/UV via busuanzi + GoatCounter embed ---
-# Visitor counts (PV/UV) and the per-page reading count are rendered by
-# busuanzi (busuanzi.ibruce.info), the standard Chinese-friendly counter
-# used by most matery deployments.  Busuanzi writes into spans with the
-# well-known IDs busuanzi_value_site_pv / busuanzi_value_site_uv /
-# busuanzi_value_page_pv; we just place the spans + script and busuanzi
-# fills them in.
-#
-# In parallel, GoatCounter (gc.zgo.at/count.js) is embedded so we have
-# an independent second counter visible at growdu.goatcounter.com.
-# GoatCounter is used as a silent tracker here (we don't display its
-# numbers, since SaaS doesn't expose the JSON endpoint across origins);
-# busuanzi does the front-end display.
-#
-# Layout: busuanzi PV/UV row + GoatCounter embed script are placed
-# DIRECTLY BELOW the <footer> element (i.e. visually below the
-# copyright container), not inside it.  The block is idempotent via
-# the 'busuanzi-footer-injected' marker comment.
-stats_block = r"""<%# busuanzi-footer-injected %>
+# --- 6. Footer scripts: busuanzi.pure.mini.js + GoatCounter embed ---
+# The <div class="busuanzi-footer-count"> PV/UV display block that an
+# earlier version of this script injected after </footer> is GONE:
+# the .copy-right container itself already renders the same stats, so
+# a second <div> immediately below the copyright line was redundant.
+# What stays here are the script tags only:
+#   * busuanzi.pure.mini.js — fills in the per-page PV span that
+#     section 7 injects into post-meta.ejs (and any busuanzi_value_*
+#     spans the .copy-right container still carries from earlier
+#     commits).
+#   * GoatCounter embed script — silent tracker; counts are visible at
+#     growdu.goatcounter.com.  SaaS CORS blocks the JSON endpoint, so
+#     we never display its numbers on the page.
+# Idempotent via the 'busuanzi-scripts-injected' marker.  The legacy
+# marker 'busuanzi-footer-injected' (and any <div> it left behind) is
+# stripped on every run so we converge on the new layout.
+stats_block = r"""<%# busuanzi-scripts-injected %>
 <% if (theme.siteCounter && theme.siteCounter.enable) { %>
-<div class="busuanzi-footer-count" style="text-align:center;padding:8px 0 0;font-size:13px;color:#888;">
-  &nbsp;<i class="far fa-eye"></i>&nbsp;本站总访问量:&nbsp;<span id="busuanzi_value_site_pv">…</span>&nbsp;次
-  &nbsp;|&nbsp;
-  <i class="fas fa-users"></i>&nbsp;本站总访客数:&nbsp;<span id="busuanzi_value_site_uv">…</span>&nbsp;人
-</div>
 <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 <% } %>
-<%# Silent GoatCounter tracker (no front-end display; view counts at
-    growdu.goatcounter.com).  Kept as a second, independent counter. %>
 <% if (theme.siteCounter && theme.siteCounter.enable && theme.goatcounter && theme.goatcounter.code) { %>
 <script src="//gc.zgo.at/count.js" data-goatcounter="https://<%= theme.goatcounter.code %>.goatcounter.com/count" async></script>
 <% } %>"""
@@ -718,22 +709,45 @@ footer_path = os.path.join(theme_dir, 'layout', '_partial', 'footer.ejs')
 if os.path.isfile(footer_path):
     with open(footer_path, encoding='utf-8') as f:
         fc = f.read()
-    if 'busuanzi-footer-injected' in fc:
-        print('Busuanzi footer block already present')
+
+    # (a) Strip the legacy <div class="busuanzi-footer-count">...</div>
+    # block that an earlier run may have left in footer.ejs (it duplicated
+    # the stats already shown inside the .copy-right container).
+    legacy_div_re = re.compile(
+        r'<div class="busuanzi-footer-count"[^>]*>.*?</div>\s*\n?',
+        re.DOTALL,
+    )
+    fc, legacy_n = legacy_div_re.subn('', fc)
+
+    # (b) Migrate the legacy marker to the new one so we don't keep
+    # "skipping" the injection logic on re-runs of an old theme tree.
+    fc = fc.replace('busuanzi-footer-injected', 'busuanzi-scripts-injected')
+
+    if 'busuanzi-scripts-injected' in fc:
+        if legacy_n:
+            print(f'Stripped {legacy_n} legacy <div class="busuanzi-footer-count"> '
+                  f'from {os.path.relpath(footer_path, theme_dir)}; scripts already in place')
+        else:
+            print(f'Busuanzi/GoatCounter scripts already present in '
+                  f'{os.path.relpath(footer_path, theme_dir)}')
+        if legacy_n:
+            with open(footer_path, 'w', encoding='utf-8') as f:
+                f.write(fc)
     else:
-        # Place the block right after </footer> so it renders BELOW the
-        # copyright container, not inside it.
+        # Place the script block right after </footer> so it shares the
+        # footer slot but stays outside the .copy-right container — the
+        # container has its own (different) display, we just need the
+        # script tags here.
         if '</footer>' in fc:
             fc = fc.replace('</footer>', '</footer>\n' + stats_block, 1)
-            with open(footer_path, 'w', encoding='utf-8') as f:
-                f.write(fc)
-            print(f'Injected busuanzi footer block after </footer> in {os.path.relpath(footer_path, theme_dir)}')
+            print(f'Injected busuanzi/GoatCounter scripts after </footer> in '
+                  f'{os.path.relpath(footer_path, theme_dir)}')
         else:
-            # Fallback: append at end of file.
             fc = fc.rstrip() + '\n' + stats_block
-            with open(footer_path, 'w', encoding='utf-8') as f:
-                f.write(fc)
-            print(f'Appended busuanzi footer block at end of {os.path.relpath(footer_path, theme_dir)} (no </footer> found)')
+            print(f'Appended busuanzi/GoatCounter scripts at end of '
+                  f'{os.path.relpath(footer_path, theme_dir)} (no </footer> found)')
+        with open(footer_path, 'w', encoding='utf-8') as f:
+            f.write(fc)
 else:
     print('WARNING: footer.ejs not found at ' + footer_path)
 
