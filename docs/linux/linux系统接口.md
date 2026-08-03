@@ -40,7 +40,7 @@
 >	printf ( " CPU 个数为: %ld 个\n " , num_procs);
 >
 >	page_size  =  sysconf (_SC_PAGESIZE);
->    printf ( " 系统页面的大小为: %ld K\n " , page_size  /   1024  );
+>    printf ( " 系统页面的大小为: %ld Kn " , page_size  /   1024  );
 >
 >    num_pages  =  sysconf (_SC_PHYS_PAGES);
 >    printf ( " 系统中物理页数个数: %ld 个\n " , num_pages);
@@ -92,7 +92,7 @@
 >#include <sys/types.h> 
 >int main() {
 >	long id = syscall(SYS_gettid);
->	printf("tid is %ld\n",id);
+>	printf("tid is %ldn",id);
 >}
 >```
 >
@@ -148,10 +148,7 @@ pagemap文件为二进制文件，要查看其文件内容可以使用od命名�
 
 ```shell
 od /proc/self/pagemap
-```
-
-
-
+```text
 ## mmap
 
 头文件 sys/mman.h

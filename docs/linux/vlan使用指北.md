@@ -34,15 +34,13 @@ vlan协议即IEE8021Q，在linux内核中若想使用vlan协议，需先加载80
 lsmod | grep 8021q
 # 若没有需先加载
 modprobe 8021q
-```
-
+```text
 ### 安装vconfig
 
 ```shell
 wget https://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/v/vconfig-1.9-16.el7.x86_64.rpm
 rpm -Uvh vconfig-1.9-16.el7.x86_64.rpm
-```
-
+```text
 vconfig参数如下：
 
 ```shell
@@ -71,10 +69,7 @@ Usage: add             [interface-name] [vlan_id]
             location of bytes.  If you don't need it, don't turn it on, because
             there will be at least a small performance degradation.  Default
             is OFF.
-```
-
-
-
+```text
 ### 配置vlan
 
 ```shell
@@ -90,8 +85,7 @@ ifconfig ens33.200 172.168.1.200/24 up
 #查看配置信息
 cat /proc/net/vlan/ens33.100
 cat /proc/net/vlan/ens33.200
-```
-
+```text
 ### 设置vlan优先级
 
 ```shell
@@ -110,5 +104,4 @@ Device: ens33
 INGRESS priority mappings: 0:0  1:0  2:0  3:0  4:0  5:0  6:0 7:0
  EGRESS priority mappings: 0:2
 [root@localhost ~]#
-```
-
+```text

@@ -18,8 +18,6 @@ Kconfig，顾名思义，用于辅助2.6以后版本Linux内核的配置(**K**er
 
 ### make *config阶段
 
-
-
 # reference
 
 1. http://www.360doc.com/content/15/0610/18/4672432_477198876.shtml

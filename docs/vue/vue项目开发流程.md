@@ -5,16 +5,14 @@
 ```shell
 asdf plugin add nodejs
 asdf install nodejs 16.20.2
-```
-
+```text
 ## 创建项目
 
 ```shell
 npm create vite@latest my-vue-app -- --template vue
 npm install 
 npm run dev
-```
-
+```text
 ### 修改调试端口
 
 修改vite.config.js,修改如下所示，添加server的host和port。
@@ -32,8 +30,7 @@ export default defineConfig({
   }
 })
 
-```
-
+```text
 ## 项目结构
 
 - index.html
@@ -54,7 +51,7 @@ export default defineConfig({
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
-```
+```text
 这个html里的内容也是可以更改的，比如这里的` <head>`标签里的内容。
 
 - main,js
@@ -67,8 +64,7 @@ import './style.css'
 import App from './App.vue'
 
 createApp(App).mount('#app')
-```
-
+```text
 在这个文件里主要是把vue接口导入进来，以及导入css，然后导入App.vue，到这里入口传到到App.vue。
 
 main.js会将vue框架mount到界面。这些一般都不需要更改，除非需要引入其他的东西。
@@ -85,8 +81,7 @@ import HelloWorld from './components/HelloWorld.vue'
 <template>
   <HelloWorld msg="anycode开发环境" />
 </template>
-```
-
+```text
 vue采用组件化和模板化来开发，在开头可以引入其他的组件，这个一般是封装好的组件，放在components目录下。
 
 比如上面的例子中就导入了HelloWorld这个组件。
@@ -112,4 +107,4 @@ defineProps({
     hello,anycode.
   </p>
 </template>
-```
+```text

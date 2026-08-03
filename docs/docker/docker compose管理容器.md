@@ -25,19 +25,14 @@ services:
     # 启动命令：daemon off 将 nginx 提到前台避免容器退出
     command: /usr/sbin/init
 
-```
-
-
-
+```text
 ## 启动容器
 
 ```shell
 sudo docker-compose up -d
-```
-
+```text
 ## 查看容器状态
 
 ```shell
 sudo docker-compose ps
-```
-
+```text

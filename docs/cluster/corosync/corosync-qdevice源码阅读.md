@@ -8,8 +8,5 @@ TLV_VOTE_ACK
 
 MSG_TYPE_ASK_FOR_VOTE
 
-
 qnetd_algorithm_register_all
-```
-
-
+```text

@@ -54,14 +54,12 @@ nfs共发布了3个版本：NFSv2、NFSv3、NFSv4，NFSv4包含两个次版本NF
 
 ```shell
 yum install rpcbind nfs-utils
-```
-
+```text
 2. 配置共享文件
 
 ```shell
 echo "/data *(rw,sync,root_squash)" >> /etc/exports
-```
-
+```text
 其中*表示不限制ip，任何ip均可访问。括号中的rw是对权限或者其他选项的控制，具体如下：
 
 -  ro 该主机对该共享目录有只读权限
@@ -104,28 +102,24 @@ echo "/data *(rw,sync,root_squash)" >> /etc/exports
 
 ```shell
 exportfs -rv
-```
-
+```text
 4. 启动nfs
 
 ```shell
 systemctl start nfs
-```
-
+```text
 5. 查看共享
 
 ```shell
 showmount -e localhost
-```
-
+```text
 ## 客户端连接
 
 ### linux
 
 ```shell
 mount localhost:/data /mnt
-```
-
+```text
 ### windows
 
 需要在程序与功能中开启nfs相关功能。
@@ -133,9 +127,8 @@ mount localhost:/data /mnt
 开启后打开命令行就可以正常使用mount命令。
 
 ```shell
-mount \\ip\data H:
-```
-
+mount \\ipdata H:
+```text
 # reference
 
 1. https://www.cnblogs.com/ludongguoa/p/15313140.html

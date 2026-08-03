@@ -63,20 +63,18 @@ vim 的最大痛点在于它就是文本编辑器，难以实现函数/变量的
 
 ## 3.1 快捷生成tags以及cscope.out
 
-```
+```text
 vim .vimrc
-```
-
+```text
 首先再用户根目录下进入 .vimrc文件。在其中添加以下语句。
 
-```
+```text
 "Generate tags and cscope.out from FileList.txt (c, cpp, h, hpp)
 nmap <C-@> :!find -name "*.c" -o -name "*.cpp" -o -name "*.h" -o -name "*.hpp" > FileList.txt<CR>
                        \ :!ctags -L -< FileList.txt<CR>
                        \ :!cscope -bkq -i FileList.txt<CR>
 
-```
-
+```text
 将 find，ctags， cscope 命令映射到 ctrl + @ 快捷键上。
 
 find具体实现的是查找当前目录以及子目录下所有 .h, .hpp, .c, .cpp文件，将找到的文件名放到 FileList.txt 文件中。如果你需要 java 文件，或是 hidl 文件，或是 .xml 文件，则将想要的文件后缀添加到 find 命令中即可。
@@ -87,13 +85,12 @@ cscope -bkq -i 同理会使用指定文件提供的文件列表生成 cscope.out
 
 编辑完成退出后，就可以使用 ctrl + @ 快捷生成 tags 以及 cscope.out 了。
 
-```
+```text
 cd xxxxxxx
 vim ./
 
 :qa!
-```
-
+```text
 进入工程**相关代码目录**（非工程根目录，不然你会为整个工程生成插件文件。有的工程非常大，导致生成插件文件会非常卡，并且不根本不需要无关的代码索引，所以你只需要进入你负责的代码目录就行），vim 打开本目录，然后 ctrl + @ 生成插件文件。  
 生成后输入:qa! 强制退出 vim ，此时插件所需文件就完全准备好了。
 
@@ -101,7 +98,7 @@ vim ./
 
 再次回到用户根目录，进入 .vimrc 文件。在里面添加如下配置。
 
-```
+```text
 if has("cscope")
     set csto=0
     set nocsverb
@@ -123,8 +120,7 @@ nmap zf :cs find f <C-R>=expand("<cfile>")<CR><CR>
 nmap zi :cs find i ^<C-R>=expand("<cfile>")<CR>$<CR>
 nmap zd :cs find d <C-R>=expand("<cword>")<CR><CR>
 
-```
-
+```text
 vim 打开时会自动加载当前目录下的 tags 文件，因此 tags 不用配置了。但 cscope.out 需要配置才能在 vim 打开时加载。
 
 如上的配置将在当前目录执行 cs add cscope.out 以完成加载，并将 cscope.out 当作 tags 使用。此外映射了 cs 的快捷建。其中 z + c 和 z + t 两个快捷操作可以实现跳转到定义，以及搜索光标所在字符串出现的所有位置。

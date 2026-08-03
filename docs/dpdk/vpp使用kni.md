@@ -8,8 +8,7 @@
 
 ```shell
 insmod rte_kni.ko carrier=on
-```
-
+```text
 <font colot="red">注意：carrier=on不能省略，因为kni模块该配置默认关闭，会导致kni无法发包。</font>
 
 ## dpdk插件分流

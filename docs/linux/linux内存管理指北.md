@@ -79,7 +79,7 @@
 >	int main() {
 >        struct rlimit *limit = (struct rlimit *)malloc(sizeof(struct rlimit));
 >        getrlimit(RLIMIT_AS, limit);
->        printf("soft limit: %ld, hard limit: %ld\n", limit->rlim_cur, limit->rlim_max);
+>        printf("soft limit: %ld, hard limit: %ldn", limit->rlim_cur, limit->rlim_max);
 >    }
 >```
 >

@@ -31,8 +31,7 @@
    +---------------+  +---------------+
                           ...
 
-```
-
+```text
 具体功能实现分为：
 
 - 角色识别（role-agent）
@@ -67,8 +66,7 @@ backend pg_primary
 
     server pg1 127.0.0.1:5433 check
     server pg2 127.0.0.1:5432 check backup
-```
-
+```text
 ## envoy
 
 ```yaml
@@ -120,8 +118,7 @@ static_resources:
                 load_balancing_weight:
                   value: 100
                 priority: 1
-```
-
+```text
 ## haproxy和envoy对比
 
 **HAProxy** 和 **Envoy** PostgreSQL 主备 L4 TCP 代理下，**性能、可用性、并发能力、稳定性、开源风险** 这五个维度系统性对比结果如下：

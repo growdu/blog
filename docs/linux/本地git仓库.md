@@ -5,11 +5,9 @@
 ```shell
 mkdir repo.git
 git --init bare repo.git
-```
-
+```text
 ## 连接仓库
 
 ```shell
 git clone user@localhost:/path/repo.git
-```
-
+```text

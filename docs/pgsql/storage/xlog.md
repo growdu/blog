@@ -20,8 +20,7 @@ typedef struct XLogwrtResult
 	XLogRecPtr	Write;			/* last byte + 1 written out */
 	XLogRecPtr	Flush;			/* last byte + 1 flushed */
 } XLogwrtResult;
-```
-
+```text
 - XLogCtlData
 
 ```c
@@ -74,8 +73,7 @@ typedef struct XLogCtlData
 
 	slock_t		info_lck;		/* locks shared variables shown above */
 } XLogCtlData;
-```
-
+```text
 - 
 
 ```c
@@ -95,8 +93,7 @@ typedef struct XLogCtlInsert
 	XLogRecPtr	lastBackupStart;
 	WALInsertLockPadded *WALInsertLocks;
 } XLogCtlInsert;
-```
-
+```text
 - XLogRecord
 
 ```c
@@ -113,12 +110,10 @@ typedef struct XLogRecord
 	/* XLogRecordBlockHeaders and XLogRecordDataHeader follow, no padding */
 
 } XLogRecord;
-```
-
+```text
 ## xlog写入流程
 
 ```mermaid
 graph TB
 XLogFlush-->XLogWrite-->pg_pwrite-->write
-```
-
+```text

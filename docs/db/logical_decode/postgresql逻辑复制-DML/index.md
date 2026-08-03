@@ -17,14 +17,10 @@ CREATE PUBLICATION name
     [ FOR ALL TABLES
       | FOR publication_object [, ... ] ]
     [ WITH ( publication_parameter [= value] [, ... ] ) ]
-```
-
+```text
 -  发布全部表（包括新建的表）
 - 发布单个表
 - 发布指定schema下的表（也包括新创建的表）
-
-
-
 
 ## Subscription
 
@@ -35,8 +31,7 @@ CREATE SUBSCRIPTION subscription_name
     CONNECTION 'conninfo'
     PUBLICATION publication_name [, ...]
     [ WITH ( subscription_parameter [= value] [, ... ] ) ]
-```
-
+```text
 subscription_parameter: 
   - create_slot：是否在源端创建logical replication slot
   - slot_name：使用源端已有的slot
@@ -75,8 +70,7 @@ dys      1201053 1201049  0 3月08 ?       00:00:00 postgres: walwriter
 dys      1201054 1201049  0 3月08 ?       00:00:00 postgres: autovacuum launcher 
 dys      1201055 1201049  0 3月08 ?       00:00:00 postgres: pglogical supervisor 
 dys      1201056 1201049  0 3月08 ?       00:00:00 postgres: logical replication launcher
-```
-
+```text
 ### apply worker
 
 每个subscription对应一个Apply worker。Apply worker既负责启动Tablesync worker拷贝存量数据，又负责消费增量数据。

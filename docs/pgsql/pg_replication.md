@@ -37,8 +37,7 @@
 ```mermaid
 graph LR
 insert/update/delete-->postgresql-->wal日志-->logical_decoding-->replication_slot-->wal2json-->jsonoutput
-```
-
+```text
 对于逻辑解码插件，主要有以下几类。按照格式来分主要有
 
 - JSON format plugins
@@ -55,8 +54,7 @@ insert/update/delete-->postgresql-->wal日志-->logical_decoding-->replication_s
 wal_level=logical
 max_replication_slots=10
 max_wal_sender=10
-```
-
+```text
 - 将`wal_level`设置为logical允许WAL记录逻辑解码所需的信息。
 - `max_replication_slots`指定了发送端可以支持的最大复制槽数量，默认为10个
 - `max_wal_sender`指定发送方用于流复制的并发连接的最大数量，默认值也是10

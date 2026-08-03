@@ -39,8 +39,7 @@ main-->PostmasterMain-->SysLogger_Start-->fork_process-->InitPostmasterChild-->S
 PostmasterMain-->maybe_start_bgworkers-->ServerLoop-->StartAutoVacLauncher-->MaybeStartWalReceiver
 PostmasterMain-->StartCheckpointer
 PostmasterMain-->StartBackgroundWriter
-```
-
+```text
 ### 后端处理流程
 
 1. 接收前端发送过来的请求报文

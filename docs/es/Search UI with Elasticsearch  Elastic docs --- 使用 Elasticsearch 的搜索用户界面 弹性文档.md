@@ -34,7 +34,7 @@ Next we need to setup an API key to access the data from the index. We can do th
 Notice here we are only giving read privileges for this api key. You will need to setup an api key with write privileges to add and update data to the index.  
 请注意，这里我们只授予此 api 密钥的读取权限。您需要设置具有写入权限的 api 密钥，以向索引添加和更新数据。
 
-```
+```text
 {
   "superuser": {
     "cluster": ["all"],
@@ -47,8 +47,7 @@ Notice here we are only giving read privileges for this api key. You will need t
     ]
   }
 }
-```
-
+```text
 Once saved, you are presented with the api-key. Copy this and keep it safe. We will need to use this further down in the tutorial.  
 保存后，您将看到 API 密钥。复制此内容并保证其安全。我们需要在本教程中进一步使用它。
 
@@ -63,14 +62,13 @@ CORS 是一种浏览器机制，可实现对当前域外部资源的受控访问
 You can do this in cloud by going to the deployment settings for your Elasticsearch instance, click "Edit user settings and plugins" and under "user settings", add the CORS configuration below:  
 您可以在云中执行此操作，方法是转到 Elasticsearch 实例的部署设置，单击“编辑用户设置和插件”，然后在“用户设置”下添加以下 CORS 配置：
 
-```
+```text
 http.cors.allow-origin: "*"
 http.cors.enabled: true
 http.cors.allow-credentials: true
 http.cors.allow-methods: OPTIONS, HEAD, GET, POST, PUT, DELETE
 http.cors.allow-headers: X-Requested-With, X-Auth-Token, Content-Type, Content-Length, Authorization, Access-Control-Allow-Headers, Accept, x-elastic-client-meta
-```
-
+```text
 then save. Your Elasticsearch instance will be restarted and the CORS configuration will be active.  
 然后保存。您的 Elasticsearch 实例将重新启动，CORS 配置将处于活动状态。
 
@@ -88,7 +86,7 @@ The mapping for an index depends on the data you want to index and the features 
 We want to be able to search on title. We need only one field of type text.  
 我们希望能够搜索标题。我们只需要一个文本类型的字段。
 
-```
+```text
 {
   "properties": {
     "title": {
@@ -96,12 +94,11 @@ We want to be able to search on title. We need only one field of type text.
     }
   }
 }
-```
-
+```text
 We want to be able to search and product facets for writers field. We need two fields of different types: keyword and text.  
 我们希望能够搜索和产品方面为作家领域。我们需要两个不同类型的字段：关键字和文本。
 
-```
+```text
 {
   "properties": {
     "writers": {
@@ -114,12 +111,11 @@ We want to be able to search and product facets for writers field. We need two f
     }
   }
 }
-```
-
+```text
 We want to be able to filter on a date field. We only need one date field.  
 我们希望能够对日期字段进行筛选。我们只需要一个日期字段。
 
-```
+```text
 {
   "properties": {
     "released": {
@@ -127,12 +123,11 @@ We want to be able to filter on a date field. We only need one date field.
     }
   }
 }
-```
-
+```text
 We want to be able to filter on a numeric field. We only need one numeric field. Can be a choice of integer, float and [more documented here](https://www.elastic.co/guide/en/elasticsearch/reference/current/number.html)  
 我们希望能够对数值字段进行过滤。我们只需要一个数值字段。可以选择整数、浮点数和更多记录在这里
 
-```
+```text
 {
   "properties": {
     "imdbRating": {
@@ -140,8 +135,7 @@ We want to be able to filter on a numeric field. We only need one numeric field.
     }
   }
 }
-```
-
+```text
 For our movie data-set, we will be using the following fields:  
 对于我们的电影数据集，我们将使用以下字段：
 
@@ -160,7 +154,7 @@ For our movie data-set, we will be using the following fields:
 The mapping file will be as follows, and we'll once again use Kibana's dev tools console to update the mapping file for our index.  
 映射文件如下所示，我们将再次使用 Kibana 的开发工具控制台来更新索引的映射文件。
 
-```
+```text
 PUT /my-example-movies/_mapping
 {
   "properties": {
@@ -213,8 +207,7 @@ PUT /my-example-movies/_mapping
     }
   }
 }
-```
-
+```text
 Elasticsearch will acknowledge the request in the response.  
 Elasticsearch 将在响应中确认请求。
 
@@ -241,22 +234,20 @@ Now with our index and mapping file created, we are ready to index some data! We
 We will use the following request. In this example we will be indexing the first movie in the data-set to verify that the data fields is being indexed correctly.  
 我们将使用以下请求。在此示例中，我们将为数据集中的第一部电影编制索引，以验证数据字段是否正确编制索引。
 
-```
+```text
 PUT /my-example-movies/_bulk
 { "index": {}}
 {"title": "The Godfather", "released": "1972-03-23T23:00:00.000Z","genre": ["Crime", "Drama"],"directors": ["Francis Ford Coppola"],"actors": ["Marlon Brando", "Al Pacino", "James Caan", "Richard S. Castellano"],"plot": "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son.","imdbRating": "9.2", "movie_completion": ["Crime", "Drama", "Marlon Brando", "Al Pacino", "James Caan", "Richard S. Castellano"], "url": "https://www.imdb.com/title/tt0068646/"}
-```
-
+```text
 ## [](https://docs.elastic.co/search-ui/tutorials/elasticsearch#step-4-setup-cra-for-search-ui)Step 4: Setup CRA for Search UI  
 步骤 4：为搜索 UI 设置 CRA
 
 First, download the Search-UI's starter app from github by  
 首先，通过以下方式从github下载Search-UI的入门应用程序
 
-```
+```text
 curl https://codeload.github.com/elastic/app-search-reference-ui-react/tar.gz/master | tar -xz
-```
-
+```text
 and should appear as a folder called `app-search-reference-ui-react-main`.  
 并且应显示为名为 `app-search-reference-ui-react-main` 的文件夹。
 
@@ -268,10 +259,9 @@ Navigate to the root to the folder and install the dependencies using the follow
 Within the folder, we can now install the `@elastic/search-ui-elasticsearch-connector` library with Yarn.  
 在该文件夹中，我们现在可以使用 Yarn 安装 `@elastic/search-ui-elasticsearch-connector` 库。
 
-```
+```text
 yarn add @elastic/search-ui-elasticsearch-connector
-```
-
+```text
 Make sure to check and update Search UI dependencies to the latest version. You can find the latest version by going to [NPM's page for @elastic/search-ui](https://www.npmjs.com/package/@elastic/search-ui).  
 请确保检查搜索 UI 依赖项并将其更新到最新版本。您可以通过访问 NPM 的页面获取 @elastic/search-ui 来找到最新版本。
 
@@ -284,14 +274,13 @@ Open the project within your favorite editor.
 Within `src/App.js`, change line 3 to import the Elasticsearch connector. You no longer need the app-search connector.  
 在 中 `src/App.js` ，更改第 3 行以导入 Elasticsearch 连接器。不再需要应用搜索连接器。
 
-```
+```text
 import ElasticsearchAPIConnector from "@elastic/search-ui-elasticsearch-connector";
-```
-
+```text
 and then update the options to the connector  
 ，然后将选项更新到连接器
 
-```
+```text
 const connector = new ElasticsearchAPIConnector({
   cloud: {
     id: "<my-elastic-cloud-id>"
@@ -299,28 +288,26 @@ const connector = new ElasticsearchAPIConnector({
   apiKey: "<api-key>",
   index: "my-example-movies"
 });
-```
-
+```text
 If you're using Elastic Cloud, you can find your cloud id within your deployment's details.  
 如果您使用的是 Elastic Cloud，则可以在部署的详细信息中找到您的云 ID。
 
 alternatively, if you're using an on-premise Elasticsearch instance, you can connect via specifying the host.  
 或者，如果您使用的是本地 Elasticsearch 实例，则可以通过指定主机进行连接。
 
-```
+```text
 const connector = new ElasticsearchAPIConnector({
   host: "http://localhost:9200",
   index: "my-example-movies"
 });
-```
-
+```text
 ## [](https://docs.elastic.co/search-ui/tutorials/elasticsearch#step-5-configure-search-ui)Step 5: Configure Search UI  
 步骤 5：配置搜索 UI
 
 Next lets configure Search UI for our needs! Navigate to the config within app.js and update the following:  
 接下来，让我们根据自己的需求配置搜索 UI！导航到应用程序中的配置.js并更新以下内容：
 
-```
+```text
 const config = {
   searchQuery: {
     search_fields: {
@@ -404,8 +391,7 @@ const config = {
   apiConnector: connector,
   alwaysSearchOnInitialLoad: true
 };
-```
-
+```text
 In the above example, we configured the:  
 在上面的示例中，我们配置了：
 
@@ -436,7 +422,7 @@ We are going to do several steps here:
 -   update the `<Results />` component to display all the fields  
     更新 `<Results />` 组件以显示所有字段
 
-```
+```text
 <div className="App">
   <ErrorBoundary>
     <Layout
@@ -475,8 +461,7 @@ We are going to do several steps here:
     />
   </ErrorBoundary>
 </div>
-```
-
+```text
 ## [](https://docs.elastic.co/search-ui/tutorials/elasticsearch#step-6-test-drive)Step 6: Test Drive!
 
 Lets run the project with the command:

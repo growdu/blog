@@ -19,8 +19,7 @@ gdb vpp
 (gdb)set args param
 (gdb) b break_point
 (gdb) r
-```
-
+```text
 重点在于需要使用set args设置参数，同时需添加断点。
 
 ## 使用attach
@@ -29,8 +28,7 @@ vpp按正常模式启动，启动后使用top找到进程号，利用gdb attach�
 
 ```shell
 gdb attach pid
-```
-
+```text
 vpp本身提供了如下全局函数，可用来查看vecetor的相关信息：
 
 ```shell
@@ -55,4 +53,4 @@ $14 = void
 $15 = void
 (gdb) p debug_hex_bytes(vm->node_main.nodes,2)
 74c4
-```
+```text

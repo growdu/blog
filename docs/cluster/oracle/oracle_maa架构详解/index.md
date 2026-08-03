@@ -16,9 +16,7 @@ oracle maa架构分为青铜、白银、黄金、铂金四个级别，其中黄�
 > **Oracle MAA架构对比表**：列出青铜、白银、黄金(remote standby/multiple standby databases/Standby Reader Farm/Cross-Region Far Sync Standby)、铂金七个等级在region1 az1、region1 az2、region1 az关系维护工具、region2 az1、region2 az2、region2 az关系维护工具、region1 local backup、region2 local backup、region同关系维护九个维度上的部署差异。
 ## 青铜
 
-
 Oracle MAA Bronze 参考体系结构以尽可能低的成本提供基本的数据库服务。接受降低的高可用性和数据保护级别，以换取降低的成本和实施复杂性。此体系结构可能适用于用于测试、开发以及不太重要的生产应用程序和数据库的数据库。其架构如下所示：
-
 
 青铜架构在同一个可用区内，采用主备的方式进行连接，同时本地有一份备份。其高可用能力如下：
 
@@ -103,13 +101,11 @@ MAA Silver 参考体系结构专为无法等待冷重启或从备份还原的数
 
 黄金多个备库的架构如下：
 
-
 黄金多个备库在黄金远程备库的基础了多了一个可用区，在主region除了原有oracle rac集群外，还增加了一个可用区，用于存放备库集群，且使用data guard负责主库与备库之间的故障切换和数据复制，主region有一份本region内的物理备份。而对于远程region来说，则只有一个备库集群和本region的物理备份，该备库集群与主库所在集群相连，但未使用data guard。
 
 ### Standby Reader Farm
 
 黄金备库农场的架构如下：
-
 
 与黄金多个备库架构相比，备库农场则主要是在远程region上有所区别，远程region的备库集群数据库节点更多。
 
@@ -124,7 +120,6 @@ MAA Silver 参考体系结构专为无法等待冷重启或从备份还原的数
 ## 铂金
 
 铂金架构能为中断和计划内维护活动提供零停机时间，而这些都是 Gold 架构无法实现的。铂金架构基于黄金架构构建，添加了 Oracle GoldenGate 复制功能，可消除迁移、应用升级和数据库升级的停机时间。每个 Oracle GoldenGate 数据库都受备用数据库保护，以便在数据库、集群或站点发生故障时实现零数据丢失。其架构如下所示：
-
 
 铂金架构共有两个region，每个region两个可用区，一共四个可用区。并且两个region的价格相同，均为使用data guard连接的两个oracle数据库集群（一般是两个节点）。region之间采用Oracle goldengate replication来维护两个region之间的数据同步。
 

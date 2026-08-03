@@ -7,8 +7,7 @@ graph TB
 PostgresMain-->exec_simple_query-->PortalRun-->PortalRunMulti-->ProcessQuery-->
     	standard_ExecutorRun-->ExecutePlan-->ExecModifyTable-->ExecInsert-->
     	heapam_tuple_insert-->heap_insert
-```
-
+```text
 以上流程数据仅仅只是到了内存里面，还没有真正到达磁盘，什么时候进入磁盘还需要BgWriter进程来操作。下面采用自底向上的方式来分析数据的插入及其实现逻辑。
 
 ## heap_insert
@@ -16,8 +15,7 @@ PostgresMain-->exec_simple_query-->PortalRun-->PortalRunMulti-->ProcessQuery-->
 ```c
 void heap_insert(Relation relation, HeapTuple tup, CommandId cid,
 			int options, BulkInsertState bistate)
-```
-
+```text
 插入需要提供五个参数，需终点关注以下四个，因为这四个是数据模型的重要数据结构。
 
 - Relation

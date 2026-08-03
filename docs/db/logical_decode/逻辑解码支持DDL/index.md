@@ -12,28 +12,24 @@ postgresql逻辑解码原生不支持DDL，其逻辑复制流程如下：
 
 ```shell
 WAL → logical decoding → output plugin → subscriber
-```
-
+```text
 WAL记录的是存储操作，并不是原始的SQL。
 
 ```shell
 heap_insert
 heap_update
 heap_delete
-```
-
+```text
 ```shell
 INSERT INTO t ...
 ALTER TABLE ...
-```
-
+```text
 逻辑解码的时候只会解析如下内容：
 
 ```shell
 Relation OID
 tuple data
-```
-
+```text
 最后通过系统 catalog 解析表结构。
 
 在postgresql中，DDL 并不会进入 logical replication stream。postgreSQL 的逻辑复制要求：publisher 和 subscriber 必须 schema 完全一致。
@@ -52,8 +48,7 @@ polardb-for-postgresql扩展了pg的逻辑复制，使DDL能进入到logical rep
 CREATE PUBLICATION pub1
 FOR ALL TABLES
 WITH (pubddl='all');
-```
-
+```text
 todo：在源码中无法搜索到pubddl。
 
 支持如下操作：
@@ -63,7 +58,7 @@ CREATE
 ALTER
 DROP
 TRUNCATE
-```
+```text
 todo：是否还支持其他操作。
 
 polardb实现流程如下：
@@ -80,8 +75,7 @@ logical decoding decode message
 pgoutput 输出 message
  ↓
 subscriber apply worker 执行 SQL
-```
-
+```text
 源码模块分布：
 
 ```shell
@@ -100,8 +94,7 @@ src/backend/replication/pgoutput/
 
 src/backend/replication/logical/
     worker.c                 ← subscriber执行DDL
-```
-
+```text
 ```shell
                 PRIMARY
 
@@ -134,8 +127,7 @@ apply worker
      │
      ▼
 SPI_execute(DDL)
-```
-
+```text
 ```shell
 src/backend/commands/event_trigger.c
 src/backend/replication/logical/logical.c
@@ -143,8 +135,7 @@ src/backend/replication/logical/decode.c
 src/backend/replication/logical/reorderbuffer.c
 src/backend/replication/pgoutput/pgoutput.c
 src/backend/replication/logical/worker.c
-```
-
+```text
 | 实现阶段       | 文件位置                                              | 主要职责                    |
 | ---------- | ------------------------------------------------- | ----------------------- |
 | DDL 捕获     | `src/backend/commands/event_trigger.c`            | 捕获 DDL 命令文本             |
@@ -154,7 +145,6 @@ src/backend/replication/logical/worker.c
 | Output     | `src/backend/replication/pgoutput/pgoutput.c`     | 输出到 logical replication |
 | Apply      | `src/backend/replication/logical/worker.c`        | Subscriber apply SQL    |
 | Policy     | `src/include/catalog/pg_publication.h`            | 控制 DDL replication      |
-
 
 ### 主要函数
 
@@ -204,14 +194,11 @@ LogLogicalMessage(const char *prefix, const char *message, size_t size,
 
 	return XLogInsert(RM_LOGICALMSG_ID, XLOG_LOGICAL_MESSAGE);
 }
-```
-
+```text
 ```c
 PG_RMGR(RM_LOGICALMSG_ID, "LogicalMessage", logicalmsg_redo, logicalmsg_desc, logicalmsg_identify, NULL, NULL, NULL, logicalmsg_decode, NULL, NULL, NULL)
-```
-
+```text
 ddl的类型XLOG_LOGICAL_MESSAGE
-
 
 LogicalDecodingProcessRecord
 

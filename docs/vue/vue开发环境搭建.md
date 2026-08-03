@@ -55,22 +55,19 @@
 
 ```shell
 npm install vue -g
-```
-
+```text
 - 安装vue-router
 
 ```shell
 npm install vue-router -g
-```
-
+```text
 - 安装vue-cli
 
 ```shell
 npm install vue-cli -g
-```
-
+```text
 ## 项目创建
 
 ```js
 vue init webpack myvue
-```
+```text

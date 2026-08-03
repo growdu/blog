@@ -1,6 +1,5 @@
 
 
-
 # 进程
 
 ## 1 基本概念
@@ -37,7 +36,7 @@ public abstract class Process
     abstract public int exitValue();   //获取进程的退出标志
     abstract public void destroy();   //摧毁进程
 }
-```
+```text
 ProcessBuilder是一个final类，它有两个构造器,构造器中传递的是需要创建的进程的命令参数
 
 * 第一个构造器是将命令参数放进List当中传进去
@@ -64,13 +63,12 @@ public final class ProcessBuilder
     }
 ....
 }
-```
+```text
 ProcessBuilder.start 方法来建立一个本地的进程.如果希望在新创建的进程中使用当前的目录和环境变量，则不需要任何配置，直接将命令行和参数传入 ProcessBuilder 中，然后调用 start 方法，就可以获得进程的引用。
 
 ```java
 Process p = new ProcessBuilder("command", "param").start();
-```
-
+```text
 也可以先配置环境变量和工作目录，然后创建进程。
 
 ```java
@@ -79,9 +77,8 @@ Map<String, String> env = pb.environment();
 env.put("VAR", "Value"); 
 pb.directory("Dir"); 
 Process p = pb.start();
-```
+```text
 可以预先配置 ProcessBuilder 的属性是通过ProcessBuilder创建进程的最大优点。而且可以在后面的使用中随着需要去改变代码中pb变量的属性。如果后续代码修改了其属性，那么会影响到修改后用 start 方法创建的进程，对修改之前创建的进程实例没有影响。
-
 
 #### 2.1.2 Runtime.exec()方法
 
@@ -110,7 +107,7 @@ Process exec(String [] cmdarrag, String [] envp)
 Process exec(String [] cmdarrag, String [] envp, File dir) 
 Process exec(String cmd, String [] envp) 
 Process exec(String command, String [] envp, File dir)
-```
+```text
 可以发现，事实上通过Runtime类的exec创建进程的话，最终还是通过ProcessBuilder类的start方法来创建的。
 
 ### 2.2 进程的实现
@@ -155,8 +152,7 @@ class MyThread extends Thread{
         myThread.start();
     }  
 }
-```
-
+```text
 #### 2.4.2 实现Runnable接口
 
 ```java
@@ -169,8 +165,7 @@ class MyRunnable implements Runnable{
         myThread.start();
     }
 }
-```
-
+```text
 不管是用哪种方法，实际上都是要实现一个 run 方法的。 该方法本质是上一个回调方法。由start方法新创建的线程会调用这个方法从而执行需要的代码。run方法并不是真正的线程函数，只是被线程函数调用的一个Java方法而已，和其他的Java方法没有什么本质的不同。
 
 从概念上来说，一个Java线程的创建根本上就对应了一个本地线程（native thread）的创建，两者是一一对应的。 问题是，本地线程执行的应该是本地代码，而Java线程提供的线程函数是Java方法，编译出的是Java字节码，所以可以想象的是，Java线程其实提供了一个统一的线程函数，该线程函数通过 Java 虚拟机调用 Java 线程方法 , 这是通过Java本地方法调用来实现的。
@@ -219,7 +214,7 @@ static int MAX_PRIORITY
 static int MIN_PRIORITY
 //线程可以具有的默认优先级，取值为5
 static int NORM_PRIORITY
-```
+```text
 Thread类的setPriority()和getPriority()方法分别用来设置和获取线程的优先级。
 
 每个线程都有默认的优先级。主线程的默认优先级为Thread.NORM_PRIORITY。
@@ -327,8 +322,7 @@ Java中每个对象都有一把锁，同一时刻只能有一个线程持有这�
 Thread t1 = new Thread(new ThreadStart(function));
 t1.IsBackground = true;
 t1.Start();
-```
-
+```text
 Thred类支持设置Name属性。如果没有设置这个值的话，Name将返回一个空字符串。如果需要用vs调试的话，可以为线程设置一个友好的Name，方便debug。
 
 Thred类定义了一个名为Priority的属性，默认情况下，所有线程的优先级都处于Normal级别。但是，在线程生命周期的任何时候，都可以使用ThredPriority属性修改线程的优先级。
@@ -343,8 +337,7 @@ ThreadStart委托仅仅支持指向无返回值、无参数的方法。如果想
 Thread t2 = new Thread(new ParameterizedThreadStart(function));
 t2.IsBackground = true;
 t2.Start("hello");
-```
-
+```text
 #### 3.3.3 使用AutoResetEvent类强制线程等待，直到其他线程结束
 
 ```C#
@@ -353,8 +346,7 @@ Thread t = new Thread(new ParameterizedThreadStart(Add));
 t.Start(ap);
 //Wait here until you are notified         
 waitHandle.WaitOne();
-```
-
+```text
 ### 3.4 前台线程和后台线程的区别
 
 前台线程能阻止应用程序的终结。一直到所有的前台线程终止后，CLR才能关闭应用程序（即卸载承载的应用程序域）。后台线程被CLR认为是程序执行中可做出牺牲的线程，即在任何时候（即使这个线程此时正在执行某项工作）都可能被忽略。因此，如果所有的前台线程终止，当应用程序卸载时，所有的后台线程也会被自动终止。 
@@ -380,8 +372,7 @@ private void Do()
         //所有在这个范围内的代码是线程安全的
     }
 }
-```
-
+```text
 #### 3.5.2 使用Interlocked类型进行同步
 
 .Net中并不是所有赋值和数值运算都是原子型操作。Interlocked允许我们原子型操作单个数据。
@@ -418,8 +409,7 @@ namespace Test
         }
     }
 }
-```
-
+```text
 ### 3.7 Task类
 
 使用ThreadPool的QueueUserWorkItem()方法发起一次异步的线程执行很简单，但是该方法最大的问题是没有一个内建的机制让你知道操作什么时候完成，有没有一个内建的机制在操作完成后获得一个返回值。为此，可以使用System.Threading.Tasks中的Task类。
@@ -449,12 +439,10 @@ namespace Test
         }
     }
 }
-```
-
+```text
 #### 3.8 委托异步执行
 
 委托的异步调用：BeginInvoke() 和 EndInvoke()。
-
 
 ## 4 python多线程
 
@@ -481,7 +469,7 @@ t = threading.Thread(target=loop, name='LoopThread')
 t.start()
 t.join()
 print('thread %s ended.' % threading.current_thread().name)
-```
+```text
 由于任何进程默认就会启动一个线程，我们把该线程称为主线程，主线程又可以启动新的线程，Python的threading模块有个current_thread()函数，它永远返回当前线程的实例。主线程实例的名字叫MainThread，子线程的名字在创建时指定，我们用LoopThread命名子线程。名字仅仅在打印时用来显示，完全没有其他意义，如果不起名字Python就自动给线程命名为Thread-1，Thread-2……
 
 多线程和多进程最大的不同在于，多进程中，同一个变量，各自有一份拷贝存在于每个进程中，互不影响，而多线程中，所有变量都由所有线程共享，所以，任何一个变量都可以被任何一个线程修改，因此，线程之间共享数据最大的危险在于多个线程同时改一个变量，把内容给改乱了。
@@ -492,7 +480,7 @@ print('thread %s ended.' % threading.current_thread().name)
 lock = threading.Lock()
 lock.acquire()
 lock.release()
-```
+```text
 当多个线程同时执行lock.acquire()时，只有一个线程能成功地获取锁，然后继续执行代码，其他线程就继续等待直到获得锁为止。
 
 获得锁的线程用完后一定要释放锁，否则那些苦苦等待锁的线程将永远等待下去，成为死线程。可以用try...finally来确保锁一定会被释放。
@@ -508,9 +496,6 @@ lock.release()
 * Running 运行
 * Blocked 阻塞，阻塞可能在 Wait Locked Sleeping
 * Dead 消亡
-
-
-
 
 ## 5 shell进程
 
@@ -541,7 +526,7 @@ pstree
 top
 #查看特定用户的进程信息
 top -u user
-```
+```text
 #### 5.2.2 调整进程的优先级
 
 ```shell
@@ -549,7 +534,7 @@ top -u user
 ps -e -o "%p %c %n" |grep vmtools*
 #调整进程优先级
 sudo renice 1 -p pid
-```
+```text
 #### 5.2.3 结束进程
 
 ```shell
@@ -564,7 +549,7 @@ kill -s SIGCONT pid
 jobs
 #kill只能通过pid或者jobs id来控制进程
 #pkill和killall扩展了通过程序名或进程的用户名来控制进程
-```
+```text
 #### 5.2.4 进程退出状态
 
 在 Shell 中，可以检查这个特殊的变量 $?，它存放了上一条命令执行后的退出状态。一般情况下，返回0表示正常结束，返回非0值表示出现异常。
@@ -572,8 +557,7 @@ jobs
 ```shell
 #查看程序结束状态
 echo $?
-```
-
+```text
 #### 5.2.5 进程通信
 
 ##### 5.2.5.1 无名管道
@@ -583,7 +567,7 @@ echo $?
 ```shell
 #将ps的输出作为grep命令的输入
 ps -ef | grep init*
-```
+```text
 当输入这样一组命令时，当前 Shell 会进行适当的解析，把前面一个进程的输出关联到管道的输出文件描述符，把后面一个进程的输入关联到管道的输入文件描述符，这个关联过程通过输入输出重定向函数 dup （或者 fcntl ）来实现。
 
 ##### 5.2.5.2 有名管道
@@ -602,7 +586,7 @@ cat fifo_test
 #启动的两个进程之间并没有父子关系。不过它们依然可以通过有名管道通信。
 echo "hello">fifo_test &
 cat fifo_test
-```
+```text
 #### 5.2.5.3 信号（Signal）
 
 信号是软件中断，Linux 用户可以通过 kill 命令给某个进程发送一个特定的信号，也可以通过键盘发送一些信号，比如 CTRL+C 可能触发 SGIINT 信号，而 CTRL+\ 可能触发 SGIQUIT 信号等，除此之外，内核在某些情况下也会给进程发送信号，比如在访问内存越界时产生 SGISEGV 信号，当然，进程本身也可以通过 kill，raise 等函数给自己发送信号。
@@ -615,7 +599,7 @@ function signal_handler { echo "hello, world."; }
 #执行该命令设定：收到SIGINT信号时打印hello, world
 trap signal_handler SIGINT 
 #按下CTRL+C，可以看到屏幕上输出了hello, world字符串
-```
+```text
 ```shell
 #!/bin/bash
 function signal_handler {
@@ -623,8 +607,7 @@ function signal_handler {
     echo "hello, world"
 }
 trap signal_handler 0
-```
-
+```text
 #### 5.2.5.4 作业和作业控制
 
 当我们为完成一些复杂的任务而将多个命令通过 |,\>,< 等组合在一起时，通常这个命令序列会启动多个进程，它们间通过管道等进行通信。而有时在执行一个任务的同时，还有其他的任务需要处理，那么就经常会在命令序列的最后加上一个&，或者在执行命令后，按下 CTRL+Z 让前一个命令暂停。以便做其他的任务。等做完其他一些任务以后，再通过 fg 命令把后台任务切换到前台。这样一种控制过程通常被称为作业控制，而那些命令序列则被成为作业，这个作业可能涉及一个或者多个程序，一个或者多个进程。
@@ -639,4 +622,4 @@ fg %1
 jobs
 #启动停止的进程并在后台运行
 bg %1
-```
+```text

@@ -4,8 +4,8 @@
 >
 >GNU C的一大特色（却不被初学者所知）就是__attribute__机制。__attribute__可以设置函数属性（Function Attribute）、变量属性（Variable Attribute）和类型属性（Type Attribute）。
 >
->\_\_attribute\_\_语法格式为：
->　　\_\_attribute\_\_ ((attribute-list))
+>\__attribute__语法格式为：
+>　　\__attribute__ ((attribute-list))
 >
 >其位置约束为：
 >　　放于声明的尾部“；”之前。
@@ -21,8 +21,7 @@ int a __attribute__((aligned(8))) = 0;
 struct test {
         int a;
 } __attribute__((aligned(8))); // struct test数据结构定义的所有变量都会出现在8字节对齐的内存上
-```
-
+```text
 ### always_inline
 
 将函数定义为内联函数。
@@ -31,8 +30,7 @@ inline函数是否会展开，编译器会进一步判断，即inline只是建�
 
 ```c
 static inline void test2(void) __attribute__((always_inline)); 
-```
-
+```text
 ### constructor
 
 构造属性，在main函数执行前执行。vpp里面使用了该种属性。
@@ -56,11 +54,10 @@ void __attribute__((destructor)) after(void)
 
 int main(void)
 {
-    printf("main is execute now\n");
+    printf("main is execute nown");
     return 0;
 }
-```
-
+```text
 ### packed
 
 ```c
@@ -77,10 +74,9 @@ struct test1 {
 
 int main(void)
 {
-        printf("%d, %d\n", sizeof(struct test), sizeof(struct test1));
+        printf("%d, %dn", sizeof(struct test), sizeof(struct test1));
 }
-```
-
+```text
 struct test结构， 理论来说一共有1+4=5字节的大小， 但是gcc默认编译出来的大小是8， 也就是说char是按照4字节来分配空间的。加上packed修饰后， 就会按照实际的类型大小来计算。 
 
 ### section
@@ -104,8 +100,7 @@ int main(void)
         test1(1, 2);
         test2(1, 2);
 }
-```
-
+```text
 # reference
 
 1. https://dude6.com/article/314203.html

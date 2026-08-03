@@ -6,8 +6,7 @@ pg提供了扩展机制可以在不动[postgresql](https://so.csdn.net/so/search
 
 ```sql
 create extension extension_name;
-```
-
+```text
 在数据库内执行上述命令之前，需要有两个重要的文件放在共享目录/install_directory/share/extension之下，分别是：
 
 1. 控制文件，以control为后缀名

@@ -22,8 +22,7 @@ tokio = { version = "1", features = ["full"] }
 name = "otlp-test"
 path = "main.rs"
 
-```
-
+```text
 ## 使用python
 
 ```shell
@@ -33,8 +32,7 @@ python3 -m venv otlp-demo-env
 source otlp-demo-env/bin/activate
 pip install --upgrade pip
 pip install opentelemetry-sdk opentelemetry-exporter-otlp grpcio
-```
-
+```text
 ```python
 import time
 from opentelemetry import trace
@@ -74,8 +72,7 @@ print("💡 Flushing all spans to Tempo...")
 span_processor.shutdown()
 print("✅ Flush complete")
 
-```
-
+```text
 打包环境依赖：
 
 ```shell
@@ -90,8 +87,7 @@ mkdir -p /tmp/wheels
 
 # 下载所有依赖（不安装）到 wheel 文件
 pip download -r requirements.txt -d /tmp/wheels
-```
-
+```text
 在离线环境安装:
 
 ```shell
@@ -100,4 +96,4 @@ source venv/bin/activate
 
 # 安装依赖
 pip install --no-index --find-links=/path/to/wheels -r requirements.txt
-```
+```text

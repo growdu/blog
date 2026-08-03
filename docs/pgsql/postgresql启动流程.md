@@ -17,4 +17,4 @@ postgres的执行从main.c的main函数开始，
 ```mermaid
 graph TB
 main-->
-```
+```text

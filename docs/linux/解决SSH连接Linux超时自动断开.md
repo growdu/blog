@@ -1,6 +1,6 @@
 1、$TMOUT 系统环境变量
 
-```
+```text
 # 用以下命令判断是否是否设置了该参数
 echo $TMOUT
 # 如果输出空或0表示不超时，大于0的数字n表示n秒没有收入则超时
@@ -12,11 +12,10 @@ export TMOUT=900
 # 将以上900修改为0就是设置不超时
 source /etc/profile
 # 让配置立即生效
-```
-
+```text
 2、sshd 服务配置
 
-```
+```text
 cd /etc/ssh
 # 查看sshd_config中关于客户端活动状态的配置
 grep ClientAlive sshd_config
@@ -38,6 +37,5 @@ grep ClientAlive sshd_config
 diff sshd_config sshd_config.bak
 # 重新加载ssd配置，让配置生效
 service sshd reload
-```
-
+```text
 现在无论空闲多久，SSH客户端都不会自动断开了。

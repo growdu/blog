@@ -15,8 +15,7 @@ vpp二次开发一般都是基于vpp框架进行插件开发。具体友包含�
 VLIB_CONFIG_FUNCTION (sample_config, "sample");
 // 读取完配置后可以使用sample_init来进行初始化
 VLIB_INIT_FUNCTION(sample_init);
-```
-
+```text
 ## 插入节点
 
 ```c
@@ -25,8 +24,7 @@ VLIB_REGISTER_NODE (sample_node);
 // sample_node收到报文后如何处理
 VLIB_NODE_FN (sample_node) (vlib_main_t * vm, vlib_node_runtime_t * node,
 				vlib_frame_t * f);
-```
-
+```text
 ## 收包
 
 收包插入一个收包节点，组织节点关系即可。
@@ -69,5 +67,4 @@ VLIB_CLI_COMMAND (sample_node, static) = {
   .function = sample,
   .short_help = "sample",
 };
-```
-
+```text

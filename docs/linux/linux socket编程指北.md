@@ -46,7 +46,7 @@ int main(){
 	//接收客户端数据，并相应
 	char str[256];
 	read(clnt_sock, str, sizeof(str));
-	printf("client send: %s\n",str);
+	printf("client send: %sn",str);
 	strcat(str, "+ACK");
 	write(clnt_sock, str, sizeof(str));
 
@@ -56,8 +56,7 @@ int main(){
 
 	return 0;
 }
-```
-
+```text
 - makefile
 
 ```c
@@ -65,10 +64,7 @@ all:
 	gcc -g server.c -o server
 clean:
 	rm -rf server
-```
-
-
-
+```text
 ## client
 
 ```c
@@ -101,7 +97,7 @@ int main(){
     }
 	int ret = connect(sock, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
     if (ret ) {
-           printf("connect failed, errno is %d\n", errno);
+           printf("connect failed, errno is %dn", errno);
            exit(0);
     }
 	//发送并接收数据
@@ -110,15 +106,14 @@ int main(){
 	scanf("%s", buffer);
 	write(sock, buffer, sizeof(buffer));
 	read(sock, buffer, sizeof(buffer) - 1);
-	printf("Serve send: %s\n", buffer);
+	printf("Serve send: %sn", buffer);
 
 	//断开连接
 	close(sock);
 
 	return 0;
 }
-```
-
+```text
 - makefile
 
 ```makefile
@@ -126,8 +121,7 @@ all:
 	gcc -g client.c -o client
 clean:
 	rm -rf cleint
-```
-
+```text
 当需要设置QOS时，具体是设置ip头部里面的TOS或者DSCP值，可在创建socket成功后调用如下接口设置：
 
 ```c
@@ -137,8 +131,7 @@ clean:
     if(setsockopt(serv_sock, SOL_IP/*IPPROTO_IP*/, IP_TOS, (void *)&service_type, sizeof(service_type)) < 0) {
             printf("setsockopt(IP_TOS) failed:\n");
     }
-```
-
+```text
 ### 运行
 
 ```shell
@@ -146,14 +139,12 @@ clean:
 ./server
 #再运行客户端
 ./client
-```
-
+```text
 <font color="red">注意：若客户端在连接过程中出现错误码为113的连接失败情况，需将防火墙关闭(使用localhost不会出现该问题)。如centos使用如下命令关闭：</font>
 
 ```shell
  systemctl stop firewalld.service
-```
-
+```text
 ## ipv6
 
 需要留意的是，基于ipv6地址创建的socket与基于ipv4创建的socket略有不同。具体为地址结构不同，创建socket的类型也不同。
@@ -177,8 +168,7 @@ clean:
         }
         //绑定文件描述符和服务器的ip和端口号
         ret = bind(serv_sock, (struct sockaddr*)&my_addr, sizeof(my_addr));
-```
-
+```text
 其他步骤与ipv4相同。
 
 <font color="red">需特别注意的是：ipv6地址分为scope link和scope global两种。对于scope link的ipv6地址（一般为系统基于mac自动生成），在使用其绑定socket时，需要调用setsockopt绑定网口，否则无法成功创建socket。对于scope global的ipv6地址（一般手动用ifconfig创建）则无需绑定可直接使用。</font>

@@ -9,8 +9,7 @@
 sudo apt-get install -y  make clang llvm libelf-dev libbpf-dev bpfcc-tools libbpfcc-dev linux-tools-$(uname -r) linux-headers-$(uname -r)
 sudo apt-get install libcap-dev
 sudo apt-get install binutils-dev
-```
-
+```text
 - centos
 
 ```shell
@@ -18,8 +17,7 @@ sudo apt-get install binutils-dev
 sudo yum install libbpf-devel make clang llvm elfutils-libelf-devel bpftool bcc-tools bcc-devel
 sudo yum install libcap-devel
 sudo yum install binutils-devel
-```
-
+```text
 ## 编写第一个ebpf程序
 
 ### 编写代码
@@ -38,8 +36,7 @@ int hello_world(void *ctx)
 }
 
 char _license[] SEC("license") = "GPL";
-```
-
+```text
 ### 编译ebpf程序
 
 使用下面的makefile进行编译：
@@ -60,14 +57,12 @@ clean:
         rm -f $(BPF_TARGET)
 
 .PHONY: clean
-```
-
+```text
 可能会报错`asm/types.h`找不到，使用如下方式解决：
 
 ```shell
 ln -sf /usr/include/asm-generic/ /usr/include/asm
-```
-
+```text
 执行`make`命令生成`hello_world.bpf.o`.
 
 ### 运行ebpf程序
@@ -80,21 +75,18 @@ ln -sf /usr/include/asm-generic/ /usr/include/asm
 
 ```c
 bpftool prog load hello_world.bpf.o /sys/fs/bpf/hello_world
-```
-
+```text
 加载成功后查看ebpf程序：
 
 ```shell
 bpftool prog list
 bpftool prog list | grep hello
-```
-
+```text
 ```shell
 bpftool prog list --json | jq '.[] | {id, name, type}'
 
 bpftool prog list --json | jq '.[] | {id, name, type}' | grep hello
-```
-
+```text
 ```shell
 bpftool prog attach 366 tracepoint syscalls/sys_enter_execve
-```
+```text

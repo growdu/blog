@@ -97,6 +97,5 @@ walsender通过wal_sender_timeout确认keepalive超时时间，默认为60s。�
                      * them.
                      */
                     XLogWalRcvFlush(false, startpointTLI);
-```
-
+```text
 ​     

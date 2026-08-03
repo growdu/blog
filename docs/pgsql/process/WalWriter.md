@@ -55,21 +55,18 @@ WalWriter进程负责定期从WAL缓冲区写出日志，并确定写出日志�
 ```mermaid
 graph TB
 main-->PostmasterMain-->StartChildProcess-->fork_process-->AuxiliaryProcessMain-->WalWriterMain
-```
-
+```text
 ### 写文件
 
 ```mermaid
   graph TB
   loop-->ResetLatch-->|处理信号包括退出进程|HandleWalWriterInterruptss-->XLogBackgroundFlush-->WaitXLogInsertionsToFinish-->XLogWrite-->pgstat_report_wal-->WaitLatch-->loop
-```
-
+```text
 WalWriter会根据WalWriterDelay时间进行循环，当WalWriterDelay时间到达后，再次执行XLogBackgroundFlush进行WAL日志写入。
 
 ```c
 int			WalWriterDelay = 200;
 int			WalWriterFlushAfter = 128;
-
 
 for (;;)
 {
@@ -87,10 +84,7 @@ for (;;)
 						 cur_timeout,
 						 WAIT_EVENT_WAL_WRITER_MAIN);
 }
-```
-
-
-
+```text
 # reference
 
 1. https://www.modb.pro/db/28621

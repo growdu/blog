@@ -15,8 +15,7 @@
 ```sql
 CREATE PARTITION FUNCTION pf_range(INT)
 AS RANGE LEFT FOR VALUES (100, 200, 300);
-```
-
+```text
 - `RANGE LEFT`：边界值归属左侧分区
 - `RANGE RIGHT`：边界值归属右侧分区
 - 定义的是**逻辑分区规则**，不涉及存储
@@ -26,8 +25,7 @@ AS RANGE LEFT FOR VALUES (100, 200, 300);
 ```sql
 CREATE PARTITION SCHEME ps_range
 AS PARTITION pf_range ALL TO ([PRIMARY]);
-```
-
+```text
 - 将 Partition Function 映射到具体的文件组（filegroup）
 - `ALL TO ([PRIMARY])` 表示所有分区都在同一个文件组
 - 也可以指定不同的文件组实现物理隔离
@@ -40,8 +38,7 @@ CREATE TABLE dbo.orders (
     order_date DATE NOT NULL,
     amount DECIMAL(10, 2)
 ) ON ps_range(order_id);
-```
-
+```text
 - `ON ps_range(order_id)` 指定分区方案和分区键
 - 表的物理存储由 Partition Scheme 决定
 
@@ -58,22 +55,20 @@ CREATE TABLE dbo.orders (
 
 ### SQL Server 分区模型
 
-```
+```text
 Partition Function (逻辑规则)
     ↓
 Partition Scheme (映射到 filegroup)
     ↓
 Table ON scheme(key) (物理表)
-```
-
+```text
 ### PostgreSQL 分区模型
 
-```
+```text
 Parent Table PARTITION BY RANGE/LIST/HASH (key)
     ↓
 Child Table PARTITION OF parent FOR VALUES FROM ... TO ...
-```
-
+```text
 ## babelfish插件如何创建分区表
 
 Babelfish 对 SQL Server 分区语法的支持通过**三层架构**实现：
@@ -82,7 +77,7 @@ Babelfish 对 SQL Server 分区语法的支持通过**三层架构**实现：
 
 T-SQL 的分区语法在 ANTLR 语法文件中定义为独立的语法规则：
 
-```
+```text
 create_partition_function
     : CREATE PARTITION FUNCTION name(data_type) AS RANGE (LEFT|RIGHT) FOR VALUES(expr_list)
 
@@ -91,8 +86,7 @@ create_partition_scheme
 
 drop_partition_function  /  drop_partition_scheme
 alter_partition_function /  alter_partition_scheme
-```
-
+```text
 这些规则在 `ddl_statement` 中注册，是 T-SQL 特有的语法，**不对应 PostgreSQL 的任何标准 DDL 节点类型**。
 
 ### 第二层：AST 构建（`tsqlIface.cpp`）
@@ -105,8 +99,7 @@ if (ctx->create_partition_function())
     stmt = makeCreatePartitionFunction(ctx->create_partition_function());
 else if (ctx->create_partition_scheme())
     stmt = makeCreatePartitionScheme(ctx->create_partition_scheme());
-```
-
+```text
 这些语句的类型是 `PLTSQL_STMT_PARTITION_FUNCTION` 和 `PLTSQL_STMT_PARTITION_SCHEME`（定义在 `pltsql.h:210-211`），**不是 PostgreSQL 标准的 `PlannedStmt` 节点**。
 
 关键细节：在 `exitDdl_statement()` 中（`tsqlIface.cpp:2228-2232`），分区函数/方案被特殊处理：
@@ -117,8 +110,7 @@ if (ctx->create_partition_function() || ctx->drop_partition_function()
 {
     return;  // 不设置 stmt->is_ddl = true，提前返回
 }
-```
-
+```text
 这意味着它们不会被标记为 DDL，也不会走标准的 DDL 处理路径。
 
 ### 第三层：PL/TSQL 执行器（`iterative_exec.c` → `pl_exec-2.c`）
@@ -133,8 +125,7 @@ case PLTSQL_STMT_PARTITION_FUNCTION:
 case PLTSQL_STMT_PARTITION_SCHEME:
     exec_stmt_partition_scheme(estate, (PLtsql_stmt_partition_scheme *) stmt);
     break;
-```
-
+```text
 #### CREATE PARTITION FUNCTION 执行流程（`pl_exec-2.c:4349`）
 
 1. 检查用户权限（`check_create_or_drop_permission_for_partition_specifier`）
@@ -153,7 +144,7 @@ case PLTSQL_STMT_PARTITION_SCHEME:
 
 当执行 `CREATE TABLE ... ON scheme(key)` 时，Babelfish 调用 `bbf_create_partition_tables()` 函数：
 
-```
+```text
 CREATE TABLE ... ON scheme(key)
     → bbf_ProcessUtility() 识别到 CREATE TABLE 带 partitionspec
         → bbf_create_partition_tables(stmt)
@@ -164,8 +155,7 @@ CREATE TABLE ... ON scheme(key)
             → standard_ProcessUtility() 执行
             → 循环创建每个分区（分区名: {hash}_partition_N）
             → 写入 sys.babelfish_partition_depend 跟踪依赖
-```
-
+```text
 关键实现细节：
 - 分区名自动生成：基于表名的 MD5 hash + 分区序号（`{hash}_partition_0`, `{hash}_partition_1`, ...）
 - 第一个分区使用 `DEFAULT` 边界容纳 NULL 值
@@ -207,18 +197,17 @@ CREATE TABLE ... ON scheme(key)
 
 PostgreSQL 的 DDL 捕获机制依赖 `ProcessUtility_hook`：
 
-```
+```text
 标准 DDL 执行流程：
   ANTLR 解析 → 转换为 PG PlannedStmt
     → ProcessUtility()
       → CapturePublicationSyncDDL()   ← DDL 捕获点
       → bbf_ProcessUtility()           ← Babelfish hook
       → standard_ProcessUtility()      ← 实际执行
-```
-
+```text
 但 Partition Function 和 Partition Scheme 走的是完全不同的路径：
 
-```
+```text
 CREATE PARTITION FUNCTION/Scheme 执行流程：
   ANTLR 解析 (TSqlParser.g4)
     → tsqlIface.cpp 转换为 PLTSQL_STMT_PARTITION_*
@@ -226,8 +215,7 @@ CREATE PARTITION FUNCTION/Scheme 执行流程：
         → exec_stmt_partition_function/scheme (pl_exec-2.c)
           → 直接写入系统表 (catalog.c)
             ← 全程不经过 ProcessUtility()
-```
-
+```text
 **关键代码**：
 
 1. **`tsqlIface.cpp:2228-2232`** — `exitDdl_statement()` 对分区语句提前返回，不设置 `is_ddl` 标记：
@@ -244,8 +232,6 @@ CREATE PARTITION FUNCTION/Scheme 执行流程：
 3. **`iterative_exec.c:830-847`** — 由 PL/TSQL 执行器直接调用 `exec_stmt_partition_function/scheme`，不经过 `ProcessUtility()`。
 
 4. **`pl_exec-2.c`** — `exec_stmt_partition_function()` 直接操作目录表（`add_entry_to_bbf_partition_function`），不生成 `PlannedStmt`。
-
-
 
 #### 影响
 
@@ -274,5 +260,4 @@ CREATE PARTITION FUNCTION/Scheme 执行流程：
 ### 解决方案
 
 需要对分区表的ddl语句进行特殊处理和适配。
-
 

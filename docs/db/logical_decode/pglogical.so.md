@@ -12,19 +12,17 @@ pglogical.so是控制层，用于管理逻辑复制。
 
 ```shell
 ./initdb -D data -A trust
-```
+```text
 修改postgres.conf，添加如下内容：
 
 ```shell
 shared_preload_libraries = 'pglogical'
-```
-
+```text
 修改完配置后启动：
 
 ```shell
 ./pg_ctl -D data -l logfile start
-```
-
+```text
 启动后连接数据库加载插件：
 
 ```sql
@@ -35,8 +33,7 @@ Type "help" for help.
 postgres=# create extension pglogical;
 CREATE EXTENSION
 postgres=# \q
-```
-
+```text
 ## 源码分析
 
 核心代码如下：
@@ -70,8 +67,7 @@ _PG_init(void)
 
 	RegisterBackgroundWorker(&bgw);
 }
-```
-
+```text
 主要作用：
 1. 申请共享内存
 2. 注册BackgroundWorker

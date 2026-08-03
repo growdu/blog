@@ -11,22 +11,19 @@
 ```bash
 docker pull verdaccio/verdaccio
 docker save -o verdaccio.tar verdaccio/verdaccio
-```
-
+```text
 ### 3. 在离线环境下加载 Docker 镜像
 将导出的 `verdaccio.tar` 文件拷贝到离线环境的机器上，然后使用以下命令加载镜像：
 
 ```bash
 docker load -i verdaccio.tar
-```
-
+```text
 ### 4. 启动 Verdaccio 容器
 在离线环境下启动 Verdaccio 容器，可以使用以下命令：
 
 ```bash
 docker run -d --name verdaccio -p 4873:4873 verdaccio/verdaccio
-```
-
+```text
 此命令会在后台启动 Verdaccio，并将其服务暴露在主机的 4873 端口。
 
 ### 5. 配置离线 npm 镜像
@@ -36,27 +33,23 @@ docker run -d --name verdaccio -p 4873:4873 verdaccio/verdaccio
 
 ```bash
 docker cp verdaccio:/verdaccio/conf/config.yaml ./config.yaml
-```
-
+```text
 修改完成后，将其复制回容器中：
 
 ```bash
 docker cp ./config.yaml verdaccio:/verdaccio/conf/config.yaml
-```
-
+```text
 然后重启容器以应用新配置：
 
 ```bash
 docker restart verdaccio
-```
-
+```text
 ### 6. 配置 npm 使用私有仓库
 在客户端机器上，通过以下命令将 npm 的 registry 设置为你的 Verdaccio 私有仓库：
 
 ```bash
 npm set registry http://<your-server-ip>:4873/
-```
-
+```text
 现在，你可以正常使用 npm 安装和发布包了。
 
 ### 7. 离线环境下的包管理
@@ -74,8 +67,7 @@ npm set registry http://<your-server-ip>:4873/
 
 ```bash
 npm install
-```
-
+```text
 这会根据项目中的 `package.json` 文件安装所有依赖，并将它们下载到 `node_modules` 文件夹中。
 
 ### 2. 使用 `npm pack` 打包依赖包
@@ -103,8 +95,7 @@ for package in $(ls node_modules); do
     cd ../../
   fi
 done
-```
-
+```text
 这个脚本会遍历 `node_modules` 目录下的所有依赖包，并使用 `npm pack` 将它们打包到 `npm-packages` 文件夹中。
 
 ### 3. 传输依赖包到离线环境
@@ -112,8 +103,7 @@ done
 
 ```bash
 npm install ./package-name-version.tgz
-```
-
+```text
 你也可以将这些 `.tgz` 文件发布到 Verdaccio 私有仓库中，供其他项目使用。
 
 ### 4. 安装依赖包
@@ -121,8 +111,7 @@ npm install ./package-name-version.tgz
 
 ```bash
 npm install
-```
-
+```text
 这样就可以在离线环境中正确安装所需的依赖包了。
 
 通过以上方法，你可以在有网络的环境中准备好项目所需的依赖包，然后将它们传输到离线环境中进行安装和使用。
@@ -135,16 +124,14 @@ npm install
 
 ```bash
 npm set registry http://<your-verdaccio-server>:4873/
-```
-
+```text
 ### 2. 登录到 Verdaccio
 
 使用 `npm adduser` 登录到 Verdaccio 仓库：
 
 ```bash
 npm adduser --registry http://<your-verdaccio-server>:4873/
-```
-
+```text
 输入用户名、密码和电子邮件地址。
 
 ### 3. 编写脚本发布 `node_modules` 中的包
@@ -182,8 +169,7 @@ for package in $(ls node_modules); do
     cd ../../
   fi
 done
-```
-
+```text
 **注意事项：**
 - 该脚本仅发布顶级依赖（非嵌套依赖包），如果你需要发布嵌套依赖包，也可以调整脚本递归遍历。
 - 使用 `npm version patch --no-git-tag-version` 确保每次发布时包的版本号都递增，避免重复发布相同版本的包。
@@ -206,8 +192,7 @@ for scope in $(ls node_modules | grep "^@"); do
     cd ../../../
   done
 done
-```
-
+```text
 这个部分脚本会处理 `node_modules` 目录中的 Scoped Packages。
 
 ### 5. 检查发布结果
@@ -216,16 +201,14 @@ done
 
 ```bash
 npm view <package-name> --registry http://<your-verdaccio-server>:4873/
-```
-
+```text
 ### 6. 使用发布的包
 
 在项目中，通过配置 npm 指向 Verdaccio 仓库来使用刚发布的包：
 
 ```bash
 npm install <package-name>
-```
-
+```text
 ### 注意事项
 
 - **重复发布：** 避免重复发布同一版本的包。确保每个包的版本号在发布前递增。

@@ -78,14 +78,12 @@ CREATE PUBLICATION name
       | FOR publication_object [, ... ] ]
     [ WITH ( publication_parameter [= value] [, ... ],
              ddl [= value] ) ]
-```
-
+```text
 其中 `ddl` 为字符串列表，例如：
 
 ```sql
 WITH (ddl = 'table,index')
-```
-
+```text
 ### 校验规则
 
 * `FOR TABLE` / `FOR TABLES IN SCHEMA`：仅允许 `table,index`
@@ -103,8 +101,7 @@ CREATE SUBSCRIPTION subname
     PUBLICATION pubname [, ...]
     [ WITH ( subscription_parameter [= value] [, ... ],
              ddl [= value] ) ]
-```
-
+```text
 ### 订阅侧校验规则
 
 设：
@@ -112,14 +109,12 @@ CREATE SUBSCRIPTION subname
 ```text
 wanted = subscription.ddl
 offered = union(all publication.ddl)
-```
-
+```text
 要求：
 
 ```text
 wanted ⊆ offered
-```
-
+```text
 否则报错。
 
 这比“必须完全一致”更符合现有 publication/subscription 的组合过滤模型。当前 `CREATE SUBSCRIPTION` 文档也说明 subscription 可以订阅多个 publications。([PostgreSQL][2])
@@ -138,8 +133,7 @@ wanted ⊆ offered
 
 ```c
 int32 pubddl;
-```
-
+```text
 按 bitmask 存储：
 
 ```c
@@ -147,8 +141,7 @@ int32 pubddl;
 #define PUBDDL_INDEX   (1 << 1)
 #define PUBDDL_TRIGGER (1 << 2)
 ...
-```
-
+```text
 ### 原因
 
 * 比 text[] 更适合执行期快速判断
@@ -161,8 +154,7 @@ int32 pubddl;
 ```c
 int32 subddl;
 bool  subddlmanual;   /* 二期可选 */
-```
-
+```text
 一期可只做 `subddl`。
 
 ---
@@ -180,8 +172,7 @@ DDL SQL
   -> pgoutput 输出 DDL 消息
   -> apply worker 按事务顺序执行 DDL
   -> 再继续执行同事务后续 DML
-```
-
+```text
 这个设计完全建立在 PostgreSQL 当前“逻辑复制基于 WAL 解码、复制槽按顺序输出、协议有明确事务消息流”的基础上。([PostgreSQL][1])
 
 ---
@@ -205,8 +196,7 @@ bool GetLogicalDDLInfo(PlannedStmt *pstmt,
                        const char *queryString,
                        ProcessUtilityContext context,
                        LogicalDDLCommand *cmd);
-```
-
+```text
 ## 7.2 内部结构体
 
 ```c
@@ -239,8 +229,7 @@ typedef struct LogicalDDLCommand
 
     uint32 flags;   /* transactional / requires_relcache_flush / etc */
 } LogicalDDLCommand;
-```
-
+```text
 ## 7.3 为什么不能只存原始 query string
 
 因为订阅端重放时：
@@ -267,14 +256,12 @@ typedef struct LogicalDDLCommand
 
 ```c
 void LogLogicalDDLMessage(LogicalDDLCommand *cmd);
-```
-
+```text
 其底层语义等价于写入一条 **transactional logical decoding message**，prefix 固定为：
 
 ```text
 pg_ddl
-```
-
+```text
 ### 为什么推荐 message，而不是专门新 WAL rmgr
 
 * 更贴近现有 logical decoding message 能力
@@ -290,8 +277,7 @@ BEGIN;
 CREATE TABLE t1(...);
 INSERT INTO t1 VALUES (1);
 COMMIT;
-```
-
+```text
 在输出端看到的仍然是：
 
 ```text
@@ -299,8 +285,7 @@ BEGIN
 DDL(create table t1)
 INSERT(t1)
 COMMIT
-```
-
+```text
 而不是乱序。
 
 ---
@@ -323,8 +308,7 @@ PostgreSQL 当前的逻辑流复制协议文档说明，`pgoutput` 作为标准�
 
 ```text
 Byte1('D')  -- DDL message
-```
-
+```text
 消息体定义：
 
 ```text
@@ -342,8 +326,7 @@ String   object_identity
 String   normalized_sql
 Int32    npubs
 Int32[]  pubids
-```
-
+```text
 ### 设计理由
 
 * 不依赖 JSON
@@ -372,16 +355,14 @@ Int32[]  pubids
 
 ```c
 static void apply_handle_ddl(StringInfo s);
-```
-
+```text
 并在 dispatch 中添加：
 
 ```c
 case LOGICAL_REP_MSG_DDL:
     apply_handle_ddl(s);
     break;
-```
-
+```text
 ## 10.2 执行时机
 
 DDL 必须在远端事务上下文中按顺序执行：
@@ -393,8 +374,7 @@ remote BEGIN
   -> DML #1
   -> DML #2
 remote COMMIT
-```
-
+```text
 这样才能保证 schema 先到位，再 apply 同事务内后续 tuple 变更。
 
 ## 10.3 tablesync worker 不处理 DDL
@@ -480,8 +460,7 @@ DDL apply 失败时建议保持同样语义：
 
 ```text
 (origin_id, xid, end_lsn, ddl_seqno)
-```
-
+```text
 其中 `ddl_seqno` 是事务内第几个 DDL 事件。
 
 ## 13.2 最低限度幂等检查
@@ -543,8 +522,7 @@ DDL apply 失败时建议保持同样语义：
 
 ```sql
 ALTER SUBSCRIPTION sub SET (ddl_manual = true);
-```
-
+```text
 含义：
 
 * publisher 仍发送 DDL message
@@ -612,8 +590,7 @@ extern bool GetLogicalDDLInfo(PlannedStmt *pstmt,
                               LogicalDDLCommand *cmd);
 
 extern void LogLogicalDDLMessage(LogicalDDLCommand *cmd);
-```
-
+```text
 ### 18.2 协议层
 
 ```c
@@ -621,16 +598,14 @@ extern void logicalrep_write_ddl(StringInfo out,
                                  LogicalDDLCommand *cmd);
 
 extern LogicalDDLCommand *logicalrep_read_ddl(StringInfo in);
-```
-
+```text
 ### 18.3 订阅端
 
 ```c
 static void apply_handle_ddl(StringInfo s);
 static void execute_replicated_ddl(LogicalDDLCommand *cmd);
 static bool ddl_already_applied(LogicalDDLCommand *cmd);
-```
-
+```text
 ---
 
 ## 19. 测试方案

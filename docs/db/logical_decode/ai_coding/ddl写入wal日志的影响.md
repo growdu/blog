@@ -23,8 +23,7 @@
 
 ```c
 LogLogicalMessage(..., RM_LOGICALMSG_ID)
-```
-
+```text
 👉 那么：
 
 > ✔ WAL 格式完全兼容
@@ -45,8 +44,7 @@ LogLogicalMessage(..., RM_LOGICALMSG_ID)
 XLOG_LOGICAL_MESSAGE
   prefix = "pg_ddl"
   payload = LogicalDDLCommand（二进制）
-```
-
+```text
 👉 本质：
 
 > **每个 DDL 多一条 WAL record**
@@ -62,8 +60,7 @@ CREATE TABLE t1 (
   id int,
   name text
 );
-```
-
+```text
 payload 大致：
 
 | 项               | 大小       |
@@ -78,8 +75,7 @@ payload 大致：
 
 ```text
 ≈ 150B ~ 400B
-```
-
+```text
 ---
 
 ## 3️⃣ 对比 WAL 本身大小
@@ -88,14 +84,12 @@ payload 大致：
 
 ```text
 heap_insert WAL ≈ 50B ~ 200B
-```
-
+```text
 一个 UPDATE：
 
 ```text
 ≈ 100B ~ 300B
-```
-
+```text
 ---
 
 👉 结论：
@@ -119,8 +113,7 @@ heap_insert WAL ≈ 50B ~ 200B
 
 ```text
 WAL 增量 ≈ 忽略不计（绝大多数场景）
-```
-
+```text
 ---
 
 ## 5️⃣ 真正可能膨胀的场景
@@ -135,28 +128,24 @@ WAL 增量 ≈ 忽略不计（绝大多数场景）
 
 ```text
 每秒 CREATE TABLE / DROP TABLE
-```
-
+```text
 👉 会产生：
 
 ```text
 DDL WAL ≈ 300B * N
-```
-
+```text
 ---
 
 ### ❗场景2：超长 SQL
 
 ```sql
 CREATE TABLE t (... 500列 ...)
-```
-
+```text
 👉 SQL 本身可能：
 
 ```text
 10KB+
-```
-
+```text
 ---
 
 👉 但注意：
@@ -165,8 +154,7 @@ CREATE TABLE t (... 500列 ...)
 
 ```text
 log_statement = ddl
-```
-
+```text
 也会记录类似大小
 
 ---
@@ -182,8 +170,7 @@ log_statement = ddl
 ```text
 query_string
 normalized_sql
-```
-
+```text
 👉 建议：
 
 | 字段             | 是否必须         |
@@ -197,8 +184,7 @@ normalized_sql
 
 ```text
 ddl_include_query = off
-```
-
+```text
 ---
 
 ## ✅ 优化2：压缩 payload（可选）
@@ -207,14 +193,12 @@ ddl_include_query = off
 
 ```c
 pglz_compress(payload)
-```
-
+```text
 👉 对长 SQL 效果很好：
 
 ```text
 10KB → 2KB
-```
-
+```text
 ---
 
 ## ✅ 优化3：结构化替代 SQL（高级优化）
@@ -226,8 +210,7 @@ pglz_compress(payload)
   "type": "CREATE_TABLE",
   "columns": [...]
 }
-```
-
+```text
 👉 比 SQL 小很多
 
 ---
@@ -245,14 +228,12 @@ pglz_compress(payload)
 ```c
 RM_LOGICALMSG_ID
 XLOG_LOGICAL_MESSAGE
-```
-
+```text
 这是 PostgreSQL 已存在的 WAL record 类型：
 
 ```c
 PG_RMGR(RM_LOGICALMSG_ID, "LogicalMessage", ...)
-```
-
+```text
 ---
 
 👉 意味着：
@@ -274,8 +255,7 @@ PG_RMGR(RM_LOGICALMSG_ID, "LogicalMessage", ...)
 
 ```c
 logicalmsg_redo(...) { /* no-op */ }
-```
-
+```text
 👉 说明：
 
 > 这种 WAL record **不参与物理恢复**
@@ -297,8 +277,7 @@ logicalmsg_redo(...) { /* no-op */ }
 WAL → 备库
 遇到 XLOG_LOGICAL_MESSAGE
 → 忽略
-```
-
+```text
 ---
 
 ✔ 不会崩
@@ -313,16 +292,14 @@ WAL → 备库
 
 ```text
 'D' message
-```
-
+```text
 ---
 
 👉 必须做：
 
 ```text
 proto_version >= N
-```
-
+```text
 否则：
 
 👉 老 subscriber 收到未知 message 会报错
@@ -333,8 +310,7 @@ proto_version >= N
 
 ```text
 START_REPLICATION ... (proto_version=5, ddl=on)
-```
-
+```text
 ---
 
 # 五、真正的风险点（你必须注意）
@@ -347,8 +323,7 @@ START_REPLICATION ... (proto_version=5, ddl=on)
 
 ```text
 logical slot retention
-```
-
+```text
 ---
 
 ### 场景：
@@ -363,8 +338,7 @@ logical slot retention
 
 ```text
 WAL = DML + DDL
-```
-
+```text
 ---
 
 👉 你的 DDL 会：
@@ -380,8 +354,7 @@ WAL = DML + DDL
 
 ```sql
 CREATE TABLE t (... 10000 columns ...)
-```
-
+```text
 👉 payload = 100KB+
 
 ---
@@ -397,8 +370,7 @@ CREATE TABLE t (... 10000 columns ...)
 
 ```text
 max_ddl_message_size
-```
-
+```text
 ---
 
 ## ❗3. 逻辑复制 replay 风险（比 WAL 更重要）
@@ -407,8 +379,7 @@ max_ddl_message_size
 
 ```text
 DDL replay 失败 → 停订阅
-```
-
+```text
 ---
 
 # 六、总结一句话
@@ -421,8 +392,7 @@ DDL replay 失败 → 停订阅
 ✔ 不影响 crash recovery
 ✔ 不影响物理复制
 ✔ 对 logical slot 有轻微压力（但可控）
-```
-
+```text
 ---
 
 # 七、最终建议（非常关键）
@@ -436,8 +406,7 @@ DDL replay 失败 → 停订阅
 ```text
 max_ddl_message_size
 ddl_include_query = off
-```
-
+```text
 ---
 
 ## ✅ 2. payload 压缩（建议）
@@ -454,8 +423,7 @@ ddl_include_query = off
 
 ```text
 table + index
-```
-
+```text
 ---
 
 # 八、如果你要更深入（下一步）

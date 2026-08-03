@@ -45,8 +45,7 @@ wal_buffers = 16MB
 
 # 设置检查点间隔
 checkpoint_timeout = 15min
-```
-
+```text
 重启 PostgreSQL 服务使配置生效：
 
 ```bash
@@ -54,8 +53,7 @@ checkpoint_timeout = 15min
 sudo systemctl restart postgresql-15
 # 或
 pg_ctl restart -D /var/lib/pgsql/15/data
-```
-
+```text
 ### 2. 创建测试数据库和用户
 
 ```sql
@@ -70,8 +68,7 @@ CREATE USER repl_user WITH REPLICATION LOGIN PASSWORD 'repl_password';
 
 -- 授予必要权限
 GRANT ALL PRIVILEGES ON DATABASE logical_test TO repl_user;
-```
-
+```text
 ### 3. 准备测试环境
 
 我们将使用两个数据库来模拟发布者（Publisher）和订阅者（Subscriber）：
@@ -82,8 +79,7 @@ GRANT ALL PRIVILEGES ON DATABASE logical_test TO repl_user;
 
 ```sql
 CREATE DATABASE logical_sub;
-```
-
+```text
 ## 第一部分：WAL 日志基础
 
 ### 1.1 查看当前 WAL 状态
@@ -102,8 +98,7 @@ SHOW data_directory;
 SHOW wal_level;
 SHOW max_wal_size;
 SHOW min_wal_size;
-```
-
+```text
 ### 1.2 开启 WAL 调试
 
 PostgreSQL 没有直接的 "WAL 调试模式"，但我们可以通过以下方式查看 WAL 内容：
@@ -126,8 +121,7 @@ log_disconnections = on
 
 # 记录复制相关活动
 log_replication_commands = on
-```
-
+```text
 重启服务后，可以在日志文件中看到详细的 SQL 执行信息。
 
 ## 第二部分：逻辑复制搭建
@@ -153,8 +147,7 @@ CREATE PUBLICATION test_pub FOR TABLE test_table;
 -- 查看发布信息
 SELECT * FROM pg_publication;
 SELECT * FROM pg_publication_tables;
-```
-
+```text
 ### 2.2 创建订阅者（Subscriber）
 
 在 logical_sub 数据库中：
@@ -176,8 +169,7 @@ WITH (copy_data = true);
 -- 查看订阅信息
 SELECT * FROM pg_subscription;
 SELECT * FROM pg_stat_subscription;
-```
-
+```text
 ### 2.3 验证复制状态
 
 ```sql
@@ -203,8 +195,7 @@ FROM pg_stat_replication;
 
 -- 在订阅者端查看数据是否已复制
 SELECT * FROM test_table;
-```
-
+```text
 ## 第三部分：DDL 操作与 WAL 日志分析
 
 ### 3.1 执行 DDL 操作
@@ -218,16 +209,14 @@ CREATE INDEX idx_test_table_name ON test_table(name);
 
 -- 修改列类型
 ALTER TABLE test_table ALTER COLUMN name TYPE VARCHAR(200);
-```
-
+```text
 ### 3.2 查看 DDL 对应的 WAL 日志
 
 首先找到当前的 WAL 文件：
 
 ```sql
 SELECT pg_walfile_name(pg_current_wal_lsn());
-```
-
+```text
 假设得到的 WAL 文件名为 `000000010000000000000001`，使用 pg_waldump 解析：
 
 ```bash
@@ -239,8 +228,7 @@ pg_waldump 000000010000000000000001 -p
 
 # 如果要查看特定 LSN 范围的 WAL
 pg_waldump 000000010000000000000001 -s 0/1000000 -e 0/2000000
-```
-
+```text
 ### 3.3 分析 DDL 的 WAL 记录
 
 DDL 操作在 WAL 中通常记录为：
@@ -262,8 +250,7 @@ SELECT txid_current();
 
 -- 查看事务快照
 SELECT pg_current_snapshot();
-```
-
+```text
 ## 第四部分：DML 操作与 WAL 日志分析
 
 ### 4.1 执行 DML 操作
@@ -283,8 +270,7 @@ DELETE FROM test_table WHERE id = 2;
 
 -- 记录操作后的 LSN
 SELECT pg_current_wal_lsn() AS after_lsn;
-```
-
+```text
 ### 4.2 查看 DML 对应的 WAL 日志
 
 使用 pg_waldump 查看 INSERT/UPDATE/DELETE 对应的 WAL 记录：
@@ -292,8 +278,7 @@ SELECT pg_current_wal_lsn() AS after_lsn;
 ```bash
 # 解析特定 LSN 范围的 WAL
 pg_waldump 000000010000000000000001 -s 0/3000000 -e 0/4000000 -r heap
-```
-
+```text
 `-r heap` 参数只显示堆表相关的 WAL 记录。
 
 ### 4.3 WAL 记录结构分析
@@ -322,8 +307,7 @@ SELECT * FROM pg_logical_slot_get_changes('test_slot', NULL, NULL);
 
 -- 删除测试槽
 SELECT pg_drop_replication_slot('test_slot');
-```
-
+```text
 ## 第五部分：DQL 操作与快照分析
 
 ### 5.1 执行 DQL 操作
@@ -340,8 +324,7 @@ COMMIT;
 
 -- 查看当前活跃快照
 SELECT * FROM pg_stat_activity WHERE state = 'active';
-```
-
+```text
 ### 5.2 快照与 LSN 的关系
 
 快照实际上是一个事务ID的集合，表示在该快照创建时哪些事务已经提交、哪些正在运行、哪些还未开始。
@@ -354,8 +337,7 @@ SELECT pg_current_snapshot();
 -- xmin: 最早仍活跃的事务ID
 -- xmax: 下一个将要分配的事务ID
 -- xip_list: 当前活跃的事务ID列表
-```
-
+```text
 ### 5.3 快照在逻辑复制中的应用
 
 逻辑复制中的初始数据拷贝（copy_data = true）使用一致性快照来确保数据的一致性：
@@ -378,8 +360,7 @@ SELECT
     pg_last_wal_replay_lsn() AS replay_lsn,
     pg_current_wal_insert_lsn() AS insert_lsn,
     pg_current_wal_flush_lsn() AS flush_lsn;
-```
-
+```text
 ### 6.2 复制过程中的 LSN 推进
 
 在逻辑复制中，有多个LSN概念：
@@ -413,8 +394,7 @@ SELECT
     pg_wal_lsn_diff(flush_lsn, replay_lsn) AS replay_lag_bytes,
     pg_wal_lsn_diff(pg_current_wal_lsn(), replay_lsn) AS total_lag_bytes
 FROM pg_stat_replication;
-```
-
+```text
 ### 6.3 LSN 与事务的关系
 
 每个事务提交时都会记录一个LSN，表示该事务的WAL记录结束位置。
@@ -431,8 +411,7 @@ SELECT pg_current_wal_lsn() AS after_commit_lsn;
 
 -- 计算事务占用的WAL大小
 SELECT pg_wal_lsn_diff('0/152B8B0', '0/152B8A0') AS wal_size_bytes;
-```
-
+```text
 ## 第七部分：文件级操作追踪
 
 ### 7.1 WAL 文件管理
@@ -448,8 +427,7 @@ du -sh /var/lib/pgsql/15/data/pg_wal/
 
 # 查看当前正在使用的WAL文件
 psql -c "SELECT pg_walfile_name(pg_current_wal_lsn());"
-```
-
+```text
 ### 7.2 数据文件追踪
 
 每个表对应一个或多个数据文件（在 `base` 目录中）。
@@ -470,8 +448,7 @@ SELECT
     reltuples
 FROM pg_class
 WHERE relname = 'test_table';
-```
-
+```text
 ### 7.3 逻辑复制相关的文件
 
 1. **复制槽状态文件**：`pg_replslot/<slot_name>/state`
@@ -484,8 +461,7 @@ ls -la /var/lib/pgsql/15/data/pg_replslot/
 
 # 查看逻辑解码插件
 ls -la /usr/pgsql-15/lib/ | grep -E '(pgoutput|decoder)'
-```
-
+```text
 ## 第八部分：完整实验演示
 
 ### 8.1 实验目标
@@ -519,8 +495,7 @@ log_timezone = 'UTC'
 
 # 启动 PostgreSQL 服务
 sudo systemctl start postgresql-15
-```
-
+```text
 #### 步骤2：初始化测试环境
 ```sql
 -- 创建测试数据库
@@ -540,8 +515,7 @@ CREATE TABLE experiment_table (
 
 -- 创建发布
 CREATE PUBLICATION experiment_pub FOR TABLE experiment_table;
-```
-
+```text
 #### 步骤3：监控脚本准备
 创建一个监控脚本 `monitor_replication.sh`：
 
@@ -577,8 +551,7 @@ while true; do
 
     sleep 2
 done
-```
-
+```text
 #### 步骤4：执行 DDL 操作并观察
 ```sql
 -- 记录开始LSN
@@ -592,8 +565,7 @@ SELECT pg_current_wal_lsn() AS end_lsn \gset
 
 -- 计算DDL产生的WAL大小
 SELECT pg_wal_lsn_diff(:'end_lsn', :'start_lsn') AS ddl_wal_size;
-```
-
+```text
 #### 步骤5：执行 DML 操作并观察
 ```sql
 -- 批量插入数据
@@ -613,8 +585,7 @@ DELETE FROM experiment_table WHERE id % 20 = 0;
 -- 查看WAL生成量
 SELECT pg_current_wal_lsn() AS current_lsn \gset
 SELECT pg_wal_lsn_diff(:'current_lsn', :'end_lsn') AS dml_wal_size;
-```
-
+```text
 #### 步骤6：创建订阅并观察复制过程
 ```sql
 -- 在订阅者数据库创建表结构
@@ -640,8 +611,7 @@ SELECT
     confirmed_flush_lsn,
     pg_wal_lsn_diff(pg_current_wal_lsn(), confirmed_flush_lsn) AS lag_bytes
 FROM pg_replication_slots;
-```
-
+```text
 #### 步骤7：分析 WAL 日志
 ```bash
 # 找到包含实验操作的WAL文件
@@ -652,8 +622,7 @@ pg_waldump /var/lib/pgsql/15/data/pg_wal/$WAL_FILE -s :'start_lsn' -e :'current_
 
 # 查看解析结果
 head -100 experiment_wal_dump.txt
-```
-
+```text
 #### 步骤8：验证数据一致性
 ```sql
 -- 在发布者和订阅者比较数据
@@ -668,8 +637,7 @@ SELECT 'Subscriber' as source, COUNT(*) as row_count FROM experiment_table;
 SELECT id, operation_type, ddl_marker FROM experiment_table ORDER BY id LIMIT 10;
 \c logical_sub
 SELECT id, operation_type, ddl_marker FROM experiment_table ORDER BY id LIMIT 10;
-```
-
+```text
 ### 8.3 实验结果分析
 
 通过上述实验，我们可以观察到：
@@ -705,8 +673,7 @@ SELECT
     pg_wal_lsn_diff(:'lsn_after_insert', :'lsn_before_insert') AS insert1_wal,
     pg_wal_lsn_diff(:'lsn_before_commit', :'lsn_after_insert') AS insert2_wal,
     pg_wal_lsn_diff(:'lsn_after_commit', :'lsn_before_commit') AS commit_wal;
-```
-
+```text
 ### 9.2 快照与事务隔离
 
 逻辑复制使用快照来确保数据一致性：
@@ -729,8 +696,7 @@ COMMIT;
 
 -- 快照对应的LSN可以用于确定复制起点
 SELECT :'snapshot_lsn' AS snapshot_lsn_position;
-```
-
+```text
 ### 9.3 逻辑复制的工作流程
 
 1. **捕获变更**：通过WAL日志捕获DDL/DML变更。
@@ -757,8 +723,7 @@ FROM pg_stat_replication;
 -- 2. 订阅者应用慢：检查订阅者负载
 -- 3. 大事务：避免长时间运行的大事务
 -- 4. WAL文件过多：定期清理旧复制槽
-```
-
+```text
 #### 问题2：WAL磁盘空间不足
 ```sql
 -- 查看WAL磁盘使用
@@ -771,8 +736,7 @@ FROM pg_replication_slots;
 -- 1. 删除不需要的复制槽：SELECT pg_drop_replication_slot('slot_name');
 -- 2. 监控复制进度，确保订阅者及时确认
 -- 3. 增加WAL磁盘空间
-```
-
+```text
 #### 问题3：复制中断
 ```sql
 -- 查看复制状态
@@ -787,8 +751,7 @@ WHERE length(pg_read_file('log/postgresql-' || to_char(current_date, 'YYYY-MM-DD
 -- 1. 网络中断：检查网络连接
 -- 2. 权限问题：检查复制用户权限
 -- 3. 表结构不一致：确保发布者和订阅者表结构一致
-```
-
+```text
 ### 10.2 性能优化建议
 
 1. **调整WAL参数**：
@@ -867,8 +830,7 @@ SELECT pg_export_snapshot();
 -- 表信息
 SELECT pg_relation_filepath('table_name');
 SELECT pg_relation_size('table_name');
-```
-
+```text
 ### B. 配置文件示例
 
 `postgresql.conf` 关键配置：
@@ -890,8 +852,7 @@ log_statement = 'all'
 log_connections = on
 log_disconnections = on
 log_replication_commands = on
-```
-
+```text
 ### C. WAL 日志实际示例分析
 
 以下是使用 `pg_waldump` 工具解析的实际 WAL 日志示例，展示了不同操作对应的 WAL 记录。
@@ -904,8 +865,7 @@ rmgr: Heap        len (rec/tot):     70/   114, tx:       1234, lsn: 0/1512345, 
   tuple data: 2 columns
     col 1: [1] 49  (integer 1)
     col 2: [7] 74 65 73 74 31  (text "test1")
-```
-
+```text
 **字段解释**：
 - `rmgr: Heap`：资源管理器为堆表（数据表）
 - `tx: 1234`：事务ID
@@ -927,8 +887,7 @@ rmgr: Heap        len (rec/tot):    104/   148, tx:       1235, lsn: 0/1512500, 
   new tuple: 2 columns
     col 1: [1] 49  (integer 1)
     col 2: [8] 74 65 73 74 31 55  (text "test17")
-```
-
+```text
 **字段解释**：
 - `desc: UPDATE`：操作类型为UPDATE
 - `old tuple`：更新前的元组数据
@@ -942,15 +901,13 @@ rmgr: Heap        len (rec/tot):     66/   110, tx:       1236, lsn: 0/1512700, 
   old tuple: 2 columns
     col 1: [1] 49  (integer 1)
     col 2: [8] 74 65 73 74 31 55  (text "test17")
-```
-
+```text
 #### 示例4：事务提交记录
 
 ```plaintext
 rmgr: Transaction len (rec/tot):     34/    34, tx:       1234, lsn: 0/1512800, prev 0/1512700, desc: COMMIT 2026-03-16 10:30:00.123456 UTC
   commit_ts: 2026-03-16 10:30:00.123456 UTC
-```
-
+```text
 **字段解释**：
 - `rmgr: Transaction`：资源管理器为事务
 - `desc: COMMIT`：事务提交
@@ -961,8 +918,7 @@ rmgr: Transaction len (rec/tot):     34/    34, tx:       1234, lsn: 0/1512800, 
 ```plaintext
 rmgr: XLOG        len (rec/tot):    106/   106, tx:          0, lsn: 0/1513000, prev 0/1512800, desc: CHECKPOINT_ONLINE
   redo 0/1513000; undo 0/0; tli 1; prev tli 1; fpw true; xid 0:1236; oid 24576; multi 1; offset 0; oldest xid 562 in DB 1; oldest multi 1; oldest/newest commit timestamp xid: 0/0; oldest running xid 0; shutdown false
-```
-
+```text
 #### 示例6：DDL 操作（创建表）的 WAL 记录
 
 DDL操作通常涉及多个系统表变更：
@@ -978,8 +934,7 @@ rmgr: Heap        len (rec/tot):     92/    92, tx:       1237, lsn: 0/1513250, 
 rmgr: Heap        len (rec/tot):     85/    85, tx:       1237, lsn: 0/1513300, prev 0/1513250, desc: INSERT
   blkref #0: rel 1663/1262/1249 blk 0  # pg_attribute 系统表
   tuple data: ...  # 表列的元数据
-```
-
+```text
 **说明**：DDL操作不会直接记录SQL语句，而是记录系统表（pg_class、pg_attribute等）的变更。逻辑复制需要额外的机制（如pglogical）来捕获和复制DDL。
 
 #### 示例7：逻辑解码消息（Logical Message）
@@ -987,8 +942,7 @@ rmgr: Heap        len (rec/tot):     85/    85, tx:       1237, lsn: 0/1513300, 
 ```plaintext
 rmgr: LogicalMessage len (rec/tot):     58/    58, tx:          0, lsn: 0/1513400, prev 0/1513300, desc: MESSAGE
   prefix "pgoutput"; content "BEGIN 1234"
-```
-
+```text
 这是逻辑复制专用的消息，用于传输事务边界等信息。
 
 ### D. 参考资源

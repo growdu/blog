@@ -18,8 +18,7 @@ set(name a.c b.c c.c)
 list(append name d.c e.c)
 # 使用list
 add_executeable(test ${name})
-```
-
+```text
 ## 添加库
 
 - 添加动态库
@@ -40,29 +39,24 @@ add_executeable(test ${name})
 
 ```cmake
 add_executeable(name main.c)
-```
-
+```text
 ## 添加头文件路径
 
 ```cmake
 target_include_directories(target private path)
-```
-
+```text
 ## 添加链接库
 
 ```cmake
 target_link_libraries(target name)
-```
-
+```text
 ## 指定安装位置
 
 ```cmake
 install(TARGETS test DESTINATION bin) #将test安装到/usr/local/bin目录下
-```
-
+```text
 ## 拷贝相关依赖到指定目录
 
 ```cmake
 install(DIRECTORY lib DESTINATION bin PATTERN "lib/*") #将lib下的所有文件拷贝到bin目录下
-```
-
+```text

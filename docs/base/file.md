@@ -16,8 +16,6 @@ superblock记录整个文件系统相关信息的地方，包括
 
 3.block
 
-
-
 * 文件的各种属性
 
 ```C
@@ -36,8 +34,7 @@ struct stat {
     time_t st_mtime; /* 最后一次修改时间 */
     time_t st_ctime; /* 最后一次改变时间(指属性) */
 };
-```
-
+```text
 ```shell
 #查看某个文件属性
 ls -l
@@ -45,9 +42,7 @@ ls -l
 stat filename
 #查看文件各类属性
 file filename
-```
-
-
+```text
 * 读取文件
 * 写入文件
 * 重命名文件
@@ -71,8 +66,7 @@ file filename
 FILE *fopen( const char * filename, const char * mode );
 //二进制文件，使用下面的访问模式关键字
 //"rb", "wb", "ab", "rb+", "r+b", "wb+", "w+b", "ab+", "a+b"
-```
-
+```text
 |模式|描述|
 |:--|:--|
 |r|打开一个已有的文本文件，允许读取文件。|
@@ -86,8 +80,7 @@ FILE *fopen( const char * filename, const char * mode );
 
 ```c
  int fclose( FILE *fp );
-```
-
+```text
 ### 1.3 写入文件
 
 ```c
@@ -99,8 +92,7 @@ int fputc( int c, FILE *fp );
 int fputs( const char *s, FILE *fp );
 //将格式化字符串写入到文件中
 int fprintf(FILE *fp,const char *format, ...); 
-```
-
+```text
 ### 1.4 读取文件
 
 ```c
@@ -111,7 +103,7 @@ int fgetc( FILE * fp );
 char *fgets( char *buf, int n, FILE *fp );
 //在遇到第一个空格字符时，会停止读取
 int fscanf(FILE *fp, const char *format, ...);
-```
+```text
 ### 1.5 二进制I/O函数
 
 ```c
@@ -121,14 +113,13 @@ size_t fread(void *ptr, size_t size_of_elements,
               
 size_t fwrite(const void *ptr, size_t size_of_elements, 
              size_t number_of_elements, FILE *a_file);
-```
-
+```text
 ### 1.6 补充
 
 ```C
 //fseek 可以移动文件指针到指定位置读,或插入写
 int fseek(FILE *stream, long offset, int whence);
-```
+```text
 ### 1.7 目录操作
 
 ```c
@@ -139,19 +130,17 @@ DIR * opendir(const char* path);
 struct dirent * readdir(DIR * dir_handle);
 //关闭目录
 int closedir(DIR * dir_handle);
-```
+```text
 ### 1.8 删除文件
 
 ```c
 //filename为要删除的文件名，可以为一目录。如果参数filename 为一文件，则调用unlink()处理；
 //若参数filename 为一目录，则调用rmdir()来处理。
 int remove(char * filename);
-```
-
+```text
 ### 1.9 代码示例
 
 代码示例详见code.
-
 
 ## 2 java
 
@@ -177,7 +166,6 @@ int remove(char * filename);
 2.继承自Reader/Writer的流都是用于向程序中输入/输出数据，且数据的单位都是字符(2byte=16bit)
 
 * 功能不同，可分为：节点流，处理流
-
 
 **节点流**：节点流从一个特定的数据源读写数据。即节点流是直接操作文件，网络等的流，例如FileInputStream和FileOutputStream，他们直接从文件中读取或往文件中写入字节流。
 
@@ -212,7 +200,7 @@ public File(String pathname)
 //传入两个字符串,将其拼接为一个路径
 public File(String parent, String child)
 public File(File parent, String child)
-```
+```text
 #### 2.4.2 文件名和文件路径操作
 
 ```java
@@ -235,7 +223,7 @@ public File getAbsoluteFile()
 
 public String getCanonicalPath()
 public File getCanonicalFile()
-```
+```text
 #### 2.4.2 文件的信息
 
 ```java
@@ -247,7 +235,7 @@ public boolean isDirectory()
 public boolean isFile()
 public boolean isHidden()
 public long lastModified()  //最后一次修改的时间
-```
+```text
 #### 2.4.3 操作文件
 
 ##### 2.4.3.1 创建文件
@@ -260,7 +248,7 @@ f.mkdir();
 //创建文件
 File d = new File("a/a.txt");
 d.createNewFile();
-```
+```text
 ##### 2.4.3.2 删除文件
 文件的删除主要有两个方法。delete和deleteOnExit，前者会删除文件或者目录返回boolean，后者标记一下，等到虚拟机退出时候进行实际删除操作。需要注意的是如果将要删除的文件目录不为空就不能完成删除操作。
 
@@ -273,7 +261,7 @@ d.createNewFile();
 public boolean mkdir()
 //迭代创建多层目录
 public boolean mkdirs()
-```
+```text
 #### 2.5.2 列出目录下的文件
 
 ```java
@@ -283,15 +271,14 @@ public File[] listFiles()
 public String[] list(FilenameFilter filter)
 public File[] listFiles(FilenameFilter filter)
 public File[] listFiles(FileFilter filter)
-```
+```text
 ```java
 File f = new File("f:/example");
 String[] list = f.list();
 for (String s : list){
     System.out.println(s);
 }
-```
-
+```text
 ## 3 C sharp
 
 C sharp文件操作主要用到以下几个类：
@@ -316,7 +303,7 @@ C sharp文件操作主要用到以下几个类：
 //创建文件夹
 Directory.CreateDirectory(@"D:\example");
 //创建文件
-using (File.Create(@"D:\example\example.txt"));
+using (File.Create(@"D:\exampleexample.txt"));
 //删除文件
 if (File.Exists(filePath))
 {
@@ -332,8 +319,7 @@ public static IEnumerable<string> ReadLines(string path);
 public static byte[] ReadAllBytes(string path);
 //使用流读取文件
 
-```
-
+```text
 ## 4 python
 
 ### 4.1 文件操作
@@ -348,15 +334,14 @@ public static byte[] ReadAllBytes(string path);
 //如果buffering的值被设为0，就不会有寄存。如果buffering的值取1，访问文件时会寄存行。
 //如果将buffering的值设为大于1的整数，表明了这就是的寄存区的缓冲大小。如果取负值，寄存区的缓冲大小则为系统默认。
 file object = open(file_name,access_mode,buffering)
-```
+```text
 #### 4.1.2 File对象的属性
 
 一个文件打开后，其实就是创建了一个File对象，该对象保存了文件的具体信息，具体如下：
 
 ```python
 fp=open("1.txt","wb")
-```
-
+```text
 |属性|描述|
 |:--:|:--:|
 |file.closed|关闭文件，成功返回true；刷新缓冲区里任何还没写入的信息，并关闭该文件|
@@ -394,13 +379,12 @@ seek（offset,from）方法改变当前文件的位置。Offset变量表示要�
 ```python
 //rename()方法需要两个参数，当前的文件名和新文件名。
 os.rename(current_file_name, new_file_name)
-```
+```text
 * __remove()__
 
 ```python
 os.remove(file_name)
-```
-
+```text
 ### 4.2 python目录操作
 
 * __mkdir()__
@@ -437,9 +421,6 @@ rmdir()方法删除目录，目录名称以参数传递。在删除这个目录�
 |file.write()|将字符串写入文件|
 |file.writelines(sequence)|向文件写入一个序列字符串列表|
 
-
-
-
 ## 5 脚本
 
 ### 5.1 shell
@@ -449,7 +430,7 @@ rmdir()方法删除目录，目录名称以参数传递。在删除这个目录�
 ```shell
 touch filename
 mkdir -m 741 dirname
-```
+```text
 * 删除文件、文件夹
 
 ```shell
@@ -463,7 +444,7 @@ if [ -d $dir2del ]; then
   rm -rf $dir2del
 fi
 done
-```
+```text
 * 判断文件是否存在
 
 ```shell
@@ -473,8 +454,7 @@ if [-e $filename]
 then
     echo "$filename exited"
 fi
-```
-
+```text
 * 判断文件是否为空
 
 ```shell
@@ -486,7 +466,7 @@ then
 else
     echo "$filename is not null"
 fi
-```
+```text
 * 遍历一个目录下的所有文件
 
 ```shell
@@ -496,9 +476,7 @@ for file in $readpath/*
 do
     echo "$file"
 done
-```
-
-
+```text
 ### 5.2 bat
 
 * 创建文件
@@ -506,15 +484,13 @@ done
 ```bat
 ::利用重定向>
 echo "hello" >1.txt
-```
-
+```text
 * 创建目录
 
 ```bat
 ::MKDIR [drive:]path
 ::MD [drive]path
-```
-
+```text
 * 复制文件
 
 ```bat
@@ -523,26 +499,24 @@ copy 1.txt 2.txt
 ::复制文件夹文件
 ::xcopy 要复制的文件或目录树　目标地址目录名 复制文件和目录树
 ::用参数/Y将不提示覆盖相同文件
-```
-
+```text
 * 删除文件
 
 ```bat
-::将直接删除d:\test\a.bat，没有任务提示
-del /s /q /f d:\test\a.bat
+::将直接删除d:\testa.bat，没有任务提示
+del /s /q /f d:\testa.bat
 ::将直接删除 本目录的 temp 目录的所有文件，没有任务提示
 ::*表示通配符
 del temp\* /q /f /s
-```
-
+```text
 * 删除文件夹
 
 ```bat
 ::删除空目录
-rd /q /s d:\test\log
+rd /q /s d:\testlog
 ::删除非空目录
 ::必须指定目录名称，不能使用通配符
 ::/s 除当前目录外，还将删除指定目录下的所有子目录
 ::/q 安静模式，无任何提示信息
-rmdir /q /s d:\test\logs
-```
+rmdir /q /s d:\testlogs
+```text

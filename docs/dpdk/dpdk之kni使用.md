@@ -20,8 +20,7 @@
 
 ```c
 module_init(kni_init);
-```
-
+```text
 首先选择kni的线程模式，分为单线程还是多线程，所谓单线程是指所有的kni端口收发都由一个线程守护，多线程只是每一个kni端口分为由一个线程守护，这部分是在插入模块时带入参数选择。 接着调用注册函数misc_register，将kni注册为一个混杂设备。其中kni_misc结构体里面定义了该混杂设备的一些操作：
 
 ```c
@@ -38,8 +37,7 @@ static struct file_operations kni_fops = {
     .unlocked_ioctl = (void *)kni_ioctl,
     .compat_ioctl = (void *)kni_compat_ioctl,
 };
-```
-
+```text
 这里涉及的主要操作有kni_open，kni_release，以及kni_ioctl，分别对应几个函数。
 
 - kni_open
@@ -115,7 +113,7 @@ kni_net_rx_normal(struct kni_dev *kni)
  
         skb = dev_alloc_skb(len + 2);
         if (!skb) {
-            KNI_ERR("Out of mem, dropping pkts\n");
+            KNI_ERR("Out of mem, dropping pktsn");
             /* Update statistics */
             kni->stats.rx_dropped++;
         }
@@ -144,10 +142,9 @@ kni_net_rx_normal(struct kni_dev *kni)
     ret = kni_fifo_put(kni->free_q, (void **)va, num);
     if (ret != num)
         /* Failing should not happen */
-        KNI_ERR("Fail to enqueue entries into free_q\n");
+        KNI_ERR("Fail to enqueue entries into free_qn");
 }
-```
-
+```text
 - sk_buf->mbuf（发包）
 
 ```c
@@ -201,12 +198,12 @@ kni_net_tx(struct sk_buff *skb, struct net_device *dev)
         ret = kni_fifo_put(kni->tx_q, (void **)&pkt_va, 1);
         if (unlikely(ret != 1)) {
             /* Failing should not happen */
-            KNI_ERR("Fail to enqueue mbuf into tx_q\n");
+            KNI_ERR("Fail to enqueue mbuf into tx_qn");
             goto drop;
         }
     } else {
         /* Failing should not happen */
-        KNI_ERR("Fail to dequeue mbuf from alloc_q\n");
+        KNI_ERR("Fail to dequeue mbuf from alloc_qn");
         goto drop;
     }
  
@@ -224,8 +221,7 @@ drop:
  
     return NETDEV_TX_OK;
 }
-```
-
+```text
 ## kni运行
 
 ### 编译
@@ -236,8 +232,7 @@ drop:
 make config T=x86_64-native-linuxapp-gcc EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic'
 make T=x86_64-native-linuxapp-gcc  CONFIG_RTE_KNI_KMOD=y CONFIG_RTE_EAL_IGB_UIO=y EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic' install -j 8
 make examples T=x86_64-native-linuxapp-gcc O=x86_64-native-linuxapp-gcc -j16
-```
-
+```text
 - dpaa
 
 ```shell
@@ -246,13 +241,11 @@ export RTE_KERNELDIR=/home/duanyingshou/linux
 make config T=arm64-dpaa2-linuxapp-gcc CROSS=aarch64-fsl-linux- CROSS_COMPILE="aarch64-fsl-linux-"
 CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC -g"  EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic'
 make examples T=arm64-dpaa2-linuxapp-gcc CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC" EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic -I/opt/cross/sysroots/aarch64-fsl-linux/usr/include' CONFIG_RTE_KNI_KMOD=y CONFIG_RTE_EAL_IGB_UIO=n install -j 32
-```
-
+```text
 ### 执行
 
 ```shell
 kni [EAL options] -- -p PORTMASK --config="(port,lcore_rx,lcore_tx[,lcore_kthread,...])[,(port,lcore_rx,lcore_tx[,lcore_kthread,...])]" [-P] [-m]
-
 
 -p PORTMASK:
 十六进制接口掩码
@@ -262,10 +255,7 @@ kni [EAL options] -- -p PORTMASK --config="(port,lcore_rx,lcore_tx[,lcore_kthrea
 可选标志，设置的话意味着混杂模式，以便不区分以太网目的MAC地址，接收所有报文。不设置此选项，仅目的MAC地址等于接口MAC地址的报文被接收
 -m:
 可选标志。使能监控模式并更新以太网链路状态。此选项需要启动一个DPDK线程定期检查物理接口链路状态，同步相应的KNI虚拟网口状态。意味着当以太网链路down的时候，KNI虚拟接口将自动禁用，反之，自动启用。
-```
-
-
-
+```text
 ```shell
 # rmmod rte_kni
 # insmod kmod/rte_kni.ko
@@ -279,22 +269,19 @@ kni [EAL options] -- -p PORTMASK --config="(port,lcore_rx,lcore_tx[,lcore_kthrea
 ./kni -l 0-1 -n 2 -- -p 0x1 -P --config="(0,0,1)"
 
 ifconfig vEth0 121.168.1.12/24
-```
-
+```text
 ### 定位追踪
 
 在kni_net.c的kni_rx_normal中的382行添加如下代码：
 
 ```c
-pr_info("kni recv a packet\n");
-```
-
+pr_info("kni recv a packetn");
+```text
 使用dmesg观察输出。
 
 ```c
-RTE_LOG(INFO, APP, "kni send %lu packets\n",kni_stats[port_id].tx_packets);
-```
-
+RTE_LOG(INFO, APP, "kni send %lu packetsn",kni_stats[port_id].tx_packets);
+```text
 ## 测试
 
 一端使用pktgen回放报文到kni口，分别使用大包和小包。大包使用GTPU报文或者其他TCP/IP报文，小包使用arp报文。
@@ -303,14 +290,12 @@ RTE_LOG(INFO, APP, "kni send %lu packets\n",kni_stats[port_id].tx_packets);
 
 ```shell
 ./app/x86_64-native-linuxapp-gcc/pktgen -c 0xe0000 --socket-mem 1024 -n 2 -- -P -m [18:19].0 -s 0:gtpu.pcap -T --crc-strip
-```
-
+```text
 - 小包（）
 
 ```shell
 ./app/x86_64-native-linuxapp-gcc/pktgen -c 0xe0000 --socket-mem 1024 -n 2 -- -P -m [18:19].0 -s 0:arp_request.pcap -T --crc-strip
-```
-
+```text
 kni端的ip需要根据抓包报文进行修改。
 
 <font color="red">10G网口大包大致可以跑到4Gbps线速，小包10G网口大致可以跑到50Mbps线速。</font>

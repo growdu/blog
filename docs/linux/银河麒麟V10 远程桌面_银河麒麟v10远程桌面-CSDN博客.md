@@ -1,20 +1,18 @@
 ### 安装
 
-```
+```text
 yum install tigervnc-server tigervnc-server-module
-```
-
+```text
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/4967717af6f54d44ae22430eb2c583c1.png)
 
 创建配置文件
 
-```
+```text
 vi /etc/systemd/system/vncserver@.service
-```
-
+```text
 写入一下内容：
 
-```
+```text
 [Unit]
 Description=Remote desktop service (VNC)
 After=syslog.target network.target
@@ -29,44 +27,38 @@ ExecStop=/usr/bin/vncserver -kill %i
 
 [Install]
 WantedBy=multi-user.target
-```
-
+```text
 重新加载
 
-```
+```text
 systemctl daemon-reload
-```
-
+```text
 启动[VNC](https://so.csdn.net/so/search?q=VNC&spm=1001.2101.3001.7020)服务
 
-```
+```text
 systemctl start vncserver@:1.service
-```
-
+```text
 > `vncserver@:1`的`1`表示启动VNC桌面id，VNC默认端口为5900,`1`配置VNC启动的端口为：`5901`
 
 查看启动状态
 
-```
+```text
 systemctl status vncserver@:1.service
-```
-
+```text
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/e40c747872694f949b0517618eb6a28f.png?x-oss-process=image/watermark,type_d3F5LXplbmhlaQ,shadow_50,text_Q1NETiBAQ2xpdmVuX2tlbg==,size_20,color_FFFFFF,t_70,g_se,x_16)
 
 设置VNC开机启动
 
-```
+```text
 systemctl enable vncserver@:1.service
-```
-
+```text
 ### 设置VNC登录口令
 
 运行命令然后输入口令，并且确认。
 
-```
+```text
 vncpasswd
-```
-
+```text
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/8b82943f2c2e49129035b7a22377dc1d.png)
 
 ### 登录访问

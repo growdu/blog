@@ -30,7 +30,6 @@ mha的架构大致如下，每个数据库节点上的mha node未在图中体现
 
 ![](./img/mha_arch.png)
 
-
 ### 结论
 
 - <font color="red">在不考虑mha manager单点问题的场景下，mysql mha不需要持久化存储元信息，通过mha node主动向mha manager注册和上报数据库状态信息来进行数据库故障转移。</font>
@@ -55,7 +54,6 @@ EMHOST和EMAGENT是一套通用的机制，通过在部署服务的节点上部�
 EMHOST会将元数据保存到oracle数据库中，这个数据库被称为EM Repository Database。通常EMDB只是一个节点，因而会存在单点问题。
 
 oracle site Guard的详细架构如下图所示：
-
 
 ### 结论
 
@@ -86,7 +84,6 @@ openguass两地三中心的机构如下：
 
 1.https://docs-opengauss.osinfra.cn/zh/docs/5.0.0/docs/TechnicalWhitePaper/%E9%83%A8%E7%BD%B2%E6%96%B9%E6%A1%88.html
 2.https://docs-opengauss.osinfra.cn/zh/docs/5.0.0/docs/AboutopenGauss/DCF.html
-
 
 ## OceanBase 两地三中心
 

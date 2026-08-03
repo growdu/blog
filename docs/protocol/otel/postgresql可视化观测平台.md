@@ -17,12 +17,10 @@
 Metrics → Prometheus   Trace → Tempo     Logs → Loki
     |                  |                   |
    Grafana ---------- Dashboard / Explore / Alerts
-```
-
+```text
 - Trace 可以展示 SQL 执行时间线
 - Metrics 可以展示系统实时状态和趋势
 - Logs 可以追溯慢 SQL 原文、错误、内存/IO峰值
-
 
 基于rust可以使用如下方式实现：
 
@@ -43,8 +41,7 @@ Metrics → Prometheus  Trace → Tempo    Logs → Loki
                     |                  |
                     +------------------+
                            Grafana
-```
-
+```text
 ## 核心逻辑
 
 1. PostgreSQL：数据库执行 SQL 查询、产生内部调用。
@@ -90,8 +87,7 @@ Coroot 是“分析层 + 采集层”的组合。
         │              │               │
   node-agent       pg-agent        其他 exporters
 (eBPF + 主机监控) (Postgres)       (Redis / Nginx / JVM …)
-```
-
+```text
 - Agent 负责采集
 - Coroot 负责聚合 → 关联拓扑 → 根因分析（RCA） → 展示
 
@@ -150,4 +146,4 @@ coroot的数据来源：
     3. 判断链路瓶颈
     4. 输出 RCA（根因）
 
-```
+```text

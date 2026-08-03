@@ -18,13 +18,13 @@
 我在gdb端加了总共四个断点  
 ![1647524623688.png](https://oss-emcsprod-public.modb.pro/image/editor/20220317-c71bd980-53b2-4453-98c2-4f86f12576aa.png)
 
-## 二、执行到exec\_simple\_query()
+## 二、执行到exec_simple_query()
 
 先从当前位置开始连续运行程序，到第一个断点，从下往上看运行的堆栈：
 
 ![1647524767084.png](https://oss-emcsprod-public.modb.pro/image/editor/20220317-cd366e22-d0f3-403c-9a8c-dc7a308832cc.png)
 
-可以看到，insert动作从main()函数开始，首先到了postmaster进程入口 PostmasterMain() ，通过ServerLoop() 监听session连接并fork postgres子进程 ，然后用BackendStartup()启动backend进程 ，之后到PostgresMain() 即backend的入口，通过子进程backend获取sql语句 ，并最终到了exec\_simple\_query() 即SQL引擎的入口。
+可以看到，insert动作从main()函数开始，首先到了postmaster进程入口 PostmasterMain() ，通过ServerLoop() 监听session连接并fork postgres子进程 ，然后用BackendStartup()启动backend进程 ，之后到PostgresMain() 即backend的入口，通过子进程backend获取sql语句 ，并最终到了exec_simple_query() 即SQL引擎的入口。
 
 可以在此时查看传入这里的参数  
 ![1647526102468.png](https://oss-emcsprod-public.modb.pro/image/editor/20220317-ed55b892-ea44-4dd7-9853-9627b118d312.png)
@@ -43,12 +43,12 @@ c继续执行，在下一个断点，即ProcessQuery()这里停下，查看堆�
 这一部分执行流程过程如黄色所示：  
 ![1647528024796.png](https://oss-emcsprod-public.modb.pro/image/editor/20220317-177acdd1-9ba8-4f8f-a274-81fbe4406123.png)
 
-## 四、执行到standard\_ExecutorRun()
+## 四、执行到standard_ExecutorRun()
 
-继续c执行，到了standard\_ExecutorRun(),这里是先通过ExecutorRun ()这里进行判断，如果有hook函数，就执行hook函数，没有的话，执行标准函数standard\_ExecutorRun()。（比较典型的使用hook的是pg\_show\_plans插件）  
+继续c执行，到了standard_ExecutorRun(),这里是先通过ExecutorRun ()这里进行判断，如果有hook函数，就执行hook函数，没有的话，执行标准函数standard_ExecutorRun()。（比较典型的使用hook的是pg_show_plans插件）  
 ![1647530334528.png](https://oss-emcsprod-public.modb.pro/image/editor/20220317-e2392436-152d-401b-b244-cb477ab9b826.png)
 
-继续执行，最后通过standard\_ExecutorRun()的ExecutePlan()执行insert并通过MemoryContextSwitchTo()切换回原内存上下文。  
+继续执行，最后通过standard_ExecutorRun()的ExecutePlan()执行insert并通过MemoryContextSwitchTo()切换回原内存上下文。  
 ![1647530791018.png](https://oss-emcsprod-public.modb.pro/image/editor/20220317-01d70778-e2f6-4f0d-92aa-0358ed876a85.png)
 
 c继续执行一直到结束

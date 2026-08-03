@@ -39,8 +39,7 @@ HugePages_Surp:        0
 Hugepagesize:       2048 kB
 ~# ls /sys/kernel/mm/hugepages/
 hugepages-1048576kB  hugepages-2048kB  hugepages-32768kB  hugepages-64kB
-```
-
+```text
 ## 大页内存free为0
 
 使用如下方式重新挂载：
@@ -63,15 +62,13 @@ mkdir -p /mnt/huge
 
 # Mount to the specific folder.
 mount -t hugetlbfs nodev /mnt/huge
-```
-
+```text
 ## 命令行设置大页内存
 
 ```shell
 $ sysctl -w vm.nr_hugepages=512
 $ sysctl -p 
-```
-
+```text
 ## 巨页的使用
 
 有两种方式，mmap方式和共享内存方式(shmget/shmat)。
@@ -104,8 +101,7 @@ Hugepagesize:       2048 kB
 echo 16 > /proc/sys/vm/nr_hugepages
 # 物理机
 echo 16 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-```
-
+```text
 使用如下方式将巨页映射到本进程:
 
 ```c
@@ -133,8 +129,7 @@ int main(int argc, char *argv[]) {
   munmap(m, s);
   return 0;
 }
-```
-
+```text
 其测试demo.c如下:
 
 ```c
@@ -154,7 +149,7 @@ void init_hugetlb_seg()
   a = mmap(NULL, s, PROT_READ | PROT_WRITE,
                     MAP_PRIVATE | MAP_ANONYMOUS | 0x40000 /*MAP_HUGETLB*/, -1, 0);
   if (a == MAP_FAILED) {
-    printf("map mem failed\n");
+    printf("map mem failedn");
     a = NULL;
     exit(-1);
   }
@@ -187,22 +182,21 @@ int main(int argc, char *argv[])
   // 申请内存
   init_hugetlb_seg();
   printf("HugeTLB memory segment initialized !\n");
-  printf("Press any key to write to memory area\n");
+  printf("Press any key to write to memory arean");
   getchar();
   // 写入测试数据
   wr_to_array();
-  printf("Press any key to rd from memory area\n");
+  printf("Press any key to rd from memory arean");
   getchar();
   // 读取测试数据
   rd_from_array();
-  printf("Press any key to free memory area\n");
+  printf("Press any key to free memory arean");
   getchar();
   // 释放内存
   munmap(a, MB_8);
   return 0;
 }
-```
-
+```text
 针对以上四步分别查看大页内存的使用情况：
 
 - 申请内存
@@ -288,8 +282,7 @@ Hugepagesize:       2048 kB
 echo 16 > /proc/sys/vm/nr_hugepages
 # 物理机
 echo 16 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-```
-
+```text
 按照如下命令设置巨页后，因为我们的巨页页面大小为2048kb（2M），设置了16个页面后，我们可以使用32M内存。
 
 要使用巨页，需要把巨页内存attach到当前进程内。实现代码如下：
@@ -312,7 +305,7 @@ void init_hugetlb_seg()
     perror("shmget");
     exit(1);
   }
-  printf("HugeTLB shmid: 0x%x\n", shmid1);
+  printf("HugeTLB shmid: 0x%xn", shmid1);
   // 将内存attach到进程，后面基于地址a进行大页内存操作
   a = shmat(shmid1, 0, 0);
   if (a == (char *)-1) {
@@ -321,8 +314,7 @@ void init_hugetlb_seg()
     exit(2);
   }
 }
-```
-
+```text
 上面即获取到了大页内存的起始地址，可以根据该地址和内存长度实现内存池。
 
 下面是具体的巨页内存使用demo.c：
@@ -350,7 +342,7 @@ void init_hugetlb_seg()
     perror("shmget");
     exit(1);
   }
-  printf("HugeTLB shmid: 0x%x\n", shmid1);
+  printf("HugeTLB shmid: 0x%xn", shmid1);
   // 将内存attach到进程，后面基于地址a进行大页内存操作
   a = shmat(shmid1, 0, 0);
   if (a == (char *)-1) {
@@ -387,26 +379,24 @@ int main(int argc, char *argv[])
   // 申请内存
   init_hugetlb_seg();
   printf("HugeTLB memory segment initialized !\n");
-  printf("Press any key to write to memory area\n");
+  printf("Press any key to write to memory arean");
   getchar();
   // 写入测试数据
   wr_to_array();
-  printf("Press any key to rd from memory area\n");
+  printf("Press any key to rd from memory arean");
   getchar();
   // 读取测试数据
   rd_from_array();
-  printf("Press any key to free memory area\n");
+  printf("Press any key to free memory arean");
   getchar();
   // 释放内存
   shmctl(shmid1, IPC_RMID, NULL);
   return 0;
 }
-```
-
+```text
 ```makefile
 gcc demo.c -o demo
-```
-
+```text
 针对以上四步分别查看大页内存的使用情况：
 
 - 申请内存

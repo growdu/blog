@@ -26,19 +26,17 @@ PostgreSQL 通信协议包括两个阶段： startup 阶段和常规 normal 阶�
 
 startup阶段server端发送给client端的消息类型如下。详细可参照[postgresql通信协议](https://link.segmentfault.com/?enc=A7vhau%2Bo0l5JpZm5XXoAmA%3D%3D.ouT5vfeo4sFDVQIjiRAu257Lm3qQgBV54LAuIGPvN%2F5kptZQxeF7QiRDeV68ukhi)
 
-```
+```text
 case 'R':        
 case 'S':        
 case 'K':        
 case 'Z':        
-```
-
+```text
 client发给server端的消息类型
 
-```
+```text
 case 'p':        
-```
-
+```text
 #### 函数调用关系图
 
 ![image](https://segmentfault.com/img/bVcODHy "image")
@@ -53,13 +51,13 @@ case 'p':
 
 ##### 本文线索
 
-本文会结合一个线索来梳理流程。在startup package中client端可以包含一个application\_name，我们会分析这个参数如何在server端生效。
+本文会结合一个线索来梳理流程。在startup package中client端可以包含一个application_name，我们会分析这个参数如何在server端生效。
 
 ##### BackendStartup分析
 
 BackendStartup是postmaster accept client端后的入口函数，负责fork backend process。为啥是入口呢，参考"[postgresql启动分析](https://segmentfault.com/a/1190000039193129)"
 
-```
+```text
 static int BackendStartup(Port *port)
 
   Backend    *bn = (Backend *) malloc(sizeof(Backend));
@@ -68,74 +66,54 @@ static int BackendStartup(Port *port)
   {
       free(bn);
 
-
       InitPostmasterChild();
-
 
       ClosePostmasterPorts(false);
 
-
       BackendInitialize(port);
-
 
       BackendRun(port);
   }
-```
-
+```text
 ##### BackendInitialize分析
 
 BackendInitialize负责backend中进一步的初始化，并处理startup package。  
 注意全局变量MyProcPort赋值为port，后面会使用。
 
-```
+```text
 static void BackendInitialize(Port *port)
 
   MyProcPort = port;
 
-
   pq_init();
-
 
   whereToSendOutput = DestRemote; 
 
-
   InitializeTimeouts
 
-
-
-
   pg_getnameinfo_all(&port->raddr.addr,remote_host,remote_port)
-
-
 
   RegisterTimeout(STARTUP_PACKET_TIMEOUT, StartupPacketTimeoutHandler);
   enable_timeout_after(STARTUP_PACKET_TIMEOUT, AuthenticationTimeout * 1000);
 
-
-
   ProcessStartupPacket(port, false, false)
-
 
   disable_timeout(STARTUP_PACKET_TIMEOUT, false);
 
-
   check_on_shmem_exit_lists_are_empty
-
 
   initStringInfo(&ps_data)
   appendStringInfo(&ps_data, "%s", port->remote_host);
   appendStringInfo(&ps_data, "(%s)", port->remote_port);
 
-
   init_ps_display(ps_data.data);
-```
-
+```text
 ##### ProcessStartupPacket分析
 
 下面单独分析BackendInitialize中的ProcessStartupPacket。  
-最终application\_name被保存到port->guc\_options和port->application\_name中。
+最终application_name被保存到port->guc_options和port->application_name中。
 
-```
+```text
 static int ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done)
 {
 
@@ -145,12 +123,9 @@ static int ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done)
   len = pg_ntoh32(len);
   len -= 4;
 
-
   pq_getbytes(buf, len)
 
-
   port->proto = proto = pg_ntoh32(*((ProtocolVersion *) buf));
-
 
   if (proto == CANCEL_REQUEST_CODE)
   {
@@ -159,15 +134,7 @@ static int ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done)
       return STATUS_ERROR;
   }
 
-
-
-
-
-
-
-
   if (proto == NEGOTIATE_SSL_CODE && !ssl_done)
-
 
     if (send(port->sock, &SSLok, 1, 0) != 1)
     return ProcessStartupPacket(port, true, SSLok == 'S');
@@ -175,9 +142,6 @@ static int ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done)
 
   else if (proto == NEGOTIATE_GSS_CODE && !gss_done)
   ...
-
-
-
 
   oldcontext = MemoryContextSwitchTo(TopMemoryContext);
 
@@ -194,8 +158,6 @@ static int ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done)
       port->guc_options = lappend(port->guc_options,pstrdup(nameptr));
       port->guc_options = lappend(port->guc_options,pstrdup(valptr));
 
-
-
       if (strcmp(nameptr, "application_name") == 0)
       {
         char       *tmp_app_name = pstrdup(valptr);
@@ -205,11 +167,10 @@ static int ProcessStartupPacket(Port *port, bool ssl_done, bool gss_done)
   ......
 
   MemoryContextSwitchTo(oldcontext);
-```
-
+```text
 ##### BackendRun分析
 
-```
+```text
 static void BackendRun(Port *port)
   // 为PostgresMain准备参数，是从postmaster中的-o选项获取option(保存于ExtraOptions)
   // 具体可以参考https://segmentfault.com/a/1190000039193129
@@ -223,13 +184,12 @@ static void BackendRun(Port *port)
   MemoryContextSwitchTo(TopMemoryContext);
 
   PostgresMain(ac, av, port->database_name, port->user_name);
-```
-
+```text
 ##### PostgresMain分析
 
 PostgresMain是所有backend process的主入口函数。
 
-```
+```text
 void PostgresMain(int argc, char *argv[],
              const char *dbname,
              const char *username)
@@ -389,15 +349,14 @@ void PostgresMain(int argc, char *argv[],
             break;
 
         // 其它类型消息处理, bind, parse......
-```
-
+```text
 ##### InitPostgres介绍
 
 InitPostgres在PostgresMain中调用，进行基本的初始化，bufferpool，timer, portal manager, GUC, process setting...。
 
-特别的，application\_name设置到GUC也在这里。authentication也发生在这里。
+特别的，application_name设置到GUC也在这里。authentication也发生在这里。
 
-```
+```text
 void
 InitPostgres(const char *in_dbname, Oid dboid, const char *username,
              Oid useroid, char *out_dbname, bool override_allow_connections)
@@ -541,13 +500,12 @@ InitPostgres(const char *in_dbname, Oid dboid, const char *username,
   // 关闭上面开始的transaction
   CommitTransactionCommand();
 }
-```
-
+```text
 ##### PerformAuthentication分析
 
 InitPostgres中调用了PerformAuthentication进行authentication。此操作对应"startup流程"部分的authentication request/authentication ok。
 
-```
+```text
 static void
 PerformAuthentication(Port *port)
 {
@@ -555,9 +513,7 @@ PerformAuthentication(Port *port)
 
   enable_timeout_after(STATEMENT_TIMEOUT, AuthenticationTimeout * 1000);
 
-
   set_ps_display("authentication");
-
 
   ClientAuthentication(port);
 
@@ -566,15 +522,14 @@ PerformAuthentication(Port *port)
   set_ps_display("startup");
   ClientAuthInProgress = false;
 }
-```
-
+```text
 ##### ClientAuthentication分析
 
 ClientAuthentication是authentication主函数。
 
 postgresql支持下面的authentication方法。
 
-```
+```text
 typedef enum UserAuth
 {
     uaReject,
@@ -593,11 +548,10 @@ typedef enum UserAuth
     uaRADIUS,
     uaPeer
 } UserAuth
-```
-
+```text
 postgresql向client发送的authentication code。
 
-```
+```text
 #define AUTH_REQ_OK            0    
 #define AUTH_REQ_KRB4        1    
 #define AUTH_REQ_KRB5        2    
@@ -613,9 +567,8 @@ postgresql向client发送的authentication code。
 #define AUTH_REQ_SASL_FIN  12    
 
 typedef uint32 AuthRequest;
-```
-
-```
+```text
+```text
 void
 ClientAuthentication(Port *port)
 {
@@ -681,7 +634,6 @@ ClientAuthentication(Port *port)
       break;
     }
 
-
     // 根据authentication的结果
     // 向client发送结果，消息类型为'R'。 如成功，则为authenticon ok(0)
     // case 'R':        /* Authentication Request */
@@ -698,19 +650,17 @@ ClientAuthentication(Port *port)
     else
         auth_failed(port, status, logdetail);
 }
-```
-
+```text
 ##### 抓包分析
 
-pg\_hba.conf中配置trust模式
+pg_hba.conf中配置trust模式
 
-```
+```text
 host    all             all             0.0.0.0/0               trust
-```
-
+```text
 ###### 测试步骤
 
-```
+```text
 1. server端开始tcpdump
 
 # tcpdump -i eth1 -s0 -nnX -w startup_trust.cap
@@ -722,19 +672,17 @@ host    all             all             0.0.0.0/0               trust
  ctrl-c
 
 4. 用wireshark查看cap包
-```
-
+```text
 ![image.png](https://segmentfault.com/img/bVcOEee "image.png")  
 类型为PSH，方向为client到server的为startup package。data中可以看到对应的消息体，其中包含如下options
 
-```
+```text
 database postgres, application_name psql, client_encoding UTF8
-```
-
+```text
 ![image.png](https://segmentfault.com/img/bVcOEew "image.png")  
-类型为PSH，方向为client到server的是一个大消息。查看data中对应的消息体内容。我们上面分析过在R，S，K消息后没有进行pg\_flush，而是直到Z一起flush后发送给client。
+类型为PSH，方向为client到server的是一个大消息。查看data中对应的消息体内容。我们上面分析过在R，S，K消息后没有进行pg_flush，而是直到Z一起flush后发送给client。
 
-```
+```text
 'R' : authentication ok
 'S' : parameter status(application_name 
 ...
@@ -747,11 +695,10 @@ database postgres, application_name psql, client_encoding UTF8
       TimeZone 
 'K' : secret 
 'Z' : ready 
-```
-
+```text
 ##### 结语
 
-本文分析了startup的主要流程，并且以application\_name为线索，帮助更连贯的理解整体流程。在这个过程中，对backend process有了更深入理解，其process管理，signal，semaphore，GUC，与client间的通信模型，消息结构等等。
+本文分析了startup的主要流程，并且以application_name为线索，帮助更连贯的理解整体流程。在这个过程中，对backend process有了更深入理解，其process管理，signal，semaphore，GUC，与client间的通信模型，消息结构等等。
 
 ##### Q&A
 

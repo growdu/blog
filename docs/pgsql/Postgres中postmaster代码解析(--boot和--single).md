@@ -2,7 +2,7 @@
 
 在正式讨论之前，我先说一下，代码主要涉及的是postgres源码的src/backend目录下的main，postmaster以及tcop模块。
 
-关于postmaster这个命令，熟悉postgres的一定不会陌生。在Linux上它是postgres命令的一个软连接，而在Windows上，它直接就是postgres命令的别名。因此，话题就转换为：postgres命令的处理细节。而postgres命令，从官方手册上我们可以知道，它是启动后端服务器的命令(当然前提是你要用initdb命令先生成一个database cluster)。无论是是直接使用postgres命令启动还是用pg\_ctl命令，其本质都是调用postgres命令来启动数据库的。
+关于postmaster这个命令，熟悉postgres的一定不会陌生。在Linux上它是postgres命令的一个软连接，而在Windows上，它直接就是postgres命令的别名。因此，话题就转换为：postgres命令的处理细节。而postgres命令，从官方手册上我们可以知道，它是启动后端服务器的命令(当然前提是你要用initdb命令先生成一个database cluster)。无论是是直接使用postgres命令启动还是用pg_ctl命令，其本质都是调用postgres命令来启动数据库的。
 
 下面进入代码。
 
@@ -12,16 +12,15 @@ ___
 
 命令的入口在src/backend/main/main.c。这个main()函数所做的工作不多：
 
-```
+```text
 做一下基本的初始化(主要是调用MemoryContextInit函数启动error和memory management子系统，还有其他的locale设置等)；
 根据命令行的第一个参数分派不同的函数去处理。
-```
-
+```text
 我们用postgres命令来启动一个数据库的时候，虽然参数很多。最简单的是对于"–help, --version"这两个参数的处理。对于这两个参数我们只需要简单的返回一下帮助信息即可返回。对于剩下的参数，我们不急着处理，因为我们首先要根据第一个参数确定的是我们希望database工作在何种模式？
 
 要回答这个问题的话，我们看一下src/backend/main/main.c，在main函数里，有以下代码：
 
-```
+```text
 if (argc > 1 && strcmp(argv[1], "--boot") == 0)
 AuxiliaryProcessMain(argc, argv);/* does not return */    --->后端子进程，bootstrap
 else if (argc > 1 && strcmp(argv[1], "--describe-config") == 0)
@@ -32,8 +31,7 @@ PostgresMain(argc, argv,
  strdup(get_user_name_or_exit(progname)));/* does not return */--->backend进程
 else
 PostmasterMain(argc, argv);/* does not return */--->后台主进程
-```
-
+```text
 我们来一一分析。
 
 > 首先是bootstrap("--boot"参数指定)模式。
@@ -45,32 +43,29 @@ PostmasterMain(argc, argv);/* does not return */--->后台主进程
 答案就是在调用工作在"bootstrap"模式下的postgres命令，启动一个"standalone bootstrap process"。也就是说，以"内核"模式启动postgres服务器，从而进行这一系列的数据库操作。证据何在？我们看看initdb.c:  
 代码调用栈如下：
 
-```
+```text
 main()
     ->initialize_data_directory()
         ->bootstrap_template1()
-```
+```text
+在bootstrap_template1中，有以下代码：
 
-在bootstrap\_template1中，有以下代码：
-
-```
+```text
 snprintf(cmd, sizeof(cmd),
  "\"%s\" --boot -x1 %s %s %s",
  backend_exec,
  data_checksums ? "-k" : "",
  boot_options, talkargs);
-```
-
+```text
 可以说是非常清晰了。
 
 > 接下来是"--describe-config"参数。
 
 这个参数在官方手册是有定义说明的，我直接抄下来吧：
 
-```
+```text
 这个选项会用制表符分隔的COPY格式导出服务器的内部配置变量、描述以及默认值。设计它的目的是用于管理工具。
-```
-
+```text
 所以还是打印信息，只不过是打印数据库的内部的配置参数信息的，其实还是蛮实用的。
 
 > single("--single"参数指定)模式
@@ -105,41 +100,40 @@ postmaster部分的处理主函数是PostmasterMain()。这个函数的处理内
 
 调用CreateDataDirLockFile()函数在数据库集群所在目录创建数据库集群的lock文件postmaster.pid。这样就能保证我们不会对同一个数据库集群"启动两次"。虽然我们也会创建socket lock文件，但是我们还是觉得数据库集群所在的目录更加可信和保险一点。
 
-> 5.共享库的预加载(process\_shared\_preload\_libraries())
+> 5.共享库的预加载(process_shared_preload_libraries())
 
-我们喜欢用Postgres的一大原因就是Postgres的丰富的插件，其中很多就是通过共享库来实现的。这里就是调用process\_shared\_preload\_libraries()函数来导入你在shared\_preload\_libraries参数中指定的共享库的。
+我们喜欢用Postgres的一大原因就是Postgres的丰富的插件，其中很多就是通过共享库来实现的。这里就是调用process_shared_preload_libraries()函数来导入你在shared_preload_libraries参数中指定的共享库的。
 
 > 6.socket的初始化
 
 这里初始化TCP/IP socket和UNIX socket。初始化UNIX socket会在/tmp下创建socket文件。默认情况下，TCP/IP socket是禁用的，我们可以通过修改配置文件来开启。
 
-> 7.共享内存和信号量的初始化(reset\_shared(PostPortNumber))
+> 7.共享内存和信号量的初始化(reset_shared(PostPortNumber))
 
-这里调用函数reset\_shared(PostPortNumber)来处理共享内存和信号量。详细的说，它调用各模块的共享内存的使用量估计函数，计算总共所需的共享内存的量，并申请。详细的我们可以看CreateSharedMemoryAndSemaphores()函数。
+这里调用函数reset_shared(PostPortNumber)来处理共享内存和信号量。详细的说，它调用各模块的共享内存的使用量估计函数，计算总共所需的共享内存的量，并申请。详细的我们可以看CreateSharedMemoryAndSemaphores()函数。
 
 > 8.初始化(并未启动)数据库相关后台进程
 
-调用SysLogger\_Start()函数启动syslogger后台子进程；
+调用SysLogger_Start()函数启动syslogger后台子进程；
 
-分别调用pgstat\_init()和autovac\_init()函数初始化状态收集子进程(stats collection process)和自动清理子进程(autovacuum process)。
+分别调用pgstat_init()和autovac_init()函数初始化状态收集子进程(stats collection process)和自动清理子进程(autovacuum process)。
 
 > 9.读取客户端认证的配置文件()
 
-调用load\_hba()函数和load\_ident()函数读取客户端认证文件pg\_hba.conf和ident.conf。
+调用load_hba()函数和load_ident()函数读取客户端认证文件pg_hba.conf和ident.conf。
 
 > 10.启动数据库(StartupDataBase()函数)
 
 做好了上面这些配置和设置，这里终于可以进行数据库的启动操作了。这里我们调用StartupDataBase()函数(其实就是一个宏)来启动数据库集群，这里主要发挥作用的是StartupProcessMain(void)函数，这个函数相当于启动数据库的Main函数。详细的调用栈如下，有兴趣的读者可以看看：
 
-```
+```text
 PostmasterMain()
     ->StartupDataBase()
         ->StartChildProcess()
             ->AuxiliaryProcessMain()
                 ->StartupProcessMain(void)
                     ->StartupXLOG()
-```
-
+```text
 > 11.服务端主循环(ServerLoop())
 
 既然数据库终于启动起来了，我们终于可以接受客户端发起的连接请求了，这里的ServerLoop()函数就是一个死循环。循环读取客户端的请求并进行相关处理。
@@ -148,7 +142,7 @@ PostmasterMain()
 
 我们看PostmasterMain()函数里面关于上面的10和11的代码如下：
 
-```
+```text
     StartupPID = StartupDataBase();
 Assert(StartupPID != 0);
 StartupStatus = STARTUP_RUNNING;
@@ -158,19 +152,18 @@ pmState = PM_STARTUP;
 maybe_start_bgworker();
 
 status = ServerLoop();
-```
-
+```text
 关于上面的代码，我们发现，正是由StartupDataBase()函数启动了数据库，然后在ServerLoop()函数里面接受连接。
 
-但是，我们看到在进入ServerLoop()函数之前，pmState的值还是PM\_STARTUP，而只有在PM\_RUN状态，数据库才是真正的启动起来了。
+但是，我们看到在进入ServerLoop()函数之前，pmState的值还是PM_STARTUP，而只有在PM_RUN状态，数据库才是真正的启动起来了。
 
-我们在看下函数reaper()，这个函数是postmaster函数的一个信号处理函数，当它捕获到Startup进程正常死亡(也就是说，数据库正常启动完毕了)后，会设置pmState为PM\_RUN。
+我们在看下函数reaper()，这个函数是postmaster函数的一个信号处理函数，当它捕获到Startup进程正常死亡(也就是说，数据库正常启动完毕了)后，会设置pmState为PM_RUN。
 
-因此，我们得到结论：**在进入ServerLoop()函数后，只有在reaper函数捕获到Startup的正常死亡并设置pmState为PM\_RUN之后，数据库才能真正的意义上接受连接。**
+因此，我们得到结论：**在进入ServerLoop()函数后，只有在reaper函数捕获到Startup的正常死亡并设置pmState为PM_RUN之后，数据库才能真正的意义上接受连接。**
 
 接下来，我们再看ServerLoop()里面到底做了什么。
 
-```
+```text
 　PostmasterMain()
 　  |->ServerLoop()
 　      |->initMasks()
@@ -187,8 +180,7 @@ status = ServerLoop();
 　              |->BackendRun()
 　                  |->PostgresMain()
             |->ConnFree()       <--释放connection相关的数据结构
-```
-
+```text
 我们再看看关于ServerLoop()中的关于socket和信号处理：  
 ![](https://images2018.cnblogs.com/blog/579102/201804/579102-20180408221956346-1712021714.png)
 

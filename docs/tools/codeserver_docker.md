@@ -4,8 +4,7 @@
 
 ```shell
 sudo apt install docker-ce
-```
-
+```text
 ## 制作镜像
 
 dockerfile如下：
@@ -17,11 +16,9 @@ RUN apt update \
   && apt install -y build-essential gdb vim zsh wget \
   && chsh -s /bin/zsh
 CMD [ "/usr/local/bin/code-server --config /home/your_user/.config/code-server/config.yaml"
-```
-
+```text
 运行如下命令拉取镜像：
 
 ```shell
 sudo docker build -t codeserver .
-```
-
+```text

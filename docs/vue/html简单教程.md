@@ -69,7 +69,7 @@ margin-left:50px;
 </div>
 </body>
 </html>
-```
+```text
 这是一个简单的登录页面，你可以根据自己的需要进行修改。如果你想了解更多关于HTML的知识，可以参考这些网站：[W3Schools](https://www.w3schools.com/html/)、[MDN Web Docs](https://developer.mozilla.org/zh-CN/docs/Learn/HTML)。
 
 (1) HTML+CSS+JS实现十款好看的登录注册界面模板，赶紧收藏起来吧！_好看的登录界面_王同学要努力的博客-CSDN博客. https://blog.csdn.net/m0_46374969/article/details/115906705.
@@ -108,8 +108,7 @@ $(document).ready(function(){
 
 </body>
 </html>
-```
-
+```text
 在这个例子中，我们使用了jQuery库来发送GET请求。当用户点击按钮时，jQuery会向demo_test_get.asp发送GET请求，并将数据附加在URL的末尾。当服务器回答请求时，jQuery会调用回调函数，并将服务器返回的数据作为参数传递给它。
 
 如果你想了解更多关于HTML、JavaScript和jQuery的知识，可以参考这些网站：[W3Schools](https://www.w3schools.com/)、[MDN Web Docs](https://developer.mozilla.org/zh-CN/)。
@@ -139,8 +138,7 @@ $(document).ready(function(){
 </form>
 </body>
 </html>
-```
-
+```text
 在这个例子中，我们使用了form元素来创建一个表单，然后使用POST方法将表单数据发送到http://www.example.com/login。在表单中，我们使用了两个input元素来接收用户名和密码。当用户点击提交按钮时，表单数据将被发送到服务器。
 
 如果你想了解更多关于HTML的知识，可以参考这些网站：[W3Schools](https://www.w3schools.com/html/)、[MDN Web Docs](https://developer.mozilla.org/zh-CN/docs/Learn/HTML)。
@@ -182,8 +180,7 @@ $(document).ready(function(){
 
 </body>
 </html>
-```
-
+```text
 在这个例子中，我们使用了jQuery库来发送POST请求。当用户点击按钮时，jQuery会向demo_test_post.asp发送POST请求，并将数据存储在HTTP请求的请求主体中。当服务器回答请求时，jQuery会调用回调函数，并将服务器返回的数据作为参数传递给它。
 
 如果你想了解更多关于HTML、JavaScript和jQuery的知识，可以参考这些网站：[W3Schools](https://www.w3schools.com/)、[MDN Web Docs](https://developer.mozilla.org/zh-CN/)。

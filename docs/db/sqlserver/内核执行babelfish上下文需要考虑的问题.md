@@ -28,7 +28,7 @@ Babelfish 使用端口来和 PG 模式进行区分，因而 Babelfish 里面的�
 Babelfish 支持两种部署模式：
 
 **Multi-DB 模式（默认）**：
-```
+```text
 ┌─────────────────────────────────────────────┐
 │ PostgreSQL Cluster                          │
 │                                             │
@@ -44,10 +44,9 @@ Babelfish 支持两种部署模式：
 │         └────────────────┴──────► Babelfish│
 │         映射到不同的物理 PG database        │
 └─────────────────────────────────────────────┘
-```
-
+```text
 **Single-DB 模式**：
-```
+```text
 ┌─────────────────────────────────────────────┐
 │ PostgreSQL Cluster (single database)        │
 │                                             │
@@ -60,8 +59,7 @@ Babelfish 支持两种部署模式：
 │  │  INFORMATION_SCHEMA → information_  │   │
 │  └─────────────────────────────────────┘   │
 └─────────────────────────────────────────────┘
-```
-
+```text
 **关键差异**：
 
 | 特性 | Multi-DB | Single-DB |
@@ -99,8 +97,7 @@ get_current_logical_database_name(void)
 {
     // 返回当前连接的逻辑数据库名
 }
-```
-
+```text
 **DDL 同步时的问题**：
 
 ```sql
@@ -111,8 +108,7 @@ CREATE TABLE myapp.dbo.t1 (id INT);
 -- 1. 包含数据库名：CREATE TABLE myapp.dbo.t1 ...
 -- 2. 不包含数据库名：CREATE TABLE dbo.t1 ...
 -- 3. 使用物理名：CREATE TABLE public.t1 ...
-```
-
+```text
 ### Current DB Name
 
 在 DDL 执行时，Babelfish 需要知道"当前是哪个逻辑数据库"：
@@ -131,8 +127,7 @@ get_current_db_name(void)
     Oid db_oid = MyDatabaseId;
     return get_logical_database_name(db_oid);
 }
-```
-
+```text
 **对于 apply worker 的挑战**：
 
 apply worker 连接的是物理 PG 数据库，但 DDL SQL 可能是逻辑数据库名：
@@ -142,8 +137,7 @@ CREATE TABLE dbo.t1 (id INT);
 
 -- 订阅端 apply worker 连接的是物理 DB
 -- 需要知道这个 dbo 对应哪个物理 schema
-```
-
+```text
 ### Schema Mapping
 
 Babelfish 维护逻辑 schema 到物理 schema 的映射：
@@ -190,8 +184,7 @@ rewrite_object_name(ObjectName *name)
     // 如果没有指定 schema，使用 dbo
     // 然后查找物理映射
 }
-```
-
+```text
 **DDL 同步时的 schema 处理**：
 
 ```sql
@@ -208,8 +201,7 @@ CREATE TABLE dbo.t1 (
     "current_db": "myapp",            -- 当前逻辑数据库
     "target_schema": "public"          -- 物理 schema（multi-db）
 }
-```
-
+```text
 ---
 
 ## PG-TSQL 和 TDS
@@ -218,7 +210,7 @@ CREATE TABLE dbo.t1 (
 
 PG-TSQL 是通过 PostgreSQL 协议连接 Babelfish，但设置 `sql_dialect = 'tsql'`：
 
-```
+```text
 客户端 (psql)
      │
      │ PG 协议
@@ -235,8 +227,7 @@ PG-TSQL 执行路径
      ├──► PG parser (使用 T-SQL 语法规则)
      ├──► bbf_ProcessUtility() hook
      └──► T-SQL 兼容函数
-```
-
+```text
 **PG-TSQL 的特点**：
 - 仍然是 PG 连接，`MyProcPort->proc` 是 PG 的
 - `Is_TSQL_CLIENT()` 可能返回 false（取决于实现）
@@ -259,13 +250,12 @@ isTDSConnection(void)
     // 更直接的检查方式
     // 检查连接是否是 Babelfish TDS 端口 (1433)
 }
-```
-
+```text
 ### TDS
 
 TDS (Tabular Data Stream) 是 SQL Server 的原生协议：
 
-```
+```text
 客户端 (sqlcmd, SSMS)
      │
      │ TDS 协议
@@ -275,8 +265,7 @@ Babelfish TDS 端口 (1433)
      ├──► TDS 协议解析
      ├──► 设置 sql_dialect = 'tsql'
      └──► 完全 T-SQL 兼容层
-```
-
+```text
 **TDS 的特点**：
 - 完全 T-SQL 兼容
 - 支持 SQL Server 特有语法
@@ -339,8 +328,7 @@ rewrite_tsql_ddl(const char *tsql_ddl, const RewriteContext *ctx)
     // 3. 生成 PG SQL
     return deparse_stmt(stmts);
 }
-```
-
+```text
 ### Apply Worker 获取 Babelfish 上下文
 
 Apply worker 是 PG 连接，要执行 Babelfish DDL 需要获取正确的上下文：
@@ -355,8 +343,7 @@ typedef struct {
     Oid         current_db_oid;       // 物理数据库 OID
     Oid         target_schema_oid;     // 目标物理 schema OID
 } BabelfishContext;
-```
-
+```text
 **获取方式**：
 
 ```c
@@ -395,8 +382,7 @@ setup_bbf_context(BabelfishContext *ctx)
     set_config_option("babelfishpg_tsql.sql_dialect", "tsql",
                      PGC_SUSET, PGC_S_SESSION);
 }
-```
-
+```text
 #### Schema Mapping
 
 Apply worker 需要正确解析 schema 引用：
@@ -421,8 +407,7 @@ resolve_schema_references(BabelfishContext *ctx, Node *stmt)
         }
     }
 }
-```
-
+```text
 #### PG-TSQL Parse
 
 使用 PG 解析器配合 T-SQL dialect：
@@ -443,8 +428,7 @@ parse_ddl_as_pgtsql(const char *ddl_sql)
 
     return stmts;
 }
-```
-
+```text
 **问题**：PG parser 只能解析 PG 语法，不能解析纯 T-SQL 语法。对于复杂的 T-SQL DDL 可能会解析失败。
 
 #### TDS Parse
@@ -460,8 +444,7 @@ parse_ddl_as_tsql(const char *ddl_sql)
     List *stmts = babelfishpg_tsql_raw_parser(ddl_sql, RAW_PARSE_DEFAULT);
     return stmts;
 }
-```
-
+```text
 **问题**：T-SQL 解析器输出的 AST 是 PG 节点，但某些 T-SQL 特有的语义信息可能丢失。
 
 ### Worker 创建 TDS 连接来执行 TSQL
@@ -524,13 +507,12 @@ establish_tsql_connection(const char *database)
 
     return conn;
 }
-```
-
+```text
 #### 数据一致性
 
 **两阶段提交问题**：
 
-```
+```text
 Apply Worker 执行时序：
 
 ┌─────────────────────────────────────────────────────────────┐
@@ -550,8 +532,7 @@ Apply Worker 执行时序：
 │                                                             │
 │ 问题：INSERT 已提交，ALTER TABLE 回滚 → 数据不一致            │
 └─────────────────────────────────────────────────────────────┘
-```
-
+```text
 **解决方案：同步屏障**
 
 ```c
@@ -576,8 +557,7 @@ execute_ddl_with_barrier(const char *ddl_sql, BabelfishContext *ctx)
     // 5. 恢复 DML 处理
     resume_dml_processing();
 }
-```
-
+```text
 #### 连接池优化
 
 ```c
@@ -652,8 +632,7 @@ cleanup_tsql_connection_pool(void)
 
     pthread_mutex_unlock(&tsql_pool.mutex);
 }
-```
-
+```text
 ---
 
 ## PostgreSQL Hook 机制与内核-插件关系
@@ -662,7 +641,7 @@ cleanup_tsql_connection_pool(void)
 
 PostgreSQL 的核心设计原则之一是**内核不依赖任何插件**，而是通过 hook 机制让插件扩展内核功能：
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────┐
 │                    PostgreSQL 内核                                │
 │                                                                 │
@@ -690,8 +669,7 @@ PostgreSQL 的核心设计原则之一是**内核不依赖任何插件**，而�
 2. 插件注册 hook 函数到内核
 3. 内核调用 hook 时不知道具体是哪个插件
 4. 插件不能直接调用内核私有函数
-```
-
+```text
 ### PostgreSQL 主要 Hook 类型
 
 | Hook 类型 | 定义位置 | 用途 |
@@ -737,8 +715,7 @@ InstallExtendedHooks(void)
     // 其他
     GetNewObjectId_hook = pltsql_GetNewObjectId;
 }
-```
-
+```text
 **在 `pl_handler.c` 中注册的 Hook**：
 
 ```c
@@ -749,8 +726,7 @@ relname_lookup_hook = bbf_table_var_lookup;
 pre_parse_analyze_hook = ...;
 post_parse_analyze_hook = ...;
 // TSQL 方言特定的 hooks
-```
-
+```text
 **Babelfish 自定义 Hook 类型**：
 
 ```c
@@ -767,11 +743,10 @@ typedef bool (*table_variable_satisfies_visibility_hook_type)(...);
 typedef TM_Result (*table_variable_satisfies_update_hook_type)(...);
 
 // ...
-```
-
+```text
 ### 内核与插件的依赖关系图
 
-```
+```text
 正确的关系：内核定义 hook，插件注册
 
 ┌────────────────────────────────────────────────────────────────┐
@@ -801,8 +776,7 @@ typedef TM_Result (*table_variable_satisfies_update_hook_type)(...);
 │  ✗ #include "babelfishpg_tsql.h"                              │
 │  ✗ 依赖 Babelfish 特定的数据结构                               │
 └────────────────────────────────────────────────────────────────┘
-```
-
+```text
 ### 方案二为何违反了这个原则
 
 方案二试图在 apply worker 中直接调用 Babelfish 的接口：
@@ -818,8 +792,7 @@ parsetree_list = babelfishpg_tsql_raw_parser(ddl_sql, RAW_PARSE_DEFAULT);
 
 // 问题 3：假设特定的 hook 函数存在并可用
 set_config_option("babelfishpg_tsql.sql_dialect", "tsql", ...);
-```
-
+```text
 **这违反了以下原则**：
 
 | 原则 | 违反原因 |
@@ -847,8 +820,7 @@ extern Datum pltsql_exec_tsql_cast_value(Datum value, bool *isnull, ...);
 
 // 视图绑定
 extern bool handle_bbf_view_binding_on_object_drop(...);
-```
-
+```text
 **问题是**：即使这些是 `extern` 函数，内核代码也不应该直接调用它们，因为：
 
 1. **运行时绑定**：hook 函数通过函数指针调用，内核不需要知道具体函数
@@ -859,7 +831,7 @@ extern bool handle_bbf_view_binding_on_object_drop(...);
 
 **正确的架构应该是**：
 
-```
+```text
 Apply Worker 执行 DDL
          │
          ▼
@@ -879,8 +851,7 @@ Apply Worker 执行 DDL
 │  bbf_ProcessUtility()   │
 │  (Babelfish hook 函数)   │
 └─────────────────────────┘
-```
-
+```text
 **对于 apply worker，需要考虑的是**：
 
 1. **apply worker 执行 DDL 时，`ProcessUtility_hook` 会被调用吗？**
@@ -902,8 +873,7 @@ Apply Worker 执行 DDL
 ```c
 // Babelfish 注册的唯一专门用于 replication 的 hook
 logicalrep_modify_slot_hook = logicalrep_modify_slot;
-```
-
+```text
 **这个 hook 的用途**：在 logical replication 时修改 tuple slot 中的数据类型（例如 T-SQL 类型到 PG 类型的转换）。
 
 **但这个 hook 不能用于 DDL 同步**，因为：
@@ -924,8 +894,7 @@ static PGDLLIMPORT DDLPreExecute_hook_type DDLPreExecute_hook;
 // 在 apply worker 中调用
 if (DDLPreExecute_hook)
     DDLPreExecute_hook(ddl_sql, context);
-```
-
+```text
 **选择 2：通过 `object_access_hook` 扩展**
 
 ```c
@@ -940,8 +909,7 @@ typedef void (*object_access_hook_type)(
     void *arg);
 
 // 拦截 CREATE, DROP, ALTER 操作
-```
-
+```text
 **选择 3：Babelfish 主动注册处理函数**
 
 ```c
@@ -952,8 +920,7 @@ typedef struct Common_Utility_Plugin {
     const char *(*translate_pg_type_to_tsql)(const char *pg_type);
     // ... 其他接口
 } Common_Utility_Plugin;
-```
-
+```text
 ### 总结：内核与插件的正确关系
 
 | 问题 | 答案 |

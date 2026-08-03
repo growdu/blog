@@ -9,8 +9,7 @@
 ```C
 char greeting[6] = {'H', 'e', 'l', 'l', 'o', '\0'};
 char greeting[] = "Hello";
-```
-
+```text
 字符串常用操作函数：
 
 |函数名称|功能|
@@ -21,7 +20,6 @@ char greeting[] = "Hello";
 |strcmp(s1,s2)|比较s1和s2的长度|
 |strchr(s1,ch)|返回字符ch所在位置的指针|
 |strstr(s1,s2)|返回字符串s2在s1中出现的起始位置|
-
 
 ## 2 java
 

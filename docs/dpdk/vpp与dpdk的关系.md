@@ -6,32 +6,26 @@ vpp使用如下命令参数初始化dpdk eal。
 
 ```shell
 EAL init args: -c a -n 1 --in-memory --huge-dir /mnt/hugepages --no-pci --proc-type primary --file-prefix vpp --master-lcore 1
-```
-
-
-
+```text
 ## dpdk初始化流程
 
 ### 读取配置
 
 ```c
 dpdk_config
-```
-
+```text
 ### 初始化库
 
 ```c
 dpdk_lib_init
-```
-
+```text
 ### 注册节点
 
 - 输入节点
 
 ```c
 dpdk_device_inpu
-```
-
+```text
 - 输出节点
 
   - 接口tx function的赋值
@@ -147,16 +141,14 @@ typedef struct _vnet_device_class
     /* 链路层地址变化函数 */
     vnet_interface_set_mac_address_function_t *mac_addr_change_function;
 } vnet_device_class_t;
-```
-
+```text
 ## vpp中dpdk内存管理
 
 ```mermaid
 graph TB
 dpdk_config-->dpdk_buffer_pool_create-->dpdk_pool_create-->rte_mempool_create_empty-->rte_pktmbuf_pool_init-->rte_mempool_get_priv
 dpdk_lib_init
-```
-
+```text
 dpdk_pool_create与rte_pktmbuf_pool_create的区别：
 
 ### dpdk mempool
@@ -194,8 +186,6 @@ dpdk_pool_create与rte_pktmbuf_pool_create的区别：
 >- ring的创建
 >
 >转自[DPDK-----内存管理之mempool](https://www.cnblogs.com/rex-2018-cloud/p/10039065.html)
-
-
 
 # reference
 

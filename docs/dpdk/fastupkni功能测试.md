@@ -10,8 +10,7 @@
 make config T=x86_64-native-linuxapp-gcc EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic'
 make T=x86_64-native-linuxapp-gcc  CONFIG_RTE_KNI_KMOD=y CONFIG_RTE_EAL_IGB_UIO=y EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic' install -j 8
 make examples T=x86_64-native-linuxapp-gcc O=x86_64-native-linuxapp-gcc -j16
-```
-
+```text
 - vpp
 
 ```shell
@@ -19,8 +18,7 @@ export DPDK_PATH=/home/duanyingshou/code/dpdk/x86_64-native-linuxapp-gcc
 export PLATFORM=vpp
 make wipe
 make build
-```
-
+```text
 ### scl
 
 scl保持多版本gcc兼容，并支持切换gcc版本进行编译。
@@ -32,14 +30,12 @@ yum install centos-release-scl
 yum install devtoolset-7-gcc*
 scl enable devtoolset-7 bash
 gcc -v
-```
-
+```text
 - numa
 
   ```shell
   yum install numactl-devel
   ```
-
 
 ### 编译脚本
 
@@ -59,10 +55,7 @@ else
     make config T=x86_64-native-linuxapp-gcc EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic'
     make T=x86_64-native-linuxapp-gcc  CONFIG_RTE_KNI_KMOD=n CONFIG_RTE_EAL_IGB_UIO=n EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic' install -j 8
 fi
-```
-
-
-
+```text
 ### 问题
 
 #### i40e dpdk 19.08以下版本打开网口会出问题
@@ -76,8 +69,7 @@ EAL:   probe driver: 8086:37d0 net_i40e
 i40e_vlan_tpid_set(): Set switch config failed aq_err: 14
 eth_i40e_dev_init(): Failed to set the default outer VLAN ether type
 EAL: ethdev initialisation failedEAL: Requested device 0000:43:00.1 cannot be used
-```
-
+```text
 解决方法如下：
 
 - 更换版本到19.08及其以上
@@ -90,10 +82,7 @@ EAL: ethdev initialisation failedEAL: Requested device 0000:43:00.1 cannot be us
         hw->device_id == I40E_DEV_ID_SFP_I_X722) {
         hw->flags &= ~I40E_HW_FLAG_802_1AD_CAPABLE;
     }
-```
-
-
-
+```text
 #### dpdk18.11当前不支持NetXtreme BCM5720网卡 
 
 使用虚拟机可利用该机器网卡进行测试。
@@ -201,10 +190,7 @@ EAL: ethdev initialisation failedEAL: Requested device 0000:43:00.1 cannot be us
 
 ```shell
 ifconfig eno2 192.168.8.26/16
-```
-
-
-
+```text
 ### 测试结果
 
 - kni虚拟出的vEth和vpp需配置相同的ip和mac地址
@@ -219,8 +205,7 @@ export CROSS=/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/a
 export RTE_KERNELDIR=/home/duanyingshou/linux
 make config T=arm64-dpaa2-linuxapp-gcc CROSS=aarch64-fsl-linux- CROSS_COMPILE="aarch64-fsl-linux-" CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC -g"  EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic'
 make T=arm64-dpaa2-linuxapp-gcc CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC" EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic -I/opt/cross/sysroots/aarch64-fsl-linux/usr/include' CONFIG_RTE_KNI_KMOD=y CONFIG_RTE_EAL_IGB_UIO=n install -j 32
-```
-
+```text
 ```shell
 export CROSSE=aarch64-linux-gnu-
 export RTE_KERNELDIR=/home/duanyingshou/linux
@@ -229,8 +214,7 @@ make T=arm64-dpaa2-linuxapp-gcc CONFIG_RTE_KNI_KMOD=y CONFIG_RTE_EAL_IGB_UIO=n i
 export RTE_TARGET=arm64-dpaa2-linuxapp-gcc
 export RTE_SDK= /home/duanyingshou/cod/dpdk
 make -C examples/kni
-```
-
+```text
 两个网口直连，一端为NXP10G网口；
 
 1. 配置vpp ip 121.168.1.12/24，另一端配置121.168.1.11无法ping通；
@@ -265,14 +249,12 @@ fastup 配置ip：
 ```shell
 set int ip address TenGigabitEthernet0 192.168.8.25/16
 set int mtu 1500 TenGigabitEthernet0
-```
-
+```text
 kni 配置ip：
 
 ```shell
 ifconfig vEth0_0 192.168.8.25/16
-```
-
+```text
 ## fastup kni测试问题
 
 1. kni网口无法接收报文回放冲击，1Mbps速率回放报文仍存在丢包；
@@ -285,6 +267,4 @@ pcap rx trace status
 pcap tx trace on max 1000 intfc dpdk0 file vppTest.pcap
 pcap rx trace status
 pcap rx trace off
-```
-
-
+```text

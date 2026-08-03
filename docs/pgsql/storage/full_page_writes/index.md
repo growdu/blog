@@ -86,15 +86,13 @@ pgwriter的工作流程大致如下：
 ```mermaid
 graph TB
 获取当前脏页队列队首位置head的值-->从head值下标开始扫描脏页队列-->达到批量刷页上限后将本批脏页写入双写文件并分发给各个pagewriter线程并行写入文件系统-->pagewrite主线程等待所有子线程完成文件写操作-->将当前脏页队列的队首位置head设置为下一个待刷盘的脏页位置-->loop
-```
-
+```text
 代码流程如下：
 
 ```mermaid
 graph TB
 ckpt_pagewriter_main-->dw_upgrade_single-->dw_upgrade_batch-->dw_upgrade_renable_double_write-->ckpt_pagewriter_main_thread_loop
-```
-
+```text
 ### openguass的增量检查点机制
 
 在openguass中，全量检查点时checkpoint线程同一时刻会将BufferPool中所有脏页写入磁盘，完成打点。
@@ -103,8 +101,7 @@ ckpt_pagewriter_main-->dw_upgrade_single-->dw_upgrade_batch-->dw_upgrade_renable
 graph TB
 checkpoint-->BufferPool-->tableFile
 checkpoint--->controlFile
-```
-
+```text
 而增量检查点时会有专门的PageWriter线程维护一个脏页队列，定期将脏页刷到磁盘，checkpoint根据PageWriter刷页进度进行打点。
 
 ```mermaid
@@ -112,8 +109,7 @@ graph TB
 PageWriter-->DirtyPageQueue-->tableFile
 DirtyPageQueue-->|recovery lsn|checkpoint
 checkpoint--->controlFile
-```
-
+```text
 ### postgresql double_write社区补丁
 
 > 为了优化full_page_write，社区提供了一个patch，它的主要设计是创建两个共享内存块队列，checkpoint专用buffer队列和非checkpoint专用buffer队列，同时关闭full_page_write。当用户DML产生的数据buffer需要刷盘时，并不是立即刷到磁盘，而是先进入double write的buffer队列，当buffer队列满时，则将buffer队列里面的数据首先刷到特别的double write文件，然后再将数据刷到数据库文件。通过这种设计就不需要在checkpoint 之后在对数据页面的第一次写的时候会将整个数据页面写到 xlog 里面。当数据库需要恢复的时候，遍历所有double write文件里面的记录块，找到每个记录块对应的数据库page，然后对这个page进行checksum，如果page损坏，那么直接把记录块里面的内容覆盖到buffer数据。最后把double write文件删除，重新初始化buffer队列。

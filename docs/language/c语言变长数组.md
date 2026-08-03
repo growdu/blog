@@ -17,8 +17,7 @@ struct test {
 	int len;
     int data[];
 };
-```
-
+```text
 - 定义2
 
 ```c
@@ -26,8 +25,7 @@ struct test {
 	int len;
     int data[0];
 };
-```
-
+```text
 - 定义3
 
 ```c
@@ -36,8 +34,7 @@ struct test {
 	int len;
     int data[FLEXIBLE_ARRAY_MEMBER];
 };
-```
-
+```text
 一般定义2使用的最多，定义3在postgresql中使用，定义1很少用。
 
 **note：变长数组前面的成员不能省略，当然不一定是长度，可以其他没有意义的成员。**。
@@ -46,5 +43,4 @@ struct test {
 
 ```c
 struct test *t = (struct test *)malloc(sizeof(struct test) + 10 * sizeof(int)); // 10个元素
-```
-
+```text

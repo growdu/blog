@@ -116,8 +116,7 @@ set /path data
 get /path
 
     返回名为/path的znode的数据
-```
-
+```text
 - 观察与通知
 
 > zookeeper采用了通知的机制。客户端向zookeeper请求，在特定的znode设置观察点（watch）。当该znode发生变化时，会触发zookeeper的通知，客户端收到通知后进行业务处理。观察点触发后立即失效。所以一旦观察点触发，需要再次设置新的观察点。
@@ -252,7 +251,6 @@ Zab 中的节点有三种状态，伴随着的 Zab 不同阶段的转换，节�
 zookeeper搭建主备集群主要是利用zookeeper的临时节点和watch机制来实现。
 
 可以认为，zookeeper是作为一个中间件存在的。分布式服务会在zookeeper上注册节点并监听相关节点，当节点发生变化时会通知到各个服务。
-
 
    ## postgresql使用zookeeper搭建主备集群
 

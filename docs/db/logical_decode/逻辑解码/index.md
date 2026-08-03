@@ -40,8 +40,7 @@ WAL 日志 → │ WAL Reader   │
            ┌──────────────┐
            │ OutputPlugin  │ ← test_decoding / wal2json 等
            └──────────────┘
-```
-
+```text
 ## 逻辑解码和物理复制的区别
 
 | 对比点   | 物理复制（Physical Replication） | 逻辑解码（Logical Decoding） |
@@ -51,7 +50,6 @@ WAL 日志 → │ WAL Reader   │
 | 适用    | 流复制、备库                     | CDC、跨版本、跨存储、数据交换       |
 | 能否过滤表 | ❌ 不行                       | ✔️ 可以                  |
 | 可否跨版本 | ❌                          | ✔️ 一般可以                |
-
 
 ## 异构数据库同步
 
@@ -116,7 +114,6 @@ PolarDB-PG 增强了 ProcessUtility_hook，并在执行 DDL 时：
 4. 所有 subscriber 读到 WAL 后可得到 DDL
 
 核心设计与 enhanced decoding（如 pglogical）类似，但做了更底层的优化。
-
 
 # reference
 

@@ -8,20 +8,19 @@ PostgreSQL中的每个表(`TABLE`)都将由一个或多个堆文件表示。默�
 
 在PostgreSQL中，数据库名和表文件名都是使用`Oid`来进行命名。该`Oid`是一个无符号整型(`unsigned int`)，定义在`postgres_ext.h`文件中。如下：
 
-```
+```text
 /*
  * Object ID is a fundamental type in Postgres.
  */
  typedef unsigned int Oid;
-```
-
+```text
 当我们将数据存储在PostgreSQL中时，PostgreSQL会将用户插入(`INSERT INTO`)的数据依次存储于文件系统的常规文件中。对于这样的文件，我们称之为“**堆文件**(`Heap File`)”。在PostgreSQL中，可以将堆文件分为四种类型：“**普通堆文件**(`Ordinary Cataloged Heap`)、“**临时堆文件**(`Temporary Heap File`)、“**序列堆文件**(`Sequence File`)和“**TOAST表堆文件**(`TOAST FILE`)”。上面说的常规文件，即指普通堆文件。TOAST文件专门用于存储变长数据，本质上它也是属于普通堆文件。对于上面的这四种堆文件，虽然底层组织方式细节不大一样，但是结构上是相似的，所以我们这里将着重分析普通堆文件。
 
 ## **1.2 数据蔟目录位置**
 
 在研究表文件之前，我们先要知道postgres的数据蔟目录位置。因为所有的数据库、表、索引、配置文件等等都是存储在数据蔟目录下的，即`PGDATA`。如果你不确定当前环境上面PostgreSQL的数据蔟目录位置，没关系，你仅需要`psql`登录终端，然后执行 `SHOW DATA_DIRECTORY`；命令即可得到。如下图所示，当前环境的数据蔟目录是：`/home/lixiaogang5/DB`。
 
-```
+```text
 test=#
 test=# SHOW DATA_DIRECTORY;
     data_directory
@@ -30,13 +29,12 @@ test=# SHOW DATA_DIRECTORY;
 (1 row)
 
 test=#
-```
-
+```text
 ## **1.3 表文件位置**
 
 对于关系型数据库，所有的表都是以库为维度进行管理，即某个表总是属于某个库。因此，我们还需要找到我们创建的数据库(`CREATE DATABASE`;)以及该库下的所有表(`CREATE TABLE`)。PostgreSQL为我们提供了`pg_relation_filepath`，用于查找指定表名的相对(`$PGDATA`)文件路径。
 
-```
+```text
 test=#
 test=# SELECT pg_relation_filepath('student');
  pg_relation_filepath
@@ -45,30 +43,27 @@ test=# SELECT pg_relation_filepath('student');
 (1 row)
 
 test=#
-```
-
+```text
 如上图所示，其中16384是数据库(test)的Oid名；16387是student数据表名。其数据库和数据表的创建过程如下：
 
-```
+```text
 postgres=# CREATE DATABASE test;
 CREATE DATABASE
 test=#
 test=# CREATE TABLE student(id  SERIAL PRIMARY KEY, name VARCHAR, age INT NOT NULL);
 CREATE TABLE
-```
-
+```text
 ## **2\. 表文件的内部布局**
 
 前面创建了名为student的数据表，到此为止，还没有向该表中插入(`INSERT INTO`)过数据。因此student表的总行数是0。
 
-```
+```text
 test=# SELECT COUNT(*) FROM student;
  count
 -------
      0
 (1 row)
-```
-
+```text
 注：关系数据表中的行数据称为**记录**(`record`)，又称之为**元组**(`tuple`)，即行、记录、元组都是同一个概念。
 
 在表中没有数据时，很显然此时文件大小是0字节。如下图中红色字体所示：
@@ -77,7 +72,7 @@ test=# SELECT COUNT(*) FROM student;
 
 现在我们向该表中插入一条数据，如下：
 
-```
+```text
 test=# SELECT COUNT(*) FROM student;
  count
 -------
@@ -93,15 +88,13 @@ test=# SELECT *FROM student;
 (1 row)
 
 test=#
-```
-
+```text
 此时再次查看该student数据表文件时，可看到其文件大小是8KB(8192Byte)。很显然，我们刚插入的这条数据并没有这么大。因此可知，postgres在向表中插入数据时候是以8KB为单位进行数据存储管理的。第一次数据进来，无论数据多少，postgres都会在该文件中分配8KB的空间 。
 
-```
+```text
 [root@Thor 16384]# ls -lh --full-time 16387
 -rw------- 1 postgres postgres 8.0K 2021-05-22 15:05:55.223806439 +0800 16387
-```
-
+```text
 ## **2.1 表文件由页组成**
 
 对于PostgreSQL数据库，在每个数据文件(堆文件、索引文件、FSM文件、VM文件等)内部，它分为固定长度的页(或块)。换言之，即一个1GB大小的表文件内部是有若干个固定的页组成。页的默认大小为8192字节(8KB)。单个表文件中的这些页(Page)从0开始进行顺序编号，这些编号也称为“块编号(`Block Numbers`)”。如果第一页空间已经被数据填满，则postgres会立刻重新在文件末尾(即已填满页的后面)添加一个新的空白页，用于继续存储数据，一直持续这个过程，直到当前表文件大小达到1GB位置。若文件达到1GB，则重新创建一个新的表文件，然后重复上面的这个过程。
@@ -120,7 +113,7 @@ test=#
 
 页头数据结构(`PageHeaderData`)声明于文件`bufpage.h`中，它包含了当前页的常规信息。其大小是24字节(byte)，且分配在页的开头位置。其声明格式如下：
 
-```
+```text
 typedef struct PageHeaderData
 {
      /* XXX LSN is member of *any* block, not only page-organized ones */
@@ -136,15 +129,14 @@ typedef struct PageHeaderData
      TransactionId  pd_prune_xid;      /* oldest prunable XID, or zero if none */
      ItemIdData  pd_linp[FLEXIBLE_ARRAY_MEMBER]; /* line pointer array [行指针数组]*/
 } PageHeaderData;
-```
-
+```text
 以下是该数据结构中各成员成员的功能描述：
 
 · `pd_lsn`
 
 `pd_lsn`变量存储由本页最后一次更改所写入的`XLOG`记录的`LSN`(即当前`WAL`位置)。它是一个8字节的无符号整数，与`WAL(Write-Ahead Logging)`机制有关。其中`PageXLogRecPtr`数据类型的声明如下：
 
-```
+```text
 typedef unsigned int uint32; /* == 32 bits */
 
 typedef struct
@@ -152,8 +144,7 @@ typedef struct
  uint32  xlogid;   /* high bits */
  uint32  xrecoff;  /* low bits */
 } PageXLogRecPtr;
-```
-
+```text
 · `pd_checksum`
 
 此变量存储此页的校验和值(请注意，9.3或更高版本支持此变量；在早期版本中，此部分存储了页面的`timelineId`)。如果`checksum`已启用，则为每个数据页计算校验和。检测到校验和失败将导致读取数据时出错，并将中止当前正在运行的事务。因此，这为直接在数据库服务器级别检测I/O或硬件问题带来了额外的控制。
@@ -162,7 +153,7 @@ typedef struct
 
 该成员用以设置位标志。对于PostgreSQL 13.2版本，共支持以下几种标志：
 
-```
+```text
 //是否有未使用的行指针?
 #define PD_HAS_FREE_LINES 0x0001 
 
@@ -174,8 +165,7 @@ typedef struct
 
 //所有有效pd_flags位的OR
 #define PD_VALID_FLAG_BITS 0x0007
-```
-
+```text
 · `pd_lower`
 
 指向空闲空间的开始位置。
@@ -204,7 +194,7 @@ typedef struct
 
 `pd_linp`是极为重要的成员变量，它是一个零长度数组(`Arrays of Length Zero`)。当页中没有插入数据时候，它的数组元素个数是0，因此这个`pd_linp`也就是上图中所谓的“行指针”数组。它指向该页中的元组(也就是表记录)。其`pd_linp`的数据类型是：
 
-```
+```text
 typedef struct ItemIdData
 {
     unsigned lp_off:15,  /* offset to tuple (from start of page) */
@@ -212,8 +202,7 @@ typedef struct ItemIdData
     lp_len:15;           /* byte length of tuple */
 } ItemIdData;
 
-```
-
+```text
 更多`pd_linp`成员的描述将在下面2.1.1.2小节中进行更加详细的描述。
 
 注：PostgreSQL中，最小的页大小是64B，以适应页头、不透明空间和最小元组；最大只能支持32KB的页面大小。
@@ -222,7 +211,7 @@ typedef struct ItemIdData
 
 行指针的长度为4个字节，它形成一个简单的(ItemId，行指针)数组，该数组起着元组索引的作用。每个索引编号从1开始，称为“**偏移数**”。当将一个新的元组添加到页的时候，新的行指针也被添加到`pd_linp`数组中，以指向其对应的元组。
 
-```
+```text
 typedef struct ItemIdData
 {
     unsigned lp_off:15,  /* offset to tuple (from start of page) */
@@ -231,8 +220,7 @@ typedef struct ItemIdData
 } ItemIdData;
 
 typedef ItemIdData *ItemId;
-```
-
+```text
 当不断向页中插入数据时候，其元组、行指针以及可用空间的变化如下图所示：
 
 ![](https://pic3.zhimg.com/v2-c7caba2e44ffeefe280e8117ea66eb82_b.jpg)
@@ -249,7 +237,7 @@ typedef ItemIdData *ItemId;
 
 其中堆元组头部的结构定义如下：
 
-```
+```text
 struct HeapTupleHeaderData
 {
      union
@@ -276,11 +264,10 @@ struct HeapTupleHeaderData
 
      /* MORE DATA FOLLOWS AT END OF STRUCT */
 };
-```
-
+```text
 其中`t_choice`成员变量是一个共用体数据类型。对于`t_choice`中的`t_heap`成员，它描述了当前元组的事务`id`、事务`id`等信息，如下：
 
-```
+```text
 typedef struct HeapTupleFields
 {
      TransactionId t_xmin;  /* inserting xact ID */
@@ -293,33 +280,30 @@ typedef struct HeapTupleFields
      }   t_field3;
 } HeapTupleFields;
 
-```
-
+```text
 该数据类型中，`t_xmin`成员保存的是插入该元组的事务`txid`。`t_xmax`报错删除或是更新该元组的`txid`。如果尚未删除或更新过该元组，则`t_xmax`将设置为0，即`INVALID`。`t_cid`保留命令`id(cid)`。这表示了从0开始到当前事务中共执行了多少个SQL命令。比如我们在一个事务中查询了2个INSERT INTO命令，即：
 
-```
+```text
  'BEGIN;
  INSERT INTO ... ;
  INSERT INTO ... ;
  COMMIT;'
-```
-
+```text
 那么第一次插入该元组时候，`t_cid`初始化为0.第二次插入次元组时候，该`t_cid`将被设置为1，依次类推。
 
-t\_ctid保存指向自身或是新元组的元组表示符。当该元组被更新时，该元组的`t_ctid`指向新的元组；否则，`t_ctid`指向自身。注：为了标识数据表中的元组，在元组内部使用了元组标识符(`Tuple Identifile`, `TID`), tid包含一对值，类似`tid(key1, key2)`。其中key1表示包含元组的页的块号，key2表示指向元组的行指针的偏移量。如下所示：
+t_ctid保存指向自身或是新元组的元组表示符。当该元组被更新时，该元组的`t_ctid`指向新的元组；否则，`t_ctid`指向自身。注：为了标识数据表中的元组，在元组内部使用了元组标识符(`Tuple Identifile`, `TID`), tid包含一对值，类似`tid(key1, key2)`。其中key1表示包含元组的页的块号，key2表示指向元组的行指针的偏移量。如下所示：
 
-```
+```text
 test=# select *from heap_page_items(get_raw_page('student',0));
  lp | lp_off | lp_flags | lp_len | t_xmin | t_xmax | t_field3 | t_ctid | t_infomask2 | t_infomask | t_hoff | t_bits | t_oid |                   t_data
 ----+--------+----------+--------+--------+--------+----------+--------+-------------+------------+--------+--------+-------+--------------------------------------------
   1 |   8144 |        1 |     44 | 604154 |      0 |        0 | (0,1)  |           3 |       2050 |     24 |        |       | \x01000000174c495849414f47414e47001c000000
 (1 row)
 
-```
-
+```text
 成员`t_infomask2`用来表示当前元组的属性个数。`t_infomask`用于标识元组的当前状态，比如是否空属性、是否具有对象id、是否具有外部存储属性等等，PostgreSQL 13.2版本中，`t_infomask`成员具有以下状态信息：
 
-```
+```text
 /*
  * information stored in t_infomask:
  */
@@ -353,23 +337,21 @@ test=# select *from heap_page_items(get_raw_page('student',0));
 #define HEAP_MOVED (HEAP_MOVED_OFF | HEAP_MOVED_IN)
 
 #define HEAP_XACT_MASK   0xFFF0 /* visibility-related bits */
-```
-
+```text
 成员`t_hoff`标识该元组头的大小。成员`t_bits`数组用于标识当前元组哪些字段是空。
 
 在读写元组头`HeapTupleHeaderData`时候，我们往往直接使用其`HeapTupleHeader`指针来进行操作。其声明如下：
 
-```
+```text
 /* typedefs and forward declarations for structs defined in htup_details.h */
 
 typedef struct HeapTupleHeaderData HeapTupleHeaderData;
 
 typedef HeapTupleHeaderData *HeapTupleHeader;
-```
-
+```text
 堆元组的整体数据类型声明如下，它嵌套了元组头部结构信息，另外新增了几个附加成员字段，用以描述当前元组的用户数据长度等。如下：
 
-```
+```text
 typedef struct HeapTupleData
 {
      uint32    t_len;   /* length of *t_data */
@@ -380,8 +362,7 @@ typedef struct HeapTupleData
 } HeapTupleData;
 
 typedef HeapTupleData *HeapTuple;
-```
-
+```text
 ## **2.1.2 pageinspect扩展查看页内容**
 
 PostgreSQL提供了一些扩展的功能，这些扩展功能的想要sql脚本都放在了`share/extension/`目录下，如下图示所示：
@@ -390,45 +371,41 @@ PostgreSQL提供了一些扩展的功能，这些扩展功能的想要sql脚本�
 
 可以看到，除了`pageinspect`外，该目录下还有其他的附属功能脚本，比如`pg_freespace`(用于查看当前表或索引的页中可用的剩余空间)等。这些扩展功能使用之前需要使用SQL命令先创建：
 
-```
+```text
 CREATE EXTENSION pageinspect; //pageinspect --扩展功能名
-```
-
+```text
 若使用`CREATE EXTENSION`创建扩展功能时候，对应的`share/extension/`目录下没有该扩展功能的SQL脚本，则会报错提示当前目录没有对应的文件，如下：
 
-```
+```text
 ERROR:  could not open extension control file "/usr/local/pg132/share/postgresql/extension/pageinspect.control": No such file or directory
-```
-
+```text
 ### **2.1.2.1 查看表文件页头信息**
 
 使用`page_header()`函数和`get_raw_page()`函数结合可得到指定页的头部信息。如下所示，其中数字0表示指定表的页数。
 
-```
+```text
 test=# select *from page_header(get_raw_page('student', 0));
     lsn     | checksum | flags | lower | upper | special | pagesize | version | prune_xid
 ------------+----------+-------+-------+-------+---------+----------+---------+-----------
  0/39620C78 |        0 |     0 |    28 |  8144 |    8192 |     8192 |       4 |         0
 (1 row)
 
-```
-
+```text
 使用`heap_page_items`和`get_raw_page`可得到表元组的头部信息和数据信息，如下：
 
-```
+```text
 test=# select *from heap_page_items(get_raw_page('student',0));
  lp | lp_off | lp_flags | lp_len | t_xmin | t_xmax | t_field3 | t_ctid | t_infomask2 | t_infomask | t_hoff | t_bits | t_oid |                   t_data
 ----+--------+----------+--------+--------+--------+----------+--------+-------------+------------+--------+--------+-------+--------------------------------------------
   1 |   8144 |        1 |     44 | 604154 |      0 |        0 | (0,1)  |           3 |       2050 |     24 |        |       | \x01000000174c495849414f47414e47001c000000
 (1 row)
 
-```
-
+```text
 ## **2.2 使用工具读分析表文件内容**
 
 因为表文件中的数据都是二进制，所以在不借助工具的情况下，是无法直接查看的。因此我们需要借助工具来查看表文件中的数据内容，结合上面的介绍进行分析。在类UNIX环境上，可以使用`hexdump`、`od`命令对堆文件表中的数据进行十六进制转存，然后进行分析。当前student表中的数据仅有一条，如下：
 
-```
+```text
 test=# \d+ student;
                                                        Table "public.student"
  Column |         Type          | Collation | Nullable |               Default               | Storage  | Stats target | Description
@@ -447,11 +424,10 @@ test=# SELECT *FROM student;
 
 test=#
 
-```
-
+```text
 `hexdump`命令主要用来查看二进制文件的十六进制编码(当然，也可以直接`vim`，然后`:%!xxd`将其二进制数据转换为十六进制)，如下所示：
 
-```
+```text
 [root@Thor 163898]# hexdump  16387
 0000000 0000 0000 aab8 40a1 0000 0000 001c 1fd0
 0000010 2000 2004 0000 0000 9fd0 0058 0000 0000
@@ -461,8 +437,7 @@ test=#
 0001fe0 0001 0003 0902 0018 0001 0000 5813 4149
 0001ff0 474f 4e41 0047 0000 001b 0000 0000 0000
 0002000
-```
-
+```text
 注：堆表文件的元组数据是从页的尾部开始存储，直到`pd_upper - pd_lower`的空间不足以存储元组为止。如下图中的`Tuple1`、`Tuple2`、`Tuple3`、`Tuple4`等等。
 
 ![](https://pic2.zhimg.com/v2-1edc85ae1aaaf6a1ba5e50419fd04a09_b.jpg)
@@ -479,28 +454,26 @@ test=#
 
 紫色表示的4字节(`d09F 5800`)是指向元组的行指针`pd_linp`(也称为`ItemId`)。行指针的结构声明如下：
 
-```
+```text
 typedef struct ItemIdData
 {
        unsigned lp_off:15,  /* offset to tuple (from start of page) */
        lp_flags:2,  /* state of line pointer, see below */
        lp_len:15;  /* byte length of tuple */
 } ItemIdData;
-```
-
+```text
 第1至15位指向该元组的偏移量(从页开始)、15至17位声明当前元组的状态，这个前面有说过、17至32声明该元组的长度大小。这里之所以将`hexdump`展示的十六进制反过来书写是因为我当前系统架构是小端模式。经转换过后，其各值能够和`pg_header`表查出来的结果相吻合。说明分析是正确的。
 
-```
+```text
 pd_linp[0] ==== 00589FD0 //转换为二进制后是：10110001001111111010000   
 101100          01    001111111010000
 44(字节)         1    8144(字节)
-```
-
+```text
 上面对页中元组的头部信息、行指针进行了详细的分析。接下来重点剖析页中行指针所指向的对应的元组数据信息。
 
 在分析元组的结构信息时候，我们需要借助`heap_page_items()`函数，该函数会将元组在页内存中的分布信息详细展示出来。
 
-```
+```text
 test=# select *from heap_page_items(get_raw_page('student',0));
  lp | lp_off | lp_flags | lp_len | t_xmin | t_xmax | t_field3 | t_ctid | t_infomask2 | t_infomask | t_hoff | t_bits | t_oid |                   t_data
 ----+--------+----------+--------+--------+--------+----------+--------+-------------+------------+--------+--------+-------+--------------------------------------------
@@ -512,17 +485,15 @@ test=# select *from student;
 ----+----------+-----
   1 | XIAOGANG |  27
 (1 row)
-```
-
+```text
 由于元组中字段占用的大小有严格的内存对齐要求，所以实际上可以看到各成员之间会存在一些“填充”字节数据。其对齐(必须始终是平台的`MAXALIGN`距离的倍数。)要求如下：
 
-```
+```text
 #define MAXALIGN(LEN)   TYPEALIGN(MAXIMUM_ALIGNOF, (LEN))
 
 #define TYPEALIGN(ALIGNVAL,LEN)  \
  (((uintptr_t) (LEN) + ((ALIGNVAL) - 1)) & ~((uintptr_t) ((ALIGNVAL) - 1)))
-```
-
+```text
 通过`heap_page_items()`函数得到结果与`hexdump`命令得到的数据，最终可得到该元组在页为0内存中布局详情如下图所示。下图中紫色标注的1b其值是age字段中的值27。该字段周边的0000是填充字节数据，用于保证内存对齐。
 
 ![](https://pic3.zhimg.com/v2-f48cba9d471b497b01fb261cf20deef6_b.jpg)
@@ -533,11 +504,11 @@ test=# select *from student;
 
 由于`pg_hexedit`工具显示的结果需要借助 `wxHexEditor`工具来进行展示，所以这里使用`pg_filedump`工具来进行分析。
 
-## **2.2.2 pg\_filedump**
+## **2.2.2 pg_filedump**
 
 `pg_filedump`命令提供许多供选的参数，具体详情可使用 `pg_filedump --help`。该工具得到的数据比较直观，因为结果中直接给出了当前文件中的页数、行指针的起始位置，以及各页中分别指向空闲空间起始、结束位置的地址等。如下所示：
 
-```
+```text
 [root@Thor bin]#
 [root@Thor bin]#
 [root@Thor bin]#
@@ -565,9 +536,7 @@ XMIN: 636107  XMAX: 0  CID|XVAC: 0
 Block Id: 0  linp Index: 1   Attributes: 3   Size: 24
 infomask: 0x0902 (HASVARWIDTH|XMIN_COMMITTED|XMAX_INVALID)
 
-
 *** End of File Encountered. Last Block Read: 0 ***
 [root@Thor bin]#
-```
-
+```text
 来源：

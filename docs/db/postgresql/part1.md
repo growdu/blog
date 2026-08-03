@@ -2,8 +2,7 @@
 
 ```shell
 src/backend/main/main.c
-```
-
+```text
 ```c
     progname = get_progname(argv[0]);
 
@@ -24,14 +23,13 @@ src/backend/main/main.c
 	 * result pointer.
 	 */
 	argv = save_ps_display_args(argc, argv);
-```
-
+```text
 这个代码片段的主要目的是在程序启动时进行一些特定平台的初始化，并保存原始的 `argv[]` 数组以便在设置进程标题时使用。以下是详细解析：
 
 ### 1. 获取程序名称
 ```c
 progname = get_progname(argv[0]);
-```
+```text
 这行代码调用 `get_progname` 函数并传入程序的第一个命令行参数（通常是程序自身的路径）。`get_progname` 函数返回处理后的程序名称并赋值给 `progname` 变量。
 
 ### 2. 执行平台特定的启动黑客
@@ -41,7 +39,7 @@ progname = get_progname(argv[0]);
  * Platform-specific startup hacks
  */
 startup_hacks(progname);
-```
+```text
 这里调用 `startup_hacks` 函数并传入程序名称 `progname`。这个函数执行一些特定平台的初始化操作，这些操作可能包括设置环境变量、调整系统配置等。
 
 ### 3. 记住最初的 `argv[]` 数组的物理位置
@@ -59,7 +57,7 @@ startup_hacks(progname);
  * result pointer.
  */
 argv = save_ps_display_args(argc, argv);
-```
+```text
 这部分代码涉及保存最初的 `argv[]` 数组的位置，以便可能在进程显示（例如 `ps` 命令）中使用。在某些平台上，为了设置进程标题，可能需要覆盖 `argv[]` 的存储。在这种情况下，`save_ps_display_args` 函数会创建并返回 `argv[]` 数组的新副本。
 
 - `save_ps_display_args` 函数还可能移动环境字符串以腾出额外的空间。因此，这个操作应尽早进行，以避免与可能保存 `getenv()` 结果指针的代码发生冲突。
@@ -127,33 +125,32 @@ MemoryContextInit(void)
     /* Initialize other special contexts, if any */
     /* e.g., CacheMemoryContext, MessageContext, etc. */
 }
-```
-
+```text
 ### 4. 解析每个步骤
 
 #### a. 初始化 `TopMemoryContext`
 ```c
 TopMemoryContext = AllocSetContextCreate(NULL, "TopMemoryContext", ALLOCSET_DEFAULT_SIZES);
-```
+```text
 这行代码创建了一个顶级内存上下文 `TopMemoryContext`，使用 `AllocSetContextCreate` 函数分配内存并初始化它。`TopMemoryContext` 是所有其他内存上下文的根，其他上下文都是它的子上下文。
 
 #### b. 设置 `CurrentMemoryContext`
 ```c
 CurrentMemoryContext = TopMemoryContext;
-```
+```text
 将当前内存上下文设置为 `TopMemoryContext`。`CurrentMemoryContext` 是一个全局变量，指向当前正在使用的内存上下文。
 
 #### c. 初始化 `ErrorContext`
 ```c
 ErrorContext = AllocSetContextCreate(TopMemoryContext, "ErrorContext", ALLOCSET_DEFAULT_SIZES);
-```
+```text
 创建并初始化 `ErrorContext`，用于错误报告和处理。`ErrorContext` 是在错误发生时分配内存的地方，以确保在内存不足或其他严重错误情况下仍能分配内存进行错误报告。
 
 #### d. 初始化其他特殊上下文
 ```c
 /* Initialize other special contexts, if any */
 /* e.g., CacheMemoryContext, MessageContext, etc. */
-```
+```text
 如果有其他特殊的内存上下文（如缓存上下文 `CacheMemoryContext`、消息上下文 `MessageContext` 等），则在这里进行初始化。
 
 ### 5. 总结
@@ -164,7 +161,7 @@ ErrorContext = AllocSetContextCreate(TopMemoryContext, "ErrorContext", ALLOCSET_
 在 PostgreSQL 的源码中，`set_pglocale_pgservice` 函数用于设置本地化和服务配置。具体来说，这一调用：
 ```c
 set_pglocale_pgservice(argv[0], PG_TEXTDOMAIN("postgres"));
-```
+```text
 主要有两个目的：
 
 1. **设置本地化（locale）信息**，包括语言环境和消息域（text domain）。
@@ -190,8 +187,7 @@ set_pglocale_pgservice(const char *argv0, const char *app)
     set_pglocale(argv0, app);
     set_pgservice(argv0, app);
 }
-```
-
+```text
 可以看到，`set_pglocale_pgservice` 调用了两个函数：`set_pglocale` 和 `set_pgservice`。
 
 #### a. `set_pglocale` 函数
@@ -217,8 +213,7 @@ set_pglocale(const char *argv0, const char *app)
     setlocale(LC_MESSAGES, "");
     setlocale(LC_CTYPE, "");
 }
-```
-
+```text
 - `bindtextdomain(app, LOCALEDIR)`: 绑定消息域 `app` 到本地化目录 `LOCALEDIR`。
 - `bind_textdomain_codeset(app, "UTF-8")`: 设置消息域 `app` 使用 UTF-8 字符集。
 - `setlocale(LC_MESSAGES, "")`: 设置消息的本地化。
@@ -240,8 +235,7 @@ set_pgservice(const char *argv0, const char *app)
     /* Do something related to service configuration */
     ...
 }
-```
-
+```text
 这里 `find_my_exec(argv0, path)` 用于计算程序的真实路径。具体的服务配置细节可能包括设置环境变量或者其他与 PostgreSQL 服务相关的配置。
 
 ### 总结
@@ -278,8 +272,7 @@ set_pgservice(const char *argv0, const char *app)
 
 ```bash
 export LANG=zh_CN.UTF-8
-```
-
+```text
 这行命令设置系统的语言环境为简体中文（UTF-8 编码），之后运行的应用程序如果支持简体中文，就会显示简体中文的消息。
 
 ### 总结
@@ -318,8 +311,7 @@ export LANG=zh_CN.UTF-8
 	 * variables installed by pg_perm_setlocale have force.
 	 */
 	unsetenv("LC_ALL");
-```
-
+```text
 在 PostgreSQL 的源码中，上述代码片段主要处理了服务器启动时的本地化（locale）设置。具体来说，这段代码初始化了与语言环境相关的设置，以确保在服务器启动过程中和运行期间能够正确处理本地化消息和数据格式。以下是对每个部分的详细解析：
 
 ### 1. 吸收环境变量值
@@ -335,8 +327,7 @@ export LANG=zh_CN.UTF-8
  */
 init_locale("LC_COLLATE", LC_COLLATE, "");
 init_locale("LC_CTYPE", LC_CTYPE, "");
-```
-
+```text
 - **LC_COLLATE**: 用于字符串比较和排序。
 - **LC_CTYPE**: 用于字符分类和转换。
 
@@ -351,8 +342,7 @@ init_locale("LC_CTYPE", LC_CTYPE, "");
 #ifdef LC_MESSAGES
 init_locale("LC_MESSAGES", LC_MESSAGES, "");
 #endif
-```
-
+```text
 - **LC_MESSAGES**: 用于确定消息的语言环境。
 
 尽管 `LC_MESSAGES` 会在后续的 GUC（Grand Unified Configuration）选项处理过程中设置，但这里提前设置是为了在启动过程中本地化错误消息。
@@ -366,8 +356,7 @@ init_locale("LC_MESSAGES", LC_MESSAGES, "");
 init_locale("LC_MONETARY", LC_MONETARY, "C");
 init_locale("LC_NUMERIC", LC_NUMERIC, "C");
 init_locale("LC_TIME", LC_TIME, "C");
-```
-
+```text
 - **LC_MONETARY**: 用于货币格式。
 - **LC_NUMERIC**: 用于数字格式。
 - **LC_TIME**: 用于时间和日期格式。
@@ -382,8 +371,7 @@ init_locale("LC_TIME", LC_TIME, "C");
  * variables installed by pg_perm_setlocale have force.
  */
 unsetenv("LC_ALL");
-```
-
+```text
 移除环境变量 `LC_ALL` 的设置。`LC_ALL` 是一个高优先级的环境变量，如果设置了它，会覆盖其他 `LC_*` 环境变量。移除 `LC_ALL` 可以确保我们之前通过 `init_locale` 设置的 `LC_*` 环境变量生效。
 
 ### 总结

@@ -57,14 +57,12 @@
 
 ```shell
 gcc -v -x c -E
-```
+```text
 同时查看ld的查找路径：
 
 ```shell
 gcc -v -x c -E
-```
-
-
+```text
 对于c语言的库来说，运行时按照如下顺序去查找库：
 
 - LD_LIBRARY_PATH设置的值

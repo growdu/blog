@@ -6,38 +6,33 @@
 
 ```shell
 docker images
-```
-
+```text
 - 查看运行的容器
 
 ```shell
 docker container ls
 docker ps -a
-```
+```text
 - 启动容器
 
 ```shell
 docker run -d -it --name dev -p 8080:8080 --privileged=true /usr/sbin/init
-```
-
+```text
 - 连接到容器
 
 ```shell
 docker exec -it id bash
-```
-
+```text
 - 停止容器
 
 ```shell
 docker stop id
-```
-
+```text
 - 删除容器
 
 ```shell
 docker container rm id
-```
-
+```text
 ## 制作基础镜像
 
 无网络环境下使用本地文件作为基础镜像：
@@ -46,8 +41,7 @@ docker container rm id
 yum -y --install-root=./code-server install gcc gcc-c++ kernel-devel make cmake  libstdc++-devel libstdc++-static glibc-devel openssl-devel gperftools-libs psmisc openssh-server sudo epel-release vim git ctags net-tools tcpdump protobuf-c protobuf-c-devel protobuf doxygen  java-1.8.0-openjdk java-1.8.0-openjdk-devel bison flex readline readline-devel icu libicu-devel yacc libxml2-devel libxml2
 cd code-sever
 tar -cvpf code-server.tar --directory=. --exclude=proc --exclude=sys --exclude=dev --exclude=boot .
-```
-
+```text
 ```dockfile
 FROM centos:centos7.6.1810
 
@@ -61,7 +55,7 @@ RUN yum -y --nogpgcheck install gcc gcc-c++ kernel-devel make cmake  libstdc++-d
 && yum -y --nogpgcheck install bison flex readline readline-devel icu libicu-devel yacc libxml2-devel libxml2 \
 && mkdir /var/run/sshd \
 && echo "root:test" | chpasswd \
-&& sed -ri 's/^#PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
+&& sed -ri 's/^#PermitRootLogins+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
 && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
 && ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
 && ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
@@ -70,41 +64,36 @@ RUN yum -y --nogpgcheck install gcc gcc-c++ kernel-devel make cmake  libstdc++-d
 RUN curl  -fsSL https://code-server.dev/install.sh | sh
 CMD export  PASSWORD="code" && code-server --host 0.0.0.0
 CMD ["/usr/sbin/sshd", "-D"]
-```
-
+```text
 写入dockerfile后执行如下命令：
 
 ```shell
 docker build -t dev:last .
-```
-
+```text
 ## 安装coder-server
 
-```
+```text
 sudo docker pull codercom/code-server:latest
 sudo docker run -d -it --name code-server -p 8080:8080 \
             -v "/home/ha/cwork:/home/coder/project" \
             -u "$(id -u):$(id -g)" \
             -e "DOCKER_USER=$USER" \
             codercom/code-server:latest
-```
-
+```text
 查看code-server镜像大小,可以看到code-server的镜像挺大的，1.63GB。
 
-```
+```text
 codercom/code-server        latest          dc6f07d1c0f8   20 months ago   1.63GB
-```
-
+```text
 查看code-server内部组件
 
-```
+```text
 sudo docker container ls
 sudo docker exec -it 19f8152c703f bash
-```
-
+```text
 查看code-server内部的操作系统版本：
 
-```
+```text
 ha@19f8152c703f:~$ gcc -v
 bash: gcc: command not found
 ha@19f8152c703f:~$ uname -a
@@ -119,8 +108,7 @@ ID=debian
 HOME_URL="https://www.debian.org/"
 SUPPORT_URL="https://www.debian.org/support"
 BUG_REPORT_URL="https://bugs.debian.org/"
-```
-
+```text
 可以看到容器内部的操作系统是debian，我们期望是centos7.6，与我们的要求不符合，
 因而采用在基础镜像里安装code-server,安装完成后，我们再将其导出为我们需要的镜像。
 
@@ -128,8 +116,7 @@ BUG_REPORT_URL="https://bugs.debian.org/"
 
 ```shell
 wget https://github.com/coder/code-server/releases/download/v4.16.1/code-server-4.16.1-amd64.rpm
-```
-
+```text
 下载完成后记录下code-server的rpm包的安装目录，并将其映射到容器内部进行安装。
 
 或者也可以下载下来后直接打包进容器，dockerfile如下所示：
@@ -147,7 +134,7 @@ RUN yum -y --nogpgcheck install gcc gcc-c++ kernel-devel make cmake  libstdc++-d
 && yum -y --nogpgcheck install bison flex readline readline-devel icu libicu-devel yacc libxml2-devel libxml2 \
 && mkdir /var/run/sshd \
 && echo "root:test" | chpasswd \
-&& sed -ri 's/^#PermitRootLogin\s+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
+&& sed -ri 's/^#PermitRootLogins+.*/PermitRootLogin yes/' /etc/ssh/sshd_config \
 && sed -ri 's/UsePAM yes/#UsePAM yes/g' /etc/ssh/sshd_config \
 && ssh-keygen -t rsa -f /etc/ssh/ssh_host_rsa_key \
 && ssh-keygen -t dsa -f /etc/ssh/ssh_host_dsa_key \
@@ -157,10 +144,7 @@ RUN yum -y --nogpgcheck install gcc gcc-c++ kernel-devel make cmake  libstdc++-d
 COPY code-server-4.16.1-amd64.rpm /home/code/
 CMD export  PASSWORD="code" && code-server --host 0.0.0.0
 CMD ["/usr/sbin/sshd", "-D"]
-```
-
-
-
+```text
 ## 启动容器
 
 ```shell
@@ -171,16 +155,14 @@ sudo docker run -d -it --name dev_server -p 8080:8080 -p 10024:22 \
             --privileged=true \
             dev:latest \
             /usr/sbin/init
-```
-
+```text
 ## 查看容器日志
 
 有时候容器可能会启动失败，这个时候就需要查看日志分析启动失败的原因。
 
 ```shell
 docker logs id
-```
-
+```text
 ## 基于当前容器构建镜像
 
 容器运行起来后,发现code-server未成功安装运行。寻找原因发现code-server未正确安装，进入容器内部手动安装。
@@ -188,8 +170,7 @@ docker logs id
 ```shell
 rpm -i /home/code/code-server-4.16.1-amd64.rpm
 which code-server
-```
-
+```text
 能看到code-server命令说明安装成功。
 
 同时发现sshd服务未在容器启动时启动，需要封装脚本，并在.bashrc中执行。
@@ -202,8 +183,7 @@ which code-server
 /usr/sbin/sshd
 export  PASSWORD="code"
 /usr/bin/code-server --bind-addr=0.0.0.0:8080 >/dev/null 2>&1 &
-```
-
+```text
 将其保存为.start_service.sh,并增加可执行权限。
 
 然后在.bashrc中添加如下内容，保证启动容器时启动。
@@ -213,56 +193,48 @@ export  PASSWORD="code"
 if [ -f /root/.start_service.sh ]; then
         ./root/.start_service.sh
 fi
-```
-
+```text
 然后基于该容器生成最新镜像。
 
 ```shell
 docker commit -a "duanyingshou" -m "add code-server" id dev:v2
-```
-
+```text
 到这里，我们的容器已经制作完成了，已经有了一个基本开发环境，可以将其导出然后到其他地方使用。
 
 ## 导出容器
 
 - 查看容器id
 
-```
+```text
 docker ps -a
-```
-
+```text
 - 根据容器id导出容器
 
-```
+```text
 docker export ${id} > name.tar
-```
-
+```text
 ## 导入容器
 
-```
+```text
 docker import - name < name.tar
-```
-
+```text
 ## 导出镜像
 
 - 查看镜像id
 
-```
+```text
 docker images
-```
-
+```text
 - 找到镜像id后，将镜像保存
 
-```
+```text
 docker save id > name.tar
-```
-
+```text
 ## 载入镜像
 
-```
+```text
 docker load < name.tar
-```
-
+```text
 ## export 与save的区别
 
 - export导出的镜像文件体积小于save保存的镜像
@@ -283,4 +255,4 @@ docker load < name.tar
 
 ```shell
 docker run -d -p 9000:9000 -v /var/run/docker.sock:/var/run/docker.sock portainer/portainer
-```
+```text

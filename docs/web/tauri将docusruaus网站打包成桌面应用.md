@@ -8,8 +8,7 @@ tauri可以将vue、react等打包成桌面应用
 
 ```shell
 cargo install create-tauri-app
-```
-
+```text
 下载之前需要安装rust。
 
 安装完成后在docusruaus目录下创建tauri项目。
@@ -33,14 +32,12 @@ For Desktop development, run:
 
 For Android development, run:
   yarn tauri android dev
-```
-
+```text
 先编译docusruaus框架代码
 
 ```shell
 yarn build
-```
-
+```text
 编译完成后进入tauri的目录，编辑tauri.conf.json,修改build的内容：
 
 ```json
@@ -49,11 +46,10 @@ yarn build
     "beforeBuildCommand": "",
     "frontendDist": "../../build"
   },
-```
-
+```text
 修改完成后在tauri项目下执行如下命令：
 
 ```shell
 yarn install
 
-```
+```text

@@ -3,7 +3,6 @@
 1. 逻辑解码会过滤掉系统表，不支持系统表进行逻辑解码；
 2. pglogical使用的是用户表，并使用user_catalog_table=true;
 
-
 黎哥，
 目前apply的流程基本跑通了。但是在做的过程中发现使用新增系统表这种方式总感觉比较奇怪，侵入性修改很严重。
 然后后面我又查了下资料和社区的讨论，发现社区之前就预留了写逻辑日志的接口LogLogicalMessage，可以直接利用LogLogicalMessage来写入自定义的wal日志，并且天生就集成到了逻辑复制的流程里。有时间你可以看看。
@@ -17,13 +16,11 @@
 
 ### 结构化DDL
 
-
 “结构化 DDL”本质上不是把
 
 ```sql
 ALTER TABLE t ADD COLUMN c int;
-```
-
+```text
 当成一段字符串发出去，而是把它拆成**带语义的结构化对象**，让订阅端按“对象类型 + 操作类型 + 参数”去理解和执行。社区这些年讨论的方向，整体上就是：
 
 > **捕获 DDL → 规范化/去解析成结构化表示 → 写入专用逻辑日志/WAL → 解码发送 → 订阅端按结构化语义 apply**
@@ -132,8 +129,7 @@ DDLRecord
       - cascade/restrict
   - mapping_hints
   - original_sql      (可选，仅审计/报错用)
-```
-
+```text
 其中最关键的是 `subcommands[]`。因为很多真正麻烦的 DDL，尤其是 `ALTER TABLE`，本身就是一个“容器命令”，里面可能混着：
 
 * add column
@@ -250,11 +246,9 @@ DDLRecord
 
 > **不是复制原始 SQL，而是在发布端把 DDL 解析/去解析成可过滤、可映射、可重建的结构化命令，再通过专用 DDL 逻辑日志/WAL 发送给订阅端，由订阅端按语义重建并执行。**
 
-
 [1]: https://wiki.postgresql.org/wiki/Logical_replication_of_DDLs "Logical replication of DDLs - PostgreSQL wiki"
 [2]: https://www.postgresql.org/message-id/OS0PR01MB571684CBF660D05B63B4412C94AB9%40OS0PR01MB5716.jpnprd01.prod.outlook.com "PostgreSQL: RE: Support logical replication of DDLs"
 [3]: https://www.postgresql.org/message-id/CAHut%2BPv9vPbUQc0fzrKmDkKOsS_bj-hup_E%2BsLHNEX%2B6F%2BSY5Q%40mail.gmail.com "PostgreSQL: Re: Support logical replication of DDLs"
-
 
 ### catalog-based replication
 
@@ -263,6 +257,5 @@ DDLRecord
 pg_class
 pg_attribute
 pg_type
-
 
 检查apply worker中`apply_publication_sync_message_q`的实现逻辑来定位DDL未执行的原因

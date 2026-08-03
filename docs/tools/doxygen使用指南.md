@@ -128,14 +128,12 @@
 
 **********************************************************************************
 */
-```
-
+```text
 项目注释也可以使用markdown文件作为主页，通过指定md文件路径来配置。
 
 ```shell
 USE_MDFILE_AS_MAINPAGE = doc/readme.md
-```
-
+```text
 ### 文件注释
 
 ```c
@@ -148,16 +146,14 @@ USE_MDFILE_AS_MAINPAGE = doc/readme.md
  * @version 版本号
  * @date 年-月-日
  */
-```
-
+```text
 #### 全局常量/变量/宏定义/结构体定义/类定义的注释
 
 ```c
 /// 缓存大小
 #define BUFSIZ 1024*4
 #define BUFSIZ 1024*4 ///< 缓存大小
-```
-
+```text
 #### 函数注释
 
 ```c
@@ -168,8 +164,7 @@ USE_MDFILE_AS_MAINPAGE = doc/readme.md
  * @param 形参 参数说明
  * @return 返回值说明
 */
-```
-
+```text
 ## reference
 
 1. https://blog.srefan.com/2020/05/doxygen-generate-docs/

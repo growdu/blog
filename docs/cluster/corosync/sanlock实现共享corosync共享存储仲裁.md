@@ -66,4 +66,3 @@ Sanlock使用的Disk Paxos算法和Delta Lease算法理解起来比较困难，�
 1. https://read01.com/0zdOno.html
 2. https://cloud.tencent.com/developer/article/1651000
 
-

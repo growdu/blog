@@ -91,16 +91,16 @@ RFC 1191 第6章“Host Implementation”讲述PMTU Discovery对终端的建议�
 
 Linux Kernel的实现参考：[man 7 ip](http://linux.die.net/man/7/ip) 中关于`IP_MTU_DISCOVER`的描述。
 
-IP\_MTU\_DISCOVER (since Linux 2.2)  
-Set or receive the Path MTU Discovery setting for a socket. **When enabled, Linux will perform Path MTU Discovery as defined in RFC 1191 on SOCK\_STREAM sockets. For non-SOCK\_STREAM sockets, IP\_PMTUDISC\_DO forces the don’t-fragment flag to be set on all outgoing packets. It is the user’s responsibility to packetize the data in MTU-sized chunks and to do the retransmits if necessary. The kernel will reject (with EMSGSIZE) datagrams that are bigger than the known path MTU. IP\_PMTUDISC\_WANT will fragment a datagram if needed according to the path MTU, or will set the don’t-fragment flag otherwise.**  
-The system-wide default can be toggled between IP\_PMTUDISC\_WANT and IP\_PMTUDISC\_DONT by writing (respectively, zero and nonzero values) to the /proc/sys/net/ipv4/ip\_no\_pmtu\_disc file.
+IP_MTU_DISCOVER (since Linux 2.2)  
+Set or receive the Path MTU Discovery setting for a socket. **When enabled, Linux will perform Path MTU Discovery as defined in RFC 1191 on SOCK_STREAM sockets. For non-SOCK_STREAM sockets, IP_PMTUDISC_DO forces the don’t-fragment flag to be set on all outgoing packets. It is the user’s responsibility to packetize the data in MTU-sized chunks and to do the retransmits if necessary. The kernel will reject (with EMSGSIZE) datagrams that are bigger than the known path MTU. IP_PMTUDISC_WANT will fragment a datagram if needed according to the path MTU, or will set the don’t-fragment flag otherwise.**  
+The system-wide default can be toggled between IP_PMTUDISC_WANT and IP_PMTUDISC_DONT by writing (respectively, zero and nonzero values) to the /proc/sys/net/ipv4/ip_no_pmtu_disc file.
 
-**When PMTU discovery is enabled, the kernel automatically keeps track of the path MTU per destination host.** When it is connected to a specific peer with connect(2), the currently known path MTU can be retrieved conveniently using the IP\_MTU socket option (e.g., after an EMSGSIZE error occurred). The path MTU may change over time. For connectionless sockets with many destinations, the new MTU for a given destination can also be accessed using the error queue (see IP\_RECVERR). A new error will be queued for every incoming MTU update.
+**When PMTU discovery is enabled, the kernel automatically keeps track of the path MTU per destination host.** When it is connected to a specific peer with connect(2), the currently known path MTU can be retrieved conveniently using the IP_MTU socket option (e.g., after an EMSGSIZE error occurred). The path MTU may change over time. For connectionless sockets with many destinations, the new MTU for a given destination can also be accessed using the error queue (see IP_RECVERR). A new error will be queued for every incoming MTU update.
 
 While MTU discovery is in progress, initial packets from datagram sockets may be dropped. Applications using UDP should be aware of this and not take it into account for their packet retransmit strategy.
 
 To bootstrap the path MTU discovery process on unconnected sockets, it is possible to start with a big datagram size (up to 64K-headers bytes long) and let it shrink by updates of the path MTU.
 
-To get an initial estimate of the path MTU, connect a datagram socket to the destination address using connect(2) and retrieve the MTU by calling getsockopt(2) with the IP\_MTU option.
+To get an initial estimate of the path MTU, connect a datagram socket to the destination address using connect(2) and retrieve the MTU by calling getsockopt(2) with the IP_MTU option.
 
-It is possible to implement RFC 4821 MTU probing with SOCK\_DGRAM or SOCK\_RAW sockets by setting a value of IP\_PMTUDISC\_PROBE (available since Linux 2.6.22). This is also particularly useful for diagnostic tools such as tracepath(8) that wish to deliberately send probe packets larger than the observed Path MTU.
+It is possible to implement RFC 4821 MTU probing with SOCK_DGRAM or SOCK_RAW sockets by setting a value of IP_PMTUDISC_PROBE (available since Linux 2.6.22). This is also particularly useful for diagnostic tools such as tracepath(8) that wish to deliberately send probe packets larger than the observed Path MTU.

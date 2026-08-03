@@ -65,8 +65,7 @@
 int pthread_rwlock_init(pthread_rwlock_t *restrict rwlock, const
     pthread_rwlockattr_t *restrict attr);
 int pthread_rwlock_destroy(pthread_rwlock_t *rwlock);
-```
-
+```text
 ```c
 // 成功则返回0,出错则返回错误编号.这3个函数分别实现获取读锁,获取写锁和释放锁的操作
 int pthread_rwlock_rdlock(pthread_rwlock_t *rwlock);
@@ -75,8 +74,7 @@ int pthread_rwlock_unlock(pthread_rwlock_t *rwlock);
 // 非阻塞接口
 int pthread_rwlock_tryrdlock(pthread_rwlock_t *rwlock);
 int pthread_rwlock_trywrlock(pthread_rwlock_t *rwlock);
-```
-
+```text
 ## 自旋锁（spin_lock）
 
 > 特点：轮询忙等待。
@@ -103,8 +101,7 @@ int pthread_cond_timewait(pthread_cond_t *cond,pthread_mutex *mutex,const
 int pthread_cond_destroy(pthread_cond_t *cond);
 int pthread_cond_signal(pthread_cond_t *cond);
 int pthread_cond_broadcast(pthread_cond_t *cond);  //解除所有线程的阻塞
-```
-
+```text
 ## 信号量
 
 信号量、共享内存，以及消息队列等System V IPC三剑客主要关注进程间通信；
@@ -152,8 +149,6 @@ int pthread_cond_broadcast(pthread_cond_t *cond);  //解除所有线程的阻塞
 >————————————————
 >版权声明：本文为CSDN博主「佰慕哒Chow」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
 >原文链接：https://blog.csdn.net/qq_18144747/article/details/86671284
-
-
 
 # reference
 

@@ -17,16 +17,14 @@ postgres主进程启动后，会监听配置的地址，等待新的连接到来
 ```mermaid
 graph TB
 ServerLoop-->|使用select监听socket并等待新连接到来|ConnCreate-->|接受连接后转到后台运行|BackendStartup-->|创建新进程来处理客户端的请求|fork_process-->BackendInitialize-->|读取启动报文并判断是不是walreceiver连接|ProcessStartupPacket
-```
-
+```text
 ```c
 if (strcmp(valptr, "database") == 0)
 {
     am_walsender = true;
     am_db_walsender = true;
 }
-```
-
+```text
 当am_walsender设置为true时，就表示postgres创建的这个服务进程为walsender。walsender进程与普通的来自客户端的连接进程没有什么区别，只是walsender专门做流复制这件事，同时它接受处理的是来自walreceiver的请求。
 
 ### 全局变量
@@ -42,8 +40,7 @@ extern PGDLLIMPORT bool wake_wal_senders;
 extern PGDLLIMPORT int max_wal_senders; // 最大walsender进程数
 extern PGDLLIMPORT int wal_sender_timeout; // wal消息发送超时时间
 extern PGDLLIMPORT bool log_replication_commands;
-```
-
+```text
 - am_walsender和am_db_walsender
   
   解析启动参数replication的值进行赋值，如果replication的值是database或者true就设置这两个值为true。
@@ -88,8 +85,7 @@ extern void WalSndInitStopping(void);
 extern void WalSndWaitStopping(void);
 extern void HandleWalSndInitStopping(void);
 extern void WalSndRqstFileReload(void);
-```
-
+```text
 - InitWalSender
   
   初始化一个walSnd。当am_walsender为true的时候，porstgres启动的时候就会初始化一个walSnd。
@@ -97,8 +93,7 @@ extern void WalSndRqstFileReload(void);
 ```mermaid
 graph TB
 InitWalSender-->|初始化walSnd|InitWalSenderSlot-->MarkPostmasterChildWalSender-->SendPostmasterSignal-->MemoryContextAllocZero
-```
-
+```text
   初始化slot的时候会将全局的WalSndCtl的walsnds初始化，walsnds是一个变长数组，会根据max_wal_senders进行内存分配和初始化。每个创建的walSnd都会保存到全局的WalSndCtl的数组中。
 
   根据walSnd的pid是否为0来判断是否需要初始化，每个初始化的walSnd的状态为WALSNDSTATE_STARTUP。
@@ -118,8 +113,7 @@ extern void replication_yyerror(const char *str) pg_attribute_noreturn();
 extern void replication_scanner_init(const char *query_string);
 extern void replication_scanner_finish(void);
 extern bool replication_scanner_is_replication_command(void);
-```
-
+```text
 - WalSndSetState
   
   用来更改walSnd的状态。
@@ -137,8 +131,7 @@ typedef enum WalSndState
     WALSNDSTATE_STREAMING,
     WALSNDSTATE_STOPPING
 } WalSndState;
-```
-
+```text
 - walsender 结构
 
 一个进程对应一个walSnd结构。
@@ -187,8 +180,7 @@ typedef struct WalSnd
      */
     TimestampTz replyTime;
 } WalSnd;
-```
-
+```text
 - WalSndCtlData
 
 ```c
@@ -215,8 +207,7 @@ typedef struct
 
     WalSnd        walsnds[FLEXIBLE_ARRAY_MEMBER];
 } WalSndCtlData;
-```
-
+```text
 - NodeTag
 
 ```c
@@ -234,8 +225,7 @@ typedef enum NodeTag {
     T_TimeLineHistoryCmd,
     ......
 } NodeTag;
-```
-
+```text
 - XLogReaderState
   
   ```c
@@ -308,8 +298,7 @@ postgresmain会监听socket，并接受对端的请求。
 graph TB
 PostgresMain-->ReadCommand-->SocketBackend-->pq_getbyte-->pq_recvbuf-->secure_read-->secure_raw_read-->recv
 pq_getbyte-->|firstChar=='Q'|exec_replication_command
-```
-
+```text
 ### 数据发送
 
   数据通过socket接口进行发送，最终数据出口为操作系统提供的socket接口的send函数。
@@ -324,8 +313,7 @@ typedef struct
     int            (*putmessage) (char msgtype, const char *s, size_t len);
     void        (*putmessage_noblock) (char msgtype, const char *s, size_t len);
 } PQcommMethods;
-```
-
+```text
 ```c
 static const PQcommMethods PqCommSocketMethods = {
     socket_comm_reset,
@@ -335,15 +323,13 @@ static const PQcommMethods PqCommSocketMethods = {
     socket_putmessage,
     socket_putmessage_noblock
 };
-```
-
+```text
 其执行流程如下：
 
 ```mermaid
 graph TB
 XLogSendPhysical-->pq_putmessage_noblock-->socket_putmessage_noblock-->socket_putmessage-->internal_putbytes-->internal_flush-->secure_write-->secure_raw_write-->send
-```
-
+```text
 ## 建连后
 
 ## 基本流程
@@ -356,15 +342,13 @@ XLogSendPhysical-->pq_putmessage_noblock-->socket_putmessage_noblock-->socket_pu
 graph TB
 WalSndLoop-->|接收报文|ProcessRepliesIfAny-->|判断需要发送报文|send_data-->|检查心跳是否超时|WalSndCheckTimeOut-->|未超时检查是否需要发送心跳|WalSndKeepaliveIfNecessary-->|上次执行时间当当前时间间隔已超过设置的一半超时时间则发送keepalive报文|WalSndKeepalive-->loop
 WalSndCheckTimeOut-->|超时关闭walSender|WalSndShutdown
-```
-
+```text
 其中walsender收包的流程如下：
 
 ```mermaid
 graph TB
 ProcessRepliesIfAny-->pq_getbyte_if_available-->secure_read-->secure_raw_read-->recv
-```
-
+```text
 需要特别注意的是recv分为阻塞IO和非阻塞IO，pg使用的是非阻塞IO，收包不会在这里卡住。
 
 ### 心跳
@@ -380,20 +364,17 @@ static TimestampTz last_processing = 0;
  * standby. Set to 0 if wal_sender_timeout doesn't need to be active.
  */
 static TimestampTz last_reply_timestamp = 0;
-```
-
+```text
 其中last_reply_timestamp会在进入循环的时候获取当前时间戳，
 
 ```c
 last_reply_timestamp = GetCurrentTimestamp();
-```
-
+```text
 在每次sender循环中，都会先检查sender有没有收到receiver发过来的报文，此时在收包前会记下当前的时间戳，并赋值给last_processing。
 
 ```c
 last_processing = GetCurrentTimestamp();
-```
-
+```text
 此时会适用recv进行收包，若收到报文类型为'd'和‘c’的报文时，会将是否收到报文的状态量received设置为true。并且若receivede为true，则在收包完成后更新last_reply_timestamp。
 
 ```c
@@ -405,8 +386,7 @@ last_processing = GetCurrentTimestamp();
         last_reply_timestamp = last_processing;
         waiting_for_ping_response = false;
     }
-```
-
+```text
 当获取到last_processing和last_reply_timestamp时间后，再结合配置wal_send_timeout即可计算sender是否需要关闭，以及计算sender的keepalive发送的时机。
 
 - 是否关闭sender
@@ -507,8 +487,7 @@ walsender收到receiver的消息后，通过消息的第一个字符来处理对
 ```mermaid
 graph TB
 XLogSendPhysical-->GetStandbyFlushRecPtr-->GetWalRcvFlushRecPtr-->GetXLogReplayRecPtr-->WALRead-->pg_read-->read
-```
-
+```text
 先找到未同步的起始指针
 
 ```c
@@ -520,4 +499,4 @@ XLogSendPhysical-->GetStandbyFlushRecPtr-->GetWalRcvFlushRecPtr-->GetXLogReplayR
     result = replayPtr;
     if (receiveTLI == replayTLI && receivePtr > replayPtr)
         result = receivePtr;
-```
+```text

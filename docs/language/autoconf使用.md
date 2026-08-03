@@ -28,8 +28,7 @@
 
 ```shell
 aclocal; autoheader;autoconf; automake --add-missing;
-```
-
+```text
 ## 使用
 
 在test目录下有一个main.c文件，其内容如下：
@@ -41,11 +40,10 @@ ha@ha-virtual-machine:~/test$ cat main.c
 #include <stdio.h>
 
 int main(){
-        printf("This is src\n");
+        printf("This is srcn");
         return 0;
 }
-```
-
+```text
 我们使用autoconf来对其进行编译构建。
 
 1. 使用autoscan扫描当前目录，生成configure.scan文件；可以看到当前目录结构如下：

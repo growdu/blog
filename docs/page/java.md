@@ -32,7 +32,6 @@
 2.Java的package本身没有子包的概念，所有package都是并列的关系，没有谁包含谁的问题。C++/C#的namespace方案则不然，一个namespace可以有自己的sub-namespace,我们不妨将namespace也称为package,那么C++/C#的package之间就可能存在包与子包的关系。
 3.Java中使用import语句而C#中使用using namespace语句.
 
-
 ## java instanceof
 
 java 中的instanceof 运算符是用来在运行时指出对象是否是特定类的一个实例。instanceof通过返回一个布尔值来指出，这个对象是否是这个特定类或者是它的子类的一个实例。

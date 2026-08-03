@@ -39,8 +39,7 @@ BH: Set bh-worker0 affinity with Core[15]
 2021/07/06 UTC 04:45:10.876997 cuup[1276] ERROR 0 sendto() failed 2 (No such file or directory)
 ./vpp[1276]: CRITICAL 0 odsServer.cc:120 sendto() failed 2 (No such file or directory)
 cuup_timer is successful!
-```
-
+```text
 运行成功，但存在如下报错：
 
 1. BH Warn: cpuid[27] is too large, should smaller than 16 on this system!
@@ -63,8 +62,7 @@ nxp板子默认配置了四个尺寸的大页，但vpp运行加载dpdk插件时�
 
 ```c
 #define MAX_HUGEPAGE_SIZES 3  /**< support up to 3 page sizes */
-```
-
+```text
 将上述代码中的3修改为大于3的值。
 
 ### vpp配置
@@ -239,7 +237,6 @@ nxp板子默认配置了四个尺寸的大页，但vpp运行加载dpdk插件时�
     set int mtu 1500 TenGigabitEthernet0
     ```
 
-
   <font color="red">使用fastup时（加载fastgtpu插件），需要注意ip应在同一网络中以保证联通。</font>
 
   如使用pktgen进行报文回放时，因报文中源ip为192.168.9.243，目的ip为192.168.8.25，为保证网络联通，在vpp侧设置IP时应将子网掩码设置为16。
@@ -251,8 +248,7 @@ nxp板子默认配置了四个尺寸的大页，但vpp运行加载dpdk插件时�
 trace add dpdk-input 1
 # 展示表格
 show trace
-```
-
+```text
 ```shell
 00:02:51:352581: dpdk-input
   TenGigabitEthernet0 rx queue 0
@@ -305,8 +301,7 @@ show trace
       length 1452, checksum 0x991a
 00:02:51:352641: error-drop
   ip4-input: ip4 source lookup miss
-```
-
+```text
 ```shell
 vpp -localExtGnbNgUpAddr 192.168.8.25  -pdcpCoreIpAddress 192.0.2.2 -cellNumber 1 -l2IpAddress1 192.0.2.10 -loglevel 6 -log_max_num 10 -c  /etc/vpp/startup.conf
 
@@ -364,8 +359,7 @@ Packet 1
       length 1452, checksum 0x991a
 00:00:50:840561: error-drop
   ip4-input: ip4 source lookup miss
-```
-
+```text
 #### 抓包
 
 ```shell
@@ -379,8 +373,7 @@ pcap rx trace status
 pcap rx trace on max 1000 intfc TenGigabitEthernet0 file vppTest.pcap
 pcap rx trace status
 pcap rx trace off
-```
-
+```text
 #### 启动时丢包
 
 ```shell
@@ -405,8 +398,7 @@ pcap rx trace off
       cgr reject frames                                  126
       cgr reject bytes                                187236
 
-```
-
+```text
 丢包在rx-errors，进一步定位丢包在dpdk的ierror是。
 
 - 使用dpdk进行转发无丢包
@@ -431,8 +423,7 @@ dev default {
                 ## to number of worker threads or 1 if no workers treads
                 num-tx-queues 1
 }
-```
-
+```text
 ##### 无回调
 
 - 1g线速1024大小不丢包
@@ -455,8 +446,7 @@ TenGigabitEthernet0               1      up          1500/0/0/0     rx packets  
                                                                     rx-miss                  1672902
 local0                            0     down          0/0/0/0
 
-```
-
+```text
 rx-miss表示网卡收到了包，表示rte_rx_queue已经塞满了数据包，所以该包被丢失。此时该包存在于物理网卡的RX FIFO中，但是不会存在于内存中的rte_rx_queue中。
 
 rx-miss表示从网卡到内存写入数据包时的丢包个数，因此需要从以下2个方面进行调试：

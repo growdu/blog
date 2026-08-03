@@ -1,9 +1,8 @@
 1. 
-```
+```text
 设置存储临时统计数据的目录。这可以是一个相对于数据目录的路径或一个绝对路径。默认值是pg_stat_tmp。在一个基于 RAM 的文件系统上指明这个参数将降低物理 I/O 需求，并且提高性能。这个参数只能在postgresql.conf文件中或在服务器命令行上设置。
 对超大容量数据库很有用；stats 临时目录可以设置为 RAMdisk 或其他高速资源（以可能丢失一些统计信息为代价），因为该文件每秒更新数百次。
-```
-
+```text
 2.  
 
    ```
@@ -51,15 +50,14 @@
 
 6. 
 
-```
+```text
 1. 可以通过pg_stat_activity查看正在执行的SQL；
 2.属于实时统计信息；
 3.使用PgBackendStatus数组存储
-```
-
+```text
 7. 
 
-```
+```text
 1.修改数据库配置，打开pg_stat_statements,重启数据库
 shared_preload_libraries = 'liboracle_parser, pg_stats_statements'
 pg_stat_statements.track_utility = on
@@ -70,14 +68,14 @@ pg_stat_statements.save = on
 CREATE EXTENSION pg_stat_statements;
 3.在数据库shell中根据相关条件查询pg_stat_statements视图，获取执行次数和执行时间
 
-```
+```text
 8. 
 
-```
+```text
 1.无；
 2.寻求帮助的方法有：
  a. 求助公司相关模块的同事；
  b. 上网查阅资料，包括pg官网；
  c.阅读数据库手册；
  d.阅读开发者文档和源码
-```
+```text

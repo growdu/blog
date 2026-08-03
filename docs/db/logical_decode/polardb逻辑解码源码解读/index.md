@@ -28,7 +28,6 @@
 - MVCC机制保证元组级别读写隔离，但文件操作（创建、删除）立即可见
 - DDL操作涉及文件变更，需要集群级同步
 
-
 PolarDB采用AccessExclusiveLock（DDL锁） 实现RW/RO节点间的DDL操作同步：
 
 ```c
@@ -46,8 +45,7 @@ PolarDB采用AccessExclusiveLock（DDL锁） 实现RW/RO节点间的DDL操作同
       if (polar_enable_sync_ddl_legacy)
           polar_wait_ddl_lock();
   }
-```
-
+```text
 同步流程：
 
 1. RW获取本地DDL锁并写入WAL（polar_ddl_lock_lsn）
@@ -62,7 +60,6 @@ PolarDB 中 DDL 会写入 WAL，但主要用于共享存储架构下的节点同
 
 要实现到MySQL 的 DDL 同步需要借助事件触发器、自定义逻辑解码插件或第三方 CDC 工具。比如pglogical。
 
-
 待处理问题：
 
 1. DDL是如何保存的
@@ -74,8 +71,7 @@ PolarDB 中 DDL 会写入 WAL，但主要用于共享存储架构下的节点同
 关键函数：
 
 ```c
-```
-
+```text
 执行流程
 
 ```shell
@@ -88,6 +84,5 @@ EventTriggerDDLCommandStart
 执行DDL
    ↓
 EventTriggerDDLCommandEnd
-```
-
+```text
 ![alt text](./image-4.png)

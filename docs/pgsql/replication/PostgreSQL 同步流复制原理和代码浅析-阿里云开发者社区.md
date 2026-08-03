@@ -14,7 +14,7 @@ bgwriter是负责将shared buffer的脏页持久化到持久化设备的进程�
 同步流复制，即保证standby节点和本地节点的日志双双落盘。  
 ![1](https://oss-cn-hangzhou.aliyuncs.com/yqfiles/171462a9e5157e2d00f815b8aa3f0bda6ef719ac.png "1")  
 PostgreSQL使用另一组全局变量，记录同步流复制节点已经接收到的XLOG LSN，以及已经持久化的XLOG LSN。  
-用户在发起提交请求后，backend process除了要判断本地wal有没有持久化，同时还需要判断同步流复制节点的XLOG有没有接收到或持久化（通过synchronous\_commit参数控制）。  
+用户在发起提交请求后，backend process除了要判断本地wal有没有持久化，同时还需要判断同步流复制节点的XLOG有没有接收到或持久化（通过synchronous_commit参数控制）。  
 如果同步流复制节点的XLOG还没有接收或持久化，backend process会进入等待状态。
 
 ### 数据库同步复制代码浅析
@@ -23,7 +23,7 @@ PostgreSQL使用另一组全局变量，记录同步流复制节点已经接收�
 CommitTransaction @ src/backend/access/transam/xact.c  
 RecordTransactionCommit @ src/backend/access/transam/xact.c
 
-```
+```text
         /*
          * If we didn't create XLOG entries, we're done here; otherwise we
          * should trigger flushing those entries the same as a commit record
@@ -35,11 +35,10 @@ RecordTransactionCommit @ src/backend/access/transam/xact.c
 
     if (wrote_xlog && markXidCommitted)  // 如果产生了redo, 等待同步流复制
         SyncRepWaitForLSN(XactLastRecEnd);
-```
-
+```text
 SyncRepWaitForLSN @ src/backend/replication/syncrep.c
 
-```
+```text
 /*
  * Wait for synchronous replication, if requested by user.
  *
@@ -139,15 +138,14 @@ SyncRepWaitForLSN(XLogRecPtr XactCommitLSN)
          * latch, so no need for timeout.
          */
         WaitLatch(&MyProc->procLatch, WL_LATCH_SET | WL_POSTMASTER_DEATH, -1);
-```
-
+```text
 注意用户进入等待状态后，只有主动cancel , 或者kill(terminate) , 或者主进程die才能退出无限的等待状态。后面会讲到如何将同步级别降级为异步。
 
 前面提到了，用户端需要等待LATCH的释放信号。  
 那么谁来给它这个信号了，是wal sender进程，源码和解释如下 :  
 src/backend/replication/walsender.c
 
-```
+```text
 StartReplication
 
 WalSndLoop
@@ -159,11 +157,10 @@ ProcessStandbyMessage
 ProcessStandbyReplyMessage
     if (!am_cascading_walsender)  // 非级联流复制节点，那么它将调用SyncRepReleaseWaiters修改backend process等待队列中它们对应的 latch。    
         SyncRepReleaseWaiters();
-```
-
+```text
 SyncRepReleaseWaiters @ src/backend/replication/syncrep.c
 
-```
+```text
 /*
  * Update the LSNs on each queue based upon our latest state. This
  * implements a simple policy of first-valid-standby-releases-waiter.
@@ -191,11 +188,10 @@ SyncRepReleaseWaiters(void)
         numflush = SyncRepWakeQueue(false, SYNC_REP_WAIT_FLUSH);
     }
 ...
-```
-
+```text
 SyncRepWakeQueue @ src/backend/replication/syncrep.c
 
-```
+```text
 /*
  * Walk the specified queue from head.  Set the state of any backends that
  * need to be woken, remove them from the queue, and then wake them.
@@ -232,22 +228,20 @@ SyncRepWakeQueue(bool all, int mode)
          */
         thisproc->syncRepState = SYNC_REP_WAIT_COMPLETE;  // 满足条件时，改成SYNC_REP_WAIT_COMPLETE  
 ....
-```
-
+```text
 ### 如何设置事务可靠性级别
 
 PostgreSQL 支持在会话中设置事务的可靠性级别。  
 off 表示commit 时不需要等待wal 持久化。  
 local 表示commit 是只需要等待本地数据库的wal 持久化。  
-remote\_write 表示commit 需要等待本地数据库的wal 持久化，同时需要等待sync standby节点wal write buffer完成(不需要持久化)。  
+remote_write 表示commit 需要等待本地数据库的wal 持久化，同时需要等待sync standby节点wal write buffer完成(不需要持久化)。  
 on 表示commit 需要等待本地数据库的wal 持久化，同时需要等待sync standby节点wal持久化。  
-提醒一点， synchronous\_commit 的任何一种设置，都不影响wal日志持久化必须先于shared buffer脏数据持久化。 所以不管你怎么设置，都不好影响数据的一致性。
+提醒一点， synchronous_commit 的任何一种设置，都不影响wal日志持久化必须先于shared buffer脏数据持久化。 所以不管你怎么设置，都不好影响数据的一致性。
 
-```
+```text
 synchronous_commit = off                # synchronization level;
                                         # off, local, remote_write, or on
-```
-
+```text
 ### 如何实现同步复制降级
 
 从前面的代码解析可以得知，如果 backend process 进入了等待循环，只接受几种信号降级。 并且降级后会告警，表示本地wal已持久化，但是sync standby节点不确定wal有没有持久化。  
@@ -256,21 +250,19 @@ synchronous_commit = off                # synchronization level;
 方法1.  
 修改配置文件并重置
 
-```
+```text
 $ vi postgresql.conf  
 synchronous_commit = local
 $ pg_ctl reload
-```
-
+```text
 然后cancel 所有query .
 
-```
+```text
 postgres=# select pg_cancel_backend(pid) from pg_stat_activity where pid<>pg_backend_pid();
-```
-
+```text
 收到这样的信号，表示事务成功提交，同时表示WAL不知道有没有同步到sync standby。
 
-```
+```text
 WARNING:  canceling wait for synchronous replication due to user request
 DETAIL:  The transaction has already committed locally, but might not have been replicated to the standby.
 COMMIT
@@ -279,9 +271,8 @@ postgres=# show synchronous_commit ;
 --------------------
  off
 (1 row)
-```
-
-同时它会读到全局变量synchronous\_commit 已经是 local了。  
+```text
+同时它会读到全局变量synchronous_commit 已经是 local了。  
 这样就完成了降级的动作。
 
 方法2.  
@@ -289,7 +280,7 @@ postgres=# show synchronous_commit ;
 可以通过修改代码的方式，做到更人性化。  
 SyncRepWaitForLSN for循环中，加一个判断，如果发现全局变量sync commit变成local, off了，则告警并退出。这样就不需要人为的去cancel query了.
 
-```
+```text
 WARNING:  canceling wait for synchronous replication due to user request
 DETAIL:  The transaction has already committed locally, but might not have been replicated to the standby.
-```
+```text

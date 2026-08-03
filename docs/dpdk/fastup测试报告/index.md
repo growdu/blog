@@ -6,8 +6,7 @@
 
 ```shell
 fsl-qoriq-glibc-x86_64-fsl-toolchain-aarch64-toolchain-2.5.sh -d /opt/cross
-```
-
+```text
 若/opt/cross已存在该交叉编译工具无需安装。
 
 注：暂时只能以该交叉工具编译vpp，且openssl、dpdk、vpp都需要以该工具链编译。
@@ -26,8 +25,7 @@ export CC=aarch64-fsl-linux-gcc
 make depend
 make CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC" LD="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-ld" AR="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-ar rv " EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic' -j 8
 make install
-```
-
+```text
 1. 编译时打包/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-ar失败
 
    解决方法添加rv参数
@@ -43,8 +41,7 @@ make install
 export CROSS=/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-
 make config T=arm64-dpaa2-linuxapp-gcc CROSS=aarch64-fsl-linux- CROSS_COMPILE="aarch64-fsl-linux-" CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC -g"  EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic'
 make T=arm64-dpaa2-linuxapp-gcc -j 4 CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC" EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic' CONFIG_RTE_KNI_KMOD=n CONFIG_RTE_EAL_IGB_UIO=n install -j 8
-```
-
+```text
 - vpp
 
 修改vpp下的toolchain.cmake的20和21行如下：
@@ -52,8 +49,7 @@ make T=arm64-dpaa2-linuxapp-gcc -j 4 CC="/opt/cross/sysroots/x86_64-fslsdk-linux
 ```shell
 set(CMAKE_C_COMPILER ${toolchain}/usr/bin/$ENV{CROSS_PREFIX}/$ENV{CROSS_PREFIX}-gcc)
 set(CMAKE_CXX_COMPILER ${toolchain}/usr/bin/$ENV{CROSS_PREFIX}/$ENV{CROSS_PREFIX}-g++)
-```
-
+```text
 ```shell
 #编译vpp
 export PLATFORM=dpaa
@@ -67,8 +63,7 @@ cd build-root
 make distclean
 #TAG可以使用dpaa_debug，编译时不会优化，方便debug，详见 vpp/build-data/platforms/dpaa.mk
 make V=0 PLATFORM=dpaa TAG=dpaa 
-```
-
+```text
 - 打包
 
 ```shell
@@ -76,8 +71,7 @@ cp ~/code/fastup_nxp/src/fastuplibs/libup/lib/arm64/*  ~/code/fastup_nxp/build-r
 cp ~/code/fastup_nxp/src/fastuplibs/libutils/lib/arm64/* ~/code/fastup_nxp/build-root/install-dpaa-aarch64/vpp/lib
 cd ~/code/fastup_nxp/build-root/install-dpaa-aarch64/
 tar zcvf ~/package/vpp_arm64.tar.gz vpp
-```
-
+```text
 ## 配置
 
 - dpaa2
@@ -96,15 +90,13 @@ export DPDMAI_COUNT=2
 
 ./vpp/dpaa2/dynamic_dpl.sh dpmac.4
 export DPRC=dprc.2
-```
-
+```text
 - hugepage
 
 ```shell
 echo 6 > /proc/sys/vm/nr_hugepages
 echo 0 > /proc/sys/vm/swappiness
-```
-
+```text
 - vpp
 
   - startup.conf
@@ -275,8 +267,7 @@ dev default {
                 ## to number of worker threads or 1 if no workers treads
                 num-tx-queues 1
 }
-```
-
+```text
 num-rx-desc大小作用效果如下：
 
 - 无回调

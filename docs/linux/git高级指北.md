@@ -8,22 +8,19 @@
 # 直接将branch2硬合到branch1，有冲突再解决冲突
 git checkout branch1
 git merge branch2
-```
-
+```text
 - 合并分支的某个文件
 
 ```shell
 # 只将branch2的test.c合并到branch1
 git checkout branch1
 git checkout branch2 test.c
-```
-
+```text
 - 比较两个分支的差异
 
 ```shell
 git diff branch1 branch2
-```
-
+```text
 - 比较两个分支的提交
 
 ```shell
@@ -35,16 +32,14 @@ git log branch1..branch2
 git log branch1...branch2
 # 左箭头< 标识branch1，右箭头>标识branch2
 git log --left-right branch1...branch2
-```
-
+```text
 ## 将log格式化输出
 
 ```shell
 git log --date=iso --pretty=format:'"%h","%an","%ad","%s"' >log.csv
 # 将2021-12-12之后的commit输出
 git log --date=iso --pretty=format:'"%h","%an","%ad","%s"' --after="2021-12-12" >log.csv
-```
-
+```text
 logc参数说明如下：
 
 ```shell
@@ -57,8 +52,7 @@ logc参数说明如下：
 --relative-date 　　使用较短的相对时间显示（比如，“2 weeks ago”）。
 --graph 　　显示 ASCII 图形表示的分支合并历史。
 --pretty 　　使用其他格式显示历史提交信息。可用的选项包括 oneline，short，full，fuller 和 format（后跟指定格式）
-```
-
+```text
 格式信息说明如下：
 
 ```shell
@@ -78,8 +72,7 @@ logc参数说明如下：
 %cd 提交日期
 %cr 提交日期，按多久以前的方式显示
 %s 提交说明
-```
-
+```text
 ```shell
 -<n>
 
@@ -108,14 +101,12 @@ logc参数说明如下：
 -S
 
 仅显示添加或删除内容匹配指定字符串的提交
-```
-
+```text
 可以在比较两个分支的同时，将日志格式化输出：
 
 ```shell
 git log --date=iso --pretty=format:'"%h","%an","%ad","%s"' branch1..branch >log.csv
-```
-
+```text
 ## rebase——解决
 
 # reference

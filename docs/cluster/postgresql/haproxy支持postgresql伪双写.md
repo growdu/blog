@@ -46,8 +46,7 @@ backend pg_primary
 
     server pg1 127.0.0.1:5433 check
     server pg2 127.0.0.1:5432 check backup
-```
-
+```text
 上面的haproxy配置对应如下内容：
 
 ---
@@ -67,8 +66,7 @@ global
 defaults
 frontend pg_front
 backend pg_primary
-```
-
+```text
 * **global**：控制 HAProxy 本身运行的资源、日志、最大连接等
 * **defaults**：设置 frontend/backend 的默认 TCP 模式、超时和日志
 * **frontend pg_front**：监听客户端请求端口 5000，把请求送到 pg_primary 后端
@@ -82,8 +80,7 @@ backend pg_primary
 global
     maxconn 5000
     log stdout format raw local0
-```
-
+```text
 | 配置项                            | 作用                                                     |
 | ------------------------------ | ------------------------------------------------------ |
 | `maxconn 5000`                 | HAProxy 最大同时处理的连接数是 5000，超过会排队                         |
@@ -105,8 +102,7 @@ defaults
     timeout client  1m
     timeout server  1m
     log global
-```
-
+```text
 | 配置项                  | 作用                                |
 | -------------------- | --------------------------------- |
 | `mode tcp`           | 默认使用 TCP 层转发（第 4 层），而不是 HTTP 层    |
@@ -128,8 +124,7 @@ defaults
 frontend pg_front
     bind *:5000
     default_backend pg_primary
-```
-
+```text
 | 配置项                          | 作用                                |
 | ---------------------------- | --------------------------------- |
 | `frontend pg_front`          | 定义一个入口（前端）处理客户端连接                 |
@@ -153,8 +148,7 @@ backend pg_primary
 
     server pg1 127.0.0.1:5433 check
     server pg2 127.0.0.1:5432 check backup
-```
-
+```text
 ---
 
 ## **5.1 backend 基础配置**
@@ -181,7 +175,6 @@ balance除了有first模式外，还有如下模式：
 | static-rr      | TCP/HTTP | 静态轮询        | 少用         |
 | random         | TCP/HTTP | 随机          | 高并发、均匀分布   |
 | uri/hdr/cookie | HTTP     | HTTP 内容哈希   | HTTP 会话保持  |
-
 
 ---
 
@@ -225,7 +218,7 @@ balance除了有first模式外，还有如下模式：
 
 ## **7️⃣ 图解（文字版）**
 
-```
+```text
 Client
   |
   | TCP:5000
@@ -237,8 +230,7 @@ HAProxy Frontend pg_front
         |--> pg1 127.0.0.1:5433 (主库, first)
         |
         |--> pg2 127.0.0.1:5432 (备库, backup)
-```
-
+```text
 * `balance first + backup` → HAProxy 优先 pg1
 * TCP-check → 确保节点可以建立连接
 
@@ -255,7 +247,6 @@ HAProxy Frontend pg_front
 ---
 
 ## 健康检查
-
 
 ---
 
@@ -303,8 +294,7 @@ backend pg_primary
     default-server inter 3s rise 2 fall 3
     server pg1 127.0.0.1:5433 check
     server pg2 127.0.0.1:5432 check backup
-```
-
+```text
 | 参数                 | 说明                  |
 | ------------------ | ------------------- |
 | `option tcp-check` | 启用 TCP 健康检查         |
@@ -346,8 +336,7 @@ backend web_app
     default-server inter 5s rise 2 fall 3
     server s1 10.0.0.1:80 check
     server s2 10.0.0.2:80 check
-```
-
+```text
 | 参数                           | 说明                          |
 | ---------------------------- | --------------------------- |
 | `option httpchk GET /health` | 向 `/health` 发起 GET 请求作为健康检查 |
@@ -391,8 +380,7 @@ backend pg_primary
     default-server inter 3s rise 2 fall 3
     server pg1 127.0.0.1:5433 check
     server pg2 127.0.0.1:5432 check backup
-```
-
+```text
 * `check_pg_master.sh` 脚本示例：
 
 ```bash
@@ -410,8 +398,7 @@ if [[ "$STATUS" == "f" ]]; then
 else
     exit 1   # 备库 DOWN
 fi
-```
-
+```text
 **特点**：
 
 * 灵活，可以检测数据库、应用、业务逻辑
@@ -440,7 +427,7 @@ fi
 
 ## **TCP/HTTP 流程**
 
-```
+```text
 HAProxy ---> TCP/HTTP connect/request ---> server
        <--- TCP ACK / HTTP 2xx
          |
@@ -449,19 +436,17 @@ HAProxy ---> TCP/HTTP connect/request ---> server
       rise/fall计数
          |
       更新server状态 UP/DOWN
-```
-
+```text
 ## **External-check 流程**
 
-```
+```text
 HAProxy ---> execute script ---> 脚本逻辑
        <--- exit code (0=UP, !=0=DOWN)
          |
      rise/fall计数
          |
       更新server状态 UP/DOWN
-```
-
+```text
 ---
 
 # **7️⃣ 使用场景对比**
@@ -514,8 +499,7 @@ listen pg_write
     server pg01 127.0.0.1:5432 check
     server pg02 127.0.0.1:5433 check
 
-```
-
+```text
 check_pg_master.sh的内容如下：
 
 ```shell
@@ -545,4 +529,4 @@ else
     echo " - $HOST:$PORT is REPLICA"
     exit 1   # 备库 -> HAProxy DOWN
 fi
-```
+```text

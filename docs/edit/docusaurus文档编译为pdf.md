@@ -29,8 +29,7 @@ sphinx转成pdf时无法识别docusaurus的sidebar.js，因而无法从sidebar.j
 
 ```shell
 pip install --no-index --find-links=. sphinx sphinx-rtd-theme myst-parser sphinx-copybutton sphinxcontrib-mermaid sphinx_material
-```
-
+```text
 ## 如何将sidebar.js转换为index.rst
 
 sidebar.js是一个嵌套递归的数组，内部指定了文档的显示顺序。

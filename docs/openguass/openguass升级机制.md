@@ -4,8 +4,7 @@
 
 ```shell
 cp script/gspylib/etc/conf/cluster_config_template.xml cluster_config.xml
-```
-
+```text
 ```shell
 <?xml version="1.0" encoding="UTF-8"?>
 <ROOT>
@@ -50,8 +49,7 @@ cp script/gspylib/etc/conf/cluster_config_template.xml cluster_config.xml
     </DEVICELIST>
 </ROOT>
 
-```
-
+```text
 1.以root用户登录待安装openGauss的任意主机，并按规划创建存放安装包的目录。
 
 ```shell
@@ -66,10 +64,7 @@ gz
 su - omm
 gs_install -X /opt/software/openGauss/cluster_config.xml
 
-```
-
+```text
 ```shell
 gs_upgradectl -t upgrade -X /data/xml/3node_3c3d_1m2s_etcd.xml
-```
-
-
+```text

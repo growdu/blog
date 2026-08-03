@@ -4,7 +4,6 @@ pglogical 是 PostgreSQL 的拓展模块, 为 PostgreSQL 数据库提供了逻�
 
 逻辑复制是将数据重新执行一次insert、update或delete。pglogical就是逻辑复制的其中一种实现方式。
 
-
 逻辑复制原理图：
 
 ![alt text](./image-6.png)
@@ -19,7 +18,6 @@ pglogical 是一个基于PostgreSQL逻辑解码框架的发布/订阅式逻辑�
   - 版本间升级（PostgreSQL 9.4-18）
   - DDL复制（可选）
   - 冲突检测与解决
-
 
 ```shell
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -39,8 +37,7 @@ pglogical 是一个基于PostgreSQL逻辑解码框架的发布/订阅式逻辑�
                       │   pglogical_output      │
                       │   (输出插件)            │
                       └─────────────────────────┘
-```
-
+```text
 架构模型如下：
 
 ```shell
@@ -58,8 +55,7 @@ apply worker
 SQL apply
    ▼
 table
-```
-
+```text
 ## 编译运行pglogical
 
 要编译pglogical，需要先编译pg。
@@ -71,16 +67,14 @@ git checkout REL_15_STABLE # 以pg15为例
 ./configure --prefix=`pwd`/debug
 make world -j16
 make install-world
-```
-
+```text
 ```shell
 git clone https://github.com/2ndQuadrant/pglogical.git
 cd pglogical
 export PG_CONFIG=/path/pg_config
 make
 make install
-```
-
+```text
 ```shell
 [root@localhost pglogical]# ls /work/cwork/postgresql/debug/lib/pglogical*
 /work/cwork/postgresql/debug/lib/pglogical_output.so
@@ -88,8 +82,7 @@ make install
 [root@localhost pglogical]# ls /work/cwork/postgresql/debug/bin/pglogical*
 /work/cwork/postgresql/debug/bin/pglogical_create_subscriber
 [root@localhost pglogical]# 
-```
-
+```text
 最终主要生成了pglogical_output.so、pglogical.so两个插件，以及pglogical_create_subscriber。
 
 ### pglogical_output.so
@@ -123,8 +116,7 @@ network
    │
    ▼
 subscriber apply worker
-```
-
+```text
 在walsender启动后，当收到启动逻辑复制的语句时回通过LoadOutputPlugin加载插件。
 
 ### pglogical.so
@@ -156,8 +148,7 @@ pglogical.so 是 pglogical 的数据库扩展（extension），负责管理复�
                          |
                          ↓
                        WAL
-```
-
+```text
 | 组件                   | 作用     |
 | -------------------- | ------ |
 | pglogical.so         | 复制管理   |
@@ -165,13 +156,11 @@ pglogical.so 是 pglogical 的数据库扩展（extension），负责管理复�
 | PostgreSQL walsender | 发送数据   |
 | apply worker         | 应用数据   |
 
-
 执行如下sql语句将会加载：
 
 ```sql
 CREATE EXTENSION pglogical;
-```
-
+```text
 ### pglogical_create_subscriber
 
 pglogical_create_subscriber 主要用于 在订阅端（subscriber）初始化并建立复制关系。它是 pglogical 内部用于创建订阅者节点及其复制配置的一部分工具函数 / SQL API（不同版本实现略有差异），核心作用是 把当前数据库注册为一个 subscriber 并建立与 provider 的逻辑复制连接。
@@ -192,9 +181,7 @@ create replication slot
 create subscription metadata
      ↓
 启动 apply worker
-```
-
-
+```text
 # reference
 
 1. https://www.modb.pro/db/11333

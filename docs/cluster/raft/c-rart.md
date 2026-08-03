@@ -43,8 +43,7 @@ raft库采用模块化设计，核心部分实现了完全独立于平台的raft
 sudo add-apt-repository ppa:dqlite/dev
 sudo apt-get update
 sudo apt-get install libraft-dev
-```
-
+```text
 ## Building
 
 从源码编译libraft，需要准备：
@@ -60,8 +59,7 @@ autoreconf -i
 ./configure --enable-example
 
 make
-```
-
+```text
 ## Example
 
 理解如何使用raft库的最好方式是阅读源码目录下的[example server](https://github.com/canonical/raft/blob/master/example/server.c)。
@@ -70,8 +68,7 @@ make
 
 ```bash
 ./example/cluster
-```
-
+```text
 这个命令启动了一个3节点组成的集群，并且会不断的随机停止一个节点并重启。
 
 ## Quick guide
@@ -88,8 +85,7 @@ struct raft_io io;
 uv_loop_init(&loop);
 raft_uv_tcp_init(&transport, &loop);
 raft_uv_init(&io, &loop, dir, &transport);
-```
-
+```text
 2. 定义应用层的`Raft FSM`，实现`raft_fsm`接口
 
 ```c
@@ -101,9 +97,8 @@ struct raft_fsm
   int (*snapshot)(struct raft_fsm *fsm, struct raft_buffer *bufs[], unsigned *n_bufs);
   int (*restore)(struct raft_fsm *fsm, struct raft_buffer *buf);
 }
-```
-```
-
+```text
+```text
 3. 为每个服务节点选择一个唯一的 ID 和地址并初始化 raft 对象：
 
 ```C
@@ -111,8 +106,7 @@ unsigned id = 1;
 const char *address = "192.168.1.1:9999";
 struct raft raft;
 raft_init(&raft, &io, &fsm, id, address);
-```
-
+```text
 4. 如果这是您第一次启动集群，请创建一个包含集群中服务器节点（节点通常只有一个，因为稍后可以使用`raft_add `和`raft_promote `扩展集群）的配置对象，并启动配置：
 
 ```c
@@ -120,15 +114,13 @@ struct raft_configuration configuration;
 raft_configuration_init(&configuration);
 raft_configuration_add(&configuration, 1, "192.168.1.1:9999", true);
 raft_bootstrap(&raft, &configuration);
-```
-
+```text
 5. 启动raft服务器节点
 
 ```c
 raft_start(&raft);
 uv_run(&loop, UV_RUN_DEFAULT);
-```
-
+```text
 6. 异步提交请求将新命令应用到应用程序状态机
 
 ```c
@@ -141,8 +133,7 @@ struct raft_buffer buf;
 buf.len = ...; /* The length of your FSM entry data */
 buf.base = ...; /* Your FSM entry data */
 raft_apply(&raft, &req, &buf, 1, apply_callback);
-```
-
+```text
 7. 添加更多的服务器节点到集群使用```raft_add()``` 和```raft_promote``` APIs
 
 ## Usage Notes

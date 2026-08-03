@@ -19,8 +19,7 @@ typedef struct PGShmemHeader	/* standard header for all Postgres shmem */
 	ino_t		inode;			/* inode number of data directory */
 #endif
 } PGShmemHeader;
-```
-
+```text
 - ShmemIndexEnt
 
 ```c
@@ -32,35 +31,23 @@ typedef struct
 	Size		size;			/* # bytes requested for the structure */
 	Size		allocated_size; /* # bytes actually allocated */
 } ShmemIndexEnt;
-```
-
-
-
+```text
 ## 初始化
 
 - 全局变量
 
 ```c
 static HTAB *ShmemIndex = NULL; /* primary index hashtable for shmem */
-```
-
-
-
+```text
 ```mermaid
 graph TB
 CreateSharedMemoryAndSemaphores-->PGSharedMemoryCreate-->shmget/shmat
-```
-
-
-
+```text
 ## 处理逻辑
 
 ```mermaid
 graph TB
 ShmemInitStruct-->ShmemAlloc-->ShmemAllocRaw
-```
-
-
-
+```text
 ## 对外接口
 

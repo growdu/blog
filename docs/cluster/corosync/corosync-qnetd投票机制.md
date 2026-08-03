@@ -6,8 +6,6 @@
 |        |          |            |
 |        |          |            |
 
-
-
 corosync-qnetd是corosync的第三方仲裁机制，当corosync出现网络分区时，集群内部无法选择出quorate一方时，就会借助corosync-qnetd来进行辅助投票。
 
 - corosync-qnetd作为服务端，会根据各分区连接到qnetd的客户端数目，完成启发式算法的客户端数目等信息来对各分区节点进行投票
@@ -55,10 +53,7 @@ corosync本身提供了votequorum模块和与其配套的接口，支持用户�
 graph TB
 qdevice_advanced_settings_init-->cli_parse-->qdevice_instance_init-->qdevice_heuristics_init-->qdevice_cmap_init-->qdevice_log_init-->a
 b-->qdevice_votequorum_init-->qdevice_ipc_init-->qdevice_model_register_all-->qdevice_instance_configure_from_cmap-->qdevice_votequorum_master_wins
-```
-
-
-
+```text
 > qdevice_heuristics_init会fork出一个进程在本机来执行启发式命令，当所有启发式命令均执行成功后，会将结果发送给qnetd，帮助qnetd进行投票决策。
 
 ### qdevice投票处理
@@ -68,8 +63,7 @@ b-->qdevice_votequorum_init-->qdevice_ipc_init-->qdevice_model_register_all-->qd
 ```mermaid
 graph TB
 qdevice_model_net_init-->qdevice_net_cast_vote_timer_update-->qdevice_net_cast_vote_timer_callback-->qdevice_votequorum_poll
-```
-
+```text
 qdevice获取到qnet的投票后会进行如下处理逻辑：
 
 ```c
@@ -107,8 +101,7 @@ qdevice获取到qnet的投票后会进行如下处理逻辑：
 		instance->cast_vote_timer = NULL;
 		return (0);
 	}
-```
-
+```text
 ### qdevice重要API
 
 >votequorum_qdevice_register 用于注册一个新的仲裁设备。 仲裁设备是向小型集群添加投票的外部方式。 仲裁设备实际上是集群中的一个伪节点，它根据一些外部设备（通常是共享磁盘分区或网络路由器）提供投票。
@@ -120,15 +113,13 @@ qdevice获取到qnet的投票后会进行如下处理逻辑：
 ```c
 #include <corosync/votequorum.h>
 int votequorum_qdevice_register(votequorum_handle_t handle, const char * name);
-```
-
+```text
 >votequorum_qdevice_poll 由仲裁设备子系统（未作为 votequorum 的一部分提供）调用，以告知投票系统仲裁设备是否存在/活动。 如果 cast_vote 为 1，则设备的投票包含在仲裁计算中，否则不包含。 当前的 ring_id 必须设置（votequorum_notification_fn 回调被调用时获取）否则轮询被忽略。 应定期调用此例程，以确保设备状态始终为 votequorum 所知。 如果在（默认）10 秒（或同步阶段为 30 秒）内未调用 votequorum_qdevice_poll，则该设备将被视为已死，并将其投票从集群中删除。 这不会取消注册设备。 默认轮询时间可以通过为正常操作设置 cmap 变量 quorum.device.timeout 或为同步阶段设置 quorum.device.sync_timeout 来更改。
 
 ```c
 #include <corosync/votequorum.h>
 int votequorum_qdevice_poll(votequorum_handle_t handle, const char * name, unsigned int cast_vote, votequorum_ring_id_t ring_id);
-```
-
+```text
 ## corosync-qnetd
 
 ### 主流程
@@ -136,15 +127,13 @@ int votequorum_qdevice_poll(votequorum_handle_t handle, const char * name, unsig
 ```mermaid
 graph TB
 qnetd_advanced_settings_init-->cli_parse-->qnetd_instance_init-->PR_Listen-->qnetd_algorithm_register_all-->qnetd_run_main_loop
-```
-
+```text
 ### 接收消息
 
 ```mermaid
 graph TB
 qnetd_client_net_socket_poll_loop_read_cb-->qnetd_client_net_read-->qnetd_client_msg_received
-```
-
+```text
 - 处理投票请求信息
 
   ```mermaid

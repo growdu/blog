@@ -28,48 +28,43 @@ Windows主机中: 执行ping x.x.x.x -l 1472 -f ，x.x.x.x是目标地址，-l�
 
 从路径上看，丢包点大致可以有下面几个位置：
 
-```
+```text
 1. 数据中心外部丢包
 
 2. 数据中心内部丢包
 
 3. 主机内部丢包
-```
-
+```text
 对于数据中心内部丢包问题，最重要的是能 “界定问题边界”，换句话说，这是谁的锅？  
 拥有自己数据中心的，往往会由网络工程师负责配置网络，系统工程师管理主机/虚拟化环境。界定的边界办法可以是：
 
-```
-
+```text
 1）长ping 网关地址，如果出现丢包，十有八九是网络设备有问题。
 
 2）使用MTR看路径上丢包点。
 
 3）抓包分析
 
-```
-
+```text
 MTU丢包
 
-```
+```text
 1.检查接口MTU配置，ifconfig eth1/eth0，默认是1500；
 
 2.进行MTU探测，然后设置接口对应的MTU值；
-```
-
+```text
 ![](https://upload-images.jianshu.io/upload_images/12979420-0581f0cf5a955a5f.png?imageMogr2/auto-orient/strip|imageView2/2/w/1080/format/webp)
 
 image.png
 
 解决方案：
 
-```
+```text
 1. 根据实际情况，设置正确MTU值；
 
 2. 设置合理的tcp mss，启用TCP MTU Probe
-```
-
-```
+```text
+```text
 # cat /proc/sys/net/ipv4/tcp_mtu_probing
 
 tcp_mtu_probing - INTEGER Controls TCP Packetization-Layer Path MTU Discovery.
@@ -77,8 +72,7 @@ Takes three values:
 0 - Disabled 
 1 - Disabled by default, enabled when an ICMP black hole detected
 2 - Always enabled, use initial MSS of tcp_base_mss.
-```
-
+```text
 ![](https://upload-images.jianshu.io/upload_images/12979420-de7e38b913fab5d3.png?imageMogr2/auto-orient/strip|imageView2/2/w/1129/format/webp)
 
 image.png
@@ -129,13 +123,13 @@ MTU不等，大的数据包就被拆开来传送，这样会产生很多数据�
 image.png
 
 一次MTU问题导致的RDS访问故障  
-[https://mp.weixin.qq.com/s/b2bk1dRDJwHCWp7cN\_Vy1Q](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2Fb2bk1dRDJwHCWp7cN_Vy1Q)  
+[https://mp.weixin.qq.com/s/b2bk1dRDJwHCWp7cN_Vy1Q](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2Fb2bk1dRDJwHCWp7cN_Vy1Q)  
 
 ![](https://upload-images.jianshu.io/upload_images/12979420-2a34d3877e2facaf.png?imageMogr2/auto-orient/strip|imageView2/2/w/1200/format/webp)
 
 image.png
 
-```
+```text
 1. 在DF位没有置1情况下，IP数据包大小超过接口MTU值时，IP数据包会切片(framed)
 
 2. 在DF位没有置1情况下，已经切片的IP数据包在转发过程中不会组装
@@ -143,8 +137,7 @@ image.png
 注：如直连的2个接口，一个MTU为1500，另一个MTU不是1500，可能会产生丢包
 （原因：MTU就是MRU；切片发生在数据包发出时，不发生在接收时）
 
-```
-
+```text
 MTU一经确定不再改变？
 
 实际上MTU并不是确定了之后就一直不变的，每个端上查看到的MTU并非是最终的MTU大小，这个怎么理解呢？
@@ -162,7 +155,7 @@ MTU一经确定不再改变？
 ## 三、参考
 
 什么是MTU值，MTU值有什么用？  
-[https://mp.weixin.qq.com/s/gruLG48W7KEJ\_BQJ8tooDQ](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FgruLG48W7KEJ_BQJ8tooDQ)
+[https://mp.weixin.qq.com/s/gruLG48W7KEJ_BQJ8tooDQ](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FgruLG48W7KEJ_BQJ8tooDQ)
 
 GaussDB网络重传/丢包问题定位总结  
 [https://bbs.huaweicloud.com/blogs/235237](https://links.jianshu.com/go?to=https%3A%2F%2Fbbs.huaweicloud.com%2Fblogs%2F235237)
@@ -180,16 +173,16 @@ GaussDB网络重传/丢包问题定位总结
 [https://mp.weixin.qq.com/s/VGtGwtzz2eKTIG3QtwgwkA](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FVGtGwtzz2eKTIG3QtwgwkA)
 
 MTU导致的悲剧  
-[https://mp.weixin.qq.com/s/hRhpwZge\_LEmDfJINp-oyQ](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FhRhpwZge_LEmDfJINp-oyQ)
+[https://mp.weixin.qq.com/s/hRhpwZge_LEmDfJINp-oyQ](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FhRhpwZge_LEmDfJINp-oyQ)
 
 解决网络丢包问题及故障判断方法  
 [https://mp.weixin.qq.com/s/Zt2SRnbRLHwIbDzErRdxXw](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FZt2SRnbRLHwIbDzErRdxXw)
 
 一次MTU问题导致的RDS访问故障  
-[https://mp.weixin.qq.com/s/b2bk1dRDJwHCWp7cN\_Vy1Q](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2Fb2bk1dRDJwHCWp7cN_Vy1Q)
+[https://mp.weixin.qq.com/s/b2bk1dRDJwHCWp7cN_Vy1Q](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2Fb2bk1dRDJwHCWp7cN_Vy1Q)
 
 网速慢？改下MTU值试试  
-[https://mp.weixin.qq.com/s/LHAuRMf72J6zm\_hOffW3rA](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FLHAuRMf72J6zm_hOffW3rA)
+[https://mp.weixin.qq.com/s/LHAuRMf72J6zm_hOffW3rA](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FLHAuRMf72J6zm_hOffW3rA)
 
 案例分享：MTU值对传输网络对接的影响  
 [https://mp.weixin.qq.com/s/J6-uG2mY4bGQcU5s-oU-Aw](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FJ6-uG2mY4bGQcU5s-oU-Aw)
@@ -201,7 +194,7 @@ MTU系列实验（1）——IP MTU
 [https://mp.weixin.qq.com/s/66sXXTt3B0A8zt8CgB4iug](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2F66sXXTt3B0A8zt8CgB4iug)
 
 TCP问题定界六大方向分析总结  
-[https://mp.weixin.qq.com/s/IE2dkmYd0etmlK7G\_wVIHA](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FIE2dkmYd0etmlK7G_wVIHA)
+[https://mp.weixin.qq.com/s/IE2dkmYd0etmlK7G_wVIHA](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FIE2dkmYd0etmlK7G_wVIHA)
 
 某局MTU问题导致手机无法上网故障排查过程  
 [https://mp.weixin.qq.com/s/HPNPa4IfCnCaU3h4rwNtUg](https://links.jianshu.com/go?to=https%3A%2F%2Fmp.weixin.qq.com%2Fs%2FHPNPa4IfCnCaU3h4rwNtUg)

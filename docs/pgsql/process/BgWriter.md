@@ -29,8 +29,7 @@ BgWriter从后向前扫描缓冲区的LRU链表写出最多bgwriter_lru_multipli
 ```mermaid
 graph TB
 main-->PostmasterMain-->StartChildProcess-->fork_process-->AuxiliaryProcessMain-->BackgroundWriterMain
-```
-
+```text
 - 子进程流程
 
   ```mermaid

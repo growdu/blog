@@ -20,7 +20,7 @@ Babelfish 是 PostgreSQL 的一个扩展，通过双端口设计支持 SQL Serve
 
 ### 逻辑复制 DDL 同步流程
 
-```
+```text
 发布端                          订阅端
    │                               │
    │  1. DDL 在 ProcessUtility()   │
@@ -38,8 +38,7 @@ Babelfish 是 PostgreSQL 的一个扩展，通过双端口设计支持 SQL Serve
    │                               │
    │                               │  6. execute_publication_sync_sql_command()
    │                               │     执行 DDL SQL
-```
-
+```text
 ### 核心问题
 
 订阅端 `apply worker` 执行 DDL SQL 时面临的问题：
@@ -61,7 +60,7 @@ Babelfish 是 PostgreSQL 的一个扩展，通过双端口设计支持 SQL Serve
 
 #### 技术实现
 
-```
+```text
 发布端捕获 DDL (T-SQL 语法)
          │
          ▼
@@ -75,8 +74,7 @@ Babelfish 是 PostgreSQL 的一个扩展，通过双端口设计支持 SQL Serve
          │
          ▼
 订阅端收到并执行 PG SQL (无需 dialect 切换)
-```
-
+```text
 **转换类型**：
 
 | T-SQL 语法 | PostgreSQL 等价 |
@@ -88,7 +86,6 @@ Babelfish 是 PostgreSQL 的一个扩展，通过双端口设计支持 SQL Serve
 | `BIT` | `BOOLEAN` |
 | `DROP TABLE [dbo].[t1]` | `DROP TABLE IF EXISTS t1` |
 | `SELECT INTO t1 FROM t2` | `CREATE TABLE t1 AS SELECT ...` |
-
 
 #### 类型映射转换
 
@@ -156,8 +153,7 @@ PG:     CREATE TABLE t1 (data BYTEA)
 // DATETIME2 精度处理
 T-SQL:  CREATE TABLE t1 (dt DATETIME2(7))
 PG:     CREATE TABLE t1 (dt TIMESTAMP(7))
-```
-
+```text
 #### Schema 和对象名转换
 
 **Schema 映射**：
@@ -182,8 +178,7 @@ PG:     CREATE TABLE "My Table" (id INT)  -- 保持原样
 -- 删除时的 schema 处理
 T-SQL:  DROP TABLE [dbo].[t1]
 PG:     DROP TABLE IF EXISTS public.t1
-```
-
+```text
 #### DDL 语句转换规则
 
 **CREATE TABLE**：
@@ -205,8 +200,7 @@ PG:
       price NUMERIC(10,2),        -- DECIMAL -> NUMERIC
       created_at TIMESTAMP         -- DATETIME2 -> TIMESTAMP
   )
-```
-
+```text
 **ALTER TABLE**：
 
 ```sql
@@ -225,8 +219,7 @@ PG:     ALTER TABLE t1 ALTER COLUMN col1 TYPE VARCHAR(100)
 -- ADD CONSTRAINT
 T-SQL:  ALTER TABLE t1 ADD CONSTRAINT pk_t1 PRIMARY KEY (id)
 PG:     ALTER TABLE t1 ADD CONSTRAINT pk_t1 PRIMARY KEY (id)
-```
-
+```text
 **DROP TABLE / INDEX**：
 
 ```sql
@@ -241,8 +234,7 @@ PG:     CREATE INDEX idx1 ON public.t1 (name)
 -- DROP INDEX
 T-SQL:  DROP INDEX idx1 ON dbo.t1
 PG:     DROP INDEX IF EXISTS public.idx1 ON public.t1
-```
-
+```text
 **CREATE / DROP / ALTER VIEW**（限制同步）：
 
 ```sql
@@ -251,8 +243,7 @@ T-SQL:  CREATE VIEW dbo.v1 AS SELECT id, name FROM t1
 PG:     CREATE VIEW public.v1 AS SELECT id, name FROM t1
 
 -- 注意：VIEW DDL 同步受限，见"转换限制"章节
-```
-
+```text
 #### 无法转换的 DDL 类型（限制）
 
 以下 DDL 类型**无法通过方案一转换同步**，需要人工处理或使用方案三：
@@ -549,8 +540,7 @@ CapturePublicationSyncDDL(...)
 
     // ... 后续存储逻辑 ...
 }
-```
-
+```text
 **核心转换函数结构**：
 
 ```c
@@ -595,8 +585,7 @@ transform_type_reference(Node *typeNode, const RewriteContext *ctx)
     }
     return typeNode;
 }
-```
-
+```text
 #### 语义差异风险
 
 方案一虽然技术上可行，但存在以下语义差异风险：
@@ -643,8 +632,7 @@ can_convert_tsql_ddl_to_pg(const char *ddl_sql, DDLType type)
             return false;  // 默认不可转换
     }
 }
-```
-
+```text
 #### 优点
 
 1. **订阅端实现简单**：订阅端收到的直接是 PG SQL，可以直接执行，无需额外适配
@@ -685,10 +673,9 @@ can_convert_tsql_ddl_to_pg(const char *ddl_sql, DDLType type)
 
 使pg的worker进程执行ddl sql能够达到像客户端连接tds端口执行ddl sql等价，并且最大程度的利用已有机制，减少内bbf的修改。
 
-
 #### 技术实现
 
-```
+```text
 订阅端收到 DDL 消息
          │
          ▼
@@ -711,8 +698,7 @@ can_convert_tsql_ddl_to_pg(const char *ddl_sql, DDLType type)
          │
          ▼
 恢复 PG 执行上下文
-```
-
+```text
 通过在bbf端增加bbf上下文初始化的hook接口，用于供非tcp连接的pg后端进程执行sql。
 
 #### 优点
@@ -751,7 +737,7 @@ can_convert_tsql_ddl_to_pg(const char *ddl_sql, DDLType type)
 
 Babelfish 通过 `ProcessUtility_hook` 拦截 DDL 语句，hook 函数 `bbf_ProcessUtility()` 内部会调用 `bbfCustomProcessUtility_hook`：
 
-```
+```text
 apply worker 执行 DDL 流程：
 
 ProcessUtility()
@@ -776,8 +762,7 @@ ProcessUtility()
     │         └──► 否 ──► 跳过 Babelfish 处理
     │
     └──► standard_ProcessUtility()        // 标准执行
-```
-
+```text
 **关键问题**：apply worker 是 PG 连接，即使设置 `sql_dialect = 'tsql'`，但某些 Babelfish 内部检查可能仍然失败。
 
 **2. Is_TSQL_CLIENT() 判断问题**
@@ -792,8 +777,7 @@ Is_TSQL_CLIENT(void)
     // 检查当前连接是否是 TDS 连接
     // 可能检查的是连接类型、协议、或者特定的 session 变量
 }
-```
-
+```text
 **问题**：`Is_TSQL_CLIENT()` 可能不仅检查 `sql_dialect`，还检查连接类型。即使设置了 `sql_dialect = 'tsql'`，如果连接本身不是 TDS 类型，可能返回 false。
 
 **已知受限的 DDL**：
@@ -816,8 +800,7 @@ set_config_option("babelfishpg_tsql.sql_dialect", "tsql", ...);
 //   - DDL 解析
 //   - DML 解析
 //   - 甚至包括 apply worker 内部的查询
-```
-
+```text
 **问题**：切换到 T-SQL 模式后，apply worker 内部执行的一些 PG 工具函数（如 `pg_catalog` 系列）可能受到影响。
 
 **4. 事务处理冲突**
@@ -836,8 +819,7 @@ BEGIN;
   DDL;  -- 不会自动提交
   DML;
 COMMIT; -- 显式提交
-```
-
+```text
 apply worker 在子事务中执行 DDL，如果 DDL 触发了 Babelfish 的特殊处理，可能导致事务状态不一致。
 
 **5. Search Path 与 Schema 解析**
@@ -853,8 +835,7 @@ saved_search_path = "dbo,pg_catalog"
 //   T-SQL: dbo      → physical: public
 //   T-SQL: sys      → physical: sys
 //   T-SQL: INFORMATION_SCHEMA → physical: information_schema
-```
-
+```text
 **问题**：如果发布端和订阅端的 schema 映射不一致，同样的 DDL SQL 可能在订阅端解析到错误的 schema。
 
 **6. 内部 Hook 拦截问题**
@@ -881,8 +862,7 @@ pltsql_bbfCustomProcessUtility(...)
     }
     return false;  // 继续 standard_ProcessUtility
 }
-```
-
+```text
 **问题**：某些 DDL 语句被 hook 直接处理而不会继续执行，或者被拦截后返回错误。
 
 **7. 错误处理与回滚**
@@ -898,8 +878,7 @@ typedef enum {
     ERRCODE_TSQL_DUPLICATE_OBJECT,        // 对象已存在
     // ...
 } TSQL_ErrorCode;
-```
-
+```text
 apply worker 需要正确处理这些 T-SQL 特有的错误码，并转换为 PG 能理解的错误。
 
 **8. 内存上下文问题**
@@ -916,8 +895,7 @@ if (sql_dialect == SQL_DIALECT_TSQL)
     // 切换到 Babelfish 的内存上下文？
     // 还是使用 apply worker 自己的？
 }
-```
-
+```text
 **问题**：内存上下文不匹配可能导致内存泄漏或访问违例。
 
 **9. Catalog 访问权限问题**
@@ -930,8 +908,7 @@ syscache = SearchSysCache(RELOID, ...);
 
 // T-SQL 模式
 // 可能访问 babelfishpg_tsql 扩展维护的 catalog
-```
-
+```text
 apply worker 在 PG 连接中访问 Babelfish catalog 可能遇到权限或可见性问题。
 
 **10. 多数据库/多 Tenant 上下文**
@@ -946,8 +923,7 @@ Babelfish 支持多数据库，每个数据库有独立的配置：
 
 // DDL 执行时需要知道是哪个数据库
 // 但 apply worker 是按订阅连接的
-```
-
+```text
 **问题**：DDL SQL 中可能不包含数据库名，需要根据订阅配置确定目标数据库。
 
 **11. 核心问题汇总**
@@ -982,7 +958,7 @@ Babelfish 支持多数据库，每个数据库有独立的配置：
 
 #### 技术实现
 
-```
+```text
 订阅端 apply worker
          │
          │ 收到 DDL 消息
@@ -1001,8 +977,7 @@ Babelfish 支持多数据库，每个数据库有独立的配置：
          │
          ▼
 关闭 T-SQL 连接，返回结果
-```
-
+```text
 **关键代码位置**：
 - 修改 `src/backend/replication/logical/worker.c` 中的 `execute_publication_sync_sql_command()`
 - 使用 libpq 建立 TDS 连接，执行 DDL 后关闭连接
@@ -1037,8 +1012,7 @@ execute_publication_sync_sql_command(...)
     PQclear(res);
     PQfinish(tsql_conn);
 }
-```
-
+```text
 **连接池优化**（避免每次 DDL 都建立新连接）：
 
 ```c
@@ -1056,8 +1030,7 @@ static PGconn* get_tsql_connection(void)
     }
     return tsql_connection_pool;
 }
-```
-
+```text
 #### 优点
 
 1. **完全兼容 T-SQL**：使用原生 TDS 协议执行，绕过 Babelfish 在 PG 连接上的限制
@@ -1096,7 +1069,7 @@ static PGconn* get_tsql_connection(void)
 
 **1. 跨连接事务一致性问题**
 
-```
+```text
 apply worker 执行流程：
 
 ┌─────────────────────────────────────────────────────────────────┐
@@ -1114,8 +1087,7 @@ apply worker 执行流程：
 └─────────────────────────────────────────────────────────────────┘
 
 问题：T2 和 T5 不在同一事务中，如果 T6 失败，T2 已经提交无法回滚
-```
-
+```text
 **具体场景分析**：
 
 | 场景 | 问题描述 | 影响 |
@@ -1126,7 +1098,7 @@ apply worker 执行流程：
 
 **2. DDL 与 DML 时序问题**
 
-```
+```text
 发布端事务：
   BEGIN
     ALTER TABLE t1 ADD col_new INT;  -- 捕获到 pg_publication_sync
@@ -1142,8 +1114,7 @@ apply worker 执行流程：
   情况B：先收到 DML 消息，再收到 DDL 消息
     → PG 连接执行 DML (col_new 还不存在!)
     → DML 执行失败 ✗
-```
-
+```text
 **3. 表结构变更与存量数据同步**
 
 | 阶段 | 发布端状态 | 订阅端状态 | 一致性风险 |
@@ -1165,7 +1136,7 @@ T-SQL 连接和 PG 连接的 session 配置可能不同：
 
 **5. 错误处理与恢复**
 
-```
+```text
 DDL 执行失败时的处理流程：
 
 ┌─────────────────────────────────────────┐
@@ -1178,8 +1149,7 @@ DDL 执行失败时的处理流程：
 │ 3. 已执行的 DML 如何处理？              │
 │    └─ 无法回滚，需人工介入              │
 └─────────────────────────────────────────┘
-```
-
+```text
 **6. 数据一致性保障措施**
 
 针对上述问题，需要以下保障措施：
@@ -1212,8 +1182,7 @@ apply_handle_ddl(...)
     // 提交同步事务
     CommitSynchronizedTransaction();
 }
-```
-
+```text
 **b) DDL 重试机制**
 
 ```c
@@ -1256,8 +1225,7 @@ execute_ddl_with_retry(const char *ddl_sql, DDLRetryConfig *config)
     }
     return false;
 }
-```
-
+```text
 **c) 订阅暂停与告警**
 
 ```c
@@ -1279,11 +1247,10 @@ handle_ddl_failure(const char *ddl_sql, const char *error_msg)
     // 4. 等待人工介入
     wait_for_manual_intervention();
 }
-```
-
+```text
 **d) 发布端事务顺序保证**
 
-```
+```text
 发布端改造方案：
 
 1. 在事务提交前，确保 DDL 已经写入 pg_publication_sync
@@ -1294,8 +1261,7 @@ handle_ddl_failure(const char *ddl_sql, const char *error_msg)
 - 在 CapturePublicationSyncDDL() 中检查是否在事务上下文中
 - 如果 DDL 和 DML 在同一事务，确保它们一起被解码
 - 订阅端按事务顺序应用
-```
-
+```text
 **7. 一致性风险等级汇总**
 
 | 一致性风险 | 发生概率 | 影响程度 | 风险等级 | 缓解措施 |
@@ -1372,7 +1338,7 @@ handle_ddl_failure(const char *ddl_sql, const char *error_msg)
 
 ### 决策矩阵
 
-```
+```text
                     ┌─────────────────────────────────────────────────────┐
                     │              场景特征                                │
                     ├─────────────┬─────────────┬─────────────┬───────────┤
@@ -1390,8 +1356,7 @@ handle_ddl_failure(const char *ddl_sql, const char *error_msg)
      └──────────────┴─────────────┴─────────────┴─────────────┴───────────┘
 
 图例：◎ 推荐  ○ 可用  △ 勉强可用  ✗ 不适用
-```
-
+```text
 ---
 
 ## 多数据库模式支持分析
@@ -1419,8 +1384,7 @@ get_ddl_source_mode(const char *sql)
         return DB_MODE_TSQL;
     return DB_MODE_PG;
 }
-```
-
+```text
 #### 订阅端执行路由
 
 ```c
@@ -1442,8 +1406,7 @@ execute_publication_sync_sql_command(const char *ddl_sql, DatabaseMode mode)
             ereport(ERROR, "Unknown database mode");
     }
 }
-```
-
+```text
 ### 多模式支持矩阵
 
 | 功能 | PG 模式 | SQL Server 模式 | 混合模式 |
@@ -1510,7 +1473,7 @@ execute_publication_sync_sql_command(const char *ddl_sql, DatabaseMode mode)
 
 ### 架构对比图
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           方案一：发布端转换                                  │
 ├─────────────────────────────────────────────────────────────────────────────┤
@@ -1603,8 +1566,7 @@ execute_publication_sync_sql_command(const char *ddl_sql, DatabaseMode mode)
 │          │                     └─────────────────┘                          │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
-```
-
+```text
 ### 关键代码文件索引
 
 | 组件 | 文件路径 | 说明 |

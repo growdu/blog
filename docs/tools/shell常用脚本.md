@@ -10,12 +10,10 @@
 start=$(date +%s)
 #你要执行的操作
 
-
 end=$(date +%s)
 take=$(( end - start ))
 echo Time taken to execute commands is ${take} seconds.
-```
-
+```text
 ### 按毫秒计算
 
 ```shell
@@ -26,8 +24,7 @@ start=$(date +%s%3N)
 end=$(date +%s%3N)
 take=`expr ${end} - ${start}`
 echo Time taken to execute commands is ${take} ms.
-```
-
+```text
 ## 循环执行
 
 ```shell
@@ -44,15 +41,13 @@ for ip in ${ips[@]:1}
 do
     echo "${ip}"
 done
-```
-
+```text
 ```shell
 while true:
 do
     echo "loop"
 done
-```
-
+```text
 ```shell
 n=0
 while [ $n -le 100 ]
@@ -60,8 +55,7 @@ do
     echo "loop"
     let n++
 done
-```
-
+```text
 ## 条件判断
 
 ### 字符串判断
@@ -73,8 +67,7 @@ if [ "${ip}"x == ""x ];
 then
     echo "eqal"
 fi
-```
-
+```text
 ### 数字判断
 
 ```shell
@@ -84,8 +77,7 @@ if [ ${ip} -eq 192 ];
 then
     echo "equal"
 fi
-```
-
+```text
 ### 文件判断
 
 ```shell
@@ -95,4 +87,4 @@ if [ -d ${ip} ];
 then
     echo "exist"
 fi
-```
+```text

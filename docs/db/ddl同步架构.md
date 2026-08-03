@@ -44,8 +44,7 @@
        │ Babelfish   │  │ Oracle      │  │ MySQL       │
        │ Adapter     │  │ Adapter     │  │ Adapter     │
        └─────────────┘  └─────────────┘  └─────────────┘
-```
-
+```text
 ## 分层架构
 
 ```shell
@@ -76,8 +75,7 @@
         ▼          ▼          ▼
    Babelfish    Oracle      MySQL
     Adapter     Adapter     Adapter
-```
-
+```text
 # DDL同步整体架构
 
 ```mermaid
@@ -141,8 +139,7 @@ subddl / Security / Object Rule"]
     EXEC --> BABEL
     EXEC --> ORA
     EXEC --> MYSQL
-```
-
+```text
 # DDL Replication Platform 分层架构
 
 ```mermaid
@@ -208,8 +205,7 @@ pg_publication_sync"]
     R3 --> A2
     R3 --> A3
     R3 --> A4
-```
-
+```text
 # Replay Framework
 
 ```mermaid
@@ -232,8 +228,7 @@ flowchart LR
     RE --> ORA["Oracle Adapter"]
 
     RE --> MYSQL["MySQL Adapter"]
-```
-
+```text
 # Dual Rule Filter Framework
 
 ```mermaid
@@ -256,8 +251,7 @@ flowchart LR
     MSG --> SF
 
     SF --> REP
-```
-
+```text
 # DDL Replication Platform
 
 ```mermaid
@@ -292,4 +286,4 @@ flowchart TB
     REPLAY --> ADAPTER
 
     ADAPTER --> TARGET
-```
+```text

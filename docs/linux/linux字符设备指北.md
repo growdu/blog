@@ -17,16 +17,14 @@ struct miscdevice {
 	struct device *parent;
 	struct device *this_device;
 };
-```
-
+```text
 ### 设备注册
 
 Linux中使用misc_register函数来注册一个混杂设备驱动。
 
 ```c
 int misc_register(struct miscdevice * misc)
-```
-
+```text
 ### 样例
 
 - test_misc.c
@@ -67,7 +65,6 @@ static ssize_t hello_read(struct file *file,
     copy_to_user(buf, &param, 4);
     return 0;
 }
-
 
  
 // 定义初始化LED的硬件操作对象
@@ -124,8 +121,7 @@ MODULE_DESCRIPTION("growdu: Driver for DEMO!");
 MODULE_AUTHOR("growdu");
 MODULE_LICENSE("GPL");
 MODULE_VERSION("V0.0.1");
-```
-
+```text
 - makefile
 
 ```makefile
@@ -139,8 +135,7 @@ all:
 clean:
         rm *.ko
         rm *.o
-```
-
+```text
 <font color="red">注意：若不添加CONFIG_MODULE_SIG=n，有可能会出现加载内核模块后签名错误，然后创建设备失败。</font>
 
 - test.c
@@ -172,7 +167,7 @@ int main(char argc,char *argv[])
     switch(cmd)
     {
         case 1:
-            printf("Second param is %c\n",*argv[1]);
+            printf("Second param is %cn",*argv[1]);
             read(fd, &param, 4);
             printf("Read Param is %d.\n",param);
             break;
@@ -182,15 +177,12 @@ int main(char argc,char *argv[])
     close(fd);
     return 0;
 }
-```
-
+```text
 - makefile
-
 
 ```makefile
 gcc test.c
-```
-
+```text
 在代码目录下面执行如下脚本：
 
 ```shell
@@ -208,8 +200,7 @@ ls /dev/test_misc
 ./a.out
 # 卸载模块
  rmmod test_misc
-```
-
+```text
 # reference
 
 1. https://www.linuxidc.com/Linux/2016-02/128598.htm

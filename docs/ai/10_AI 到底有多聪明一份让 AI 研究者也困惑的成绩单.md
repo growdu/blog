@@ -34,8 +34,6 @@ AP 生物、心理学、统计等 | 5/5 满分 | 顶尖
   * 四位数乘法[错误率超过 70%](https://techcrunch.com/2024/10/02/why-is-chatgpt-so-bad-at-math/)——你拿张草稿纸就能算对
   * 数学综合研究显示[错误率在 25% 到 47% 之间](https://hechingerreport.org/proof-points-combat-ai-hallucinations-math/)
 
-
-
 一个 SAT 1410 分的”天才”，连 9.11 和 9.8 的大小都搞错？
 
 ![](https://wmyskxz-blog.oss-cn-chengdu.aliyuncs.com/img20260227220544.png)
@@ -63,8 +61,6 @@ Claude Opus 4.6 — SWE-bench（真实编程任务） | **80.8%** | 能修复 80
   * GPT-5.2 在 [ARC-AGI-2 抽象推理测试](https://arcprize.org/blog/arc-prize-2025-results-analysis)上只有 52.9%——**「人类平均 60%」** ，而且 100% 的题人类都能做对
   * OpenAI 自己的推理模型 o3 在事实问答上[幻觉率 33%](https://techcrunch.com/2025/04/18/openais-new-reasoning-ai-models-hallucinate-more/)，更小的 o4-mini 高达 **「48%」** ——每两个回答就有一个在编造
   * Apple 研究发现，把数学题的数字换一下、人名换一下，AI 的[表现就大幅波动](https://machinelearning.apple.com/research/gsm-symbolic)；问题复杂度一高，所有推理模型[直接崩溃至 0%](https://machinelearning.apple.com/research/illusion-of-thinking)
-
-
 
 三年后，矛盾不但没消失，反而**升级了** ——连研究 AI 的人自己也在为同一个问题争论不休：这些模型到底是真的在”推理”，还是学会了更高级的”模式匹配”？
 
@@ -135,8 +131,6 @@ GPT-4 的训练数据包括了互联网上海量的法律文本——教科书�
   * **仅仅改变数学题中的数字** （比如把”5 个苹果”改成”7 个苹果”），所有模型的表现都下降了
   * **添加一个看似相关但完全无关的条件** ，性能暴降高达 **65%**
   * 甚至**仅仅改变题目中的人名** ，就能改变 AI 的答案
-
-
 
 Apple 的结论措辞非常强硬：
 
@@ -220,8 +214,6 @@ RLHF 没有让 AI 变得更”聪明”。它的底层仍然是”预测下一�
   * o4-mini 更是达到 **48%**
   * [OpenAI 自己也承认不太理解这是为什么](https://techcrunch.com/2025/04/18/openais-new-reasoning-ai-models-hallucinate-more/)
 
-
-
 原因分析：为了”好好推理”而优化的模型，倾向于用看似合理的推测来填补知识空白——推理链越长，编造看起来越”有道理”。
 
 **RLHF 教会了 AI “好好说话”。推理训练教会了 AI “好好思考的样子”。但两者都没有教会 AI 什么是”事实”。**
@@ -256,15 +248,11 @@ RLHF 没有让 AI 变得更”聪明”。它的底层仍然是”预测下一�
   * “AI 算不对 9.11 和 9.8 的大小。”→ 原来 AI 很蠢嘛。
   * （在两个极端之间反复摇摆）
 
-
-
 现在：
 
   * “AI 通过了律师考试！”→ 律师考试是什么样的任务？选择题为主，标准化问答模式，训练数据中覆盖充分。所以模式匹配表现好，正常。
   * “AI 算不对小数比大小。”→ 数值比较不是模式匹配任务，Token 化还破坏了数字关系。所以做不好，也正常。
   * （每条新闻都有了清晰的定位，不再摇摆）
-
-
 
 **你不需要对每条 AI 新闻感到惊喜或恐慌。你只需要问一个问题：这个任务的性质是什么？**
 

@@ -11,16 +11,14 @@ CREATE TABLE dbo.t1
 (
     id INT IDENTITY(1,1)
 )
-```
-
+```text
 DDL 不仅修改 PostgreSQL Catalog：
 
 ```text
 pg_class
 pg_attribute
 pg_namespace
-```
-
+```text
 同时还维护：
 
 ```text
@@ -29,27 +27,22 @@ sys.tables
 sys.columns
 object_id
 schema mapping
-```
-
+```text
 等 SQL Server 兼容元数据。
 
 如果订阅端直接执行 PostgreSQL DDL：
 
 ```c
 ProcessUtility()
-```
-
+```text
 则无法保持 TSQL 语义。
 
 因此需要在逻辑复制框架中引入：
 
 ```text
 Babelfish DDL Replay Adapter
-```
-
+```text
 实现 TSQL DDL 回放。
-
-
 
 # 2. 设计目标
 
@@ -73,11 +66,8 @@ DROP FUNCTION
 
 CREATE PROCEDURE
 DROP PROCEDURE
-```
-
+```text
 同步。
-
-
 
 ## 2.2 非目标
 
@@ -89,11 +79,8 @@ UPDATE
 DELETE
 COPY
 MERGE
-```
-
+```text
 DML继续使用 PostgreSQL Logical Replication。
-
-
 
 ## 2.3 核心目标
 
@@ -109,11 +96,8 @@ sys.columns
 object_id
 
 schema mapping
-```
-
+```text
 与发布端保持一致。
-
-
 
 # 3. 总体架构
 
@@ -165,10 +149,7 @@ Babelfish Utility
      ▼
 
 PostgreSQL Utility
-```
-
-
-
+```text
 # 4. DDL消息设计
 
 ## 4.1 消息类型
@@ -177,10 +158,7 @@ PostgreSQL Utility
 
 ```c
 LOGICAL_REP_MSG_DDL
-```
-
-
-
+```text
 ## 4.2 消息结构
 
 ```c
@@ -196,10 +174,7 @@ typedef struct LogicalRepDDL
 
     XLogRecPtr commit_lsn;
 } LogicalRepDDL;
-```
-
-
-
+```text
 # 5. Replay Framework
 
 ## 5.1 Adapter接口
@@ -216,10 +191,7 @@ typedef struct DDLReplayAdapter
     );
 
 } DDLReplayAdapter;
-```
-
-
-
+```text
 ## 5.2 DDL分发
 
 ```c
@@ -233,10 +205,7 @@ switch(msgtype)
 
         break;
 }
-```
-
-
-
+```text
 # 6. Babelfish Adapter设计
 
 ## 6.1 Adapter注册
@@ -245,10 +214,7 @@ switch(msgtype)
 RegisterDDLReplayAdapter(
         REPLAY_DIALECT_TSQL,
         &babelfish_adapter);
-```
-
-
-
+```text
 ## 6.2 Replay入口
 
 ```c
@@ -256,10 +222,7 @@ bool
 bbf_replay_ddl(
         ReplayExecContext *ctx,
         LogicalRepDDL *ddlmsg);
-```
-
-
-
+```text
 ## 6.3 执行流程
 
 ```text
@@ -272,10 +235,7 @@ bbf_context_activate()
 bbf_parse_and_replay()
        ↓
 bbf_context_deactivate()
-```
-
-
-
+```text
 # 7. Babelfish Context设计
 
 ## 7.1 Context结构
@@ -293,10 +253,7 @@ typedef struct BabelfishExecContext
 
     bool        tsql_mode;
 } BabelfishExecContext;
-```
-
-
-
+```text
 ## 7.2 初始化
 
 恢复：
@@ -309,24 +266,17 @@ Current User
 Search Path
 
 Database Mapping
-```
-
-
-
+```text
 ## 7.3 激活
 
 ```c
 bbf_context_activate();
-```
-
+```text
 进入：
 
 ```text
 TSQL Semantic Context
-```
-
-
-
+```text
 # 8. Parser Replay设计
 
 ## 8.1 设计原则
@@ -335,23 +285,18 @@ TSQL Semantic Context
 
 ```c
 SPI_execute(sql);
-```
-
+```text
 禁止：
 
 ```c
 ProcessUtility(sql);
-```
-
+```text
 禁止：
 
 ```c
 raw_parser(sql);
-```
-
+```text
 直接进入 PostgreSQL Parser。
-
-
 
 ## 8.2 Replay入口
 
@@ -361,10 +306,7 @@ raw_parser(sql);
 bool
 bbf_parse_and_replay(
         LogicalRepDDL *ddlmsg);
-```
-
-
-
+```text
 ## 8.3 Parse流程
 
 ```text
@@ -373,16 +315,12 @@ DDL SQL
 babelfishpg_tsql_raw_parser()
       ↓
 TSQL Parse Tree
-```
-
+```text
 生成：
 
 ```text
 tsql_parse_tree
-```
-
-
-
+```text
 ## 8.4 Analyze流程
 
 ```text
@@ -391,10 +329,7 @@ TSQL Parse Tree
 Babelfish Analyzer
         ↓
 TSQL Utility Node
-```
-
-
-
+```text
 ## 8.5 Utility执行
 
 ```text
@@ -403,10 +338,7 @@ TSQL Utility Node
 Babelfish Utility Hook
         ↓
 standard_ProcessUtility()
-```
-
-
-
+```text
 # 9. DDL Replay执行路径
 
 ## CREATE TABLE
@@ -423,10 +355,7 @@ CreateStmt(TSQL)
 Babelfish Catalog Update
       ↓
 PG Catalog Update
-```
-
-
-
+```text
 ## ALTER TABLE
 
 ```text
@@ -439,10 +368,7 @@ AlterTableStmt
 Babelfish Utility
       ↓
 PG Utility
-```
-
-
-
+```text
 ## DROP TABLE
 
 ```text
@@ -455,10 +381,7 @@ DropStmt
 Babelfish Utility
       ↓
 PG Utility
-```
-
-
-
+```text
 # 10. Catalog一致性维护
 
 Replay过程中自动维护：
@@ -471,8 +394,7 @@ sys.tables
 sys.columns
 
 sys.indexes
-```
-
+```text
 以及：
 
 ```text
@@ -481,11 +403,8 @@ object_id
 database mapping
 
 schema mapping
-```
-
+```text
 无需额外同步逻辑。
-
-
 
 # 11. 事务一致性
 
@@ -499,8 +418,7 @@ CREATE TABLE t1
 ALTER TABLE t1 ADD c1
 
 COMMIT
-```
-
+```text
 订阅端：
 
 ```text
@@ -511,11 +429,8 @@ Replay CREATE
 Replay ALTER
 
 COMMIT
-```
-
+```text
 保持事务边界一致。
-
-
 
 # 12. 错误处理
 
@@ -531,8 +446,7 @@ Analyze Error
 Utility Error
 
 Catalog Error
-```
-
+```text
 返回：
 
 ```c
@@ -541,11 +455,8 @@ REPLAY_SUCCESS
 REPLAY_RETRYABLE_ERROR
 
 REPLAY_FATAL_ERROR
-```
-
+```text
 由 Replay Framework 统一处理。
-
-
 
 # 13. 涉及模块
 
@@ -565,10 +476,7 @@ replay_framework.h
 replay_adapter.c
 
 replay_adapter.h
-```
-
-
-
+```text
 ## Babelfish
 
 新增：
@@ -585,10 +493,7 @@ bbf_adapter.h
 bbf_replay.c
 
 bbf_replay.h
-```
-
-
-
+```text
 修改：
 
 ```text
@@ -599,10 +504,7 @@ session.c
 pl_handler.c
 
 parser_entry.c
-```
-
-
-
+```text
 # 15. 预期收益
 
 1. 完整复用Babelfish Parser。

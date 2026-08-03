@@ -53,7 +53,6 @@
 在PostgreSQL中，每个page缺省大小为8K，可以在编译PostgreSQL时指定BLCKSZ的大小，对于IO性能较好的硬件，增加BLCKSZ的大小可以显著提升数据库性能。
 每个page又可以包含多个tuple（在PG中将保存在磁盘中的块称为page，而将内存中的块称为buffer，行称为tuple，这些都是与数学概念相同的）。
 
-
 在PostgreSQL中，表文件中的tuple之间不进行关联，这样的表文件称为堆文件，每个堆文件都是由多个page组成。
 
 # reference

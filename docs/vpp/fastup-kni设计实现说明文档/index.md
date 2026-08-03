@@ -33,33 +33,25 @@ fastup当前基于dpdk收发包未适配kni功能，需在fastup的dpdk插件中
 ```mermaid
 graph TB
 dpdk_config-->|读取dpdk参数后初始化dpdk环境|rte_eal_init-->|创建dpdk收发包内存池|dpdk_buffer_pool_create
-```
-
+```text
 #### 加载网口
 
 ```mermaid
 graph TB
 dpdk_lib_init
-```
-
-
-
+```text
 #### 收发包
 
 ```mermaid
 graph TB
 dpdk_device_input-->rte_eth_rx_burst-->dpdk_process_rx_burst
-```
-
+```text
 #### cli
 
 ```mermaid
 graph TB
 show_sw_interface
-```
-
-
-
+```text
 ### fastup kni dpdk插件流程
 
 #### 配置初始化
@@ -68,33 +60,25 @@ show_sw_interface
 graph TB
 dpdk_config-->|读取dpdk参数后初始化dpdk环境,同时会读取kni参数|rte_eal_init-->|未开启kni直接创建dpdk收发包内存池|dpdk_buffer_pool_create
 rte_eal_init-->|开启kni需先初始化kni|dpdk_kni_init-->rte_kni_init-->|创建dpdk kni收发包内存池|dpdk_kni_buffer_pool_create
-```
-
+```text
 fastup配置文件本身预留了kni的配置项，只是未将其实现。fastup kni会使用该配置项以对fastup进行兼容。具体配置项为在startup.conf配置文件的dpdk模块添加如下内容：
 
 ```shell
 kni 1 # 1表示kni网口的个数，无法创建超过物理网口个数的kni网口
-```
-
+```text
 比如：
 
 ```shell
 dpdk {
 	kni 1 # 1表示kni网口的个数，无法创建超过物理网口个数的kni网口
 }
-```
-
-
-
+```text
 #### 加载网口
 
 ```mermaid
 graph TB
 dpdk_lib_init-->|针对每个物理网口创建kni网口|dpdk_kni_create-->|分配kni资源|kni_alloc-->|配置kni网口参数|kni_config_network_interface
-```
-
-
-
+```text
 #### 网卡收发包
 
 ```mermaid
@@ -102,17 +86,13 @@ graph TB
 dpdk_device_input-->rte_eth_rx_burst
 rte_eth_rx_burst-->|开启kni需先将包送到kni模块进行过滤分流处理|dpdk_kni_rxtx-->|处理收包进行过滤分流|dpdk_kni_ingress-->|过滤掉kni不需要处理的包的|kni_rx_or_not-->|将需要kni处理的包送往内核|rte_kni_tx_burst-->rte_kni_handle_request-->|需要kni收取的包已经送往内核|dpdk_process_rx_burst
 dpdk_kni_rxtx-->|处理发包|dpdk_kni_egress-->|从kni中将linux内核发出的包取出|rte_kni_rx_burst-->|使用dpdk将包发出去|rte_eth_tx_burst-->|linux内核发出的包已经处理完成,回到fastup正常收发包流程|dpdk_process_rx_burst
-```
-
+```text
 #### cli
 
 ```mermaid
 graph TB
 show_sw_interface-->|显示kni网口的相关信息|show_vEth
-```
-
-
-
+```text
 ## fastup kni实现
 
 ### 配置

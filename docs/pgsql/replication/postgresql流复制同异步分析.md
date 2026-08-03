@@ -42,8 +42,7 @@ postgresql流复制主要是四个进程的交互。
         &synchronous_commit,
         SYNCHRONOUS_COMMIT_ON, synchronous_commit_options,
         NULL, assign_synchronous_commit, NULL
-```
-
+```text
 ```c
 static const struct config_enum_entry synchronous_commit_options[] = {
     {"local", SYNCHRONOUS_COMMIT_LOCAL_FLUSH, false},
@@ -59,8 +58,7 @@ static const struct config_enum_entry synchronous_commit_options[] = {
     {"0", SYNCHRONOUS_COMMIT_OFF, true},
     {NULL, 0, false}
 };
-```
-
+```text
 配置不同的值代表不同的同步模式。
 
 ### synchronous_standby_names
@@ -78,12 +76,10 @@ static const struct config_enum_entry synchronous_commit_options[] = {
         "",
         check_synchronous_standby_names, assign_synchronous_standby_names, NULL
     },
-```
-
+```text
 ```c
 SyncRepConfig = (SyncRepConfigData *) extra;
-```
-
+```text
 在check_synchronous_standby_names中解析后最终将其赋值给了SyncRepConfig。
 
 synchronous_standby_names可以配置为某个具体的备节点名，也可以配置成any 1(*)的形式。
@@ -92,14 +88,12 @@ synchronous_standby_names可以配置为某个具体的备节点名，也可以�
 
 ```shell
 synchronous_standby_names = 'standby001'
-```
-
+```text
 或者
 
 ```shell
 synchronous_standby_names='ANY 1 (*)'
-```
-
+```text
 ### walsender进程处理同步
 
 ```mermaid
@@ -110,22 +104,19 @@ ProcessStandbyMessage-->|walsender收到walreceiver回复的r报文|ProcessStand
 -->|获取候选者个数|SyncRepGetCandidateStandbys
 -->|SYNC_REP_PRIORITY优先级模式计算ptr,最旧的|SyncRepGetOldestSyncRecPtr
 SyncRepGetCandidateStandbys-->|非优先级模式计算ptr,第n个|SyncRepGetNthLatestSyncRecPtr
-```
-
+```text
 收到walreceiver的确认报文，walsender需要判断回复的standby个数是否满足配置的要求。SyncRepGetSyncRecPtr中会计算已经回复的standby个数并和配置的值进行比较，若满足则会返回true，否则返回false。
 
 ```c
 got_recptr = SyncRepGetSyncRecPtr(&writePtr, &flushPtr, &applyPtr, &am_sync);
-```
-
+```text
 ```c
     if (!got_recptr || !am_sync)    { // 若确认的standby个数不足或者不是sync模式直接返回
         LWLockRelease(SyncRepLock);
         announce_next_takeover = !am_sync;
         return;
     }
-```
-
+```text
 若确认的standby个数不足或者不是sync模式直接返回；
 
 若确认的standby个数满足，且是sync模式，则需要唤醒对应模式的backend进程。
@@ -146,8 +137,7 @@ got_recptr = SyncRepGetSyncRecPtr(&writePtr, &flushPtr, &applyPtr, &am_sync);
         walsndctl->lsn[SYNC_REP_WAIT_APPLY] = applyPtr;
         numapply = SyncRepWakeQueue(false, SYNC_REP_WAIT_APPLY);
     }
-```
-
+```text
 此时唤醒对应的后端进程后，后端进程将回复客户端。
 
 可以看到，针对不同的同步模式，唤醒后端进程采用的是不同的lsn指针。
@@ -171,8 +161,7 @@ got_recptr = SyncRepGetSyncRecPtr(&writePtr, &flushPtr, &applyPtr, &am_sync);
             SyncRepWaitMode = SYNC_REP_NO_WAIT;
             break;
     }
-```
-
+```text
 对于SYNC_REP_WAIT_WRITE，使用的是writePtr唤醒后端进程。
 
 对于SYNC_REP_WAIT_FLUSH，使用的是flushPtr唤醒后端进程。

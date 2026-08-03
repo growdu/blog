@@ -3,7 +3,7 @@
 该进程实质上是streaming replication环境中master节点上普通的backend进程,在standby节点启动时,standby节点向master发送连接请求,master节点的postmaster进程接收到请求后,启动该进程与standby节点的walreceiver进程建立通讯连接,用于传输WAL Record.  
 walsender启动后,使用gdb跟踪此进程,其调用栈如下:
 
-```
+```text
 (gdb) bt
 #0  0x00007fb6e6390903 in __epoll_wait_nocancel () from /lib64/libc.so.6
 #1  0x000000000088e668 in WaitEventSetWaitBlock (set=0x10ac808, cur_timeout=29999, occurred_events=0x7ffd634441b0, 
@@ -23,8 +23,7 @@ walsender启动后,使用gdb跟踪此进程,其调用栈如下:
 #10 0x0000000000819bd9 in ServerLoop () at postmaster.c:1706
 #11 0x000000000081948f in PostmasterMain (argc=1, argv=0x1018a50) at postmaster.c:1379
 #12 0x0000000000742931 in main (argc=1, argv=0x1018a50) at main.c:228
-```
-
+```text
 本节首先介绍调用栈中PostgresMain函数.
 
 #### 一、数据结构
@@ -32,7 +31,7 @@ walsender启动后,使用gdb跟踪此进程,其调用栈如下:
 **StringInfo**  
 StringInfoData结构体保存关于扩展字符串的相关信息.
 
-```
+```text
 /*-------------------------
  * StringInfoData holds information about an extensible string.
  * StringInfoData结构体保存关于扩展字符串的相关信息.
@@ -64,8 +63,7 @@ typedef struct StringInfoData
     int         cursor;
 } StringInfoData;
 typedef StringInfoData *StringInfo;
-```
-
+```text
 #### 二、源码解读
 
 **PostgresMain**  
@@ -88,7 +86,7 @@ typedef StringInfoData *StringInfo;
 11.4读取命令  
 11.5根据命令类型执行相关操作
 
-```
+```text
 /* ----------------------------------------------------------------
  * PostgresMain
  *     postgres main loop -- all backends, interactive or otherwise start here
@@ -350,7 +348,7 @@ PostgresMain(int argc, char *argv[],
     /* Welcome banner for  case */
     //standalone的欢迎信息
     if (whereToSendOutput == DestDebug)
-        printf("\nPostgreSQL stand-alone backend %s\n", PG_VERSION);
+        printf("\nPostgreSQL stand-alone backend %sn", PG_VERSION);
     /*
      * Create the memory context we will use in the main loop.
      * 创建主循环中使用的内存上下文
@@ -893,13 +891,12 @@ PostgresMain(int argc, char *argv[],
         }
     }                           /* end of input-reading loop */
 }
-```
-
+```text
 #### 三、跟踪分析
 
 在主节点上用gdb跟踪postmaster,在PostgresMain上设置断点后启动standby节点,进入断点
 
-```
+```text
 [xdb@localhost ~]$ ps -ef|grep postgre
 xdb       1263     1  0 14:20 pts/0    00:00:00 /appdb/xdb/pg11.2/bin/postgres
 (gdb) b PostgresMain
@@ -914,12 +911,11 @@ Using host libthread_db library "/lib64/libthread_db.so.1".
 Breakpoint 1, PostgresMain (argc=1, argv=0x1aa4c78, dbname=0x1aa4b68 "", username=0x1aa4b40 "replicator") at postgres.c:3660
 3660        volatile bool send_ready_for_query = true;
 (gdb)
-```
-
+```text
 1.初始化相关变量  
 注意变量IsUnderPostmaster,如为T则表示该进程为postmaster的子进程
 
-```
+```text
 (gdb) p *argv
 $1 = 0xc27715 "postgres"
 (gdb) n
@@ -928,22 +924,20 @@ $1 = 0xc27715 "postgres"
 3664        if (!IsUnderPostmaster)
 (gdb) p IsUnderPostmaster
 $2 = true
-```
-
+```text
 2.初始化进程信息,设置进程状态,初始化GUC参数
 
-```
+```text
 (gdb) n
 3667        SetProcessingMode(InitProcessing);
 (gdb) 
 3672        if (!IsUnderPostmaster)
 (gdb) p InitProcessing
 $3 = InitProcessing
-```
-
+```text
 3.解析命令行参数并作相关校验
 
-```
+```text
 (gdb) n
 3678        process_postgres_switches(argc, argv, PGC_POSTMASTER, &dbname);
 (gdb) 
@@ -955,20 +949,18 @@ $5 = 0x1aa4b40 "replicator"
 (gdb) n
 3692        if (!IsUnderPostmaster)
 (gdb)
-```
-
+```text
 4.如为walsender进程,则调用WalSndSignals初始化,否则执行其他信号初始化
 
-```
+```text
 3712        if (am_walsender)
 (gdb) 
 3713            WalSndSignals();
 (gdb)
-```
-
+```text
 5.初始化BlockSig/UnBlockSig/StartupBlockSig
 
-```
+```text
 (gdb) 
 3751        pqinitmask();
 (gdb) 
@@ -979,35 +971,31 @@ $5 = 0x1aa4b40 "replicator"
 (gdb) 
 3759        PG_SETMASK(&BlockSig);      /* block everything except SIGQUIT */
 (gdb)
-```
-
+```text
 6.非子进程(仍为postmaster进程),则检查数据库路径/切换路径/创建锁定文件等操作
 
-```
+```text
 N/A
-```
-
+```text
 7.调用BaseInit执行基本的初始化
 
-```
+```text
 3785        BaseInit();
 (gdb)
-```
-
+```text
 8.调用InitProcess/InitPostgres初始化进程
 
-```
+```text
 3797        InitProcess();
 (gdb) 
 3801        PG_SETMASK(&UnBlockSig);
 (gdb) 
 3810        InitPostgres(dbname, InvalidOid, username, InvalidOid, NULL, false);
 (gdb)
-```
-
+```text
 9.重置内存上下文,处理加载库和前后台消息交互等
 
-```
+```text
 (gdb) 
 3819        if (PostmasterContext)
 (gdb) 
@@ -1049,11 +1037,10 @@ $9 = false
 (gdb) 
 3865        if (whereToSendOutput == DestDebug)
 (gdb)
-```
-
+```text
 10.初始化内存上下文
 
-```
+```text
 (gdb) 
 3874        MessageContext = AllocSetContextCreate(TopMemoryContext,
 (gdb) 
@@ -1075,23 +1062,21 @@ $9 = false
 (gdb) 
 4030            send_ready_for_query = true;    /* initially, or after error */
 (gdb)
-```
-
+```text
 11.进入主循环  
 11.1切换至MessageContext上下文
 
-```
+```text
 (gdb) 
 4042            doing_extended_query_message = false;
 (gdb) 
 4048            MemoryContextSwitchTo(MessageContext);
 (gdb) 
 4049            MemoryContextResetAndDeleteChildren(MessageContext);
-```
-
+```text
 11.2初始化输入的消息
 
-```
+```text
 (gdb) 
 4051            initStringInfo(&input_message);
 (gdb) 
@@ -1099,11 +1084,10 @@ $9 = false
 (gdb) p input_message
 $10 = {data = 0x1a78d78 "", len = 0, maxlen = 1024, cursor = 0}
 (gdb)
-```
-
+```text
 11.3给客户端发送可以执行查询等消息
 
-```
+```text
 (gdb) n
 4072            if (send_ready_for_query)
 (gdb) p send_ready_for_query
@@ -1125,13 +1109,12 @@ $12 = true
 (gdb) 
 4110                send_ready_for_query = false;
 (gdb)
-```
-
+```text
 11.4读取命令  
-命令是IDENTIFY\_SYSTEM,判断系统标识是否OK  
+命令是IDENTIFY_SYSTEM,判断系统标识是否OK  
 firstchar -> ASCII 81 —> 字母’Q’
 
-```
+```text
 (gdb) 
 4119            DoingCommandRead = true;
 (gdb) 
@@ -1153,12 +1136,11 @@ $15 = 81
 (gdb) 
 4161            if (ignore_till_sync && firstchar != EOF)
 (gdb)
-```
-
+```text
 11.5根据命令类型执行相关操作  
-walsender —> 执行exec\_replication\_command命令
+walsender —> 执行exec_replication_command命令
 
-```
+```text
 (gdb) 
 4164            switch (firstchar)
 (gdb) 
@@ -1180,11 +1162,10 @@ $16 = 0x1a78d78 "IDENTIFY_SYSTEM"
 (gdb) 
 4411        }                           /* end of input-reading loop */
 (gdb)
-```
+```text
+继续循环,接收命令,第二个命令是START_REPLICATION
 
-继续循环,接收命令,第二个命令是START\_REPLICATION
-
-```
+```text
 ...
 (gdb) 
 4124            firstchar = ReadCommand(&input_message);
@@ -1211,21 +1192,19 @@ $21 = {data = 0x1a78d78 "START_REPLICATION 0/5D000000 TIMELINE 16", len
 (gdb) n
 4178                            if (!exec_replication_command(query_string))
 (gdb)
-```
-
+```text
 开始执行复制,master节点使用psql连接数据库,执行sql语句,子进程会接收到相关信号,执行相关处理  
 执行脚本
 
-```
+```text
 [xdb@localhost ~]$ psql -d testdb
 psql (11.2)
 Type "help" for help.
 testdb=# drop table t1;
-```
-
+```text
 子进程输出
 
-```
+```text
 (gdb) 
 Program received signal SIGUSR1, User defined signal 1.
 0x00007fb38696c903 in __epoll_wait_nocancel () from /lib64/libc.so.6
@@ -1245,13 +1224,12 @@ which has no line number information.
 procsignal_sigusr1_handler (postgres_signal_arg=10) at procsignal.c:265
 265     if (CheckProcSignal(PROCSIG_CATCHUP_INTERRUPT))
 (gdb)
-```
-
+```text
 DONE!
 
 DEBUG退出gdb后,psql会话crash:(
 
-```
+```text
 [xdb@localhost ~]$ psql -d testdb
 psql (11.2)
 Type "help" for help.
@@ -1264,6 +1242,5 @@ server closed the connection unexpectedly
     before or while processing the request.
 The connection to the server was lost. Attempting reset: Failed.
 !>
-```
-
+```text
 到此，关于“PostgreSQL的后台进程walsender分析”的学习就结束了，希望能够解决大家的疑惑。理论与实践的搭配能更好的帮助大家学习，快去试试吧！若想继续学习更多相关知识，请继续关注亿速云网站，小编会继续努力为大家带来更多实用的文章！

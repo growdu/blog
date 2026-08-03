@@ -11,14 +11,13 @@
 
 * 结构
 
-```
+```text
 gridControl
    |__gridview
         |__dataTable
             |__dataRow/dataColumn
                 |__cell
-```
-
-```
+```text
+```text
 gridControl1.DataSource = datatable;
-```
+```text

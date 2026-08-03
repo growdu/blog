@@ -4,27 +4,25 @@
 
 SH 代码:
 
-```
+```text
 #CentOS 7、Debian、Ubuntu
 curl -sSL https://get.docker.com/ | sh
 systemctl start docker
 systemctl enable docker
-```
-
+```text
 2、安装Docker Compose
 
 SH 代码:
 
-```
+```text
 curl -SL https://github.com/docker/compose/releases/download/v2.15.1/docker-compose-linux-x86_64 -o /usr/local/bin/docker-compose
 chmod +x /usr/local/bin/docker-compose
-```
-
+```text
 3、安装TaleBook
 
 SH 代码:
 
-```
+```text
 mkdir -p /fast1/docker_data/talebook
 vim docker-compose.yaml
 
@@ -48,4 +46,4 @@ services:
       - "/fast1/docker_data/talebook:/data"
 
 docker-compose up -d -f docker-compose.yaml
-```
+```text

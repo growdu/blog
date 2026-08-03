@@ -28,8 +28,7 @@ otel不提供ui，不保存数据，只定义如何采集和如何发送。
 ┌─────▼──────┐
 │ Backend │ ← Jaeger / Prometheus / Tempo / SkyWalking
 └────────────┘
-```
-
+```text
 ## 核心概念
 
 ### trace/span

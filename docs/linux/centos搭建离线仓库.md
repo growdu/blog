@@ -32,15 +32,13 @@
 
 ```shell
 sudo createrepo -po extras extras
-```
-
+```text
 ```shell
 ➜  extra ls
 extras
 ➜  extra ls extras 
 Packages  repodata
-```
-
+```text
  然后再将整个exrtras包拷贝到http服务器目录上，使其可以通过http服务器访问。
 
  这个时候再来修改/etc/yum.repos.d/CentOS-Base.repo，增加[extra]项，其地址配置为http的extra目录地址。

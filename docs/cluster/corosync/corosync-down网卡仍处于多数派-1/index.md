@@ -6,9 +6,7 @@ corosync三节点集群，未启用vote_quorum，没有qdevice进程。使用ifd
 
 corosync使用的通信方式为udpu。
 
-
 使用如下命令down掉网卡，格一段时间后查看节点的quorate状态，发现仍处于quorate。实际上网络不通应处于非quorate状态。
-
 
 当前的同城双中心集群数据库fence依赖于corosync的quorate状态，只有当corosync处于非quorate状态超过20秒时才会停止数据库。
 当down掉网卡时，实际网络不通，但因为仍处于quorate状态未停止数据库。但本中心已无法和observer及其他中心通信，因为会触发observer执行跨中心切换，将主库切换到另一个中心。当重新up网卡，网路恢复，此时生成中心的主库未停止，灾备中心也有了新主库，导致出现脑裂双主。
@@ -51,10 +49,10 @@ clusterware MDE应关注，和ES一样需要关注社区版本更新并选择，
 2. 若现场poc测试比较紧急的话，可以修改V8R6_cluster_install.sh文件，</font>找到如下内容：
 ```shell
 transport: udpu
-```
+```text
 将其删除或者修改为：
 
 ```shell
 transport: knet
-```
+```text
 这样部署的集群可以规避该问题。

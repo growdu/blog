@@ -12,15 +12,14 @@
 2. 按下回车键。
 3. 导航到以下注册表项：
 
-```
-HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
+```text
+HKEY_LOCAL_MACHINESYSTEMCurrentControlSetServicesLanmanServerParameters
 netsh interface ipv4 set portproxy protocol=tcp listenport=445 listenaddress=0.0.0.0 connectport=445 connectaddress=127.0.0.1
 netsh interface ipv4 set portproxy protocol=tcp listenport=139 listenaddress=0.0.0.0 connectport=139 connectaddress=127.0.0.1
 netsh interface portproxy add v4tov4 listenport=3000 connectaddress=192.168.1.100 connectport=445
 netsh interface portproxy add v4tov4 listenport=3000 connectaddress=192.168.10.200 connectport=445
 
-```
-
+```text
 4. 在右侧窗格中，找到名为“SmbPort”的 DWORD 值。
 5. 双击“SmbPort”值。
 6. 在“数值数据”字段中，输入您要使用的端口号。
@@ -35,18 +34,16 @@ netsh interface portproxy add v4tov4 listenport=3000 connectaddress=192.168.10.2
 
 * **Samba 4：**
 
-```
+```text
 [global]
     port = 445
-```
-
+```text
 * **Samba 3：**
 
-```
+```text
 [global]
     smb ports = 445
-```
-
+```text
 请将 `445` 替换为您要使用的端口号。
 
 希望这些信息对您有所帮助。

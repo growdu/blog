@@ -57,15 +57,13 @@
 //   成功 : 返回新创建的套接字文件描述符
 //   失败 : 返回 -1，错误代码存于 errno 中，通过引入 <errno.h> 可以引入该变量
 int socket(int domain, int type, int protocol)
-```
-
+```text
 ```C
 //建立TCP连接
 int tcp_fd = socket(AF_INET , SOCK_STREAM , 0);
 //建立UDP连接
 int udp_fd = socket(AF_INET , SOCK_DGRAM , 0);
-```
-
+```text
 #### 3.1.2 TCP连接与通信
 
 无论是tcp还是udp，第一步都需要创建套接字，而之后的操作差异较大，TCP在数据收发前，需要建立连接，而UDP不需要建立连接就可以收发数据。
@@ -94,8 +92,7 @@ struct sockaddr_in{
 truct in_addr{
   unsigned long s_addr;
 };
-```
-
+```text
 **注：**如果在bind绑定时，指定端口0，意味着由系统随机选择一个可用端口来绑定。
 
 * 建立TCP client
@@ -125,7 +122,6 @@ DP并不是基于连接的数据通讯，也就是说UDP server 并不通过acce
 1.创建套接字 (socket)
 
 2.数据通讯 (读recvfrom / 写sendto)
-
 
 ## 3.2 java网络编程
 
@@ -188,9 +184,7 @@ while(true)
     //下面就可以使用Socket进行通信了
     ...
 }
-```
-
-
+```text
 ### 3.2.2 使用socket进行通信
 
 客户端通常可使用Socket的构造器来连接到指定服务器，Socket通常可使用如下两个构造器：
@@ -216,5 +210,4 @@ while(true)
 Socket s = new Socket("127.0.0.1", 3000);
 //下面就可以使用Socket进行通信
 ...
-```
-
+```text

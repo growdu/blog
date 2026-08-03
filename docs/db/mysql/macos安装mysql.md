@@ -2,8 +2,7 @@
 
 ```shell
 brew install mysql@8.4
-```
-
+```text
 ```shell
 we've installed your MySQL database without a root password. To secure it run:
     mysql_secure_installation
@@ -36,4 +35,4 @@ To start mysql@8.4 now and restart at login:
   brew services start mysql@8.4
 Or, if you don't want/need a background service you can just run:
   /opt/homebrew/opt/mysql@8.4/bin/mysqld_safe --datadir\=/opt/homebrew/var/mysql
-```
+```text

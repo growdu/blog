@@ -46,8 +46,7 @@ Pandoc 的 JSON 文件的顶层结构通常包括两个主要部分：
     }
   ]
 }
-```
-
+```text
 - `meta`: 包含文档元数据的对象，通常包括 `title`, `author`, `date`。
 - `blocks`: 是文档主体的内容，这里包含了一个段落 (`Para`)。
 
@@ -75,8 +74,7 @@ Pandoc 的 JSON 文件的顶层结构通常包括两个主要部分：
     "c": [{"t": "Str", "c": "2024-09-15"}]
   }
 }
-```
-
+```text
 ### 3. **块元素 (`blocks`)**
 块元素表示文档的结构部分，它可以是段落、标题、列表、代码块等。常见的块元素包括：
 
@@ -102,8 +100,7 @@ Pandoc 的 JSON 文件的顶层结构通常包括两个主要部分：
     {"t": "Str", "c": "paragraph."}
   ]
 }
-```
-
+```text
 ### 4. **内联元素 (`Inlines`)**
 内联元素是嵌入在段落或标题等块元素中的文本或小型元素。常见的内联元素包括：
 - `Str`: 字符串。
@@ -120,8 +117,7 @@ Pandoc 的 JSON 文件的顶层结构通常包括两个主要部分：
   "t": "Code",
   "c": [{"t": "Str", "c": "print('Hello, world!')"}]
 }
-```
-
+```text
 ### 5. **表格 (`Table`)**
 `Table` 是一个复杂的结构，包含表头、表格主体、对齐方式、列宽等内容。表格的定义较为灵活，允许你指定每列的对齐、列宽、以及包含的内容。
 
@@ -139,8 +135,7 @@ Pandoc 的 JSON 文件的顶层结构通常包括两个主要部分：
       [{"t": "Plain", "c": [{"t": "Str", "c": "Row 1, Col 2"}]}]]]
   ]
 }
-```
-
+```text
 ### 6. **Raw Block/Inline**
 有时，文档中可能包含特定格式的原始数据（如 HTML 或 LaTeX）。这些内容以 `RawBlock` 或 `RawInline` 形式出现，用于保留特定格式的内容。
 
@@ -151,16 +146,14 @@ Pandoc 的 JSON 文件的顶层结构通常包括两个主要部分：
   "t": "RawBlock",
   "c": ["html", "<div class='custom-class'>Custom HTML Content</div>"]
 }
-```
-
+```text
 ## 如何查看pandoc的json格式
 
 以rst文件为例：
 
 ```shell
 pandoc input.rst -f rst -t json
-```
-
+```text
 ## rst转markdown
 
 markdown由于历史原因为了支持更多的格式，衍生出多种markdown方言，pandoc在转换时支持指定gfm、markdown、markdown-strict、commonmark，来确定你所转换的markdown方言。
@@ -169,8 +162,7 @@ markdown由于历史原因为了支持更多的格式，衍生出多种markdown�
 
 ```shell
 pandoc rst/input.rst -f rst -t commonmark -o md/output.md
-```
-
+```text
 在这里使用一个带有表格、图片、列表、代码块、告警的rst文件，将其转换为md。
 
 ### 图片
@@ -180,14 +172,12 @@ rst的代码如下：
 ```shell
 .. image:: https://docusaurus.io/zh-CN/img/undraw_typewriter.svg
    :alt: element
-```
-
+```text
 换后的md格式如下：
 
 ```markdown
 ![element](https://docusaurus.io/zh-CN/img/undraw_typewriter.svg)
-```
-
+```text
 可以看到就是markdown的标准语法。
 
 但是rst有一种类型的图片语法，使用figure关键字，pandoc将其转为md后变成了html标签：
@@ -196,8 +186,7 @@ rst的代码如下：
 
 ```rst
 .. figure:: https://docusaurus.io/zh-CN/img/docusaurus.svg
-```
-
+```text
 转换后的md文件如下：
 
 ```markdown
@@ -205,8 +194,7 @@ rst的代码如下：
 <img src="https://docusaurus.io/zh-CN/img/docusaurus.svg"
 alt="https://docusaurus.io/zh-CN/img/docusaurus.svg" />
 </figure>
-```
-
+```text
 可以看到直接变成了html标签，这个不太符合我们的格式要求，需要对其进行适配。
 
 需要编写figure_filter.py的过滤器，用于对输入内容进行转换，其脚本内容如下：
@@ -234,10 +222,9 @@ def figure_to_markdown(key, value, format, meta):
 if __name__ == "__main__":
     toJSONFilter(figure_to_markdown)
 
-```
-
+```text
 在转换时使用如下命令进行转换：
 
 ```shell
 pandoc rst/input.rst -t commonmark -o md/output_filter_figure.md --filter=./src/figure_filter.py
-```
+```text

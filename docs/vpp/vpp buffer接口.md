@@ -109,8 +109,7 @@ typedef union
   u8x64 as_u8x64[1];
 #endif
 } vlib_buffer_t;
-```
-
+```text
 ## 常用接口
 
 - 增

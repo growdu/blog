@@ -8,7 +8,7 @@ checkpoint又名检查点，一般checkpoint会将某个时间点之前的脏数
 
 在xlog.h文件中，有如下代码对checkpoint进行了相应的分类：
 
-```
+```text
 /*
  * OR-able request flag bits for checkpoints.  The "cause" bits are used only
  * for logging purposes.  Note: the flags must be defined so that it's
@@ -29,8 +29,7 @@ checkpoint又名检查点，一般checkpoint会将某个时间点之前的脏数
 #define CHECKPOINT_CAUSE_TIME0x0040/* Elapsed time */
 #define CHECKPOINT_FLUSH_ALL0x0080/* Flush all pages, including those
  * belonging to unlogged tables */
-```
-
+```text
 也就是说，以下几种情况会触发数据库操作系统做检查点操作：
 
 1. 超级用户（其他用户不可）执行CHECKPOINT命令
@@ -44,13 +43,13 @@ checkpoint又名检查点，一般checkpoint会将某个时间点之前的脏数
 
 ### 与检查点相关参数
 
-- checkpoint\_segments
+- checkpoint_segments
   - WAL log的最大数量，系统默认值是3。超过该数量的WAL日志，会自动触发checkpoint。
-- checkpoint\_timeout
+- checkpoint_timeout
   - 系统自动执行checkpoint之间的最大时间间隔。系统默认值是5分钟。
-- checkpoint\_completion\_target
+- checkpoint_completion_target
   - 该参数表示checkpoint的完成时间占两次checkpoint时间间隔的比例，系统默认值是0.5,也就是说每个checkpoint需要在checkpoints间隔时间的50%内完成。
-- checkpoint\_warning
+- checkpoint_warning
   - 系统默认值是30秒，如果checkpoints的实际发生间隔小于该参数，将会在server log中写入写入一条相关信息。可以通过设置为0禁用。
 
 ## 创建检查点具体过程
@@ -59,14 +58,14 @@ checkpoint又名检查点，一般checkpoint会将某个时间点之前的脏数
 
 当PostgreSQL触发checkpoint发生的条件后，会调用CreateCheckPoint函数创建具体的检查点，具体过程如下：
 
-1. 遍历所有的数据buffer，将脏页块状态从BM\_DIRTY改为BM\_CHECKPOINT\_NEEDED，表示这些脏页将要被checkpoint刷新到磁盘
+1. 遍历所有的数据buffer，将脏页块状态从BM_DIRTY改为BM_CHECKPOINT_NEEDED，表示这些脏页将要被checkpoint刷新到磁盘
 2. 调用CheckPointGuts函数将共享内存中的脏页刷出到磁盘
 3. 生成新的Checkpoint 记录写入到XLOG中
 4. 更新控制文件、共享内存里XlogCtl的检查点相关成员、检查点的统计信息结构
 
-PostgreSQL 控制文件pg\_control里存储的数据是一个ControlFileData结构，具体如下：
+PostgreSQL 控制文件pg_control里存储的数据是一个ControlFileData结构，具体如下：
 
-```
+```text
 typedefstruct ControlFileData
 {
     uint64    system_identifier;
@@ -87,8 +86,7 @@ XLogRecPtrbackupStartPoint;
 XLogRecPtrbackupEndPoint;
 boolbackupEndRequired;
    ......
-```
-
+```text
 其中，minRecoveryPoint和minRecoveryPointTLI确定数据库启动前，如果做归档恢复，我们必须恢复到的最小检查点。其中minRecoveryPoint指向该检查点对应的LSN位置，minRecoveryPointTLI指向该检查点对应的时间线。其具体的用法，我们将在之后的PostgreSQL崩溃恢复中分析，这里我们主要分析下PostgreSQL中的时间线概念。
 
 PostgreSQL中WAL日志段名称，由时间线ID、日志ID、段ID的八位16进制数依次构成。例如：
@@ -107,7 +105,7 @@ PostgreSQL中WAL日志段名称，由时间线ID、日志ID、段ID的八位16�
 
 CheckPointGuts函数将共享内存里的数据刷出并文件同步到磁盘，具体定义如下：
 
-```
+```text
 staticvoid
 CheckPointGuts(XLogRecPtrcheckPointRedo,int flags)
 {
@@ -120,8 +118,7 @@ CheckPointGuts(XLogRecPtrcheckPointRedo,int flags)
    /* We deliberately delay 2PC checkpointingas long as possible */
    CheckPointTwoPhase(checkPointRedo);
 }
-```
-
+```text
 可以看出，CheckPointGuts根据不同的缓存类型，把clog、subtrans、multixact、predicate、relationmap、buffer（数据文件）和twophase相应缓存分别调用不同的方法，将缓存刷到磁盘中：
 
 - 提交事务日志管理器的方法CheckPointClog
@@ -132,9 +129,9 @@ CheckPointGuts(XLogRecPtrcheckPointRedo,int flags)
 - 缓存管理器的方法CheckPointBuffers
 - 两阶段提交模块的方法CheckPointTwoPhase
 
-其中，前四个函数最后都调用了SLRU模块的SimpleLruFlush（简单最近最少使用）方法，把相应的共享内存数据写到磁盘，并通过调用pg\_fsync方法把相应文件刷到磁盘上对应文件。
+其中，前四个函数最后都调用了SLRU模块的SimpleLruFlush（简单最近最少使用）方法，把相应的共享内存数据写到磁盘，并通过调用pg_fsync方法把相应文件刷到磁盘上对应文件。
 
-后二个函数没有使用SLRU算法，直接调用pg\_fsync方法把相应文件刷到磁盘上对应文件。
+后二个函数没有使用SLRU算法，直接调用pg_fsync方法把相应文件刷到磁盘上对应文件。
 
 而目录/系统表到文件节点映射模块的方法CheckPointRelationMap，会将共享内存里系统表和对应物理文件映射的map文件刷到磁盘。
 
@@ -143,7 +140,7 @@ CheckPointGuts(XLogRecPtrcheckPointRedo,int flags)
 至此，我们大体了解了checkpoint的用法和整个实现过程，但是还需要对一些特别的地方做出说明。
 
 - 每个检查点后，第一次数据页的变化会导致整个页面会被记录在XLOG日志中
-- 检查点的开销比较高，可以用checkpoint\_warning自检，相应调大checkpoint\_segments
-- 检查点的位置保存在文件 pg\_control，pg\_control文件被损坏可能会导致数据库不可用
+- 检查点的开销比较高，可以用checkpoint_warning自检，相应调大checkpoint_segments
+- 检查点的位置保存在文件 pg_control，pg_control文件被损坏可能会导致数据库不可用
 
-其中，如果pg\_control文件损坏，在数据库崩溃恢复时可能出现一些问题，这些问题我们将在分析PostgreSQL数据库崩溃恢复时具体分析。
+其中，如果pg_control文件损坏，在数据库崩溃恢复时可能出现一些问题，这些问题我们将在分析PostgreSQL数据库崩溃恢复时具体分析。

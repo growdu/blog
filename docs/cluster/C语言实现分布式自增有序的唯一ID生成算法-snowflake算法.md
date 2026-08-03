@@ -6,7 +6,7 @@ https://github.com/twitter/snowflake
 
 于是，我自己用c语言随便实现了一下，还没有达到工业级别，需要细化，但是基本能用了，上代码。
 
-```
+```text
 1.  /\* 
 2.      snowflake 
 
@@ -35,90 +35,90 @@ https://github.com/twitter/snowflake
 
 27.  struct  globle  
 28.  {  
-29.      int global\_int:12;  
-30.      uint64\_t last\_stamp;  
+29.      int global_int:12;  
+30.      uint64_t last_stamp;  
 31.      int workid;  
 32.      int seqid;  
 33.  };  
 
-35.  void set\_workid(int workid);  
-36.  pid\_t gettid( void );  
-37.  uint64\_t get\_curr\_ms();  
-38.  uint64\_t wait\_next\_ms(uint64\_t lastStamp);  
-39.  int atomic\_incr(int id);  
-40.  uint64\_t get\_unique\_id();  
+35.  void set_workid(int workid);  
+36.  pid_t gettid( void );  
+37.  uint64_t get_curr_ms();  
+38.  uint64_t wait_next_ms(uint64_t lastStamp);  
+39.  int atomic_incr(int id);  
+40.  uint64_t get_unique_id();  
 
   
 
 1.  #include "snowflake.h"  
 
-3.  struct globle g\_info;  
+3.  struct globle g_info;  
 4.  #define   sequenceMask  (-1L ^ (-1L << 12L))  
-5.  void set\_workid(int workid)  
+5.  void set_workid(int workid)  
 6.  {  
-7.   g\_info.workid = workid;  
+7.   g_info.workid = workid;  
 8.  }  
-9.  pid\_t gettid( void )  
+9.  pid_t gettid( void )  
 10.  {  
-11.      return syscall( \_\_NR\_gettid );  
+11.      return syscall( \__NR_gettid );  
 12.  }  
-13.  uint64\_t get\_curr\_ms()  
+13.  uint64_t get_curr_ms()  
 14.  {  
-15.      struct timeval time\_now;  
-16.      gettimeofday(&time\_now,NULL);  
-17.      uint64\_t ms\_time =time\_now.tv\_sec\*1000+time\_now.tv\_usec/1000;  
-18.      return ms\_time;  
+15.      struct timeval time_now;  
+16.      gettimeofday(&time_now,NULL);  
+17.      uint64_t ms_time =time_now.tv_sec\*1000+time_now.tv_usec/1000;  
+18.      return ms_time;  
 19.  }  
 
-21.  uint64\_t wait\_next\_ms(uint64\_t lastStamp)  
+21.  uint64_t wait_next_ms(uint64_t lastStamp)  
 22.  {  
-23.      uint64\_t cur = 0;  
+23.      uint64_t cur = 0;  
 24.      do {  
-25.          cur = get\_curr\_ms();  
+25.          cur = get_curr_ms();  
 26.      } while (cur <= lastStamp);  
 27.      return cur;  
 28.  }  
-29.  int atomic\_incr(int id)  
+29.  int atomic_incr(int id)  
 30.  {  
-31.      \_\_sync\_add\_and\_fetch( &id, 1 );  
+31.      \__sync_add_and_fetch( &id, 1 );  
 32.      return id;  
 33.  }  
-34.  uint64\_t get\_unique\_id()  
+34.  uint64_t get_unique_id()  
 35.  {  
-36.      uint64\_t  uniqueId=0;  
-37.      uint64\_t nowtime = get\_curr\_ms();  
+36.      uint64_t  uniqueId=0;  
+37.      uint64_t nowtime = get_curr_ms();  
 38.      uniqueId = nowtime<<22;  
-39.      uniqueId |=(g\_info.workid&0x3ff)<<12;  
+39.      uniqueId |=(g_info.workid&0x3ff)<<12;  
 
-41.      if (nowtime <g\_info.last\_stamp)  
+41.      if (nowtime <g_info.last_stamp)  
 42.      {  
 43.          perror("error");  
 44.          exit(-1);  
 45.      }  
-46.      if (nowtime == g\_info.last\_stamp)  
+46.      if (nowtime == g_info.last_stamp)  
 47.      {  
-48.          g\_info.seqid = atomic\_incr(g\_info.seqid)& sequenceMask;  
-49.          if (g\_info.seqid ==0)  
+48.          g_info.seqid = atomic_incr(g_info.seqid)& sequenceMask;  
+49.          if (g_info.seqid ==0)  
 50.          {  
-51.              nowtime = wait\_next\_ms(g\_info.last\_stamp);  
+51.              nowtime = wait_next_ms(g_info.last_stamp);  
 52.          }  
 53.      }  
 54.      else  
 55.      {  
-56.          g\_info.seqid  = 0;  
+56.          g_info.seqid  = 0;  
 57.      }  
-58.      g\_info.last\_stamp = nowtime;  
-59.      uniqueId |=g\_info.seqid;  
+58.      g_info.last_stamp = nowtime;  
+59.      uniqueId |=g_info.seqid;  
 60.      return uniqueId;  
 61.  }  
 62.  int main()  
 63.  {  
-64.      set\_workid(100);  
+64.      set_workid(100);  
 65.      int size;  
 66.      for (;;)  
 67.      {  
-68.          uint64\_t unquie = get\_unique\_id();  
-69.          printf("pthread\_id:%u, id \[%llu\]\\n",gettid(),unquie);  
+68.          uint64_t unquie = get_unique_id();  
+69.          printf("pthread_id:%u, id \[%llu\]\\n",gettid(),unquie);  
 70.      }  
 
 72.      return;   

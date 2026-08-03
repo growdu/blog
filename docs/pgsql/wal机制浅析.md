@@ -20,7 +20,7 @@ WAL即 Write-Ahead Logging，是一种实现事务日志的标准方法。WAL �
 
 为了标记每个数据页最后修改它的日志记录号，在每个数据页的PageHeaderData结构中引入了一个LSN标记，如下：
 
-```
+```text
 typedef struct PageHeaderData
 {
 PageXLogRecPtr pd_lsn; //指向最后修改页面的日志记录
@@ -33,8 +33,7 @@ uint16   pd_pagesize_version;
 TransactionId     pd_prune_xid; 
 ItemIdData       pd_linp[1];
 } PageHeaderData;
-```
-
+```text
 其中PageXLogRecPtr结构是一个无符号的64位整数，它的含义如下：
 
 | 32位     | 8位  | 13位 | 11位  |
@@ -43,24 +42,24 @@ ItemIdData       pd_linp[1];
 
 PageXLogRecPtr结构和每个日志记录一一对应，同时LSN是全局统一管理，顺序增加的。
 
-当缓冲区管理器(Bufmgr)写出脏数据页时，必须确保小于页面PageHeaderData中pd\_lsn指向的Xlog日志已经刷写到磁盘上了。这里的LSN检查只用于共享缓冲区，用于临时表的local缓冲区不需要，因此临时表是没有WAL日志的，不受WAL机制的保护。
+当缓冲区管理器(Bufmgr)写出脏数据页时，必须确保小于页面PageHeaderData中pd_lsn指向的Xlog日志已经刷写到磁盘上了。这里的LSN检查只用于共享缓冲区，用于临时表的local缓冲区不需要，因此临时表是没有WAL日志的，不受WAL机制的保护。
 
 ### WAL共享缓存区
 
 为了进一步的减少xlog日志文件的I/O操作，PostgreSQL中引入了WAL共享缓存区，对产生的xlog日志进行缓存，合并I/O操作。
 
-WAL共享缓存区的大小可以通过设置postgresql.conf文件参数wal\_buffers来设置，官方解释如下：
+WAL共享缓存区的大小可以通过设置postgresql.conf文件参数wal_buffers来设置，官方解释如下：
 
 - 表示WAL共享缓存区的大小，和oracle中的log buffer类似，单位可以是kB, MB
-- 默认值为-1，表示大小占shared\_buffers大小的1/32，但是大于64kB，小于16MB
+- 默认值为-1，表示大小占shared_buffers大小的1/32，但是大于64kB，小于16MB
 - 用户可以自己设置，小于32kB的值会被转化为32kB
 - 只能在服务启动之前设置
 
-可以看出，当多个client同时进行事务提交时，如果这个缓存区比较大，相应地会更大程度地合并I/O，提高性能，但是如果过大，同时也存在断电后，这部分数据丢失的风险。所以，这里比较推荐使用默认值，即shared\_buffers的1/32。
+可以看出，当多个client同时进行事务提交时，如果这个缓存区比较大，相应地会更大程度地合并I/O，提高性能，但是如果过大，同时也存在断电后，这部分数据丢失的风险。所以，这里比较推荐使用默认值，即shared_buffers的1/32。
 
 为了标示当前WAL共享缓存区的状态，引入了XLogCtlData结构如下：
 
-```
+```text
 typedef struct XLogCtlData
 {
 XLogwrtRqst LogwrtRqst;/* 表示当前请求写入系统缓冲区或同步写入磁盘的日志位置*/
@@ -71,42 +70,39 @@ intXLogCacheBlck;/* WAL缓存区的大小，单位为页 */
         char              *pages;      /* 指向WAL缓存Buffer的首地址 */
 ......
 }
-```
+```text
+其中，LogwrtRqst表示当前请求写入系统缓冲区或同步写入磁盘的日志位置，由info_lck轻量锁保护，结构如下：
 
-其中，LogwrtRqst表示当前请求写入系统缓冲区或同步写入磁盘的日志位置，由info\_lck轻量锁保护，结构如下：
-
-```
+```text
 typedef struct XLogwrtRqst
 {
 XLogRecPtr     Write;
 XLogRecPtr  Flush;
 } XLogwrtRqst;
-```
-
+```text
 这里需要**注意**的是，因为很多操作系统会维护一个操作系统缓存，用来对磁盘的I/O操作进行合并，这就可能造成操作系统返回给内核写文件成功的地址和真实文件写到磁盘的地址是有差异的。为了区分这个差异，这里引入了2个变量，其中：
 
 - Write表示在此位置之前的日志记录已经写出Wal缓冲区，可能在操作系统缓存区
 - Flush表示的是在此位置之前的日志已经写入到磁盘
 
-asyncXactLSN是一个XLogRecPtr类型的成员变量，表示最近需要异步提交的日志位置，并且也是由info\_lck锁来保护。
+asyncXactLSN是一个XLogRecPtr类型的成员变量，表示最近需要异步提交的日志位置，并且也是由info_lck锁来保护。
 
 在PostgreSQL中，日志记录刷写到磁盘有两种提交方式：同步和异步。其区别如下：
 
-- synchronous\_commit参数（默认值为ON）为ON，则为同步方式。事务提交时，对应的Xlog日志必须马上刷新回磁盘事务才能返回成功
-- synchronous\_commit参数为OFF，则为异步方式。事务提交时，立刻返回用户成功，同时更新asyncXactLSN
+- synchronous_commit参数（默认值为ON）为ON，则为同步方式。事务提交时，对应的Xlog日志必须马上刷新回磁盘事务才能返回成功
+- synchronous_commit参数为OFF，则为异步方式。事务提交时，立刻返回用户成功，同时更新asyncXactLSN
 
 异步提交的提出主要是为了很多短事务（本身执行时间非常短）能立即提交。但是同时，也会打破WAL机制，造成数据库崩溃后数据丢失的危险。在PostgreSQL中，这个参数用户可以在连接中使用SET语句直接设置，实现异步日志提交和同步日志提交的切换，既减少数据丢失风险又能兼顾效率。
 
-LogwrtResult表示当前已经写入系统缓冲区或者同步写入磁盘的日志位置，由info\_lck 和 WALWriteLock 锁保护，结构如下：
+LogwrtResult表示当前已经写入系统缓冲区或者同步写入磁盘的日志位置，由info_lck 和 WALWriteLock 锁保护，结构如下：
 
-```
+```text
 typedef struct XLogwrtResult
 {
 XLogRecPtr   Write;
 XLogRecPtr  Flush;
 } XLogwrtResult;
-```
-
+```text
 可以看出，XLogwrtResult和XLogwrtRqst的结构相同，其原因也是为了区分是否真正写入到磁盘。
 
 Xlblocks是一个XLogRecPtr \*类型的成员变量，表示指向每个WAL缓存开始的LSN数组的首地址，可以根据这个变量加上日志缓存的偏移量就可以得到具体的对应LSN。
