@@ -104,7 +104,7 @@ reward_ejs = r"""<% if (theme.reward && theme.reward.enable) { %>
   </button>
 </div>
 
-<div id="reward-modal" class="reward-modal" hidden role="dialog" aria-modal="true">
+<div id="reward-modal" class="reward-modal" role="dialog" aria-modal="true" aria-hidden="true">
   <div class="reward-modal-backdrop" data-reward-close></div>
   <div class="reward-modal-content">
     <button type="button" class="reward-modal-close" data-reward-close aria-label="关闭">
@@ -132,16 +132,10 @@ reward_ejs = r"""<% if (theme.reward && theme.reward.enable) { %>
 (function(){
   var modal = document.getElementById('reward-modal');
   if (!modal) return;
-  function open(){
-    modal.removeAttribute('hidden');
-    document.body.style.overflow = 'hidden';
-  }
-  function close(){
-    modal.setAttribute('hidden', '');
-    document.body.style.overflow = '';
-  }
+  function open(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
+  function close(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
   document.querySelectorAll('[data-reward-open]').forEach(function(b){
-    b.addEventListener('click', open);
+    b.addEventListener('click', function(e){ e.preventDefault(); open(); });
   });
   modal.addEventListener('click', function(e){
     if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-reward-close')) {
@@ -149,7 +143,7 @@ reward_ejs = r"""<% if (theme.reward && theme.reward.enable) { %>
     }
   });
   document.addEventListener('keydown', function(e){
-    if (e.key === 'Escape' && !modal.hasAttribute('hidden')) close();
+    if (e.key === 'Escape' && modal.classList.contains('show')) close();
   });
 })();
 </script>
@@ -492,12 +486,14 @@ a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2p
 @media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
 
 /* --- Reward modal: centered fixed-position popup with 200x200 QRs --- */
+/* No backdrop-filter / body overflow toggles — both can flicker the
+   fixed sidebars / reading-progress bar in the surrounding page. */
 .reward-row{text-align:center;margin:30px 0 10px}
 .reward-open-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 22px;background:linear-gradient(135deg,#ff6b6b,#ee5a52);color:#fff;border:none;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 2px 8px rgba(238,90,82,.35)}
 .reward-open-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(238,90,82,.5)}
-.reward-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
-.reward-modal[hidden]{display:none}
-.reward-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.reward-modal{position:fixed;inset:0;z-index:9999;display:none;align-items:center;justify-content:center}
+.reward-modal.show{display:flex}
+.reward-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55)}
 .reward-modal-content{position:relative;background:#fff;border-radius:12px;padding:28px 36px 24px;max-width:92vw;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center}
 .reward-modal-close{position:absolute;top:10px;right:12px;background:transparent;border:none;font-size:18px;color:#888;cursor:pointer;padding:4px 8px;line-height:1}
 .reward-modal-close:hover{color:#333}
