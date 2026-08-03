@@ -6,7 +6,7 @@
 
 ```shell
 apt install svn
-```text
+```
 ## 配置
 
 设置默认编辑器为vim
@@ -14,29 +14,29 @@ apt install svn
 ```shell
 echo "export SVN_EDITOR=vim" >> /etc/profile
 source /etc/profile
-```text
+```
 ## 命令
 
 - 拉取仓库
 
 ```shell
 svn checkout path
-```text
+```
 - 添加文件
 
 ```shell
 svn add filename
-```text
+```
 <font color="red">注意：svn的文件只允许提交依次。当你第一次提交后，后面修改了直接commit。</font>
 
 - 提交文件
 
-```text
+```
 # 默认会提交所有修改的文件
 svn commit
 # 指定要提交哪个文件
 svn commit filename
-```text
+```
 - 查看当前文件状态
 
 ```shell
@@ -45,7 +45,7 @@ svn status
 svn status path
 # 列出目录下文件的状态
 svn status -v path
-```text
+```
 - 查看修改记录
 
 ```shell
@@ -53,17 +53,17 @@ svn status -v path
 svn log
 # 查看单个文件提交记录
 svn log filename
-```text
+```
 - 查看文件信息
 
 ```shell
 svn info filename
-```text
+```
 - 更新到某个版本
 
 ```shell
 svn update -r m path
-```text
+```
 - 版本回退
 
 ```shell
@@ -73,7 +73,7 @@ svn revert filename
 svn revert -R dir
 # 恢复一个已经提交的版本，找到仓库的当前版本，现在是版本 22，我们要撤销回之前的版本，比如版本 21
 svn merge -r 22:21 readme
-```text
+```
 >**一、改动还没被提交的情况（未commit）**
 >
 >这种情况下，见有的人的做法是删除work copy中文件，然后重新update，恩，这种做法达到了目的，但不优雅，因为这种事没必要麻烦服务端。

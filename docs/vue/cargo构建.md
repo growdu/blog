@@ -12,9 +12,9 @@ registry = "https://github.com/rust-lang/crates.io-index"
 replace-with = 'ustc'
 [source.ustc]
 registry = "git://mirrors.ustc.edu.cn/crates.io-index"
-```text
+```
 ## rust升级
 
 ```shell
 rustup update
-```text
+```

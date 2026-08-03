@@ -8,7 +8,7 @@ Dcoker容器在使用的过程中，默认的docker run时都是以普通方式�
 --cap-add list Add Linux capabilities # 添加某些权限
 --cap-drop list Drop Linux capabilities # 关闭权限
 --privileged Give extended privileges to this container # default false
-```text
+```
 以下将举例来进行说明：
 
 默认run容器的情况下，查看iptables的设置：
@@ -17,24 +17,24 @@ Dcoker容器在使用的过程中，默认的docker run时都是以普通方式�
 root@42dd128c89db:/# iptables -nL
 iptables v1.6.0: can't initialize iptables table `filter': Permission denied (you must be root)
 Perhaps iptables or your kernel needs to be upgraded.
-```text
+```
 显然就连iptables的查看都不允许，就像前面说的，有的时候，我们有需求进行网络设置，即入站、出站网络端口设置，我们可以在启动容器的时候如下设置：
 
 ```css
 docker run --cap-add NET_ADMIN --name demo imageName bash
-```text
+```
 通过这样简单的设置，我们就可以方便的在容器里面管理网络了。
 
 当然，路子够野的也可以通过--privileged设置，默认false，即关闭了一些权限的，如果设置为true，或者在docker run 的时候加上 --privileged，此时我们就放开了权限。
 
 ```css
 docker run --privileged --name demo imageName bash
-```text
+```
 对于iptables需要的权限进行开放，而对于其它的权限不予开放，那么在启动docker的时候使用如下的命令参数进行限制权限的过度开放：
 
 ```css
 docker run--cap-add NET_ADMIN --cap-add NET_RAW -d -p 4489:4489/tcp  --name bbb aaa
-```text
+```
 ### 总结：
 
 -   1.privileged，权限全开，不利于宿主机安全
@@ -51,7 +51,7 @@ securityContext:
 privileged: true
 capabilities:
 add: ["NET_ADMIN","NET_RAW"]
-```text
+```
 ## Linux capabilities
 
 [进一步了解：Linux Capabilities 简介](https://www.cnblogs.com/sparkdev/p/11417781.html)
@@ -130,7 +130,7 @@ CAP_SYS_TTY_CONFIG:允许配置TTY设备
 CAP_MKNOD:允许使用mknod()系统调用
 
 CAP_LEASE:允许修改文件锁的FL_LEASE标志
-```text
+```
 参考：  
 [https://blog.csdn.net/yygydjkthh/article/details/50737237](https://blog.csdn.net/yygydjkthh/article/details/50737237)  
 [https://www.it1352.com/1534884.html](https://www.it1352.com/1534884.html)  

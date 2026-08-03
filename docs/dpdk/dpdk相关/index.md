@@ -30,13 +30,13 @@ DPDK中，如果有多个核可能需要同时访问一个网卡，那DPDK中会
 ```shell
 # 预留1024个2M内存页
 echo 1024> /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-```text
+```
 - NUMA系统
 
 ```shell
 echo 1024>/sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
 echo 1024>/sys/devices/system/node/node1/hugepages/hugepages-2048kB/nr_hugepages
-```text
+```
 ## dapp2
 
 ### dpdk编译
@@ -76,7 +76,7 @@ echo 1024>/sys/devices/system/node/node1/hugepages/hugepages-2048kB/nr_hugepages
 ```shell
 make config T=x86_64-native-linuxapp-gcc
 make T=x86_64-native-linuxapp-gcc install CONFIG_RTE_KNI_KMOD=y CONFIG_RTE_EAL_IGB_UIO=y -j 8
-```text
+```
 ## kni
 
 dpdk收到的包需要交给内核协议栈处理。

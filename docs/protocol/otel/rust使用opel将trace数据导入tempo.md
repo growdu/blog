@@ -4,7 +4,7 @@
 
 ```shell
 cargo new otlp_test
-```text
+```
 ## 修改项目依赖
 
 修改Cargo.toml,将其内容修改如下：
@@ -20,7 +20,7 @@ opentelemetry = "0.23"
 opentelemetry-otlp = "0.16"
 tokio = { version = "1", features = ["full"] }
 opentelemetry_sdk = { version = "0.23", features = ["rt-tokio"] }
-```text
+```
 ## 添加导入逻辑
 
 将main.rs替换为如下内容：
@@ -89,7 +89,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-```text
+```
 ## 基本概念详解
 
 - exporter：出口
@@ -107,7 +107,7 @@ Instrumentation (Span / Metric)
      Exporter
         ↓
  Tempo / Jaeger / Prometheus / OTLP Collector
-```text
+```
 trace/span/metric是底层数据模型：
 
 span有如下特点：
@@ -122,7 +122,7 @@ span有如下特点：
 HTTP request
  └─ SQL query
      └─ index scan
-```text
+```
 trace是一棵span树，使用traceID标识。span是最小单位，trace是span的集合。
 
 metric是数值型时间序列，主要是统计信息。
@@ -137,7 +137,7 @@ provider是入口+全局管理者。
 let provider = TracerProvider::builder()
     .with_span_processor(...)
     .build();
-```text
+```
 - 创建Tracer
 - 管理生命周期
 - 持有pipeline
@@ -160,7 +160,7 @@ trace pipeline典型组成：
 
 ```rust
 let exporter = opentelemetry_otlp::new_exporter().tonic();
-```text
+```
 trace的完整生命周期如下：
 
 ```shell
@@ -175,7 +175,7 @@ Span 生命周期交给 SpanProcessor
 Span 结束
    ↓
 Exporter 发出去
-```text
+```
 对应sdk结构关系：
 
 ```shell
@@ -184,7 +184,7 @@ TracerProvider
  ├── Sampler
  └── SpanProcessor
       └── Exporter
-```text
+```
 - trace / metric	“记录什么数据”
 - provider	“谁来创建 & 管理”
 - pipeline	“数据如何处理”

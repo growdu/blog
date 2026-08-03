@@ -13,7 +13,7 @@ dprc.1/dpni.3 (interface: eth3, end point: dpmac.4)
 dprc.1/dpni.2 (interface: eth2, end point: dpmac.13)
 dprc.1/dpni.1 (interface: eth0)
 dprc.1/dpni.0 (interface: eth1, end point: dpmac.14)
-```text
+```
 ## 查看网卡
 
 - 更换dpdk前
@@ -25,7 +25,7 @@ dprc.1/dpni.3 (interface: eth3, end point: dpmac.4)
 dprc.1/dpni.2 (interface: eth2, end point: dpmac.13)
 dprc.1/dpni.1 (interface: eth0)
 dprc.1/dpni.0 (interface: eth1, end point: dpmac.14)
-```text
+```
 - 更换dpdk后
 
 ```shell
@@ -37,7 +37,7 @@ dprc.1/dpni.1 (interface: eth0)
 dprc.1/dpni.0 (interface: eth1, end point: dpmac.14)
 dprc.1/dprc.2/dpni.5 (end point: dpmac.4)
 root@hx-A-Tiny:~#
-```text
+```
 ## dpaa2
 
 专有名词：

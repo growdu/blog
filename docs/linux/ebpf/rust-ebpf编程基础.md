@@ -11,16 +11,16 @@ export RUSTUP_UPDATE_ROOT=https://rsproxy.cn/rustup
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 export PATH="/root/.cargo/bin:${PATH}
-```text
+```
 ```shell
 rustup install stable
 rustup toolchain install nightly --component rust-src
 cargo install bpf-linker
 cargo install cargo-generate
-```text
+```
 ```shell
 cargo generate --git https://github.com/aya-rs/aya-template
-```text
+```
 ```shell
 root@linux-kernel-test:~/ebpf_dev# cargo generate --git https://github.com/aya-rs/aya-template
 🤷   Project Name: aya_test
@@ -33,7 +33,7 @@ root@linux-kernel-test:~/ebpf_dev# cargo generate --git https://github.com/aya-r
 [ 1/25]   Done: .cargo/config.toml                                                                                                                                                              [ 2/25]   Done: .cargo                                                                                                                                                                          [ 3/25]   Done: .gitignore                                                                                                                                                                      [ 4/25]   Done: Cargo.toml                                                                                                                                                                      [ 5/25]   Done: LICENSE-APACHE                                                                                                                                                                  [ 6/25]   Done: LICENSE-GPL2                                                                                                                                                                    [ 7/25]   Done: LICENSE-MIT                                                                                                                                                                     [ 8/25]   Done: README.md                                                                                                                                                                       [ 9/25]   Ignored: pre-script.rhai                                                                                                                                                              [10/25]   Done: rustfmt.toml                                                                                                                                                                    [11/25]   Done: aya_test/Cargo.toml                                                                                                                                                             [12/25]   Done: aya_test/build.rs                                                                                                                                                               [13/25]   Done: aya_test/src/main.rs                                                                                                                                                            [14/25]   Done: aya_test/src                                                                                                                                                                    [15/25]   Done: aya_test                                                                                                                                                                        [16/25]   Done: aya_test-common/Cargo.toml                                                                                                                                                      [17/25]   Done: aya_test-common/src/lib.rs                                                                                                                                                      [18/25]   Done: aya_test-common/src                                                                                                                                                             [19/25]   Done: aya_test-common                                                                                                                                                                 [20/25]   Done: aya_test-ebpf/Cargo.toml                                                                                                                                                        [21/25]   Done: aya_test-ebpf/build.rs                                                                                                                                                          [22/25]   Done: aya_test-ebpf/src/lib.rs                                                                                                                                                        [23/25]   Done: aya_test-ebpf/src/main.rs                                                                                                                                                       [24/25]   Done: aya_test-ebpf/src                                                                                                                                                               [25/25]   Done: aya_test-ebpf                                                                                                                                                                   🔧   Moving generated files into: `/root/ebpf_dev/aya_test`...
 🔧   Initializing a fresh Git repository
 ✨   Done! New project created /root/ebpf_dev/aya_test
-```text
+```
 ## ebpf程序分类
 
 ebpf按照attach point分为多种类型：
@@ -92,4 +92,4 @@ pub fn exec_simple_query_entry(ctx: ProbeContext) -> u32 {
     submit_entry(ctx, event)
 }
 
-```text
+```

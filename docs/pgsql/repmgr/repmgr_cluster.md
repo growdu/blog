@@ -4,19 +4,19 @@
 
 ```shell
 git clone git@github.com:EnterpriseDB/repmgr.git
-```text
+```
 检查pg是否安装，主要看pg_config在不在$PATH下面。
 
 ```shell
 pg_config --help
-```text
+```
 然后使用如下命令编译
 
 ```shell
 ./configure
 make
 make install
-```text
+```
 repmgr5.3与pg15对应，使用其他对应关系有可能会编译报错，编译完成后repmgr会放在pg的二进制目录下。
 
 ## 运行

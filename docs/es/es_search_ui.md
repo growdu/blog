@@ -78,9 +78,9 @@
 
 ![手把手教你通过ElasticSearch、FSCrawler及 SearchUI搭建文件搜索引擎_java_14](https://s2.51cto.com/images/blog/202208/31171755_630f27430371212551.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_30,g_se,x_10,y_10,shadow_20,type_ZmFuZ3poZW5naGVpdGk=/format,webp/resize,m_fixed,w_1184 "在这里插入图片描述")
 
-```text
+```
 ---name: "test"fs:  url: "d:\\test" # 监控windows下的D盘test目录  update_rate: "15m" # 间隔15分进行扫描  excludes:  - "*/~*"  #排除以~开头的文件  json_support: false  filename_as_id: false  add_filesize: true  remove_deleted: true  add_as_inner_object: false  store_source: false  index_content: true  attributes_support: false  raw_metadata: false  xml_support: false  index_folders: true  lang_detect: false  continue_on_error: false  ocr:    language: "eng"    enabled: true    pdf_strategy: "ocr_and_text"  follow_symlinks: falseelasticsearch:  nodes:  - url: "http://127.0.0.1:9200"  bulk_size: 100  flush_interval: "5s"  byte_size: "10mb"  ssl_verification: true1.2.3.4.5.6.7.8.9.10.11.12.13.14.15.16.17.18.19.20.21.22.23.24.25.26.27.28.29.30.31.32.
-```text
+```
 ![手把手教你通过ElasticSearch、FSCrawler及 SearchUI搭建文件搜索引擎_spring boot_15](https://s2.51cto.com/images/blog/202208/31171755_630f27430ff4253814.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_30,g_se,x_10,y_10,shadow_20,type_ZmFuZ3poZW5naGVpdGk=/format,webp/resize,m_fixed,w_1184 "在这里插入图片描述")
 
 -   保存配置后，我们就可启动FSCrawle爬虫程序了：
@@ -93,9 +93,9 @@
 
 ![手把手教你通过ElasticSearch、FSCrawler及 SearchUI搭建文件搜索引擎_程序人生_18](https://s2.51cto.com/images/blog/202208/31171755_630f27433e5c464880.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_30,g_se,x_10,y_10,shadow_20,type_ZmFuZ3poZW5naGVpdGk=/format,webp/resize,m_fixed,w_1184 "在这里插入图片描述")
 
-```text
+```
 {  "name" : "test",  "lastrun" : "2021-11-27T09:00:16.2043064",  "indexed" : 0,  "deleted" : 0}1.2.3.4.5.6.
-```text
+```
 ## 三、SearchUI
 
 -   我们最后从 [https://github.com/elastic/search-ui](https://github.com/elastic/search-ui)下载前端页面：
@@ -148,9 +148,9 @@
 
 -   安装依赖包，运行程序
 
-```text
+```
 # 安装- npm install# 运行- npm1.2.3.4.
-```text
+```
 ![手把手教你通过ElasticSearch、FSCrawler及 SearchUI搭建文件搜索引擎_spring boot_30](https://s2.51cto.com/images/blog/202208/31171756_630f2744474f617136.png?x-oss-process=image/watermark,size_16,text_QDUxQ1RP5Y2a5a6i,color_FFFFFF,t_30,g_se,x_10,y_10,shadow_20,type_ZmFuZ3poZW5naGVpdGk=/format,webp/resize,m_fixed,w_1184 "在这里插入图片描述")
 
 -   放置文件到FSCrawler监控的目录下

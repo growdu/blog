@@ -7,60 +7,60 @@ bash是Linux操作系统的默认Shell脚本。Shell是用来处理操作系统�
 
 下面的这段脚本，先是输出一个问候语句，然后输出当前的时间：
 
-```text
+```
 #!/bin/bash
 echo "Hello $USER,"
 echo "Today is $(date +'%Y-%m-%d')"
-```text
+```
 下面让我们使用-x选项来运行这段脚本：
 
-```text
+```
 $ bash -x example_script.sh
 + echo 'Hello chenhao,'
 Hello chenhao,
 ++ date +%Y-%m-%d
 + echo 'Today is 2009-08-31'
 Today is 2009-08-31
-```text
+```
 这时，我们可以看到，bash在运行前打印出了每一行命令。而且每行前面的+号表明了嵌套。这样的输出可以让你看到命令执行的顺序并可以让你知道整个脚本的行为。  
 **在跟踪里输出行号**
 
 在一个很大的脚本中，你会看到很多很多的执行跟踪的输出，阅读起来非常费劲，所以，你可以在每一行前加上文件的行号，这会非常有用。要做到这样，你只需要设置下面的环境变量：
 
-```text
+```
 export PS4='+${BASH_SOURCE}:${LINENO}:${FUNCNAME[0]}: '
-```text
+```
 让我们看看设置上了PS4这个环境变量后会是什么样的输出。
 
-```text
+```
 $ bash -x example_script.sh
 +example_script.sh:2:: echo 'Hello chenhao,'
 Hello chenhao,
 ++example_script.sh:3:: date +%Y-%m-%d
 +example_script.sh:3:: echo 'Today is 2009-08-31'
 Today is 2009-08-31
-```text
+```
 **调试部份的脚本**
 
 有些时候，你并不想调试整个脚本，你只要调试其中的一部份，那么，你可以在你想要调试的脚本之前，调用“set -x”，结束的时候调用“set +x”就可以了。如下面的脚本所示：
 
-```text
+```
 #!/bin/bash
 echo "Hello $USER,"
 set -x
 echo "Today is $(date %Y-%m-%d)"
 set +x
-```text
+```
 让我们看看运行起来是啥样？
 
-```text
+```
 $ ./example_script.sh
 Hello chenhao,
 ++example_script.sh:4:: date +%Y-%m-%d
 +example_script.sh:4:: echo 'Today is 2009-08-31'
 Today is 2009-08-31
 +example_script.sh:5:: set +x
-```text
+```
 注意：我们在运行脚本的时候，不需要使用bash -x了。
 
 ### 日志输出
@@ -69,24 +69,24 @@ Today is 2009-08-31
 
 使用log前，我们先写一个函数：
 
-```text
+```
 _log() {
     if [ "$_DEBUG" == "true" ]; then
         echo 1>&2 "$@"
     fi
 }
-```text
+```
 于是，你就可以在你的脚本中如下使用：
 
-```text
+```
 _log "Copying files..."
 cp src/* dst/
-```text
+```
 我们可以看到，上面那个\_log函数，需要检查一个\_DEBUG 变量，只有这个变量是真，才会真正开发输出日志。这样，你就只需要控制这个开关，而不需要删除你的debug信息。
 
-```text
+```
 $ _DEBUG=true ./example_script.sh
-```text
+```
 #### 使用Bash专用调试器
 
 如果你在写一个相当复杂的脚本，并且，你需要一个完整的像调试别的语言一样的调试器，那么你可以试着用用这个开源软件—— [bashdb](http://bashdb.sourceforge.net/)， 一个Bash的专用调试器。这个调试器很强大，你想得到的功能，他都有，比如，设置断点，单步跟踪，跳出函数，等等。它的用户接口很想GDB，这是他的[文档](http://bashdb.sourceforge.net/bashdb.html) 。

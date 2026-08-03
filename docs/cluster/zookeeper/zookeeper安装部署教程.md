@@ -116,7 +116,7 @@ set /path data
 get /path
 
     返回名为/path的znode的数据
-```text
+```
 - 观察与通知
 
 > zookeeper采用了通知的机制。客户端向zookeeper请求，在特定的znode设置观察点（watch）。当该znode发生变化时，会触发zookeeper的通知，客户端收到通知后进行业务处理。观察点触发后立即失效。所以一旦观察点触发，需要再次设置新的观察点。

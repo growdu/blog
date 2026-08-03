@@ -9,14 +9,14 @@ git checkout REL_15_STABLE # 以pg15为例
 ./configure --prefix=`pwd`/debug
 make world -j16
 make install-world
-```text
+```
 ```shell
 git clone https://github.com/2ndQuadrant/pglogical.git
 cd pglogical
 export PG_CONFIG=/path/pg_config
 make
 make install
-```text
+```
 ## 配置启动
 
 ### 配置数据库1
@@ -25,7 +25,7 @@ make install
 
 ```shell
 ./initdb -D data -A trust
-```text
+```
 初始化data后，修改postgres.conf，添加如下内容：
 
 ```shell
@@ -36,12 +36,12 @@ max_replication_slots = 10
 max_wal_senders = 10
 
 shared_preload_libraries = 'pglogical'
-```text
+```
 启动数据库并配置插件：
 
 ```shell
 ./pg_ctl -D data start -l logfile
-```text
+```
 ```shell
 ./psql -d postgres
 psql (15.12)
@@ -49,14 +49,14 @@ Type "help" for help.
 
 postgres=# create extension pglogical;
 CREATE EXTENSION
-```text
+```
 ### 配置数据库2
 
 在同一台机器上再初始化一个数据库，
 
 ```shell
 ./initdb -D data -A trust
-```text
+```
 初始化data后，修改postgres.conf，添加如下内容：(修改一下数据库运行的端口)
 
 ```shell
@@ -68,10 +68,10 @@ max_wal_senders = 10
 
 shared_preload_libraries = 'pglogical'
 port=5433
-```text
+```
 ```shell
 ./pg_ctl -D data1 start -l logfile1
-```text
+```
 ```shell
 ./psql -d postgres -p 5433
 psql (15.12)
@@ -79,7 +79,7 @@ Type "help" for help.
 
 postgres=# create extension pglogical;
 CREATE EXTENSION
-```text
+```
 ## 配置pub
 
 连接数据库，注册pub。
@@ -90,7 +90,7 @@ SELECT pglogical.create_node(
     node_name := 'provider1',
     dsn := 'host=127.0.0.1 port=5432 dbname=postgres'
 );
-```text
+```
 ```sql
 ./psql -d postgres
 psql (15.12)
@@ -104,14 +104,14 @@ postgres(# );
 -------------
   2976894835
 (1 row)
-```text
+```
 创建复制集
 
 将public架构中的所有表添加到default复制集中。
 
 ```sql
 SELECT pglogical.replication_set_add_all_tables('default', ARRAY['public']);
-```text
+```
 复制集default的表都必需要primary key。
 
 ## 配置subscribe
@@ -123,7 +123,7 @@ SELECT pglogical.create_node(
 node_name := 'subscriber1',
 dsn := 'host=127.0.0.1 port=5433 dbname=postgres'
 );
-```text
+```
 ```sql
 ./psql -d postgres -p 5433
 psql (15.12)
@@ -138,7 +138,7 @@ postgres(# );
    330520249
 (1 row)
 
-```text
+```
 节点创建完成后，创建订阅者。
 
 ```sql
@@ -146,7 +146,7 @@ SELECT pglogical.create_subscription(
 subscription_name := 'subscription1',
 provider_dsn := 'host=127.0.0.1 port=5432 dbname=postgres'
 );
-```text
+```
 ```sql
 postgres=# SELECT pglogical.create_subscription(
 postgres(# subscription_name := 'subscription1',
@@ -156,7 +156,7 @@ postgres(# );
 ---------------------
           1763399739
 (1 row)
-```text
+```
 此时查看机器上的进程如下：
 
 ```shell
@@ -180,14 +180,14 @@ dys      1222134 1202949  0 02:44 ?        00:00:00 postgres: pglogical manager 
 dys      1222717 1202949  0 02:51 ?        00:00:00 postgres: pglogical apply 5:1763399739 
 dys      1222722 1201049  0 02:51 ?        00:00:00 postgres: walsender dys 127.0.0.1(57692) START_REPLICATION
 dys      1222772 1218880  0 02:51 pts/1    00:00:00 grep --color=auto postgres
-```text
+```
 ## 验证逻辑复制
 
 创建表：
 
 ```sql
 create table test_lo(id int primary key, name text, reg_time timestamp);
-```text
+```
 ```sql
 ./psql -d postgres
 psql (15.12)
@@ -201,7 +201,7 @@ postgres=# \d
 --------+---------+-------+-------
  public | test_lo | table | dys
 (1 row)
-```text
+```
 可以看到已经在源库（pub）创建了表，可以看下目的库有没有同步该表。
 
 ```shell
@@ -211,7 +211,7 @@ Type "help" for help.
 
 postgres=# \d
 Did not find any relations.
-```text
+```
 可以看到目标库并没有自动同步该表。
 
 ### 生成测试数据
@@ -220,7 +220,7 @@ Did not find any relations.
 
 ```sql
 insert into test_lo select generate_series(1,1000),'postgres',now();
-```text
+```
 ```sql
 postgres=# insert into test_lo select generate_series(1,1000),'postgres',now();
 INSERT 0 1000
@@ -244,7 +244,7 @@ postgres=# select * from test_lo limit 10;
   9 | postgres | 2026-03-09 03:00:15.304868
  10 | postgres | 2026-03-09 03:00:15.304868
 (10 rows)
-```text
+```
 ### 将新建的表添加到对应的复制集
 
 对新建的表；并没有为其分配对应的复制集；需要手动添加。（也可以使用触发器添加）
@@ -254,10 +254,10 @@ postgres=# select * from pglogical.replication_set_table ;
  set_id | set_reloid | set_att_list | set_row_filter 
 --------+------------+--------------+----------------
 (0 rows)
-```text
+```
 ```sql
 select pglogical.replication_set_add_table( set_name := 'default', relation := 'test_lo',synchronize_data := true);
-```text
+```
 ```sql
 postgres=# select * from pglogical.replication_set_table ;
  set_id | set_reloid | set_att_list | set_row_filter 
@@ -275,10 +275,10 @@ postgres=# select * from pglogical.replication_set_table ;
 -----------+------------+--------------+----------------
  290045701 | test_lo    |              | 
 (1 row)
-```text
+```
 ```sql
 select * from pglogical.show_subscription_table('subscription1','test_lo');
-```text
+```
 ### 同步DDL
 
 逻辑复制不会自动同步DDL，需要在创建表时使用pglogical指定的语句才会同步。
@@ -292,7 +292,7 @@ SET search_path = public;
 create table test_lo(id int primary key, name text, reg_time timestamp);
 $$
 );
-```text
+```
 ```sql
 ./psql -d postgres
 psql (15.12)

@@ -11,7 +11,7 @@ go mod init oh-my-code
 go env -w GOPROXY=https://proxy.golang.com.cn,direct
 go get github.com/gin-gonic/gin
 go get github.com/lib/pq
-```text
+```
 ### 安装数据库
 
 选择Postgresql作为我们的数据库环境，然后使用如下配置文件启动容器：
@@ -31,17 +31,17 @@ services:
       - /home/ha/oh-my-code-data:/var/lib/postgresql/data
     ports:
       - 5432:5432
-```text
+```
 使用如下命令启动容器：
 
 ```shell
 docker-compose up -d
-```text
+```
 启动后连接数据库并且创建表，如下命令所示：
 
 ```shell
 psql -Upostgres -dpostgres -h localhost -p 5432
-```text
+```
 创建user_configs表，命令如下：
 
 ```sql
@@ -51,7 +51,7 @@ postgres=# select * from user_configs;
  id | username | url | port | password 
 ----+----------+-----+------+----------
 (0 rows)
-```text
+```
 ### 编写后端代码
 
 ```go
@@ -212,7 +212,7 @@ func main() {
 	}
 }
 
-```text
+```
 ## front
 
 ### 安装node开发环境
@@ -223,24 +223,24 @@ func main() {
 ```shell
 nvm ls-remote
 nvm install v16.20.2
-```text
+```
 3. 使用nvm确定node版本
 
 ```shell
 nvm use v16.20.2
-```text
+```
 4. 安装pnpm
 
 ```shell
 npm install pnpm -g
-```text
+```
 5. 下载vue
 
 ```shell
 pnpm install vue -g
 pnpm install vue@cli -g
 pnpm install create-vite-app -g
-```text
+```
 6.创建项目
 
 ```shell
@@ -248,28 +248,28 @@ create-vite-app oh-my-code
 pnpm install
 pnpm run dev
 pnpm run build
-```text
+```
 7. 下载element-ui
 
 ```shell
 pnpm i element-plus
 pnpm i vuex
-```text
+```
 8. chatgpt 搜索基本代码
 
 ### 编写前端代码
 
 **步骤 1：创建一个 Vue.js 项目**
 
-```text
+```
 npx vite create user-management-ui
-```text
+```
 **步骤 2：安装 Element Plus**
 
-```text
+```
 cd user-management-ui
 npm install element-plus
-```text
+```
 **步骤 3：在 `main.js` 中导入 Element Plus**
 
 ```javascript
@@ -280,7 +280,7 @@ import 'element-plus/dist/index.css'
 const app = createApp({})
 
 app.use(ElementPlus)
-```text
+```
 **步骤 4：创建用户配置模型**
 
 ```javascript
@@ -294,7 +294,7 @@ export default class UserConfig {
     this.password = password
   }
 }
-```text
+```
 **步骤 5：创建用户配置服务**
 
 ```javascript
@@ -324,7 +324,7 @@ const userConfigService = {
 }
 
 export default userConfigService
-```text
+```
 **步骤 6：创建用户管理界面组件**
 
 ```javascript
@@ -441,7 +441,7 @@ export default {
   },
 }
 </script>
-```text
+```
 **步骤 7：在 `App.vue` 中使用用户管理界面组件**
 
 ```javascript
@@ -460,12 +460,12 @@ export default {
   },
 }
 </script>
-```text
+```
 **步骤 8：运行项目**
 
-```text
+```
 npm run dev
-```text
+```
 现在，你就可以在浏览器中访问 `http://localhost:3000` 来查看用户管理界面了。你可以在界面上查看、修改、创建和删除用户配置。
 
 **注意：**

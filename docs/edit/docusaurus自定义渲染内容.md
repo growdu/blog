@@ -10,13 +10,13 @@ Docusaurus 使用的是 remark 库，来解析和处理 Markdown 文件，可以
 
 ```shell
 npm install unist-util-visit
-```text
+```
 ## 编写插件
 
 ```shell
 mkdir remark-plugins
 vim  remark-ignore-eval-rst.js
-```text
+```
 在js文件中添加如下内容：
 
 ```js
@@ -34,7 +34,7 @@ module.exports = function removeCodeBlocks() {
   };
 };
 
-```text
+```
 在docusaurus.config.js中引入该插件：
 
 ```js
@@ -44,7 +44,7 @@ docs: {
           remarkPlugins: [remarkIgnoreEvalRst],  // 添加自定义的 Remark 插件
         },
 .....
-```text
+```
 同时修改一个md文件，使其内容被"```eval-rst" 和"```"包裹:
 
 ```md
@@ -52,6 +52,6 @@ docs: {
 
 ```eval-rst
 这里的内容不显示在网页。
-```text
-```text
+```
+```
 最后执行npm start观察结果。

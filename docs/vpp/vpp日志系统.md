@@ -9,7 +9,7 @@ dpdk_log_info
 dpdk_log_warn
 dpdk_log_notice
 dpdk_log_err
-```text
+```
 vpp本身的日志会调用syslog写到内核日志系统里面。
 
 vppctl的日志会写到startup.conf里配置的日志路径里面。
@@ -28,12 +28,12 @@ vppctl的日志会写到startup.conf里配置的日志路径里面。
 #define RTE_LOG_NOTICE   6U  /**< Normal but significant condition. */
 #define RTE_LOG_INFO     7U  /**< Informational.                    */
 #define RTE_LOG_DEBUG    8U  /**< Debug-level messages.             */
-```text
+```
 成功启动vpp后，进入vpp的cli界面使用如下命令可以查看dpdk日志：
 
 ```shell
 show log
-```text
+```
 #  reference
 
 1. https://blog.csdn.net/choumin/article/details/121630307

@@ -34,7 +34,7 @@ mec-->acceptor
 mec-->reactor
 mec-->agent
 mec-->queue
-```text
+```
 ```mermaid
 sequenceDiagram
 acceptor->>reactor: acceptor接受一个连接后会将socket绑定到一个pipe上并交给reactor监听
@@ -42,7 +42,7 @@ reactor->>agent: reactor使用epoll检测到socket IO事件时，将pipe attach�
 agent->>queue: agent执行job(send或者recv)，会将消息放到队列里
 agent->>reactor: agent线程会执行pipe的job，执行完成后将pipe deattach agent，reactor会重新监听pipe的socket
 queue-->>queue: queue执行线程会不停的取出消息去处理(即应用层的数据处理其实是在队列线程里执行的)
-```text
+```
 mec重点由五大组件组成，分别是：
 
 - listener（acceptor）
@@ -72,14 +72,14 @@ mec-->reactor
 mec-->agent
 mec-->listener
 mec-->queue
-```text
+```
 mec运行初始化流程如下：
 
 ```mermaid
 graph TB
 mec_init-->|初始化内存分配系统|init_buddy_pool-->|初始化mec配置|init_mec_profile-->|初始化reactor|mec_init_reactor-->|创建agent|agent_create_pool-->|创建reactor|reactor_create_pool-->mec_init_core
 mec_init_core2-->|初始化加密|mec_init_ssl-->|初始化消息队列|mec_init_mq-->|初始化channel|mec_init_channels-->|初始化分片|fragment_ctx_init-->|启动tcp监听|mec_start_lsnr-->|连接其他节点,实际是连接发送pipe|mec_connect_by_profile-->|运行mec守护线程|mec_daemon_proc
-```text
+```
 mec模块的网络通信采用epoll I/O多路复用的reactor模型，同时结合线程池和代理池来实现。reactor负责消息的通知，分为高优先级reactor和低优先级reactor。内部通信采用channel的概念，channel内部采用pipe来进行连接通信。每一个代理运行在一个线程上，每一个pipe会附着到一个代理上运行。acceptor接受新的连接后，会创建channel，并将channel添加到reactor池中，reactor负责监听I/O事件的到来。
 
 每一个acceptor接受到新的客户端连接请求后，接受连接并初始化pipe，同时将pipe添加到reactor中。reactor会监听每个pipe是否有事件到来，有事件到来时，reactor会把pipe附着到一个agent上运行。
@@ -101,7 +101,7 @@ typedef struct st_mec_instance {
     ssl_ctx_t         *ssl_acceptor_fd; ///< ssl接受器
     ssl_ctx_t         *ssl_connector_fd;///< ssl连接器
 } mec_instance_t;
-```text
+```
 ## 1. compress
 
 压缩模块主要是对传输数据进行压缩，以及对接收到的数据进行解压缩，以提高网络传输数量。当前支持zstd压缩和lz4压缩。
@@ -143,7 +143,7 @@ agent与reactor对应，也分为高优先级agent和低优先级agent，并与r
         (void)pthread_cond_destroy(&evnt->cond);
         return CM_ERROR;
     }
-```text
+```
 #### 2.1.2 agent执行
 
 当reactor监听到有pipe就绪时，会将该pipe附着到agent上执行。
@@ -163,7 +163,7 @@ agent与reactor对应，也分为高优先级agent和低优先级agent，并与r
 ```mermaid
 graph TB
 attach_agent-->try_attach_agent-->try_create_agent-->create_agent-->start_agent-->|agent线程循环函数|agent_entry-->try_process_multi_channels-->|等待信号唤醒线程|cm_event_timedwait-->|执行pipe的job|job
-```text
+```
 当调用attach_agent时，就意味着有一个pipe要放到agent里来运行。若在attach_agent成功后，同时调用cm_event_notify，则会发送信号给agent线程，表示有任务可以执行，此时会唤醒线程并执行pipe的job。
 
 在网络模块中有两个地方会将pipe attach到agent，分别是客户端在connect成功后和reactor接收到事件之后。
@@ -216,7 +216,7 @@ typedef struct st_mec_channel {
     atomic32_t    serial_no;
     mec_pipe_t    pipe[PRIV_CEIL]; ///< pipe数组，高优先级和低优先级
 } mec_channel_t;
-```text
+```
 创建channel时会根据实际的实例个数（节点个数）创建。
 
 channel存放在mec上下文里，用一个二维数组来存放。其中一维是nodeid，二维是channel索引。比如三个节点的集群，若每个节点之间有三个channel，则有9个channel（实际使用的没有那么多，自己不会连自己的channel），因为在分布式集群中，各节点互相之间都需要通信。
@@ -229,14 +229,14 @@ typedef struct st_mec_context {
     mec_cb_t          cb_processer[MEC_CMD_CEIL];
     shutdown_phase_t  phase;
 } mec_context_t;
-```text
+```
 #### 2.2.1 初始化channel
 
 ```mermaid
 graph TB
 mec_init_channels-->mec_alloc_channels-->mec_alloc_channel-->mec_init_inst_param-->|初始化 send job and recv job|mec_init_channels_param
 mec_init_channels-->|初始化 recv queue and send queue|mec_alloc_channel_msg_queue-->init_msgqueue
-```text
+```
 每个channel有两个pipe，每个pipe又有两个job，一个发送job，一个接收job，在初始化channel时注册，这个job就是具体的执行函数。最后会通过reactor分配到agent线程上去具体执行。
 
 ```c
@@ -262,14 +262,14 @@ void mec_init_channels_param(mec_channel_t *channel, const mec_profile_t *profil
         pipe->recv_need_close = CM_FALSE;
     }
 }
-```text
+```
 - mec_proc_send_pipe
 
 ```mermaid
 graph TB
 mec_proc_send_pipe-->mec_try_connect-->|连接tcp服务端|cs_connect-->cs_send_bytes
 cs_connect-->cs_open_tcp_link-->|发送pipe层连接信息|cs_tcp_connect-->cm_ipport_to_sockaddr-->cs_create_socket-->cs_tcp_send_timed-->cs_tcp_wait-->cs_tcp_recv_timed
-```text
+```
 - mec_proc_recv_pipe
 
 ```mermaid
@@ -277,13 +277,13 @@ graph TB
 mec_proc_recv_pipe-->mec_proc_recv_msg-->mec_read_message-->mec_process_message-->|处理消息实际上放入消息队列,每一个队列会创建一个线程,由线程循环函数去解析消息|dtc_task_proc-->|批量从队列中取出消息来处理|get_batch_msgitems-->|批量处理接收|dtc_proc_batch_recv-->dtc_proc_batch-->dtc_proc_batch_core-->dtc_recv_proc
 dtc_proc_batch-->dtc_decompress_batch
 get_batch_msgitems-->|批量处理发送|dtc_proc_batch_send
-```text
+```
   服务端启动监听的流程如下：
 
 ```mermaid
 graph TB
 mec_start_lsnr-->cs_start_tcp_lsnr-->cs_create_lsnr_socks-->cs_lsnr_init_epoll_fd-->srv_tcp_lsnr_proc
-```text
+```
 初始化channel完成后，还需要初始化mq接收上下文和mq发送上下文中的channel_private_queue，这是一个二维数组，是消息队列的具体存放地址。一维是节点id，二维是channel对应的消息队列。假设有三个节点，每个节点配置的channel个数是4，那么就有3\*4=12个消息队列，对应3\*4的二维数组。
 
 #### 2.2.2 连接channel
@@ -293,7 +293,7 @@ mec_start_lsnr-->cs_start_tcp_lsnr-->cs_create_lsnr_socks-->cs_lsnr_init_epoll_f
 ```mermaid
 graph TB
 mec_connect_by_profile-->mec_connect-->|连接每一个channel|mec_connect_channel-->|连接高优先级pipe和低优先级pipe|mec_conn_pipe-->|将pipe绑定到agent上运行|attach_agent-->|pipe放入成功后需要发送信号通知agent有任务到来,agent线程会被唤醒处理job|cm_event_notify
-```text
+```
 此时会将所有的channel连接，具体来说是pipe连接，channel的连接其实就是channel两个pipe（高低优先级）的连接。通过这个步骤，就将pipe放入到agent里，此时socket也还没有到reactor里，且此时的pipe是发送类型，表明需要主动发送消息，最终消息流程转移到了mec_proc_send_pipe。
 
 ### 2.3 api
@@ -321,7 +321,7 @@ typedef struct st_mec_message_head {
     uint64     time2;
     uint64     time3;
 } mec_message_head_t;
-```text
+```
 消息体结构如下：
 
 ```c
@@ -334,7 +334,7 @@ typedef struct st_mec_message {
     uint32              offset;   // for reading
     uint32              options;  // options
 } mec_message_t;
-```text
+```
 消息头中cmd的类型有如下几种：
 
 ```c
@@ -371,7 +371,7 @@ typedef enum en_mec_command {
 
     MEC_CMD_CEIL,
 } mec_command_t;
-```text
+```
 mec对外提供的接口主要分为以下几类：
 
 - 初始化mec和释放mec资源
@@ -845,7 +845,7 @@ static inline uint32 mec_get_recv_pack_version(const mec_message_t *pack)
 
 uint32 mec_get_write_pos(const mec_message_t *pack);
 void mec_modify_int64(mec_message_t *pack, uint32 pos, uint64 value);
-```text
+```
 ### 2.4 func
 
 是一些主要函数的实现，此处不做展开。
@@ -873,7 +873,7 @@ typedef struct st_mq_context_t {
     message_pool_t *private_pool[CM_MAX_NODE_COUNT][PRIV_CEIL]; ///< 私有消息池，对应高低优先级
     message_pool_t msg_pool[PRIV_CEIL]; ///< 消息池
 } mq_context_t;
-```text
+```
 message_pool_t利用指针数组来存储数据，其结构如下：
 
 ```c
@@ -891,7 +891,7 @@ typedef struct st_message_pool {
     uint32            msg_pool_extent; ///< ext个数
     cm_event_t        event;
 } message_pool_t;
-```text
+```
 其中实际数据存储在extents数组内，数组内的每一个指针又指向一段内存，每一段内存都申请了msg_pool_extent个item。
 
 extents数组中的内存是按需申请分配的，当extent个数不够时，又会重新申请一段内存，每申请一次ext_cnt都会增加1，直到ext_cnt个数达到MSG_POOL_MAX_EXTENTS，或者说直到capacity达到最大值ext_cnt*msg_pool_extent。
@@ -906,7 +906,7 @@ typedef struct st_msg_item {
     uint32          next; ///< 下一个item的索引
     char            buffer[0]; ///< 存放实际的数据
 } msg_item_t;
-```text
+```
 dtc_msgitem_pool_t是消息队列池，与消息池不同，其结构如下
 
 ```c
@@ -918,7 +918,7 @@ typedef struct st_dtc_msgitem_pool {
     uint16           hwm;
     dtc_msgqueue_t  free_list; ///< 缓存队列
 } dtc_msgitem_pool_t;
-```text
+```
 #### 2.5.1 初始化
 
 需要初始化发送队列上下文和接收队列上下文。
@@ -926,7 +926,7 @@ typedef struct st_dtc_msgitem_pool {
 ```mermaid
 graph TB
 init_dtc_mq_instance-->init_msgqueue-->init_msgitem_pool-->mec_init_message_pool-->dtc_init_compress
-```text
+```
 #### 2.5.2 运行
 
 当上层应用主动发送消息时，消息会放到发送队列里。当agent执行pipe的recv job时，消息会放到接收队列里。
@@ -939,7 +939,7 @@ init_dtc_mq_instance-->init_msgqueue-->init_msgitem_pool-->mec_init_message_pool
 graph TB
 dtc_task_proc-->cm_event_timedwait-->get_batch_msgitems-->|批量处理发送消息|dtc_send_batch_proc-->dtc_send_proc-->dtc_send_proc_core-->cs_send_fixed_size-->release_batch_msgitems
 get_batch_msgitems-->|批量处理接收消息|dtc_proc_batch_recv-->dtc_proc_batch-->dtc_proc_batch_core-->dtc_recv_proc-->release_batch_msgitems
-```text
+```
 ##### 2.5.1.1 接收消息入队
 
 接收消息入队是在pipe的recv job中入队的。具体函数为mec_proc_recv_msg。
@@ -947,14 +947,14 @@ get_batch_msgitems-->|批量处理接收消息|dtc_proc_batch_recv-->dtc_proc_ba
 ```c
 mq_context_t *mq_ctx = get_recv_mq_ctx(); ///< 先找到接收队列上下文
 message_pool_t *pool = &mq_ctx->msg_pool[pipe->priv]; ///< 根据pipe的优先级取出对应的消息池，后面会从消息池分配消息
-```text
+```
 先从priavte_pool里分配消息，
 
 ```mermaid
 graph TB
 mec_alloc_msg_item_from_private_pool-->|如果private_pool没有初始化需要先初始化|mec_private_pool_init-->|pool初始化只是申请了message_pool_t的内存,但其内部的extents内存还没有分配|mec_init_message_pool-->mec_alloc_msg_item
 mec_alloc_msg_item_from_private_pool-->|从已经初始化的private_pool分配一个item|mec_alloc_msg_item
-```text
+```
 mec_alloc_msg_item逻辑比较复杂，下面是具体的流程：
 
 ```c
@@ -1004,12 +1004,12 @@ status_t mec_alloc_msg_item(message_pool_t *pool, msg_item_t **item)
     }
     return CM_SUCCESS;
 }
-```text
+```
 item分配成功后，会把pack attach到item的数据内存buff上,此时pack引用了buff。
 
 ```c
 MEC_MESSAGE_ATTACH(&pack, get_mec_profile(), pipe->priv, item->buffer);
-```text
+```
 然后调用mec_read_message将数据读到pack里，再通过mec_process_message将pack放入队列。
 
 ```c
@@ -1057,7 +1057,7 @@ status_t mec_process_message(const mec_pipe_t *pipe, mec_message_t *msg) ///< ms
     cm_event_notify(&mq_ctx->work_thread_idx[index].event); ///< 通知队列线程有新消息到来
     return CM_SUCCESS;
 }
-```text
+```
 ##### 2.5.1.2 发送消息入队
 
 #### 2.5.3 队列批处理
@@ -1067,7 +1067,7 @@ status_t mec_process_message(const mec_pipe_t *pipe, mec_message_t *msg) ///< ms
 ```c
 uint32 queue_idx = arg->index % (DTC_MSG_QUEUE_NUM + 1); ///< 队列的索引根据放入时的索引对队列个数加1取余，实际取出的还是创建队列线程时对应的队列，避免取出非法索引队列
 get_batch_msgitems(queue, &batch_queue, mq_ctx->profile->batch_size);
-```text
+```
 批量取出的逻辑如下：
 
 1. 首先上层可以配置批量处理的消息数量；
@@ -1115,7 +1115,7 @@ void get_batch_msgitems(dtc_msgqueue_t *queue, dtc_msgqueue_t *batch, uint32 bat
     cm_spin_unlock(&queue->lock);
     return;
 }
-```text
+```
 批量取出的消息只是队列的指针，并没有解析具体的消息。具体处理函数为dtc_proc_batch_recv，
 
 ```c
@@ -1130,7 +1130,7 @@ void get_batch_msgitems(dtc_msgqueue_t *queue, dtc_msgqueue_t *batch, uint32 bat
         msg_item->msg = NULL;
         msg_item = msg_item->next;
     }
-```text
+```
 mec_message_head_t消息头中携带了批量数据的个数，先查看消息是否是多条。
 
 ```c
@@ -1155,7 +1155,7 @@ mec_message_head_t消息头中携带了批量数据的个数，先查看消息�
         batch_size--;
         remain_size -= temp_head->size;
     }
-```text
+```
 每次处理消息需要根据控制消息查看是否需要合并包，
 
 ```c
@@ -1202,7 +1202,7 @@ mec_message_head_t消息头中携带了批量数据的个数，先查看消息�
                 head->src_inst, head->dst_inst, head->cmd, head->stream_id, code, code == 0 ? "N/A" : message);
         }
     }
-```text
+```
 处理分片时，分片使用hash来保存，使用节点id，流id和序列号来计算hash。
 
 ```c
@@ -1232,7 +1232,7 @@ mec_message_head_t消息头中携带了批量数据的个数，先查看消息�
         }
         cm_spin_unlock(&ctrl->lock);
     }
-```text
+```
 ### 2.6 reactor
 
 mec总共有两个reactor，一个是高优先级，一个是低优先级。与之相对应，agent也有两个，高优先级和低优先级。
@@ -1254,7 +1254,7 @@ typedef struct st_reactor {
     reactor_status_t status; ///< 状态
     agent_pool_t  *agent_pool; ///< 代理池
 } reactor_t;
-```text
+```
 reactor初始化时，创建一个reactor就是创建一个线程，每一个线程执行的是一个循环，用epoll_wait监听是否有socket准备就绪。
 
 ```c
@@ -1279,7 +1279,7 @@ reactor初始化时，创建一个reactor就是创建一个线程，每一个线
     for (loop = 0; loop < nfds; ++loop) {
         /*处理就绪的socket */
     }
-```text
+```
 每就绪一个socket，这里其实就是pipe，就会将其放到一个agent里去执行。
 
 #### 2.6.1 添加pipe
@@ -1289,7 +1289,7 @@ acceptor每接收到一个客户端的连接，就会创建一个pipe，并将�
 ```mermaid
 graph TB
 mec_tcp_accept-->mec_accept-->mec_init_pipe-->reactor_register_pipe-->reactor_add_epoll_pipe
-```text
+```
 #### 2.6.2 执行pipe
 
 reactor线程会监听添加进来的pipe，并把有事件到来的取出附着到agent中运行。附着到agent后，reactor会调用cm_event_notify向agent发送信号量，激活一个agent线程来处理pipe的job。
@@ -1297,7 +1297,7 @@ reactor线程会监听添加进来的pipe，并把有事件到来的取出附着
 ```mermaid
 graph TB
 reactor_create_pool-->reactor_start_pool-->reactor_start-->reactor_work-->reactor_entry-->reactor_handle_events-->reactor_wait4events-->attach_agent-->try_attach_agent
-```text
+```
 ## 3. protocol
 
 协议层主要包含tcp和ssl的相关收发包实现以及服务端监听实现。
@@ -1324,7 +1324,7 @@ static const vio_t g_vio_list[] = {
     { (recv_func_t)cs_ssl_recv, (send_func_t)cs_ssl_send, (wait_func_t)cs_ssl_wait,
       (recv_timed_func_t)cs_ssl_recv_timed, (send_timed_func_t)cs_ssl_send_timed },
 };
-```text
+```
 ### 3.1 listener
 
 listener主要负责监听socket并accept，accept包括系统调用accept(即tcp三次握手)，又包含应用层accept（pipe连接）。
@@ -1337,14 +1337,14 @@ mec采用reactor模式实现，listener主要是实现acceptor的功能，负责
 graph TB
 mec_start_lsnr-->cs_start_tcp_lsnr-->|创建监听socket,设置socket参数|cs_create_lsnr_socks-->|如果有多个地址的话会创建多个socket|cs_create_one_lsnr_sock
 cs_start_tcp_lsnr-->|将创建的socket添加到epoll监听里|cs_lsnr_init_epoll_fd-->|创建一个线程来接受来自客户端的连接请求|cm_create_thread
-```text
+```
 创建完socket后会启动一个线程来处理客户端的连接请求，处理函数为srv_tcp_lsnr_proc。该函数是一个epoll_wait的循环，会监听对应的socket事件并进行处理。
 
 ```mermaid
 graph TB
 srv_tcp_lsnr_proc-->cs_try_tcp_accept-->epoll_wait-->|有客户端连接请求到来|cs_create_tcp_link-->accept-->cs_check_link_ip-->|这里会设置socket为非阻塞非延时|cs_set_io_mode
 cs_create_tcp_link-->|accept完成后,执行上层accept回调并将pipe加入到reactor|mec_tcp_accept
-```text
+```
 创建监听后，accept完成后会将mec_tcp_accept保存在tcp_lsnr_t的action里，会在创建pipe时调用。在acceptor的执行线程里完成accept后，会执行action并将pipe放入reactor中。
 
 #### 3.1.2 应用层accept
@@ -1365,12 +1365,12 @@ mec_message_head_t消息里会携带src_inst和stream_id，分别表示来源实
 channel = &mec_ctx->channels[head.src_inst][head.stream_id]; ///< 找到一个channel
 msg_priv_t priv = CS_PRIV_LOW(head.flags) ? PRIV_LOW : PRIV_HIGH; ///< 根据flags确定是高优先级pipe还是低优先级
 mec_pipe_t *mec_pipe = &channel->pipe[priv]; ///< 找到pipe
-```text
+```
 ```mermaid
 graph TB
 mec_tcp_accept-->mc_accept-->mec_init_pipe-->|读取proto_code验证协议码是否正确|cs_read_bytes-->|然后发送link_ready_ack_t给对端|cs_send_bytes
 mec_init_pipe-->|等待socket事件到来|cs_wait-->cs_read_fixed_size-->|检查连接信息是否正确|check_connect_head_info-->|将pipe交给reactor去管理,此时acceptor完成|reactor_register_pipe-->reactor_add_epoll_pipe
-```text
+```
 ### 3.2 packet
 
 packet主要是实现了大小端转换。
@@ -1408,7 +1408,7 @@ typedef struct st_mec_pipe {
     struct st_mec_channel *channel;
     attach_info_t      attach[MODE_END]; ///< pipe的job（send、recv），agent线程的执行函数信息
 } mec_pipe_t;
-```text
+```
 #### 3.4.1 pipe的连接
 
 ##### 3.4.1.1 客户端
@@ -1450,7 +1450,7 @@ graph TB
 mec_proc_send_pipe-->|pipe还没有连接成功的话尝试连接|mec_try_connect-->cs_connect-->cs_open_tcp_link-->|先建立tcp连接|cs_tcp_connect-->cs_tcp_connect_core-->connect-->|连接成功后发送协议码,协议确认确保通信两端协议一致|cs_tcp_send_timed-->|若协议一致对端回复link_ready_ack,接收该消息并处理|cs_tcp_recv_timed
 cs_connect-->|连接成功后发送消息头|cs_send_bytes-->cs_tcp_send_timed
 mec_proc_send_pipe-->|已经连接成功,连接成功后会将agent重新放到idle队列里|detach_agent
-```text
+```
 ##### 3.4.1.2 服务端
 
 服务端的连接请参考listener。
@@ -1472,7 +1472,7 @@ mec_proc_send_pipe-->|已经连接成功,连接成功后会将agent重新放到i
 ```mermaid
 graph TB
 reactor_wait4events-->|reactor监听到事件到来将pipe绑定到agent上运行|attach_agent-->|agent收到信号会执行对应的job|job-->|reactor监听都是接收job|mec_proc_recv_pipe-->mec_proc_recv_msg-->|先解析消息头|mec_read_message-->|再处理消息体|mec_process_message-->|把消息放到接收队列里|put_msgitem-->|通知队列线程有新消息到来|cm_event_notify
-```text
+```
 pipe的接收job并不负责实际消息的处理，而是将消息放到消息队列里面，由队列线程进行处理。
 
 ### 3.5 tcp
@@ -1502,7 +1502,7 @@ typedef struct st_mec_message_head {
     uint64     time2;
     uint64     time3;
 } mec_message_head_t;
-```text
+```
 flags的bit位用于存放消息的控制信息，
 
 ```c
@@ -1513,7 +1513,7 @@ flags的bit位用于存放消息的控制信息，
 #define CS_FLAG_COMPRESS             0x0008  ///< 压缩标志
 #define CS_FLAG_PRIV_LOW             0x0010  ///< 低优先级消息
 #define CS_FLAG_BATCH                0x0020  ///< 批量发送消息
-```text
+```
 消息也有自己的消息池，消息池又分为private pool和msg_pool。
 
 ### 4.2 数据发送
@@ -1524,7 +1524,7 @@ flags的bit位用于存放消息的控制信息，
 
 ```c
  my_queue = &mq_ctx->channel_private_queue[head->dst_inst][channel_id]; ///< 根据目的节点id和channel id找到队列
-```text
+```
 放入queue，如果是低优先级根据目的实例id和channel id来计算hash；如果是高优先级放在第一个队列里。
 
 ```c
@@ -1532,7 +1532,7 @@ flags的bit位用于存放消息的控制信息，
     if (CS_PRIV_LOW(head->flags)) {
         index = cm_hash_uint32((head->dst_inst & 0xFFFFFF) | (channel_id << 24), DTC_MSG_QUEUE_NUM) + 1;
     }
-```text
+```
 每一个队列对应一个消息处理线程，若队列线程没有启动的话还需要启动队列线程。
 
 将消息放入队列后，需要发送信号通知队列线程有新任务到来。
@@ -1542,7 +1542,7 @@ graph TB
 mec_send_data-->mec_put_msg_queue-->mec_alloc_msgitem-->alloc_msgitems-->put_msgitem-->cm_event_notify
 put_msgitem-->cm_event_init-->cm_create_thread-->dtc_task_proc
 mec_send_data-->|如果channel没有连接需要先连接|mec_scale_out-->mec_connect_channel
-```text
+```
 ### 4.3 数据接收
 
 数据接收请参考3.4.2pipe的执行。数据接收处理实际是在pipe的接收job中执行的，具体的执行函数是mec_proc_recv_pipe。
@@ -1552,7 +1552,7 @@ mec_send_data-->|如果channel没有连接需要先连接|mec_scale_out-->mec_co
 ```mermaid
 graph TB
 mec_proc_recv_msg-->|先读出一条消息|mec_read_message-->|再将消息放入队列|mec_process_message
-```text
+```
 1. 先读取消息头，获取消息体长度；
 2. 再根据消息体长度读取消息体；
 3. 将消息放入队列；
@@ -1567,7 +1567,7 @@ mec_proc_recv_msg-->|先读出一条消息|mec_read_message-->|再将消息放�
     }
     CM_MFENCE;
     put_msgitem(&mq_ctx->queue[index], msgitem); ///< 放入队列
-```text
+```
 消息放入队列后，就由队列线程来处理。
 
 ## 5. FAQ
@@ -1594,7 +1594,7 @@ void register_msg_process(mec_command_t cmd, msg_proc_t proc, msg_priv_t priv)
     mec_ctx->cb_processer[cmd].priv = priv;
     mec_ctx->cb_processer[cmd].proc = proc;
 }
-```text
+```
 <font color="red">高优先级的消息和低优先级的消息差别在分配包填充控制信息时，高优先级的消息是不进行压缩传输的，而低优先级的消息若设置了压缩则会压缩进行传输。</font>
 
 ```c
@@ -1602,7 +1602,7 @@ void register_msg_process(mec_command_t cmd, msg_proc_t proc, msg_priv_t priv)
     if (get_mec_profile()->algorithm != COMPRESS_NONE && priv) { 
         head->flags |= CS_FLAG_COMPRESS; ///< 低优先级消息配置压缩算法后需要设置压缩标志
     }
-```text
+```
 <font color="red">根据消息优先级的不同，其放入队列的位置也不同。高优先级消息放入索引为0的队列，低优先级消息放入索引非0的其他队列。</font>
 
 ```c
@@ -1611,14 +1611,14 @@ void register_msg_process(mec_command_t cmd, msg_proc_t proc, msg_priv_t priv)
         index = cm_hash_uint32((head->dst_inst & 0xFFFFFF) | (channel_id << 24), DTC_MSG_QUEUE_NUM) + 1;
     }
     put_msgitem(&mq_ctx->queue[index], msgitem); 
-```text
+```
 <font color="red">DTC_MSG_QUEUE_NUM的值是16，也就是说，高优先级队列只有一个，就是第一个，低优先级队列有15个。这样的话，高优先级消息就不会和低优先级消息竞争。</font>
 
 根据消息优先级的不同，消息的buf大小也不一样。
 
 ```c
 uint32 buf_size = (priv == PRIV_LOW) ? MEC_ACTL_MSG_BUFFER_SIZE(get_mec_profile()) : MEC_PRIV_MESSAGE_BUFFER_SIZE;
-```text
+```
 #### 5.1.1 接收
 
 <font color="red">接收时消息携带的消息头中包含的stream_id和src_inst可以确定一个channel，消息头中flags包含了消息是高优先级还是低优先级。</font>
@@ -1627,7 +1627,7 @@ uint32 buf_size = (priv == PRIV_LOW) ? MEC_ACTL_MSG_BUFFER_SIZE(get_mec_profile(
 channel = &mec_ctx->channels[head.src_inst][head.stream_id];
 msg_priv_t priv = CS_PRIV_LOW(head.flags) ? PRIV_LOW : PRIV_HIGH;
 mec_pipe_t *mec_pipe = &channel->pipe[priv];
-```text
+```
 根据消息的优先级，会将pipe放到不同等级的reactor里。
 
 ```c
@@ -1635,7 +1635,7 @@ mec_pipe_t *mec_pipe = &channel->pipe[priv];
         LOG_RUN_ERR("[MEC]register channel %u priv %u to reactor failed.", channel->id, priv);
         return CM_ERROR;
     }
-```text
+```
 #### 5.1.2 发送
 
 <font color="red">发送时消息携带的消息头中包含的stream_id和dst_inst可以确定一个channel，消息头中flags包含了消息是高优先级还是低优先级。</font>
@@ -1646,7 +1646,7 @@ mec_pipe_t *mec_pipe = &channel->pipe[priv];
 #define MEC_STREAM_TO_CHANNEL_ID(stream_id, channel_num) (uint8)((stream_id) % (channel_num))
 uint32 channel_id = MEC_STREAM_TO_CHANNEL_ID(head->stream_id, profile->channel_num);
 mec_channel_t *channel = &mec_ctx->channels[head->dst_inst][channel_id];///< 取出channel
-```text
+```
 确定channel后，根据应用设定的包的优先级选取对应的pipe，判断对应的pipe是否已经连接激活，未连接激活直接返回错误，本次发送失败。
 
 ```c
@@ -1655,7 +1655,7 @@ mec_channel_t *channel = &mec_ctx->channels[head->dst_inst][channel_id];///< 取
             LOG_DEBUG_ERR("[MEC]data send_pipe to dst_inst[%u] priv[%u] is not ready.", head->dst_inst, priv);
             return CM_ERROR;
         }
-```text
+```
 ### 5.2 五大组件的关系图？
 
 ### 5.3 收发pipe是否都需要激活
@@ -1677,7 +1677,7 @@ mec_channel_t *channel = &mec_ctx->channels[head->dst_inst][channel_id];///< 取
         pipe->recv_pipe.socket_timeout = profile->socket_timeout; ///< 接收pipe socket接收发送超时时间
         pipe->send_pipe.l_onoff = 1; ///< 0=off, 1=on(开关)
         pipe->send_pipe.l_linger = 1; ///< 延时时间
-```text
+```
 > 在默认情况下,当调用close关闭socke的使用，close会立即返回。但是，如果send buffer中还有数据，系统会试着先把send buffer中的数据发送出去，然后close才返回。SO_LINGER选项则是用来修改这种默认操作的。
 > 
 > 1. 当l_onoff被设置为0的时候
@@ -1816,7 +1816,7 @@ mec_channel_t *channel = &mec_ctx->channels[head->dst_inst][channel_id];///< 取
 /// @param ready 是否准备好
 /// @return 
 status_t cs_tcp_wait(tcp_link_t *link, uint32 wait_for, int32 timeout, bool32 *ready)
-```text
+```
 在读取消息时，若消息还没有全部读完，会循环读取，每次读取都会设置超时时间,读取数据的默认超时时间为50ms。然后会累积读取超时时间，如果时间累积到socket_timeout则会认为读取超时。
 
 ```c
@@ -1841,7 +1841,7 @@ status_t cs_tcp_wait(tcp_link_t *link, uint32 wait_for, int32 timeout, bool32 *r
         read_buf    += read_size;
         remain_size -= read_size;
     }
-```text
+```
 ### 5.5 批处理的消息逻辑，怎么确定一次处理多少条消息
 
 请查看队列章节2.5.3 队列批处理。
@@ -1874,7 +1874,7 @@ status_t cs_tcp_wait(tcp_link_t *link, uint32 wait_for, int32 timeout, bool32 *r
         LOG_DEBUG_ERR("[MEC]rcvhead:no message handling function registered for message type %u", head->cmd);
         return CM_ERROR;
     }
-```text
+```
 ### 5.8 agent执行job结束的标志，接收多少数据结束
 
 agent执行job时，若是发送job，将一条消息发送结束后，job结束。

@@ -5,7 +5,7 @@
 ```shell
 cd project
 cargo vendor --respect-source-config
-```text
+```
 此时会在项目目录下生成vendor目录，里面存放了相关依赖。
 
 ## 修改包获取路径
@@ -14,16 +14,16 @@ cargo vendor --respect-source-config
 
 ```shell
 mkdir -p .cargo
-```text
+```
 ```shell
 [source.crates-io]
 replace-with = "vendored-sources"
 
 [source.vendored-sources]
 directory = "vendor"
-```text
+```
 将vendor目录拷贝过来解压。然后编译:
 
 ```shell
 cargo build
-```text
+```

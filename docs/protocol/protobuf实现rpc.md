@@ -8,7 +8,7 @@ protobuf用来定义网络数据交互的数据结构。
 
 ```shell
 yum install protobuf-devel.x86_64 protobuf-c-devel.x86_64 protobuf-c.x86_64
-```text
+```
 ## 示例
 
 示例说明：使用c语言，需要存储两张表，一张是节点信息表，包含id、名字、角色、优先级等字段，另外一张表是事件表，包含故障、关机、重启等事件，需要实现这两张表的插入更新和删除。
@@ -79,12 +79,12 @@ message Response {
   string message = 3;
 }
 
-```text
+```
 ### 生成C代码
 
 ```shell
 protoc-c --c_out=. cluster.proto
-```text
+```
 ```shell
 # ls -al
 总用量 29
@@ -93,4 +93,4 @@ drwxrwxrwx. 1 root root  4096 9月   3 08:47 ..
 -rwxrwxrwx. 1 root root 15440 9月   3 08:56 cluster.pb-c.c
 -rwxrwxrwx. 1 root root  7459 9月   3 08:56 cluster.pb-c.h
 -rwxrwxrwx. 1 root root   640 9月   3 08:48 cluster.proto
-```text
+```

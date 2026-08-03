@@ -51,7 +51,7 @@ quorum {
              exec_test_txt_exists: /usr/bin/test -f /tmp/test.txt
            }
        }
-```text
+```
 - votes
   
   qnetd的票数。
@@ -86,4 +86,4 @@ corosync-qnetd不需要配置文件，直接以命令行参数指定相关配置
 # -s 是否开启tls，默认开启
 # -f 后台运行
 corosync-qnetd -l host -p port -s on/off -f
-```text
+```

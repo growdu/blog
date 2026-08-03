@@ -6,7 +6,7 @@
 
 ```shell
 initdb -D data -A trust -Upostgres
-```text
+```
 将如下配置文件添加到postgresql.conf,
 
 ```shell
@@ -18,17 +18,17 @@ wal_level = replica
 max_wal_senders = 10
 wal_keep_size = 1GB
 hot_standby = on
-```text
+```
 启动数据库：（如果是跨机器部署机器还需要修改pg_hba.conf）
 
 ```shell
 pg_ctl -D data -l logfile start
-```text
+```
 ## cloen备库
 
 ```shell
 pg_basebackup -h localhost -p 5432 -D data1 -U repl -P -v -R -X stream -C -S standby1_slot
-```text
+```
 将如下配置文件添加到postgresql.conf,
 
 ```shell
@@ -42,14 +42,14 @@ default_transaction_read_only = on
 
 # 可选：报告为主库（用于监控）
 hot_standby_feedback = on
-```text
+```
 拷贝过来的原来的主库配置要把它删除掉。
 
 启动备库。
 
 ```shell
 pg_ctl -D data1 -l logfile start
-```text
+```
 可以看到主库运行在5432端口，备库运行在5433端口，然后连接主库查看流复制关系。
 
 ```shell
@@ -84,14 +84,14 @@ postgres=# select pg_is_in_recovery();
 (1 row)
 
 postgres=#
-```text
+```
 到这里主备集群就搭建好了。
 
 ## haproxy
 
 ```shell
 apt install haproxy
-```text
+```
 或者从源码下载编译。https://github.com/haproxy/haproxy
 
 采用extern-check方式来探测主库，探测脚本check_pg_master.sh的内容如下：
@@ -124,7 +124,7 @@ else
     echo " - $HOST:$PORT is REPLICA"
     exit 1   # 备库 -> HAProxy DOWN
 fi
-```text
+```
 haproxy的配置如下：
 
 ```shell
@@ -151,12 +151,12 @@ listen pg_write
     # PostgreSQL 节点
     server pg01 127.0.0.1:5432 check
     server pg02 127.0.0.1:5433 check
-```text
+```
 使用如下命令启动haproxy，
 
 ```shell
 systemctl start haproxy
-```text
+```
 ## 验证代理是否生效
 
 - 代理运行在5000端口，将流量转发到主库
@@ -173,5 +173,5 @@ postgres=# select pg_is_in_recovery();
 -------------------
  f
 (1 row)
-```text
+```
 修改haproxy的配置，变更pg1和pg2的位置，继续使用上面的连接串连接数据库，依然能连接到主库。

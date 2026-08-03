@@ -52,17 +52,17 @@
 
 ```bash
 netsh interface portproxy add v4tov4 listenport=445 listenaddress=localhost connectport=目标端口 connectaddress=目标IP
-```text
+```
 例如我要把访问`127.0.0.1:445`的请求都转发到`192.168.3.116:446`，命令如下
 
 ```bash
 netsh interface portproxy add v4tov4 listenport=445 listenaddress=localhost connectport=446 connectaddress=192.168.3.11
-```text
+```
 查看是否设置成功
 
 ```bash
 netsh interface portproxy show all
-```text
+```
 ![image-20231114012339209](https://img-blog.csdnimg.cn/img_convert/04f4ac9fb95637a8583e6ae4241fc996.png)
 
 到此就设置完了，重启下电脑，让SMB 1.0协议和端口转发服务生效
@@ -73,7 +73,7 @@ netsh interface portproxy show all
 
 ```bash
 netstat -ano|findstr 445
-```text
+```
 只要显示不是`4`就是代表成功的意思，否则就是不成功。
 
 ![image-20231114012534117](https://img-blog.csdnimg.cn/img_convert/a9d834773204b6519ccf031281dc2925.png)

@@ -64,7 +64,7 @@ struct fastgtpu_tx_debug_t {
     ip4_address_t dst_addr4;
 };
 
-```text
+```
 ## 配置
 
 启动时可在startup.conf启动文件中添加fastgtpu配置模块，进行参数配置和功能开启。配置样例如下：
@@ -93,7 +93,7 @@ fastgtpu {
         # 报文是否送往运用层，配置该参数后收到报文直接丢弃，不做任何处理
         tx-to-application-off
 }
-```text
+```
 ## cli
 
 可以通过vppctl发送命令对发包测试进行控制。

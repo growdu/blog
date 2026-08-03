@@ -12,7 +12,7 @@ fastgtpu {
         # 报文是否送往运用层，配置该参数后收到报文直接丢弃，不做任何处理
         tx-to-application-off
 }
-```text
+```
 ## cli
 
 可以通过vppctl查看fastgtpu插件状态和清除统计信息。
@@ -20,4 +20,4 @@ fastgtpu {
 ```shell
 vpp# show fastgtpu stats
 vpp# clear fastgtpu
-```text
+```

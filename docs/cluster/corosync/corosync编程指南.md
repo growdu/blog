@@ -8,7 +8,7 @@
 
 ```shell
  sudo apt-get install libgcrypt20-dev libzstd-dev liblzo2-dev liblzma-dev libbz2-dev libsctp-dev doxygen libnl-3-dev libnl-route-3-dev
-```text
+```
 - 编译libqb
 
   ```shell
@@ -217,7 +217,7 @@ cpg_initialize-->cpg_join-->|应用层发送消息|cpg_mcast_joined
 cpg_join-->|循环接收消息|loop--->cpg_dispatch-->loop
 cpg_dispatch-->|流程结束释放资源|cpg_finalize
 
-```text
+```
 ### 基于quorum的投票机制
 
 分布式集群需要处理的一个最主要问题就是“脑裂”，corosync通过quorum机制解决“脑裂的问题”，并且提供了一套接口对quorum进行配置和获取quorum信息。对于每一个corosync服务来说，其quorum都有两种状态：
@@ -358,7 +358,7 @@ cpg_join-->|循环接收消息|loop--->cpg_dispatch-->loop
 cpg_dispatch-->|流程结束释放资源|cpg_finalize
 
 votequorum_initialize-->votequorum_trackstart
-```text
+```
 ## corosync分布式应用实现
 
 基于corosync的分布式应用实现时需考虑以下几个问题：

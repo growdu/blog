@@ -18,7 +18,7 @@ vpp#set interface l2 bridge vpp0 100
 vpp#set interface l2 bridge vpp1 100
 vpp#l2fib add mac_addr 100 vpp0
 vpp# show l2fib all
-```text
+```
 ### 三层转发
 
 三层转发需使用nat44功能，设置一张网口进，另一张网口出。
@@ -34,7 +34,7 @@ vpp#set int ip address vpp1 172.168.1.12/24
 vpp#ip route add 0.0.0.0/0 via 172.168.1.12 
 vpp# nat44 add address 172.168.1.12
 vpp# set int nat44 in vpp1 out vpp0
-```text
+```
 ```shell
 set interface mac address TenGigabitEthernet1 42:4b:54:ae:6e:05
 set int ip address TenGigabitEthernet1 172.168.1.12/24
@@ -42,7 +42,7 @@ set int ip address TenGigabitEthernet0 192.168.8.25/24
 ip route add 0.0.0.0/0 via 172.168.1.12
 nat44 add address 172.168.1.12
 set int nat44 in TenGigabitEthernet1 out TenGigabitEthernet0
-```text
+```
 cpub对外网口1接入，经ip层转发到cpub对内网口2，经ip层转发到cpua对内网口1进行业务逻辑处理。在cpub上未进行业务处理。
 
 ```shell
@@ -57,7 +57,7 @@ set ip arp static TenGigabitEthernet0 192.168.8.25 92:51:e6:5c:01:00
 set fastgtpu test ip dst 192.168.8.25
 set fastgtpu test ip src 192.168.8.24
 set fastgtpu test mode 3
-```text
+```
 cpub对外网口1接入，网口1先进行业务处理和分流，再将报文由cpub对内网口1发出，cpua对内网口1收包后进行业务处理。两个cpu都会进行业务处理。
 
 ```shell
@@ -72,4 +72,4 @@ set fastgtpu test ip dst 172.168.8.25
 set fastgtpu test ip src 172.168.8.24
 set fastgtpu test mode 3
 start fastgtpu test
-```text
+```

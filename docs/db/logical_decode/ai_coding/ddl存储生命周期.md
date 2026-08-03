@@ -16,7 +16,7 @@ XLogRecPtr LogLogicalMessage(const char *prefix,
                             size_t size,
                             bool transactional,
                             bool flush);
-```text
+```
 这个函数在当前 PostgreSQL 源码里已经存在，且底层就是往 `RM_LOGICALMSG_ID / XLOG_LOGICAL_MESSAGE` 写 WAL。`logicalmsg_redo()` 还是 no-op，因为这类记录主要是给 logical decoding 用的。([doxygen.postgresql.org][1])
 
 所以你的 `LogLogicalDDLMessage()` 最合理的实现，是：
@@ -88,7 +88,7 @@ extern void SerializeLogicalDDLMessage(StringInfo out,
 extern LogicalDDLCommand *DeserializeLogicalDDLMessage(StringInfo in);
 
 #endif
-```text
+```
 ---
 
 # 3. payload 序列化格式
@@ -100,7 +100,7 @@ extern LogicalDDLCommand *DeserializeLogicalDDLMessage(StringInfo in);
 
 格式建议：
 
-```text
+```
 uint8   version
 uint8   kind
 uint16  reserved
@@ -120,7 +120,7 @@ cstring command_tag
 cstring object_identity
 cstring normalized_sql
 cstring query_string
-```text
+```
 这样做的好处：
 
 * 以后你加字段可以升 `version`
@@ -204,7 +204,7 @@ SerializeLogicalDDLMessage(StringInfo out, const LogicalDDLCommand *cmd)
 	append_string0(out, cmd->normalized_sql);
 	append_string0(out, cmd->query_string);
 }
-```text
+```
 这里用 `StringInfo` 做 buffer，是因为它本来就是 PostgreSQL 内部最常用的变长缓冲区容器，后续 `pgoutput` 侧也方便复用同一格式。
 
 ---
@@ -259,7 +259,7 @@ DeserializeLogicalDDLMessage(StringInfo in)
 
 	return cmd;
 }
-```text
+```
 ---
 
 # 6. `LogLogicalDDLMessage()` 实现
@@ -303,7 +303,7 @@ LogLogicalDDLMessage(const LogicalDDLCommand *cmd)
 
 	return lsn;
 }
-```text
+```
 这版实现的关键点有三个：
 
 1. **必须在事务内调用**，否则报错。
@@ -349,7 +349,7 @@ standard_ProcessUtility(...);  /* 先真正执行 DDL */
 
 if (should_emit)
 	LogLogicalDDLMessage(&cmd);
-```text
+```
 这样可以避免“DDL 实际执行失败，但你已经写了复制消息”。
 
 ---
@@ -374,7 +374,7 @@ if (should_emit)
 
 ```c
 #define LOGICAL_DDL_PREFIX "pg_ddl"
-```text
+```
 这样 decode / pgoutput / apply 都容易识别。
 
 ---

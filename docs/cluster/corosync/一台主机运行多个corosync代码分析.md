@@ -11,7 +11,7 @@ corosync从设计上就只运行一台机器运行一个corosync节点，它通�
 
 ```c
 static const char *corosync_lock_file = LOCALSTATEDIR"/run/corosync.pid";
-```text
+```
 corosync_lock_file是一个const的常量，不允许修改，若要支持同一机器运行多个corosync实例，需要支持corosync_lock_file可配置。
 
 ## ipc创建
@@ -53,7 +53,7 @@ static const char* cs_ipcs_serv_short_name(int32_t service_id)
     }
     return name;
 }
-```text
+```
 ```c
     serv_short_name = cs_ipcs_serv_short_name(service->id);
 
@@ -68,7 +68,7 @@ static const char* cs_ipcs_serv_short_name(int32_t service_id)
         ipcs_mapper[service->id].id,
         cs_get_ipc_type(),
         &corosync_service_funcs);
-```text
+```
 应用在与corosync通信时，也直接使用服务名创建ipc。如cpg服务初始流程如下：
 
 ```c
@@ -77,5 +77,5 @@ static const char* cs_ipcs_serv_short_name(int32_t service_id)
         error = qb_to_cs_error(-errno);
         goto error_put_destroy;
     }
-```text
+```
 可以看到直接使用cpg连接ipc，这也导致应用只能连接到一个corosync。

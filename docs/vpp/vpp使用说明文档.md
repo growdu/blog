@@ -5,7 +5,7 @@
 ```shell
 root@localhost-Technical-B:~/vpp/vpp# ls
 bin  dpaa2  vpp_readme  include  install.sh  kmod  lib  share  startup.conf  usertools  vpp_papi-1.6.2-py2.7.egg
-```text
+```
 首先阅读vpp_readme，可根据该文档进行安装。
 
 安装时需要运行install.sh脚本，该脚本主要把该目录下的文件拷贝到目的安装路径，并设置环境变量。使用如下命令进行安装：
@@ -13,7 +13,7 @@ bin  dpaa2  vpp_readme  include  install.sh  kmod  lib  share  startup.conf  use
 ```shell
 chmod +x install.sh
 ./install.sh /mnt/
-```text
+```
 ## 环境准备
 
 ### 绑定dpdk网口
@@ -21,7 +21,7 @@ chmod +x install.sh
 ```shell
 dynamic_dpl.sh dpmac.4
 export DPRC=dprc.2
-```text
+```
 ## 驱动模块加载
 
 - 若需要开启kni功能，则需要加载rte_kni.ko模块，使用如下命令加载：

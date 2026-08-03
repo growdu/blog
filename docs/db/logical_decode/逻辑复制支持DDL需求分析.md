@@ -26,12 +26,12 @@ WITH (
     publish = 'insert, update, delete',
     publish_ddl = true
 );
-```text
+```
 或者仿照opengauss的接口设计：
 
 ```sql
 CREATE PUBLICATION pub_name FOR ALL TABLES with(publish='insert,update,delete,truncate',ddl='table');
-```text
+```
 在实现方式直接在内核里基于当前的逻辑复制来实现，需要补充完善：
 
 1. 捕获 DDL 
@@ -88,7 +88,7 @@ CREATE PUBLICATION name
     [ FOR ALL TABLES
       | FOR publication_object [, ... ] ]
     [ WITH ( publication_parameter [= value] [, ... ] ) ]
-```text
+```
 - 可以指定发布所有表，也可以指定发布一个或者多个表
 - 除了制定发布的表外，还可以指定要发布的操作，比如insert
 
@@ -96,7 +96,7 @@ with参数用于控制可选选项。
 
 ```sql
 WITH ( publication_parameter = value )
-```text
+```
 | 参数                         | 含义     |
 | -------------------------- | ------ |
 | publish                    | 复制哪些操作 |
@@ -110,7 +110,7 @@ WITH ( publication_parameter = value )
 CREATE PUBLICATION insert_only
 FOR TABLE users
 WITH (publish = 'ddl,insert');
-```text
+```
 但是当ddl需要显示配置时，就意味着逻辑复制的默认行为不会同步DDL。
 
 完整示例。
@@ -120,26 +120,26 @@ WITH (publish = 'ddl,insert');
 ```sql
 CREATE PUBLICATION pub_all
 FOR ALL TABLES;
-```text
+```
 - 复制部分表
 
 ```sql
 CREATE PUBLICATION sales_pub
 FOR TABLE orders, customers;
-```text
+```
 - 只复制insert
 
 ```sql
 CREATE PUBLICATION log_pub
 FOR TABLE logs
 WITH (publish = 'insert');
-```text
+```
 - 列级复制
 
 ```sql
 CREATE PUBLICATION user_pub
 FOR TABLE users (id, name);
-```text
+```
 ** 需要注意的是当开启ddl同步的时候，是否支持列级复制。因为在逻辑复制中，并不要求发布端和订阅端的表结构完全一致。**
 
 由这里引申出来的结论就是：是否开启自动同步DDL，应该是由发布端和订阅端共同决定的，或者说就是应该由订阅端来决定的。
@@ -155,14 +155,14 @@ CREATE SUBSCRIPTION subscription_name
     CONNECTION 'conninfo'
     PUBLICATION publication_name [, ...]
     [ WITH ( subscription_parameter [= value] [, ... ] ) ]
-```text
+```
 ##### subscription_name
 
 订阅名称。
 
 ```sql
 CREATE SUBSCRIPTION my_sub;
-```text
+```
 - 在 订阅数据库中唯一
 - 会创建多个 后台 worker
 
@@ -170,7 +170,7 @@ CREATE SUBSCRIPTION my_sub;
 
 ```sql
 SELECT * FROM pg_subscription;
-```text
+```
 ```sql
 ostgres=# SELECT * FROM pg_subscription;
  oid | subdbid | subskiplsn | subname | subowner | subenabled | subbinary | substream | subtwophasestate | subdisableonerr | subconninfo | subslotname | subsy
@@ -178,24 +178,24 @@ nccommit | subpublications
 -----+---------+------------+---------+----------+------------+-----------+-----------+------------------+-----------------+-------------+-------------+------
 ---------+-----------------
 (0 rows)
-```text
+```
 ##### CONNECTION 参数
 
 ```sql
 CONNECTION 'conninfo'
-```text
+```
 指定如何连接发布端sql。
 
 ```sql
 CONNECTION 'host=192.168.1.10 port=5432 dbname=test user=rep password=123456'
-```text
+```
 node: 该用户必须有 replication 权限.
 
 ##### PUBLICATION
 
 ```sql
 PUBLICATION publication_name [, ...]
-```text
+```
 指定订阅哪些 publication。
 
 订阅端会 合并所有 publication 的数据流。
@@ -295,14 +295,14 @@ Subscriber Core
 |  if DDL_MESSAGE:       |
 |     ProcessUtility()   |
 +------------------------+
-```text
+```
 基于现有的PG15的接口进行扩展，可选的接口是：
 
 ```sql
 CREATE PUBLICATION pub1
 FOR TABLE t1
 WITH (publish = 'insert, update, delete, ddl');
-```text
+```
 或者更加明确一点（减少对原有语法的修改）：
 
 ```sql
@@ -312,7 +312,7 @@ WITH (
     publish = 'insert, update, delete',
     publish_ddl = true
 );
-```text
+```
 对应订阅端的语法可以变更为：
 
 ```sql
@@ -323,14 +323,14 @@ WITH (
     copy_data = true,
     enable_ddl = true
 );
-```text
+```
 #### polardb-for-postgres分析
 
 #### opengauss逻辑复制支持DDL分析
 
 ```sql
 CREATE PUBLICATION pub_name FOR ALL TABLES with(publish='insert,update,delete,truncate',ddl='table');
-```text
+```
 - pub_name 
 
 创建的发布名称。

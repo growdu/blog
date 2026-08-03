@@ -9,21 +9,21 @@ walsender进程是用来发送WAL日志记录的，执行顺序如下：
 graph TB
 PostgresMain-->exec_replication_command-->StartReplication
 -->WalSndLoop-->XLogSendPhysical
-```text
+```
 walreceiver进程是用来接收WAL日志记录的，执行顺序如下：`sigusr1_handler()->StartWalReceiver()->AuxiliaryProcessMain()->WalReceiverMain()->walrcv_receive()`  
 
 ```mermaid
 graph TB
 sigusr1_handler-->StartWalReceiver-->AuxiliaryProcessMain
 -->WalReceiverMain-->walrcv_receive
-```text
+```
 startup进程是用来apply日志的，执行顺序如下：`PostmasterMain()->StartupDataBase()->AuxiliaryProcessMain()->StartupProcessMain()->StartupXLOG()`
 
 ```mermaid
 graph TB
 PostmasterMain-->StartupDataBase-->AuxiliaryProcessMain
 -->StartupProcessMain-->StartupXLOG
-```text
+```
 在流复制启动过程中，三个进程的启动顺序是从备库到主库，即：startup —> walreceiver —> walsender。但是值得注意的是Startup启动后，不会马上发送信号给postmaster来启动wal receiver进程，它先会进行一系列条件的判断然后决定是否通知postmaster启动wal receiver进程。 我们知道Startup进程回放日志所需要的WAL文件有3个来源：归档中获取、pg_wal文件夹下获取、从primary 节点以流复制方式获取。在实际流复制过程中， 如果是非归档，则先会从pg_wal中获取；否则优先从archive归档中获取（Archive Mode）； 如果两者都没有，startup要恢复的wal，只能从primary 节点以流复制方式获取，这时startup会发送信号（通过函数SendPostmasterSignal(PMSIGNAL_START_WALRECEIVER) ，可以查看之前的博文了解这段过程）给postmaster进程，请求其启动wal receiver进程从Primary节点来获取wal数据。
 
 在流复制运行中，WAL数据的流向则是walsender进程占据主动位置：walsender —> walreceiver —> startup。从主库[backend](https://so.csdn.net/so/search?q=backend&spm=1001.2101.3001.7020)执行业务操作所产生的XLOG会顺着上述流程从主库walsender进程网络发送到walreceiver网络接收并落盘，最终备库startup进程会对XLOG进行应用。
@@ -67,11 +67,11 @@ XLogPageRead-->WaitForWALToBecomeAvailable-->RequestXLogStreaming
 -->|发送PMSIGNAL_START_WALRECEIVER信号启动walreceiver|SendPostmasterSignal
 -->sigusr1_handler-->StartWalReceiver-->AuxiliaryProcessMain
 -->WalReceiverMain-->walrcv_receive
-```text
+```
 1. startup进程向postmaster请求启动WalReceiver进程  
    startup进程通过如下`WaitForWALToBecomeAvailable->RequestXLogStreaming`流程设置receiveStart和receiveStartTLI，要求WalReceiver进行流复制。
 
-```text
+```
 void RequestXLogStreaming(TimeLineID tli, XLogRecPtr recptr, const char *conninfo, const char *slotname, bool create_temp_slot) {
 WalRcvData *walrcv = WalRcv;
 ...
@@ -84,10 +84,10 @@ SpinLockRelease(&walrcv->mutex);
 if (launch) SendPostmasterSignal(PMSIGNAL_START_WALRECEIVER);
 else if (latch) SetLatch(latch);
 }
-```text
+```
 2. walReceiver进程调用XLogWalRcvFlush函数如果已经flush了XLOG逻辑位置则唤醒startup进程
 
-```text
+```
 static void XLogWalRcvFlush(bool dying) {
 if (LogstreamResult.Flush < LogstreamResult.Write) {
 WalRcvData *walrcv = WalRcv;
@@ -109,10 +109,10 @@ XLogWalRcvSendHSFeedback(false);
 }
 }
 }
-```text
+```
 3. startup进程要求WalReceiver进行现在发送应用反馈，每当应用interesting xlog records时，startup进程都会调用此方法，以便 walreceiver 可以检查它是否需要将apply通知（notification）发送回主节点，主库可能在应用了**synchronous_commit = remote_apply**参数的COMMIT中等待walreceiver的反馈。从这里可以看到WalReceiver除了发送write位点、flush位点、apply位点消息之外，针对remote_apply从库应用之后才commit这种情况，增加了startup进程强制WalReceiver唤醒发送反馈这一特性，加速主库进行commit操作。
 
-```text
+```
 void WalRcvForceReply(void) {
 Latch   *latch;
 WalRcv->force_reply = true;  // 设置强制回复标志
@@ -121,10 +121,10 @@ latch = WalRcv->latch;
 SpinLockRelease(&WalRcv->mutex);
 if (latch) SetLatch(latch);
 }
-```text
+```
 4. walReceiver进程WalRcvWaitForStartPosition函数等待startup进程设置receiveStart和receiveStartTLI
 
-```text
+```
 static void WalRcvWaitForStartPosition(XLogRecPtr *startpoint, TimeLineID *startpointTLI) {
 WalRcvData *walrcv = WalRcv;
 intstate;
@@ -161,13 +161,13 @@ SpinLockRelease(&walrcv->mutex);
 (void) WaitLatch(MyLatch, WL_LATCH_SET | WL_EXIT_ON_PM_DEATH, 0, WAIT_EVENT_WAL_RECEIVER_WAIT_START);
 }
 }
-```text
+```
 startup进程则通过`WaitForWALToBecomeAvailable->RequestXLogStreaming`流程设置receiveStart和receiveStartTLI，并且是通过[latch](https://so.csdn.net/so/search?q=latch&spm=1001.2101.3001.7020)唤醒WalReceiver进程。
 
 5. walReceiver进程关闭  
    (1) startup进程执行如下ShutdownWalRcv函数请求walreceiver进程关闭，并通过walRcvStoppedCV监视walReceiver进程关闭，等待 walreceiver 通过将状态设置为 WALRCV_STOPPED 来确认其死亡。
 
-```text
+```
 void ShutdownWalRcv(void) {
 WalRcvData *walrcv = WalRcv;
 pid_twalrcvpid = 0;
@@ -202,10 +202,10 @@ while (WalRcvRunning())
 ConditionVariableSleep(&walrcv->walRcvStoppedCV, WAIT_EVENT_WAL_RECEIVER_EXIT);
 ConditionVariableCancelSleep();
 }
-```text
+```
 walReceiver进程信号处理函数WalRcvDie向walRcvStoppedCV条件变量进行广播，通知startup进程。
 
-```text
+```
 static void WalRcvDie(int code, Datum arg) {
 WalRcvData *walrcv = WalRcv;
 XLogWalRcvFlush(true); /* Ensure that all WAL records received are flushed to disk */
@@ -219,7 +219,7 @@ ConditionVariableBroadcast(&walrcv->walRcvStoppedCV);
 if (wrconn != NULL) walrcv_disconnect(wrconn); /* Terminate the connection gracefully. */
 WakeupRecovery(); /* Wake up the startup process to notice promptly that we're gone */
 }
-```text
+```
 walReceiver进程WalReceiverMain处理walRcvState状态向walRcvStoppedCV条件变量进行广播，通知startup进程。  
 ![在这里插入图片描述](https://img-blog.csdnimg.cn/eebf23b0f51f4f9da7586f9b7556a6e5.png)
 

@@ -20,7 +20,7 @@
 
 ```sql
 ALTER TABLE t ADD COLUMN c int;
-```text
+```
 当成一段字符串发出去，而是把它拆成**带语义的结构化对象**，让订阅端按“对象类型 + 操作类型 + 参数”去理解和执行。社区这些年讨论的方向，整体上就是：
 
 > **捕获 DDL → 规范化/去解析成结构化表示 → 写入专用逻辑日志/WAL → 解码发送 → 订阅端按结构化语义 apply**
@@ -111,7 +111,7 @@ ALTER TABLE t ADD COLUMN c int;
 
 如果你们自己实现，比较合理的内部模型大致会长这样：
 
-```text
+```
 DDLRecord
   - dbid
   - xid
@@ -129,7 +129,7 @@ DDLRecord
       - cascade/restrict
   - mapping_hints
   - original_sql      (可选，仅审计/报错用)
-```text
+```
 其中最关键的是 `subcommands[]`。因为很多真正麻烦的 DDL，尤其是 `ALTER TABLE`，本身就是一个“容器命令”，里面可能混着：
 
 * add column

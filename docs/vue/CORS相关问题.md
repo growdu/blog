@@ -34,7 +34,7 @@ ___
 -   之后，服务器会在响应报文中告诉浏览器，这些方法和请求头是否有效。这些信息会放在 Access-Control-Request-Headers 字段和Access-Control-Allow-Headers 字段中。如果浏览器发现这些字段完全匹配，那么正式请求就得以实现。
 -   如果使用node.js的cors库，实现这个操作的方式会很简单：
 
-```text
+```
 const express = require('express')
 const app = express()
 const cors = require('cors')
@@ -48,7 +48,7 @@ app.use(cors({
 // Server code 
 
 app.listen(3000)
-```text
+```
 -   这样服务器就会响应报文中添加刚才说的那些字段。值得一提的是，你并不需要手动设置allowedHeaders字段，因为它的默认值和客户端发来的那个字段中的值相同。
 
 ___
@@ -67,7 +67,7 @@ ___
 -   `javascript fetch(url, { credentials: 'include' })`
 -   服务器端(使用cors库实现)：
 
-```text
+```
 const express = require('express')
 const app = express()
 const cors = require('cors')
@@ -82,7 +82,7 @@ app.use(cors({
 // Server code 
 
 app.listen(3000)
-```text
+```
 ___
 
 ## 总结

@@ -33,14 +33,14 @@ dcf在初次启动后，会将传入的配置文件信息写入到metadata里，
 	"role": "FOLLOWER"
 }]
 
-```text
+```
 ## 内部启动流程
 
 dcf内部从dcf_start开启启动，dcf_start需要每个节点都运行，并且需要传入节点id和集群配置json字符串。
 
 ```c
 int dcf_start(unsigned int node_id, const char *cfg_str);
-```text
+```
 dcf内部采用的是多线程模型，在启动后需要初始化各个线程。具体包括如下几个方面：
 
 - metadata（元数据，简称md）
@@ -73,7 +73,7 @@ typedef struct st_mec_instance {
     ssl_ctx_t         *ssl_connector_fd;///< ssl连接器
 } mec_instance_t;
 static mec_instance_t *g_mec = NULL;
-```text
+```
 mec模块会初始化g_mec，首先是需要设置其配置，也就是profile，其中profile需要设置如下信息：
 
 ```c
@@ -96,7 +96,7 @@ typedef struct st_mec_profile {
     int32                connect_timeout;  // ms
     int32                socket_timeout;   // ms
 } mec_profile_t;
-```text
+```
 mec通信层面使用reactor模型，并将其分为agent和reactor，agent+reactor=mec，同时mec又分为高优先级和低优先级。
 而agent和reactor的个数则由上面提到的配置传入。agent和reacor都是线程池，有任务来的时候就会attach到对应的线程上去执行。
 

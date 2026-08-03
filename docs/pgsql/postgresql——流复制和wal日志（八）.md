@@ -35,7 +35,7 @@ wal日志位置在$PGDATA/pg_wal目录中（PostgreSQL从10版本开始，将所
 
 wal命名格式文件名称为16进制的24个字符组成，每8个字符一组，每组的意义如下：
 
-```text
+```
 00000001 00000000 00000001
 -------- -------- --------
 时间线    LogID     LogSeg
@@ -50,10 +50,10 @@ LogID：当LogSeg的最后两位变成FF，在生成一个时，LogID就会+1，
 00000001 00000000 000000FE
 00000001 00000000 000000FF
 00000001 00000001 00000001
-```text
+```
 ### 查看当前正在用的wal日志文件
 
-```text
+```
 ##################方式一##########################
 postgres=# select pg_current_wal_lsn();
  pg_current_wal_lsn 
@@ -74,7 +74,7 @@ postgres=# select pg_walfile_name(pg_current_wal_lsn());
  00000001000000000000000E
 (1 row)
 
-```text
+```
 ## 3、wal日志内部布局
 
 一个wal日志默认16M，大约能记录几十万个事务日志
@@ -93,10 +93,10 @@ postgres=# select pg_walfile_name(pg_current_wal_lsn());
 
 pg数据库有一个专门的写进程：walwriter
 
-```text
+```
 [postgres@pg1 ~]$ ps -ef|grep postgre
 postgres   1323   1318  0 03:25 ?        00:00:00 postgres: walwriter
-```text
+```
 **wal日志中的内容：**
 
 pg数据库会把事务做一个格式化，形成一个pg能够读懂的格式
@@ -115,24 +115,24 @@ wal日志文件默认为 16MB，这个值可以在编译 PostgreSQL 时通过参
 
 手动切换命令：
 
-```text
+```
 --PG10之前切换WAL log
 select pg_switch_xlog();
 --PG10之后切换WAL log
 select pg_switch_wal();
-```text
+```
 ### 3.2、wal日志归档
 
 wal日志写满后会自动归档，在postgresql.conf 文件中的参数archive_timeout，如果设置archive_timeout=60s，意思是，wal日志60s切换一次，同时会触发日志归档。
 
 尽量不要把archive_timeout设置的很小，如果设置的很小，会很消耗归档存储，因为强制归档的日志，即使没有写满，也会是默认的16M（假设wal日志写满的大小为16M）
 
-```text
+```
 archive_mode = on # 当启用archive_mode时，可以通过设置 archive_command命令将完成的 WAL 段发送到 归档存储。
 archive_command = 'cp %p /pgarch/pg_arch/%p' 
 
 archive_command：表示归档的命令%p:wal日志文件名 %f:归档文件名
-```text
+```
 ## 4、wal日志的清理
 
 在没有开启归档的情况下：9.5以后，如果超过了max_wal_size，那么就会删除不需要的wal。
@@ -146,7 +146,7 @@ archive_command：表示归档的命令%p:wal日志文件名 %f:归档文件名
 
 ### 4.2、手动清理wal日志
 
-```text
+```
 pg_controldata
 Latest checkpoint location:           0/1000098
 Latest checkpoint's REDO location:    0/1000060
@@ -156,7 +156,7 @@ Latest checkpoint's REDO WAL file:    000000010000000000000002
 
 --保留000000010000000000000002之后的日志
 pg_archivecleanup /pgdb/pgdata/pg_wal/  000000010000000000000002
-```text
+```
 注意：pg_wal日志没有设置保留周期的参数，即没有类似mysql的参数expire_logs_days，pg_wal日志永久保留，除非shell脚步删除几天前或pg-rman备份时候设置保留策略。
 
 ## 5、数据落盘
@@ -172,17 +172,17 @@ pg_archivecleanup /pgdb/pgdata/pg_wal/  000000010000000000000002
 
 ### 5.2、Checkpoints相关参数
 
-```text
+```
 checkpoint_timeout： 自动 WAL 检查点之间的最长时间，以秒计。合理的范围在 30 秒到 1 天之间。默认是 5 分钟(5min)。
 max_wal_size：在自动WAL检查点使得WAL增长到最大尺寸。这是软限制；特殊情况下WAL大小可以超过 max_wal_size，如重负载下，错误archive_command，或者 较大wal_keep_segments的设置。缺省是1GB。
 min_wal_size ：  # 只要WAL磁盘使用率低于这个设置，旧的WAL文件总数被回收，以供将来检查点使用。
 checkpoint_timeout = 5min       # range 30s-1d 自动 WAL 检查点之间的最长时间。如果指定值时没有单位，则以秒为单位。 合理的范围在 30 秒到 1 天之间。默认是 5 分钟（5min）。增加这个参数的值会增加崩溃恢复所需的时间。
-```text
+```
 ## 二、流复制的配置
 
 ## 1、主节点的配置参数
 
-```text
+```
 [postgres@pg1 ~]$ vim /pgdb/pgdata/postgresql.conf
 
 # - 连接设置 Connection Settings -
@@ -344,23 +344,23 @@ deadlock_timeout = 1s                   # 这是进行死锁检测之前在一�
 restart_after_crash = off               # 当被设置为真（默认值）时，PostgreSQL将在一次后端崩溃后自动重新初始化。
 # CUSTOMIZED OPTIONS
 include '/var/lib/pgsql/tmp/rep_mode.conf' # added by pgsql RA
-```text
+```
 创建用于复制的用户
 
-```text
+```
 create user repl  REPLICATION  LOGIN ENCRYPTED  PASSWORD 'repl';
-```text
+```
 修改pg.hab.conf
 
-```text
+```
 host    replication     repl             192.168.56.33/24            md5
 host    replication     repl             192.168.56.32/24            md5
-```text
+```
 ## 2、同步节点的配置参数
 
 备份数据
 
-```text
+```
 pg_basebackup -h 192.168.56.32 -U repl -p 5432 -F p   -X s  -v -P -R -D /pgdb/pgdata/ -l postgres32
 
 pg_basebackup命令中的参数说明：
@@ -374,10 +374,10 @@ pg_basebackup命令中的参数说明：
 -R 表示会在备份结束后自动生成recovery.conf文件，这样也就避免了手动创建。
 -D 指定把备份写到哪个目录，这里尤其要注意一点就是做基础备份之前从库的数据目录（/data/postgresql/data）目录需要手动清空。
 -l 表示指定个备份的标识，运行命令后可以看到进度提示。
-```text
+```
 ### 修改recovery.conf,以上备份命令中生成了recovery.conf 文件,因此简单修改即可。
 
-```text
+```
 standby_mode = 'on'
 primary_conninfo = 'application_name=pg2 user=repl password=repl123 host=192.168.56.32 port=5432 sslmode=disable sslcompression=0 target_session_attrs=any'
 ## 添加如下信息
@@ -386,12 +386,12 @@ recovery_target_timeline = 'latest'
 standby_mode：设置是否启用数据库为备库，如果设置成on，备库会不停地从主库上获取WAL日志流，直到获取主库上最新的WAL日志流
 primary_conninfo：设置主库的连接信息，这里设置了主库IP、端口、用户名信息等，此处是明文密码，生产环境建议配置非明文密码，而是将密码配置在另一个隐藏文件中
 covery_target_timeline：设置恢复的时间线（timeline），默认情况下是恢复到基准备份生成时的时间线，设置成latest表示从备份中恢复到最近的时间线，通常流复制环境设置此参数为latest，复杂的恢复场景可将此参数设置成其他值
-```text
+```
 ## 3、异步节点的
 
 备份数据
 
-```text
+```
 pg_basebackup -h 192.168.56.32 -U repl -p 5432 -F p   -X s  -v -P -R -D /data/postgresql/data/ -l postgres32
 
 pg_basebackup命令中的参数说明：
@@ -405,10 +405,10 @@ pg_basebackup命令中的参数说明：
 -R 表示会在备份结束后自动生成recovery.conf文件，这样也就避免了手动创建。
 -D 指定把备份写到哪个目录，这里尤其要注意一点就是做基础备份之前从库的数据目录（/data/postgresql/data）目录需要手动清空。
 -l 表示指定个备份的标识，运行命令后可以看到进度提示。
-```text
+```
 ### 修改recovery.conf,以上备份命令中生成了recovery.conf 文件,因此简单修改即可。
 
-```text
+```
 standby_mode = 'on'
 primary_conninfo = 'application_name=pg3 user=repl password=repl123 host=192.168.56.32 port=5432 sslmode=disable sslcompression=0 target_session_attrs=any'
 ## 添加如下信息
@@ -417,11 +417,11 @@ recovery_target_timeline = 'latest'
 standby_mode：设置是否启用数据库为备库，如果设置成on，备库会不停地从主库上获取WAL日志流，直到获取主库上最新的WAL日志流
 primary_conninfo：设置主库的连接信息，这里设置了主库IP、端口、用户名信息等，此处是明文密码，生产环境建议配置非明文密码，而是将密码配置在另一个隐藏文件中
 covery_target_timeline：设置恢复的时间线（timeline），默认情况下是恢复到基准备份生成时的时间线，设置成latest表示从备份中恢复到最近的时间线，通常流复制环境设置此参数为latest，复杂的恢复场景可将此参数设置成其他值
-```text
+```
 ## 查看流复制
 
 查看流复制
 
-```text
+```
 select pid,state,client_addr,sync_priority,sync_state from pg_stat_replication;
-```text
+```

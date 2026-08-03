@@ -8,7 +8,7 @@ cd docker-registry
 mkdir registry
 mkdr auth
 vim docker-compose.yml
-```text
+```
 docker-compose.yml的内容如下：
 
 ```shell
@@ -27,18 +27,18 @@ services:
     restart: always
     ports:
       - "5000:5000"
-```text
+```
 用htpasswd先生成一个密码，然后将文件拷贝到auth下面，用这个用户名密码登录。
 
 ```shell
 htpasswd -Bbc htpasswd.user admin 123456
 mv htpasswd.user auth/passwd
-```text
+```
 然后再启动镜像：
 
 ```shell
 docker-compose up -d
-```text
+```
 ## 添加镜像仓库到registry
 
 - 编辑docker配置文件 
@@ -54,12 +54,12 @@ docker-compose up -d
           "ip:port"
         ]
     }
-```text
+```
 - 修改完成后重启docker服务
 
 ```shell
 systemctl restart docker
-```text
+```
 - 登录到docker registry
 
 ```shell
@@ -71,20 +71,20 @@ Configure a credential helper to remove this warning. See
 https://docs.docker.com/engine/reference/commandline/login/#credentials-store
 
 Login Succeeded
-```text
+```
 - 加上个人仓库标签然后push
 
 ```shell
 docker tag registry 192.168.80.20:5000/registry
 docker push 192.168.80.20:5000/registry
-```text
+```
 ## 设置镜像仓库ui
 
 - 编辑配置文件
 
 ```shell
 vim registry_ui.yml
-```text
+```
 内容如下：
 
 ```yaml
@@ -100,9 +100,9 @@ services:
       - ENV_DOCKER_REGISTRY_PORT=5000
     ports:
       - "5001:80"
-```text
+```
 - 启动registry-ui
 
 ```shell
 docker-compose -f registry_ui.yml up -d
-```text
+```

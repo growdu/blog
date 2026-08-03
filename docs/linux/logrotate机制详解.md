@@ -20,7 +20,7 @@ if [ $EXITVALUE != 0 ]; then
     /usr/bin/logger -t logrotate "ALERT exited abnormally with [$EXITVALUE]"       
 fi                                                                                 
 exit 0
-```text
+```
 可以看到这个脚本主要做的事就是以 `/etc/logrotate.conf` 为配置文件执行了 logrotate。就是这样实现了每天执行一次 logrotate。
 
 # reference

@@ -4,7 +4,7 @@
 
 ```shell
 git config --global core.quotepath false
-```text
+```
 ```shell
 PS D:\codeblog> git status .
 On branch master
@@ -27,4 +27,4 @@ Untracked files:
         vue/css教程.md
 
 nothing added to commit but untracked files present (use "git add" to track)
-```text
+```

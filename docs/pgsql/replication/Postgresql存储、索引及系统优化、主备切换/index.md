@@ -51,7 +51,7 @@ root@eb2e0ae36696:/var/lib/postgresql/data# cat postmaster.pid
 *
   5432001         0
 ready   
-```text
+```
 数据目录的根目录下还会生成如下子目录。
 
 - base：默认表空间的目录。
@@ -92,7 +92,7 @@ drwx------ 2 postgres postgres     6 Feb 20 08:16 pg_tblspc
 drwx------ 2 postgres postgres     6 Feb 20 08:16 pg_twophase
 drwx------ 3 postgres postgres   124 Mar  7 12:10 pg_wal
 drwx------ 2 postgres postgres    18 Feb 20 08:16 pg_xact
-```text
+```
 在默认表空间的base目录下有很多子目录，这些子目录的名称与相应数据库的OID相同。
 
 ```shell
@@ -107,7 +107,7 @@ postgres=# select oid, datname from pg_database;
      1 | template1
  13457 | template0
 (3 rows)
-```text
+```
 比如我们新创建一个test数据库，它的oid为16405，此时在base目录下就会生成一个16405的目录。
 
 ```shell
@@ -123,7 +123,7 @@ postgres=# select oid, datname from pg_database;
 (4 rows)
 postgres=# \c test;
 You are now connected to database "test" as user "postgres".
-```text
+```
 ```shell
 root@eb2e0ae36696:/var/lib/postgresql/data# ls base -al
 total 52
@@ -133,12 +133,12 @@ drwx------  2 postgres postgres 8192 Feb 20 08:16 1
 drwx------  2 postgres postgres 8192 Feb 20 08:16 13457
 drwx------  2 postgres postgres 8192 Mar 14 06:40 13458
 drwx------  2 postgres postgres 8192 Mar 18 06:29 16405
-```text
+```
 `在16405目录下，存放着“test”这个数据库的表、索引等数据文件。每个表或索引都会分配一个文件号relfilenode，数据文件格式则以“<relfilenode>[.顺序号]”命名，每个文件最大为1GB，当表或索引的内容大于1GB时，就会从1开始生成顺序号。所以一张表的数据文件的路径为：`
 
 ```shell
 <默认表空间的目录>/<database oid> /<relfilenode>[.顺序号]
-```text
+```
 我们在test数据库下面创建一张test表，同时创建一个索引。
 
 ```shell
@@ -172,7 +172,7 @@ Indexes:
     "test_index" btree (id)
 
 test=# 
-```text
+```
 而一张表或索引的“relfilenode”是记录在系统表pg_class的relfilenode字段中的。如果要查询数据库“tes”中表“test”的数据文件，根据前面已经查出的数据库“test”的oid（为16405）来查，假设表“test01”是在默认表空间下的，那么查询这张表的relfilenode的命令如下：
 
 ```sql
@@ -181,13 +181,13 @@ test=# select relnamespace, relname, relfilenode from pg_class where relname='te
 --------------+---------+-------------
          2200 | test    |       16406
 (1 row)
-```text
+```
 可以看出这个表的relfilenode为“33103”，则这张表的数据文件为“$PGDATA/base/16405/16406”：
 
 ```shell
 root@eb2e0ae36696:/# ls $PGDATA/base/16405/16406 -al
 -rw------- 1 postgres postgres 0 Mar 18 06:35 /var/lib/postgresql/data/base/16405/16406
-```text
+```
 同样的查看索引文件test_index，
 
 ```sql
@@ -205,13 +205,13 @@ test=# select relnamespace, relname, relfilenode from pg_class where relname='te
 --------------+------------+-------------
          2200 | test_index |       16412
 (1 row)
-```text
+```
 可以看出这个索引的relfilenode为“16412”，则这张表的数据文件为“$PGDATA/base/16405/16412”：
 
 ```shell
 root@eb2e0ae36696:/# ls $PGDATA/base/16405/16412 -al
 -rw------- 1 postgres postgres 8192 Mar 18 06:53 /var/lib/postgresql/data/base/16405/16412
-```text
+```
 ### 1.2 数据（表）物理存储结构
 
 Postgresql当前不支持使用裸设备或者块设备，必须基于文件系统来存储。
@@ -251,7 +251,7 @@ typedef struct PageHeaderData
 	TransactionId pd_prune_xid; /* 可删除的旧XID，如果没有则为零 */
 	ItemIdData	pd_linp[FLEXIBLE_ARRAY_MEMBER]; /* 行指针数组(变长数组),它指向该页中的元组(也就是表记录) */
 } PageHeaderData;
-```text
+```
 pd_flags可取值如下：
 
 ```c
@@ -266,7 +266,7 @@ pd_flags可取值如下：
 
 //所有有效pd_flags位的OR操作
 #define PD_VALID_FLAG_BITS 0x0007
-```text
+```
 当向表中插入数据时，postgres会分配8KB(BLCKSZ)的内存空间。
 除了页的头部数据占用的空间外，其余的空间都是可用于存储元组的(当然行指针也有占用空间)。
 当没有行数据时，pd_upper指向可用空间（空闲空间）的末尾，而pd_lower指向页头(PageHeaderData)之后的第一个空闲空间的起始位置。
@@ -283,7 +283,7 @@ typedef struct ItemIdData
 				lp_flags:2,		/* 指针的标记位 */
 				lp_len:15;		/* 行内容的长度 */
 } ItemIdData;
-```text
+```
 行指针中表示行内容在业内（块中）的偏移量是15bit，能表示的最大偏移量是2^15=32768，因此在Postgresql中的最大大小是32KB。
 
 行指针的长度为4个字节，它形成一个简单的(ItemId，行指针)数组，该数组起着元组索引的作用。每个索引编号从1开始，称为“偏移数”。
@@ -305,7 +305,7 @@ typedef struct ItemIdData
 
 ```shell
 n = (pd_lower - sizeof(PageHeaderData))/4
-```text
+```
 访问的时候先从页头的尾部开始依次访问行指针，根据lp_off确定行的起始位置，根据lp_off+lp_len确定行的结束位置。
 
 #### 1.2.3 tuple结构
@@ -350,7 +350,7 @@ struct HeapTupleHeaderData
 
 	/* MORE DATA FOLLOWS AT END OF STRUCT */
 };
-```text
+```
 其中t_choice成员变量是一个共用体数据类型。对于t_choice中的t_heap成员，它描述了当前元组的事务id、事务id等信息，如下：
 
 ```c
@@ -365,7 +365,7 @@ typedef struct HeapTupleFields
 		TransactionId t_xvac;	/* old-style VACUUM FULL xact ID */
 	}			t_field3;
 } HeapTupleFields;
-```text
+```
 ##### 1.2.3.2 行头关键字段
 
 - xmin
@@ -404,7 +404,7 @@ cmin和cmax用于判断同一个事务内的其他命令导致的行版本变更
 > 使用到tuple中的标志位infomask,combo cid的标志位是HEAP_COMBOCID，其值是0x0020。定义如下：
 ```c
 #define HEAP_COMBOCID			0x0020	/* t_cid is a combo CID */
-```text
+```
 >在通过HeapTupleHeaderGetCmin/HeapTupleHeaderGetCmax获取cmin或者cmax的时候，首先会通过头部的控制字段判断tuple->t_infomask & HEAP_COMBOCID，如果是combo cid，那么通过这个cmobo cid字段，获取真正的cmin或者cmax。
 
 如何通过combo cid获取cmin和cmax？
@@ -426,7 +426,7 @@ typedef struct
 	ComboCidKeyData key;
 	CommandId	combocid;
 } ComboCidEntryData;
-```text
+```
 > 事务在第一次更新本事务插入的tuple时，会新开辟一个数组ComboCidKey comboCids；
 其大小初始的时候为100（每次空间不够的时候，会将数组的大小的扩大2倍）。
 同时还会使用一个hashmap，用来根据ComboCidKeyData查找combo cid。
@@ -435,7 +435,7 @@ comboHash = hash_create("Combo CIDs",
 			CCID_HASH_SIZE,
 			&hash_ctl,
 			HASH_ELEM | HASH_BLOBS | HASH_CONTEXT);
-```text
+```
 >将combo cid存储映射cmin/cmax，在update/delete本事务中插入的tuple时，调用GetComboCommandId函数，生成一个combo cid存储在tuple头部原来的cmin/cmax域。大致流程如下：
 >1. 首先根据(cmin, cmax)查找comboHash，如果找到返回ComboCidEntryData中的combo cid（reuse机制, 这个hashmap的作用）；
 >2. 如果没找到，往comboCids数组中添加一个ComboCidKeyData元组，同时往hashmap插入一个entry。返回的combo cid为usedComboCids（comboCids数组当前的大小），然后usedComboCids++。
@@ -481,7 +481,7 @@ comboHash = hash_create("Combo CIDs",
 #define HEAP_MOVED (HEAP_MOVED_OFF | HEAP_MOVED_IN)
 
 #define HEAP_XACT_MASK			0xFFF0	/* visibility-related bits */
-```text
+```
 如果t_infomask中HEAP_XMIN_COMMITTED为真，而HEAP_XMAX_INVALID为假，则说明该行是新插入的行，是可见的，此时就不需要到CLOG中查询xmin和xmax的事务状态了。
 
 而如果未设置HEAP_XMIN_COMMITTED，并不表示该行没有提交，而是说不知道xmin是否提交了，需要到CLOG中去判断xmin的状态。HEAP_XMAX_COMMITTED也是如此。
@@ -531,7 +531,7 @@ PG是通过数据行上的xmin和xmax来判断对某事务是否可见，那么�
 当正常事务ID与冻结事务ID比较时，会认为正常事务ID比冻结事务ID新。然后对于普通的事务比较新旧时就可以套用如下公式了：
 ```shell
 ((int32) (id1 - id2)) < 0
-```text
+```
 从这个公式中可以看出
 ，当事务ID没有回卷时，上面的公式相当于直接比较大小，在事务ID回卷后，如id1=4294967295，id2=5，id1-id2=4294967290，这是一个正数，但转换成有符号的int32时，由于超出了有符号数的取值范围，会转换成一个负数，说明id2的数据要新。
 
@@ -569,7 +569,7 @@ FSM文件固定使用3层树型结构，第0层和第1层为查找辅助层，�
 -rw------- 1 polkitd input 8.0K 2月  20 16:41 16384
 -rw------- 1 polkitd input  24K 2月  20 16:41 16384_fsm
 -rw------- 1 polkitd input 8.0K 2月  20 16:41 16384_vm
-```text
+```
 为什么fsm只需要3层二叉树？
 
 >fsm实际在文件中也是按页存储的,对于BLCKSZ是8KB的场景，每个二叉树可以大约存储8*1024/2个二叉树叶子节点，即4000个左右。三层二叉树共可以存储4000^3=(2^2*2^10)^3=2^36个数据页。
@@ -591,7 +591,7 @@ postgres=# select * from pg_freespace('test');
 (1 行记录)
 
 postgres=# 
-```text
+```
 #### 1.2.5 可见性映射表文件
 
 在PostgreSQL中更新、删除行后，数据行并不会马上从数据块中被清理掉，而是需要等VACUUM时清理。为了能加快VACUUM清理的速度并降低对系统I/O性能的影响，PostgreSQL在8.4.1版本之后为每个数据文件加了一个后缀为“_vm”的文件，此文件被称为可见性映射表文件，简称VM文件。VM文件中为每个数据块存储了一个标志位，用来标记数据块中是否存在需要清理的行。有该文件后，做VACUUM扫描此文件时，如果发现VM文件中该数据块上的位表示该数据块没有需要清理的行，VACUUM就可以跳过对这个数据块的扫描，从而加快VACUUM清理的速度。
@@ -668,7 +668,7 @@ Float8 argument passing:              by value
 Data page checksum version:           0
 Mock authentication nonce:            8242cbd9ab9f94ca6eec380df819fa397c0b2fd6bdbd64e76d3df8cd9bff5504
 root@1db814f27ee9:/# 
-```text
+```
 #### 1.2.1 数据库唯一标识
 
 数据库的唯一标识串“Database system identifier”用于唯一标识一套数据库系统，流复制的主数据库和备数据库有相同的数据库唯一标识串。在备库和主库建立流复制关系时需要根据该标识来确认是否能建立流复制关系，如果数据库唯一标识不同，将无法建立流复制关系。
@@ -683,7 +683,7 @@ postgres=# SELECT to_timestamp(((7337595217489322023>>32) & (2^32 -1)::bigint));
 (1 行记录)
 
 postgres=# 
-```text
+```
 #### 1.2.2 checkpoint信息
 
 Postgresql采用WAL日志来保证数据一致性，优先保证WAL日志写入磁盘。当数据库宕机时，可以通过重放wal日志来恢复数据库。但wal日志重放存在如下问题：
@@ -714,7 +714,7 @@ Latest checkpoint's oldestMultiXid:   1
 Latest checkpoint's oldestMulti's DB: 1
 Latest checkpoint's oldestCommitTsXid:0
 Latest checkpoint's newestCommitTsXid:0
-```text
+```
 “Latest checkpoint location”和“Prior checkpoint location”这两项指的是“最后一次的Checkpoint位置”和“前一次的Checkpoint位置”。
 
 虽然Checkpoint事件是一个时间点，但执行Checkpoint刷盘的操作是需要进行一段时间的，如现在我们要开始做Checkpoint了，先记录当前点，该当前点就记录在“Latest checkpoint's REDO location”中，当完成刷盘操作之后，把Checkpoint相关信息也生成一条WAL记录，再把这条WAL记录也写入WAL日志文件中，此WAL日志的位置就是“Latest checkpoint location”，然后更新控制文件中有关Checkpoint的信息。
@@ -741,13 +741,13 @@ checkpoint写入wal日志的流程如下：
 ```shell
 Minimum recovery ending location:     0/0
 Min recovery ending loc's timeline:   0
-```text
+```
 备库中这两项均不为0，
 
 ```shell
 Minimum recovery ending location:     0/50004F0
 Min recovery ending loc's timeline:   1
-```text
+```
 备库在不停地应用WAL日志，对于Hot Standby，在应用WAL日志的同时，还会对外提供服务。
 
 备库本身也可能因断电或其他故障而宕机，当备库在重新启动时，不能一启动就对外提供只读服务，因为这时的数据可能还不一致，如果这时提供只读服务，用户会读到不一致的数据。
@@ -776,7 +776,7 @@ drwx------ 19 postgres root     4.0K Feb 21 09:07 ..
 -rw-------  1 postgres postgres  16M Feb 21 08:54 000000010000000000000006
 -rw-------  1 postgres postgres  16M Feb 21 08:54 000000010000000000000007
 drwx------  2 postgres postgres    6 Feb 20 08:16 archive_status
-```text
+```
 - LSN：“Log Sequence Number（日志序列号）”，是一个不断增长的8字节（64bit）长数字，用于记录WAL日志的绝对位置，随着数据库WAL日志的不断增加，LSN也会不断地增长。
 
 #### 1.3.2 wal文件构成
@@ -806,7 +806,7 @@ PostgreSQL在源代码中的“改名”方法实际上并不是用改名的方�
 
 ```shell
 select pg_switch_wal();
-```text
+```
 2. wal日志写满后触发归档
 3. 设置archive_timeout
 
@@ -866,7 +866,7 @@ CREATE [ UNIQUE ] INDEX [ CONCURRENTLY ] [ 名称 ] ON 表名 [ USING 方法 ]
     [ WHERE 述词 ]
 
 postgres=# 
-```text
+```
 一般，在创建索引的过程中会把表中的数据全部读一遍，该过程所用时间由表的大小决定，对于较大的表，可能会花费很久的时间。在创建索引的过程中，对表的查询可以正常常运行，但对表的增、删、改等操作需要等索引建完后才能进行，为此PostgreSQL提供了一种并发建索引的方法，并发创建索引不会影响表的增删改操作，这是通过在CREATE INDEX中加CONCURRENTLY选项来实现的。当该选项被启用时，PostgreSQL会执行表的两次扫描，因此该方法需要更长的时间来建索引。
 
 ### 2.4 索引的特性
@@ -1031,7 +1031,7 @@ Intel CPU通过QPI（QuickPath Interconnect技术）与其他CPU通信，QPI大�
 ```shell
 dmidecode -t memory
 lshw -C memory
-```text
+```
 ##### 3.3.1.3 硬盘
 
 硬盘按接口可以分为以下3种。
@@ -1139,7 +1139,7 @@ Ext3文件系统是Linux下使用最广泛的文件系统，它提供以下3种�
 
 ```shell
 rootflags=data=journal
-```text
+```
 从理论上说，writeback模式的性能最好，但可靠性最差；journal模式的性能最差，但可靠性最好。如果硬件是带电池的Raid卡，而Raid卡上都有写缓存，在写缓存的帮助下，三者的性能差异并不是很大。因为文件系统日志的写通常是顺序写，这些顺序写的数据写入Raid卡的缓存中后会立即返回，而Raid卡会在后台再把数据刷新到磁盘中，所以这种情况下三种模式的性能差异并不大。
 在PostgreSQL中通常会使用默认的ordered模式。当然也不应该完全放弃journal模式，因为journal模式提供了更全面的完整性保证。
 
@@ -1184,17 +1184,17 @@ FUA技术让用户可以不使用硬盘上的缓存直接访问磁盘介质。SY
 ```shell
 (base) ➜  ~ dmesg |grep libata
 [    4.157767] libata version 3.00 loaded.
-```text
+```
 多数文件系统都提供了是否开启Barriers I/O选项，Ext3和Ext4默认开启了Barriers，如果想关闭Barriers，则需要在挂载文件系统时指定参数barriers=0，命令如下：
 
 ```shell
 mount -o barriers=0 /dev/sdb1 /data/pgdata
-```text
+```
 XFS也默认打开了Barriers，如果想关闭，则需要在挂载文件系统时指定参数nobarrier ，命令如下：
 
 ```shell
 mount -o nobarrier /dev/sdb1 /data/pgdata
-```text
+```
 ##### 3.3.2.5 I/O调优方法
 
 ###### 3.3.2.5.1 打开noatime
@@ -1207,7 +1207,7 @@ mount -o nobarrier /dev/sdb1 /data/pgdata
 
 ```shell
 /dev/sdd1 / xfs noatime,errors=remount-ro 0 1
-```text
+```
 ###### 3.3.2.5.2 调整预读
 
 Linux环境下块设备通常都默认打开了预读，可以使用下面的命令查看预读的大小：
@@ -1216,14 +1216,14 @@ Linux环境下块设备通常都默认打开了预读，可以使用下面的命
 (base) ➜  ~ sudo blockdev --getra /dev/sda
 256
 (base) ➜  ~ 
-```text
+```
 上面的示例中返回值为“256”，表示是256个扇区，即128KB。
 
 设置预读的命令如下：
 
 ```shell
 blockdev --setra 4096 /dev/sda
-```text
+```
 设置并不会永久生效，机器重启后该设置就会失效，如果想让其永久生效，应该把上面的命令放到开始自启动脚本中，如放在/etc/rc.local中。
 
 如果想让全表扫描更快，可以把预读调整得更大一些，如像上例中那样把预读设置为2MB。
@@ -1236,17 +1236,17 @@ blockdev --setra 4096 /dev/sda
 (base) ➜  ~ cat /proc/sys/vm/swappiness
 20
 (base) ➜  ~ 
-```text
+```
 设置此参数值，并使其永久生效的方法是在/etc/sysctl.conf中添加如下命令行：
 
 ```shell
 vm.swappiness = 0
-```text
+```
 然后执行如下命令，让/etc/sysctl.conf中的配置项生效：
 
 ```shell
 sysctl -p
-```text
+```
 如果想让PostgreSQL数据库的性能尽量平稳，就应该把此值设置为“0”。
 
 第二个需要调整的虚拟内存参数是“overcommit”。在Linux中，程序调用malloc()函数分配内存时，只分配虚拟内存，真正的物理内存并没有被分配，只有进程真正需要使用时才会分配物理内存。这种申请内存后并不会马上使用的技术就叫“Overcommit”技术。
@@ -1264,17 +1264,17 @@ vm.overcommit参数可控制调用malloc()函数时分配内存的行为，此�
 
 ```shell
 vm.overcommit_memory=2
-```text
+```
 要根据当前机器上的实际物理内存和SWAP空间的大小对参数vm.overcommit_ratio进行合理配置。如果想保守一些，让能分配的所有内存不超过物理内存的大小，如以下一台机器，其物理内存为4GB，SWAP也为4GB,则可以设置vm.overcommit_ratio为“0”，swap+0%*mem为“4G”，能分配的所有内存大小恰好是4GB：
 
 ```shell
 vm.overcommit_ratio=0
-```text
+```
 另一台机器的内存为128GB，SWAP为4GB，则可以配置vm.overcommit_ratio为“95” ，这样能分配的所有内存为4G+128G×0.95=125.6GB，示例如下：
 
 ```shell
 vm.overcommit_ratio=95
-```text
+```
 ###### 3.3.2.5.4 写缓存优化
 
 在Linux系统中，对文件的普通写，并不会马上写入磁盘中，而是会先写到内存页cache中，实际刷新到磁盘中的操作是由内核线程来完成的。在Linux2.6中，内核线程为pdflush，在Linux3.0以上则为flush进程。既然是由Linux中的一个内核线程后台刷新到磁盘中的，那么当内存中累积多少脏数据或积累多长时间后刷新是有讲究的，如果刷新得太频繁会产生过多的I/O，因为同一个数据块，在刷新到磁盘之前可能被写了好几次，但不管写了几次，实际上只会写到磁盘一次。而如果刷新太慢，会占用太多的内存，当真正需要内存时，需要先把脏数据刷新到磁盘中以腾出内存空间，从而导致PostgreSQL数据库的性能出现较大的抖动。
@@ -1290,13 +1290,13 @@ vm.overcommit_ratio=95
 ```shell
 vm.dirty_background_ratio = 10
 vm.dirty_ratio = 20
-```text
+```
 在较大内存的机器上还可以把这两个值调得更低一些，如在8GB以上的机器上可以做如下调整：
 
 ```shell
 vm.dirty_background_ratio = 5
 vm.dirty_ratio = 10
-```text
+```
 在实际应用中可以根据需求，通过测试来确定一个更精确的值。
 
 ###### 3.3.2.5.5 调整IO调度器
@@ -1310,12 +1310,12 @@ Linux系统下通常有以下3种I/O调度器。
 
 ```shell
 echo deadline > /sys/block/sdd/queue/scheduler
-```text
+```
 上面手动设置的方法并不持久，在机器重启后，设置就会失效。如果想将设置持久化，可以把上述命令行放到开机自启动脚本“rc.local”中。另一种方法是在Linux内核启动命令行上改变默认的I/O调度器，常用的修改的方法是修改grub.conf中的启动命令行，在命令行后加上“elevator=deadline”，命令如下：
 
 ```shell
 kernel /vmlinuz-2.6.18-128.e15 ro root=/dev/sda1 elevator=deadline
-```text
+```
 实际上，改变I/O调度器对PostgreSQL性能的提升很小，所以保留默认的调度器也是可以的。
 
 ##### 3.3.2.6 SSD的trim优化
@@ -1325,7 +1325,7 @@ kernel /vmlinuz-2.6.18-128.e15 ro root=/dev/sda1 elevator=deadline
 
 ```shell
 mount -o discard, noatime/dev/sdd1 /data
-```text
+```
 ## 4 Postgresql主备切换
 
 ### 4.1 standby数据库原理
@@ -1355,7 +1355,7 @@ WAL日志，只要应用WAL日志足够快，该备数据库就会追上主数�
 ```shell
 archive_mode = on
 archive_command = 'cp %p /backup/pgarch/%f'
-```text
+```
 上面的命令中“archive_mode=on”表示打开归档备份，参数“archive_command”的配置值是一UNIX的cp命令，命令中的“%p”表示在线WAL日志文件的全路径名，“%f”表示不包括路径的WAL日志文件名。在实际执行备份时，PostgreSQL会把“%p”替换成实际的在线WAL日志文件的全路径名，并把“%f”替换成不包括路径的WAL日志名。
 
 也可以使用操作系统命令scp把WAL日志复制到其他机器上，从而实现跨机器的归档日志备份，命令如下：
@@ -1363,7 +1363,7 @@ archive_command = 'cp %p /backup/pgarch/%f'
 ```shell
 archive_mode = on
 archive_command = 'scp %p postgres@192.168.1.100:/backup/pgarch/%f'
-```text
+```
 使用上面复制WAL文件的方式来同步主、备数据库之间的数据，会导致备库落后主库一个WAL日志文件，具体落后多长时间取决于主库上生成一个完整的WAL文件所需要的时间。
 
 #### 4.1.3 流复制
@@ -1390,14 +1390,14 @@ PostgreSQL数据库是通过在数据目录下建一个特殊的文件来指示�
 ```shell
 [postgres@pg01 ~]$ psql
 psql: FATAL: the database system is starting up
-```text
+```
 #### 4.1.5 创建standby备库的步骤
 
 对于PostgreSQL 12版本的数据库，只需要在数据库的数据目录下建standby.signal文件，然后重新启动数据库，数据库就会进入Standby模式下。当然由于PostgreSQL 12版本中postgresql.conf的参数“hot_standby”是打开的，该数据库是只读的。对于PostgreSQL 12版本之前的数据库，如PostgreSQL 11版本，需要创建一个recovery.conf文件，并在文件中设置如下内容：
 
 ```shell
 standby_mode = 'on'
-```text
+```
 当我们把文件standby.signal（如果是PostgreSQL 12之前的版本数据库是recovery.conf）删除，再重启数据库，数据库就变回主库了。
 
 当然上面的步骤只是把主库转换成了备库，变成了只读库，并没有新建一个备库，通常我们需要新建一个只读备库，并从主库进行WAL日志的同步，最简单的方法是把主数据库停下来，把主数据库的数据目录原封不动地复制到备机，在备机数据库的数据目录下
@@ -1443,7 +1443,7 @@ pg_basebackup工具把整个数据库实例的数据都物理地复制出来，�
 local replication osdba trust
 local replication osdba ident
 host replication osdba 0.0.0.0/0 md5
-```text
+```
 上例中第二列的数据库名填写的是“replication”，这并不是表示连接到名为“replication”的数据库上，而是表示允许这些客户端机器发起流复制连接。
 
 理论上，一个数据库可以被几个pg_basebackup同时连接，但为了不影响主库的性能，建议最好还是一个数据库上同时只有一个pg_basebackup在它上面做备份。
@@ -1491,7 +1491,7 @@ Password:
 backup
 (base) ➜  standby_test ls backup
 base.tar.gz  pg_wal.tar.gz
-```text
+```
 因为用“-Ft -z”指定了tar和压缩模式，所以在backup目录下生成了两个压缩文件。
 
 如果把base.tar.gz压缩文件解压，其中的backup_label文件的内容如下：
@@ -1504,7 +1504,7 @@ BACKUP FROM: standby
 START TIME: 2024-03-07 11:55:55 UTC
 LABEL: pg_basebackup base backup
 START TIMELINE: 1
-```text
+```
 从上面的内容可以看出，如果不指定备份label，pg_basebackup工具生成的label为“pg_basebackup base backup”。
 
 ```shell
@@ -1513,7 +1513,7 @@ backup_label      global        pg_ident.conf  pg_replslot   pg_stat_tmp  PG_VER
 backup_label.old  pg_commit_ts  pg_logical     pg_serial     pg_subtrans  pg_wal         postgresql.conf
 base              pg_dynshmem   pg_multixact   pg_snapshots  pg_tblspc    pg_wal.tar.gz  standby.signal
 base.tar.gz       pg_hba.conf   pg_notify      pg_stat       pg_twophase  pg_xact        tablespace_map
-```text
+```
 而且因为是从一台备库备份过来的，所以之前就有一个backup_label，会重新命名为backup_label.old。
 
 再从另一台机器指定label来进行备份，命令如下：
@@ -1534,7 +1534,7 @@ BACKUP FROM: master
 START TIME: 2024-03-07 12:05:19 UTC
 LABEL: standby01
 START TIMELINE: 1
-```text
+```
 上述的命令中使用的连接用户名为“postgres”，输出格式为普通原样输出“-F p”，“-P”参数表示在执行过程中输出备份的进度，“-X stream”参数表示把在备份过程中产生的xlog文件也备份出来，“-R” 参数表示在备份中会生standby.signal文件，并把连接主库的信息放到postgresql.auto.conf中，如果是PostgreSQL 12版本之前会生成配置文件“recovery.conf”，当用此备份启动备库时，只需要简单修改recovery.conf就可以把数据库启动到备库模式。“-D”参数指定了备份文件都生成到环境变量backup2目录下，“-l”参数指定了备份的标识串为“standby01”。
 
 ### 4.3 异步流复制Hot Standby的示例
@@ -1547,7 +1547,7 @@ START TIMELINE: 1
 
 ```shell
 host replication all 0/0 md5
-```text
+```
 上面这条SQL语句的含义是允许任意用户从任何网络（0/0）网络上发起到本数据库的流复制连接，使用MD5的密码认证。用户“postgres”是该演示环境上的超级用户，当然，换成一个有流复制权限的用户也可以。
 
 要想搭建流复制，需要在主库的postgresql.conf中设置以下几个参数：
@@ -1556,21 +1556,21 @@ host replication all 0/0 md5
 listen_addresses = '*'
 max_wal_senders = 10
 wal_level = replica
-```text
+```
 注意，一定要把max_wal_senders参数设置成一个大于零的值，在这里设置为“10”，同时需要把wal_level参数设置为“replica”或“logical”。若在数据库启动后再来修改这几个值则需要重启数据库。
 
 另外，min_wal_size参数的默认值为“80MB”，该值通常太小，很容易导致备库失效，也需要设置得大一些：
 
 ```shell
 min_wal_size = 800MB
-```text
+```
 #### 4.3.3 在Standby上生成基础备份
 
 做完以上准备工作后，就可以使用pg_basebackup生成基础备份了，命令如下：
 
 ```shell
 ~/work/cwork/postgresql/debug/bin/pg_basebackup -U postgres -F p -P -X stream -R -D backup2 -l standby01 -h 192.168.80.20 -p 5432 -W
-```text
+```
 因为使用pg_basebackup命令时使用了“-R”参数，所以也会生成standby.signal文件，同时在postgresql.auto.conf中生成如下内容：
 
 ```shell
@@ -1578,7 +1578,7 @@ min_wal_size = 800MB
 # Do not edit this file manually!
 # It will be overwritten by the ALTER SYSTEM command.
 primary_conninfo = 'user=postgres password=postgres channel_binding=disable host=192.168.80.20 port=5432 sslmode=disable sslcompression=0 sslcertmode=disable sslsni=1 ssl_min_protocol_version=TLSv1.2 gssencmode=disable krbsrvname=postgres gssdelegation=0 target_session_attrs=any load_balance_hosts=disable'
-```text
+```
 如果没有加“-R”参数，我们也可以手动添加上面的内容。
 
 ## 4.3.4 启动Standby数据库
@@ -1590,7 +1590,7 @@ base) ➜  standby_test cat backup2/postgresql.conf | grep hot
 #old_snapshot_threshold = -1            # 1min-60d; -1 disables; 0 is immediate
 #hot_standby = on                       # "off" disallows queries during recovery
 #hot_standby_feedback = off             # send info from standby to prevent
-```text
+```
 如果备库连接到主库上，在主库的pg_stat_replication视图中，就可以看到从备库过来的流复制连接：
 
 ```shell
@@ -1598,7 +1598,7 @@ postgres=# select client_addr,client_port,state,sync_state from pg_stat_replicat
  client_addr | client_port |   state   | sync_state 
 -------------+-------------+-----------+------------
  172.28.0.1  |       62273 | streaming | async
-```text
+```
 如果看不到备库过来的连接，说明备库没有连过来，需要检查备库的日志文件查看原因。如果看到的流复制状态“state”的值不是“streaming”，也说明备库的流复制有问题。
 
 因为Hot Standby是只读的，所以如果在Standby上做修改，会操作失败。
@@ -1641,24 +1641,24 @@ PostgreSQL异步流复制的缺点是当主库损坏的时候，激活备库后�
 ```shell
 primary_conninfo = 'application_name=standby01 user=postgres password=XXXXXX host=10.0.3.101 port=5432 ss
 lmode=disable sslcompression=1'
-```text
+```
 在PostgreSQL 9.6版本之前，只允许有一个同步的Standby备库，即“synchronous_standby_names”参数的配置值只有一种格式：
 
 ```shell
 standby_name [, ...]
-```text
+```
 例如，我们配置了“synchronous_standby_names='s1,s2,s3'”，虽然配置了多个备库s1、s2、s3，但只有第一个备库s1是同步的，其他均是潜在的同步备库，即只要WAL日志传递到第一个备库s1，事务commit就可以返回了，当第一个备库s1出现问题时，第二个备库s2才会提升为同步备库。
 
 ```shell
 num_sync ( standby_name [, ...] )
-```text
+```
 其中“num_sync”是一个数字，如“synchronous_standby_names='2 (s1,s2,s3)”表示，WAL日志必须传到前两个备库“s1”和“s2”，事务commit才可以返回。所以之前版本中的配置“s1,s2,s3”相当于“1(s1,s2,s3)”备。
 
 从PostgreSQL 10版本开始，可以设置基于quorum的方式设置备库，新增的格式如下：
 
 ```shell
 ANY num_sync ( standby_name [, ...] )
-```text
+```
 例如，我们配置“synchronous_standby_names='ANY 2 (s1,s2,s3)'”时，只要WAL日志传到了任意两个备库，事务commit就可以返回了。
 
 影响同步复制的还有一个参数“synchronous_commit”，该参数可以取的值有以下几个:
@@ -1686,7 +1686,7 @@ pid | state | client_addr | sync_priority | sync_state
 650 | streaming | 10.0.3.102 | 0 | async
 614 | streaming | 10.0.3.103 | 0 | async
 (2 rows)
-```text
+```
 从上面的运行结果中可以看到sync_state字段显示的信息为“async”。
 
 另外，pg_stat_replication视图中的以下几个字段记录了一些WAL日志的位置。
@@ -1703,7 +1703,7 @@ postgres=# select pg_wal_lsn_diff(pg_current_wal_lsn(),replay_lsn) from pg_stat_
 pg_wal_lsn_diff
 ----------------
 11815016
-```text
+```
 上面的SQL语句中，使用pg_current_wal_lsn ()获得当前主库的WAL日志的位置，replay_location为当前备库应用WAL日志的位置，再使用函数“pg_wal_lsn_diff”就可以算出差异的字节数，注意，上面示例中算出的结果的单位是字节。
 
 注意，在PostgreSQL10及以上版本中与WAL日志有关的函数的名称有所改变，名称中的“xlog”改成了“wal”，“location”改成了“lsn”，pg_stat_replication中列名也有类似的变化：
@@ -1730,7 +1730,7 @@ pid | state | client_addr | sync_priority | sync_state
 599 | streaming | 10.0.3.102 | 1 | sync
 614 | streaming | 10.0.3.103 | 2 | potential
 (2 rows)
-```text
+```
 可以看到pg02的优先级是“1”，pg03的优先级是“2”，这个优先级是由synchronous_standby_names参数配置中的顺序决定的。目前主数据库与pg02处于同步“sync”，而pg03的状态为“potential”，表示它是一个潜在的同步Standby备库，当pg02损坏时，pg03会切换到同步状态，这时关掉pg02，可看到如下内容：
 
 ```shell
@@ -1739,7 +1739,7 @@ pid | state | client_addr | sync_priority | sync_state
 -----+-----------+-------------+---------------+------------
 614 | streaming | 10.0.3.103 | 2 | sync
 (1 row)
-```text
+```
 再次启动pg02，此时查看同步情况如下：
 
 ```shell
@@ -1749,7 +1749,7 @@ pid | state | client_addr | sync_priority | sync_state
 650 | streaming | 10.0.3.102 | 1 | sync
 614 | streaming | 10.0.3.103 | 2 | potential
 (2 rows)
-```text
+```
 从中可以发现pg03又从“sync”状态变成了“potential”状态，pg02重新变成了“同步状态” 。
 
 ##### 4.4.3.3 pg_stat_replication视图详解
@@ -1762,7 +1762,7 @@ file_name | file_offset
 --------------------------+-------------
 00000001000000000000005F | 8938224
 (1 row)
-```text
+```
 ##### 4.4.3.4 查看备库的状态
 
 前面讲解了在主库上通过查看pg_stat_replication视图获得备库流复制状态的方法，在备库上也可以通过查看视“pg_stat_wal_receiver”来查看流复制的状态：
@@ -1788,7 +1788,7 @@ sender_port           | 5432
 conninfo              | user=postgres password=******** channel_binding=disable dbname=replication host=192.168.80.20 port=5432 fallback_application_name=walreceiver sslmode=disable sslcompression=0 sslsni=1 ssl_min_protocol_version=TLSv1.2 gssencmode=prefer krbsrvname=postgres target_session_attrs=any
 
 postgres=# 
-```text
+```
 从上面的示例中可以看出，这个视图实际上是显示备库上WAL接收进程的状态，其中的主要字段的说明如下。
 
 - pid：WAL接收进程的PID。
@@ -1814,7 +1814,7 @@ postgres=# select pg_is_in_recovery();
 -------------------
  f
 (1 row)
-```text
+```
 在备库上执行pg_is_in_recovery()函数的示例如下：
 
 ```shell
@@ -1823,7 +1823,7 @@ postgres=# select pg_is_in_recovery();
 -------------------
  t
 (1 row)
-```text
+```
 如果备库不是Hot Standby状态，不能直接连接上去，这时可以使用命令行工具“pg_controldata”来进行判断，在主库上看到“Database cluster state”为“in production”，命令如下：
 
 ```shell
@@ -1835,7 +1835,7 @@ Database cluster state:               in production
 pg_control last modified:             Thu 14 Mar 2024 06:44:29 AM UTC
 ...
 ...
-```text
+```
 在备库上看到“Database cluster state”为“in archive recovery”，命令如下：
 
 ```shell
@@ -1847,7 +1847,7 @@ Database cluster state:               in archive recovery
 pg_control last modified:             Thu 14 Mar 2024 06:44:43 AM UTC
 ...
 ...
-```text
+```
 在Hot Standby备库上，还可以执行如下函数查看备库接收的WAL日志和应用WAL日志的状态：
 
 - pg_last_wal_receive_lsn()
@@ -1864,7 +1864,7 @@ postgres=# select pg_last_wal_receive_lsn(),pg_last_wal_replay_lsn(),pg_last_xac
 -------------------------+------------------------+-------------------------------
  0/70002E0               | 0/70002E0              | 
 (1 row)
-```text
+```
 ### 4.5 Hot Standby的限制
 
 前面已经说过，PostgreSQL支持在备库做只读查询，这样的备库就叫Hot Standby。在Hot Standby备库上执行查询时有一些限制。
@@ -1878,7 +1878,7 @@ postgres=# create table test(id int);
 ERROR:  cannot execute CREATE TABLE in a read-only transaction
 postgres=# select * from test for update;
 ERROR:  cannot execute SELECT FOR UPDATE in a read-only transaction
-```text
+```
 虽然在Hot Standby备库中行锁不能使用，但部分类型的表锁是可以使用的，但要注意，这部分表锁需要在BEGIN启动的事务块中使用，直接使用会报错.在Hot Standby备库上可以加以下类型的表锁：
 
 - ACCESS SHARE。
@@ -1921,7 +1921,7 @@ ACTION READ WRITE。
 
 ```shell
 ERROR：canceling statement due to conflict with recove
-```text
+```
 导致冲突的原因有以下几个：
 
 - 主库上运行的VACUUM清理掉了备库上的查询需要的多版本数据。
@@ -1963,17 +1963,17 @@ ERROR：canceling statement due to conflict with recove
 ```shell
 archive_command = 'scp %p 192.168.1.52:/data/archivedir/%f.mid && ssh 192.168.1.52 "mv /data/archivedir/%
 f.mid /data/archivedir/%f"'
-```text
+```
 然后在Standby数据库中的postgresql.conf中配置restore_command参数，命令如下：
 
 ```shell
 restore_command = 'cp /data/archivedir /%f "%p"'
-```text
+```
 另两个参数“archive_cleanup_command”“recovery_end_command”是可选的，其中archive_cleanup_command参数可以用来清理上面示例中“/data/archivedir”目录中的WAL日志文件。从上面的示例中可以知道，当主库不断地把WAL日志文件复制到Standby备库的“/data/archivedir”目录中时，一定要有清理机制，否则就会把此目录的空间填满。清理的原则通常是清除Standby已使用完的WAL日志文件。contrib目录中提供了一个命令行的工具“pg_archivecleanup”以便实现清理工作，archive_cleanup_comand参数的配置内容如下：
 
 ```shell
 archive_cleanup_command = 'pg_archivecleanup /data/archivedir %r'
-```text
+```
 下面介绍主库上的归档配置项。主库上的归档配置项有如下3个，都是在postgresql.conf文件中配置。
 
 - archive_mode：是否开启归档。如果想以归档的方式搭建Standby数据库，则此参数设置为“on”。

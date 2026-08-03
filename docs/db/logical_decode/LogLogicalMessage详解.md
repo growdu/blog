@@ -43,7 +43,7 @@
 ```sql
 pg_logical_emit_message(transactional boolean, prefix text, content text [, flush boolean default false]) -> pg_lsn
 pg_logical_emit_message(transactional boolean, prefix text, content bytea [, flush boolean default false]) -> pg_lsn
-```text
+```
 官方说明非常明确：该函数会“发出一个 logical decoding message”，用于“通过 WAL 向逻辑解码插件传递通用消息”；`transactional` 表示消息是否属于当前事务，`prefix` 用于让插件识别自己关心的消息，`content` 可以是 text 或 bytea，`flush` 仅控制**非事务型消息**是否立即 flush 到 WAL。([PostgreSQL][4])
 
 ### 4.2 SQL 到内核函数的映射
@@ -52,13 +52,13 @@ pg_logical_emit_message(transactional boolean, prefix text, content bytea [, flu
 
 因此以把它理解为：
 
-```text
+```
 SQL 层 pg_logical_emit_message(...)
            ↓
 内核层 LogLogicalMessage(...)
            ↓
 写入一条 RM_LOGICALMSG_ID / XLOG_LOGICAL_MESSAGE WAL record
-```text
+```
 ---
 
 ## 5. WAL 记录格式
@@ -176,7 +176,7 @@ SQL 层 pg_logical_emit_message(...)
 
 ```c
 ReorderBufferQueueMessage(rb, xid, snapshot, lsn, transactional, prefix, message_size, message)
-```text
+```
 把消息作为一种 change 排入 ReorderBuffer。([doxygen.postgresql.org][7])
 
 这一步意义非常大：
@@ -200,7 +200,7 @@ typedef void (*LogicalDecodeMessageCB)(
     const char *prefix,
     Size message_size,
     const char *message);
-```text
+```
 文档说明：
 
 * 当 logical decoding message 被解码时会调用它
@@ -354,7 +354,7 @@ PostgreSQL 订阅端 `apply_dispatch()` 在收到 `LOGICAL_REP_MSG_MESSAGE` 时�
 
 可以把它放到如下总链路里理解：
 
-```text
+```
 上层 SQL / 内核模块
     ↓
 pg_logical_emit_message() / LogLogicalMessage()
@@ -378,7 +378,7 @@ logicalrep_write_message()
 订阅端 apply_dispatch()
     ↓
 当前内建实现：识别但不处理
-```text
+```
 其中：
 
 * “逻辑流复制协议使用 `pgoutput`，并且 `messages` 参数控制是否把 `pg_logical_emit_message` 写入的消息发送出去”是官方文档定义的。([PostgreSQL][10])

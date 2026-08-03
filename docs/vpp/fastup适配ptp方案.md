@@ -60,7 +60,7 @@ dpdk {
         proc-type primary
         log-level 7
 }
-```text
+```
 ## reference
 
 主要参考文档为1588v2时间接口规范 QB-B-017-2010.doc，以及dpdk ptpclient源码样例。

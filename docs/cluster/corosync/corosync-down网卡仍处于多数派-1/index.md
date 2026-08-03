@@ -49,10 +49,10 @@ clusterware MDE应关注，和ES一样需要关注社区版本更新并选择，
 2. 若现场poc测试比较紧急的话，可以修改V8R6_cluster_install.sh文件，</font>找到如下内容：
 ```shell
 transport: udpu
-```text
+```
 将其删除或者修改为：
 
 ```shell
 transport: knet
-```text
+```
 这样部署的集群可以规避该问题。

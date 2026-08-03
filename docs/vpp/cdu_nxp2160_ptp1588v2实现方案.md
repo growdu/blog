@@ -58,7 +58,7 @@ Capabilities:
 PTP Hardware Clock: none
 Hardware Transmit Timestamp Modes: none
 Hardware Receive Filter Modes: none
-```text
+```
 - 预期kni网口ptp配置
 
 ```shell
@@ -76,7 +76,7 @@ Hardware Transmit Timestamp Modes:
 Hardware Receive Filter Modes:
         none                  (HWTSTAMP_FILTER_NONE)
         all                   (HWTSTAMP_FILTER_ALL)
-```text
+```
 #### 适配ptp4l
 
 适配ptp4l主要所做工作分为三个方面：

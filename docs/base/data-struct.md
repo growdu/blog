@@ -98,7 +98,7 @@
 // (size_t)(&(((TYPE*)0)->MEMBER))结果转换类型
 //对于32位系统而言，size_t是unsigned int类型
 //对于64位系统而言，size_t是unsigned long类型
-```text
+```
 #### 2.2.2 container_of
 
 ```C
@@ -114,7 +114,7 @@
 //(char *)__mptr - offsetof(type,member))就是用来获取"结构体type"的指针的起始地址（为char *型指针）
 //(type *)( (char *)__mptr - offsetof(type,member) )
 //就是将"char *类型的结构体type的指针"转换为"type *类型的结构体type的指针
-```text
+```
 #### 2.2.3 链表实现
 
 将双向链表节点嵌套在其它的结构体中；在遍历链表的时候，根据双链表节点的指针获取"它所在结构体的指针"，从而再获取数据。
@@ -136,7 +136,7 @@ static inline void INIT_LIST_HEAD(struct list_head *list){
     list->next=list;
     list->pre=list;
 }
-```text
+```
 * 添加节点
 
 ```C
@@ -161,7 +161,7 @@ static inline void list_add_tail(struct list_head *new, struct list_head *head)
 {
     __list_add(new, head->prev, head);
 }
-```text
+```
 * 删除节点
 
 ```C
@@ -187,7 +187,7 @@ static inline void list_del_init(struct list_head *entry)
     __list_del_entry(entry);
     INIT_LIST_HEAD(entry);
 }
-```text
+```
 * 替换节点
 
 ```C
@@ -200,7 +200,7 @@ static inline void list_replace(struct list_head *old,
     new->prev = old->prev;
     new->prev->next = new;
 }
-```text
+```
 * 判断链表是否为空
 
 ```C
@@ -209,14 +209,14 @@ static inline int list_empty(const struct list_head *head)
 {
     return head->next == head;
 }
-```text
+```
 * 获取节点
 
 ```C
 //获取指向节点的指针
 #define list_entry(ptr, type, member) \
     container_of(ptr, type, member)
-```text
+```
 * 遍历节点
 
 ```C
@@ -228,7 +228,7 @@ static inline int list_empty(const struct list_head *head)
 #define list_for_each_safe(pos, n, head) \
     for (pos = (head)->next, n = pos->next; pos != (head); \
         pos = n, n = pos->next)
-```text
+```
 ## 3 二叉树
 
 ### 3.1 基本概念

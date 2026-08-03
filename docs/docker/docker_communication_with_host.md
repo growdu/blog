@@ -19,7 +19,7 @@ struct shared_use_st
 };
 
 #endif
-```text
+```
 - shm_slave.c
 
 ```c
@@ -91,7 +91,7 @@ int main(int argc, char **argv)
     sleep(2);
     exit(EXIT_SUCCESS);
 }
-```text
+```
 - makefile
 
 ```makefile
@@ -99,7 +99,7 @@ all:
     gcc -o shm_slave shm_slave.c
 clean:
     rm -rf shm_slave
-```text
+```
 ## docker镜像准备
 
 - shm_data.h
@@ -117,7 +117,7 @@ struct shared_use_st
 };
 
 #endif
-```text
+```
 - shm_master.c
 
 ```c
@@ -201,7 +201,7 @@ int main(int argc, char **argv)
      flcose(file);
     exit(EXIT_SUCCESS);
 }
-```text
+```
 - makefile
 
 ```makefile
@@ -209,7 +209,7 @@ all:
     gcc -o shm_master shm_master.c
 clean:
     rm -rf shm_master
-```text
+```
 - Dockerfile
 
 ```dockerfile
@@ -224,7 +224,7 @@ WORKDIR /usr/src/shm_test
 RUN  make
 
 CMD ["./shm_master"]
-```text
+```
 ## 运行
 
 运行时需要先下载docker，获取支持c语言编译运行的基础镜像，比如ubuntu、gcc等。这里使用gcc作为基础镜像。
@@ -234,25 +234,25 @@ sudo apt install docker
 sudo docker pull gcc
 # 查看一下gcc的镜像是否拉取下来了
 docker images
-```text
+```
 基础镜像有了后就可以基于基础镜像构建docker容器，基于上面所写的dockerfile，构建镜像：
 
 ```shell
 sudo docker build -t shm_master:v1 .
 # 查看镜像是否创建成功
 sudo docker images
-```text
+```
 镜像创建成功后就可以启动容器，启动时记得加上参数“--ipc”。
 
 ```shell
 # fe9c3bd6d102是之前创建成功的镜像的id
 sudo docker run -d --ipc=host --name master fe9c3bd6d102
-```text
+```
 成功启动容器后可以进入到容器内部查看通信相关信息。
 
 ```shell
 sudo docker exec -it master /bin/bash
-```text
+```
 # reference
 
 <font color="red">需要特别说明的是:以下共享内存的代码均来自[博客](https://www.cnblogs.com/52php/p/5861372.html),在此表示感谢。docker镜像创建参考[自北极之光的博客](https://www.cnblogs.com/hailun1987/p/9697236.html)。</font>

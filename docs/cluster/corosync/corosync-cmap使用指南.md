@@ -36,7 +36,7 @@ CMAP_VALUETYPE_DOUBLE - Double value
 CMAP_VALUETYPE_STRING - C-style string
 
 CMAP_VALUETYPE_BINARY - Binary data, byte with zero value has no special meaning
-```text
+```
 - cmap_initialize
 
   ```c
@@ -158,4 +158,4 @@ cmap的大致使用流程如下：
 graph TB
 cmap_initialize-->cmap_set-->cmap_get-->cmap_delete-->cmap_finalize
 
-```text
+```

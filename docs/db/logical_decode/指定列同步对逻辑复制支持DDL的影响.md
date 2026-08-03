@@ -16,7 +16,7 @@
 
 ```sql
 CREATE PUBLICATION pub FOR TABLE my_table (col1, col2);
-```text
+```
 - 只有 `col1` 和 `col2` 的变更会被发送
 - update 只会发送涉及的列
 - INSERT 只发送指定列的值
@@ -37,12 +37,12 @@ CREATE PUBLICATION pub FOR TABLE my_table (col1, col2);
 
 ```sql
 CREATE PUBLICATION pub FOR ALL TABLES WITH (ddl='table,others');
-```text
+```
 或者对于单表：
 
 ```sql
 CREATE PUBLICATION pub FOR TABLE my_table WITH (ddl='table,others');
-```text
+```
 通过`ddl`参数来指定是否开启ddl自动同步。
 
 表级同步支持自动DDL分为两种情况：
@@ -60,7 +60,7 @@ CREATE PUBLICATION pub FOR TABLE my_table WITH (ddl='table,others');
 ```sql
 ALTER TABLE t ADD COLUMN c int;
 ALTER TABLE t DROP COLUMN c;
-```text
+```
 若订阅端列少或者列名不匹配，则无法正常复制。
 
 #### 表级同步订阅端表不存在
@@ -75,7 +75,7 @@ ALTER TABLE t DROP COLUMN c;
 
 ```sql
 CREATE PUBLICATION pub FOR TABLE my_table (col1, col2) WITH (ddl='table,others');
-```text
+```
 按照上面的语法，创建了一个发布者，指定要同步my_table的列col1，col2，但因为开启了ddl自动同步的功能，所以就可能出现如下几种情况：
 
 #### ddl同步完整的表结构

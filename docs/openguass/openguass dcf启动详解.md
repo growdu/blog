@@ -12,7 +12,7 @@ RequestXLogStreaming-->SendPostmasterSignal
 -->|WALRECEIVER|GaussDbThreadMain
 -->GaussDbAuxiliaryThreadMain
 -->WalReceiverMain
-```text
+```
 - 启动walreceiver后，再启动dcf
 
 ```mermaid
@@ -21,7 +21,7 @@ WalReceiverMain-->LaunchPaxos
 -->InitPaxosModule
 -->RegisterDcfCallBacks
 -->InitDcfAndStart-->dcf_start
-```text
+```
 ## openguass dcf主要处理逻辑
 
 ### 接收
@@ -61,7 +61,7 @@ static bool RegisterDcfCallBacks()
     }
     return true;
 }
-```text
+```
 其中根据是否属于paxos消息通信又分为两类：
 
 - 集群间消息
@@ -81,7 +81,7 @@ dcf_send_msg-->DcfUpdateConsensusLsnAndIndex
 dcf_broadcast_msg-->DcfUpdateConsensusLsnAndIndex
 -->DcfUpdateAppliedRecordIndex
 -->SyncPaxosReleaseWaiters
-```text
+```
 - dcf_register_consensus_notify(ReceiveLogCbFunc)
   
   follower节点写入数据成功的回调函数（仅follower节点会触发回调）
@@ -91,7 +91,7 @@ graph TB
 ReceiveLogCbFunc-->CheckBuildReasons-->CheckConfigFile
 -->XLogWalRcvReceive
 -->DcfUpdateAppliedRecordIndex
-```text
+```
 - dcf_register_status_notify(PromoteOrDemote)
   
   节点角色变化的回调函数（只有当本节点变为leader会收到该回调）
@@ -101,7 +101,7 @@ graph TB
 PromoteOrDemote-->PromoteCallbackFunc-->SendNotifySignal
 PromoteOrDemote-->DemoteCallbackFunc-->ResetDCFNodesInfo
 -->SendPostmasterSignal-->ProcessDemoteRequest
-```text
+```
 - dcf_register_election_notify(ElectionCbFunc)
   
   选举leader变化的回调函数.
@@ -119,7 +119,7 @@ graph TB
 ProcessMsgCbFunc-->|检查是否有leader|QueryLeaderNodeInfo
 QueryLeaderNodeInfo-->|当前节点是leader|ReplyFollower
 QueryLeaderNodeInfo-->|收到来自leader的消息|CheckLeaderReply
-```text
+```
 ### 发送消息
 
 发送消息同样分为集群间消息和节点间消息。
@@ -136,7 +136,7 @@ WalWriterMain-->XLogBackgroundFlush-->XLogWritePaxos-->|往dcf集群写入数据
 XLogSelfFlush-->XLogBackgroundFlush
 XLogInsert-->XLogInsertRecord-->XLogInsertRecordSingle-->
 CopyXLogRecordToWAL-->XLogSelfFlushWithoutStatus-->XLogWritePaxos
-```text
+```
 - 节点间消息发送
   
   - DCFSendMsg

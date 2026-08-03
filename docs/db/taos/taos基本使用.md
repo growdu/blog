@@ -12,7 +12,7 @@ taos是一个开源的时序数据库，目前发展势头较好，走的开源�
 wget https://www.taosdata.com/assets-download/3.0/TDengine-server-3.3.2.0-Linux-x64.rpm
 rpm -i TDengine-server-3.3.2.0-Linux-x64.rpm
 systemctl start taosd
-```text
+```
 需要使用root用户安装。
 
 taosd的默认数据库目录在/var/lib/taos下面，他的配置文件在/etc/taos/taos.cfg。
@@ -30,13 +30,13 @@ taos的数据库目录结构大致如下：
 │   ├── sync
 │   └── wal
 └── vnode
-```text
+```
 taos默认以root用户运行：(已常规数据库有所区别，一般数据库都是以普通用户运行的，比如postgres、mysql)。
 
 ```shell
 (base) ➜  ~ ps -ef | grep taosd
 root     3744260       1  0 11:07 ?        00:00:00 /usr/bin/taosd
-```text
+```
 如果没有明确指定，taos默认监听127.0.0.1的6300端口，只能本机访问。同时还会监听一个unix domain socket。
 
 ```shell
@@ -45,7 +45,7 @@ tcp        0      0 0.0.0.0:6030            0.0.0.0:*               LISTEN      
 tcp        0      0 127.0.0.1:6030          127.0.0.1:54630         ESTABLISHED 3744260/taosd       
 tcp        0      0 127.0.0.1:54630         127.0.0.1:6030          ESTABLISHED 3744260/taosd       
 unix  2      [ ACC ]     STREAM     LISTENING     293894282 3744286/udfd         /var/lib/taos//.udfd.sock.1
-```text
+```
 taos默认的运行日志放在/var/log/taos/目录下面，其目录结构如下：
 
 ```shell
@@ -54,14 +54,14 @@ taos默认的运行日志放在/var/log/taos/目录下面，其目录结构如�
 ├── taosSlowLog
 ├── tdengine_install.log
 └── udfdlog.0
-```text
+```
 我们要使taosd能对外服务，就不能使用127.0.0.1这个ip，而是要使用对外的ip，这里需要修改配置文件。
 
 ```shell
 vim /etc/taos/taos.cfg
 (base) ➜  ~ cat /etc/taos/taos.cfg | grep fqdn
 fqdn                      taosdb
-```text
+```
 将fqdn那行后面的域名换成自己的ip或者域名，如果使用的是域名的话，可以在/etc/hosts里添加域名和ip的映射关系。
 
 修改完成后需要重启taosd，需要特别注意的是因为taosd会默认写一些数据到/var/lib/taos的数据目录下，目前直接修改配置文件重启会失败。（当前采用的措施是删除数据库目录重新启动）
@@ -74,11 +74,11 @@ fqdn                      taosdb
 07/22 11:19:24.065781 03779249 C DND ERROR failed to read file since Invalid config option
 07/22 11:19:24.065791 03779249 C DND ERROR failed to create dnode since Invalid config option
 07/22 11:19:24.065794 03779249 C DND ERROR failed to init dnode since Invalid config option
-```text
+```
 ```shell
 sudo rm -rf /var/lib/taos/*
 sudo systemctl restart taosd 
-```text
+```
 重启之后配置正确的话就会监听对外的ip和端口了。
 
 ### client
@@ -109,7 +109,7 @@ Copyright (c) 2023 by TDengine, all rights reserved.
 Server is TDengine Community Edition, ver:3.3.2.0 and will never expire.
 
 taos> 
-```text
+```
 尝试了一下基本命令，看起来有点像是类mysql的，没有postgres的\d、\d+，倒是有show databases。
 
 ```shell
@@ -135,14 +135,14 @@ taos> show databases;
 Query OK, 2 row(s) in set (0.000737s)
 
 taos> 
-```text
+```
 #### windows cli
 
 taos官网提供了客户端程序，同样需要输入邮箱地址才能下载，下载链接会发到邮箱地址。
 
 ```shell
 wget https://www.taosdata.com/assets-download/3.0/TDengine-client-3.3.2.0-Windows-x64.exe
-```text
+```
 下载完成后可以安装到windows，可以生成桌面快捷方式，但实际上是启动了一个cmd窗口，可以使用taos命令连接服务端，还是没有界面。
 
 ```shell
@@ -162,7 +162,7 @@ wget https://www.taosdata.com/assets-download/3.0/TDengine-client-3.3.2.0-Window
 2024/07/22  14:06    <DIR>          taos_odbc
 2024/07/22  14:06            48,905 unins000.dat
 2024/07/22  14:06         3,141,379 unins000.exe
-```text
+```
 ```shell
 C:\TDengine>taos -h taosdb
 Welcome to the TDengine Command Line Interface, Client Version:3.3.2.0
@@ -178,7 +178,7 @@ taos> show databases;
 Query OK, 2 row(s) in set (0.038056s)
 
 taos>
-```text
+```
 ### webui
 
 taos还提供了一个web操作管理界面taos-explorer，不过属于付费功能，github下面也没有该仓库的开源。

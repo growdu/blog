@@ -128,17 +128,17 @@
 
 **********************************************************************************
 */
-```text
+```
 项目注释也可以使用markdown文件作为主页，通过指定md文件路径来配置。
 
 ```shell
 USE_MDFILE_AS_MAINPAGE = doc/readme.md
-```text
+```
 若markdown文件里包含图片，可能会出现图片无法显示的情况，这个时候需先检查图片路径是否正确，同时还需要在doxyfile中添加图片路径方可显示。
 
 ```shell
 IMAGE_PATH             = ./doc/images 
-```text
+```
 ### 文件注释
 
 ```c
@@ -151,14 +151,14 @@ IMAGE_PATH             = ./doc/images
  * @version 版本号
  * @date 年-月-日
  */
-```text
+```
 #### 全局常量/变量/宏定义/结构体定义/类定义的注释
 
 ```c
 /// 缓存大小
 #define BUFSIZ 1024*4
 #define BUFSIZ 1024*4 ///< 缓存大小
-```text
+```
 #### 函数注释
 
 ```c
@@ -169,7 +169,7 @@ IMAGE_PATH             = ./doc/images
  * @param 形参 参数说明
  * @return 返回值说明
 */
-```text
+```
 ## reference
 
 1. https://blog.srefan.com/2020/05/doxygen-generate-docs/

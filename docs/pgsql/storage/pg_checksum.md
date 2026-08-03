@@ -7,7 +7,7 @@ pg在将数据写入磁盘时才会进行checksum的计算写入。
 ```mermaid
 graph TB
 PageSetChecksumCopy-->pg_checksum_page-->pg_checksum_block
-```text
+```
 ```c
 char *
 PageSetChecksumCopy(Page page, BlockNumber blkno)
@@ -32,12 +32,12 @@ PageSetChecksumCopy(Page page, BlockNumber blkno)
 	((PageHeader) pageCopy)->pd_checksum = pg_checksum_page(pageCopy, blkno);
 	return pageCopy;
 }
-```text
+```
 ## 检测
 
 ```mermaid
 graph TB
 PageIsVerifiedExtended-->pg_checksum_page-->pg_checksum_block
-```text
+```
 ```c
-```text
+```

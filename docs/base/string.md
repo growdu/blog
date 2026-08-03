@@ -9,7 +9,7 @@
 ```C
 char greeting[6] = {'H', 'e', 'l', 'l', 'o', '\0'};
 char greeting[] = "Hello";
-```text
+```
 字符串常用操作函数：
 
 |函数名称|功能|

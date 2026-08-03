@@ -10,7 +10,7 @@
 
 ```shell
  sudo apt-get install libgcrypt20-dev libzstd-dev liblzo2-dev liblzma-dev libbz2-dev libsctp-dev doxygen libnl-3-dev libnl-route-3-dev
-```text
+```
 - 编译libqb
   
   ```shell
@@ -146,14 +146,14 @@
 ```mermaid
 graph TB
 quorum_initialize-->|初始化quorum api的连接,注册quorum配置和投票变更的回调函数|quorum_trackstart-->|q启动quorum api回调通知,投票配置变更会quorum状态更改时,通知会进行排队|quorum_getquorate-->|检查节点的仲裁状态|quorum_dispatch
-```text
+```
 ### testvotequorum1
 
 ```mermaid
 graph TB
 votequorum_initialize-->votequorum_trackstart-->votequorum_getinfo-->votequorum_setexpected-->votequorum_dispatch
 votequorum_getinfo-->votequorum_setvotes-->votequorum_dispatch
-```text
+```
 ## FAQ
 
 1. 如何修改corosync监听端口

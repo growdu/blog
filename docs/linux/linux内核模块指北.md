@@ -35,7 +35,7 @@ lsmod
 #查看模块信息
 modinfo modname
 >>>>>>> 805efff96212946933afaddb75d65e85df96dac0
-```text
+```
 ## 编写内核模块
 
 ### 模块声明
@@ -60,7 +60,7 @@ module_param（name，type，perm）
 =======
 module_param（name，type，perm） 
 >>>>>>> 805efff96212946933afaddb75d65e85df96dac0
-```text
+```
 -  name  ： 变量名
 
 -  type  ： 数据类型内核支持模块参数类型有：bool、invbool（bool的发转，true变为false，false变为true）、charp（char类型指针值）、int、long、short、uint、ulong、ushort、
@@ -72,7 +72,7 @@ module_param（name，type，perm）
 ```c
 
 Module_param_array（name，type，num，perm）
-```text
+```
 ### 模块符号导出
 
 当一个模块要使用另一个模块的函数（变量）的时候，要使用EXPORT_SYMBOL（符号名）或者EXPORT_SYMBOL_GPL（符号名）来申明。
@@ -113,7 +113,7 @@ module_init(hello_init);//该宏在模块的目标代码中增加一个特殊的
 
 module_exit(hello_exit);//跟上面的宏对立
 
-```text
+```
 - makefile
 
 ```makefile
@@ -129,7 +129,7 @@ make -C $(DIRS) M=$(PWD) modules
 clean:
 
 rm -Rf*.o *.ko *.mod.c *.order *.symvers
-```text
+```
 - printk
 
 printk函数为内核打印函数，其和printf函数功能类似，不过比printf多了打印权限一共有8个级别，printk的日志级别定义如下（在include/linux/kernel.h中）
@@ -152,7 +152,7 @@ printk函数为内核打印函数，其和printf函数功能类似，不过比pr
 
 #define KERN_DEBUG 7 //调试级别的消息
 
-```text
+```
 # reference
 
 1. https://blog.csdn.net/qq_33406883/article/details/100071183

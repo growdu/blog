@@ -21,7 +21,7 @@ HugePages_Surp:        0
 Hugepagesize:       2048 kB
 ~# ls /sys/kernel/mm/hugepages/
 hugepages-1048576kB  hugepages-2048kB  hugepages-32768kB  hugepages-64kB
-```text
+```
 ## 大页内存free为0
 
 使用如下方式重新挂载：
@@ -44,13 +44,13 @@ mkdir -p /mnt/huge
 
 # Mount to the specific folder.
 mount -t hugetlbfs nodev /mnt/huge
-```text
+```
 ## 命令行设置大页内存
 
 ```shell
 $ sysctl -w vm.nr_hugepages=512
 $ sysctl -p 
-```text
+```
 # reference
 
 1. https://blog.csdn.net/zhang123456456/article/details/77853345

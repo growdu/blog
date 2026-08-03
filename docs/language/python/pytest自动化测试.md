@@ -14,7 +14,7 @@ yaml语法规则：
 
 ```shell
 pip install pyyaml
-```text
+```
 ### yaml列表
 
 ```shell
@@ -22,7 +22,7 @@ pip install pyyaml
 - 5
 - 2
 - 0
-```text
+```
 ```python
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
@@ -33,7 +33,7 @@ with open("list.yaml", encoding="utf-8") as f:
     print("list.yaml list is:")
     for d in data:
         print(d)
-```text
+```
 ## yaml列表字典
 
 ```shell
@@ -43,7 +43,7 @@ with open("list.yaml", encoding="utf-8") as f:
 -
  name: cest
  age: 18
-```text
+```
 ```python
 with open("dict.yaml", encoding="utf-8") as f:
     data = yaml.load(f, Loader=yaml.FullLoader)
@@ -51,7 +51,7 @@ with open("dict.yaml", encoding="utf-8") as f:
     for d in data:
         #print(d)
         print("name is " + d['name'] + ", age is " + str(d['age']))
-```text
+```
 ### yaml字典列表
 
 ```shell
@@ -64,7 +64,7 @@ course:
  - english
  - math
  - chinese
-```text
+```
 ```python
 with open("dict_list.yaml", encoding="utf-8") as f:
     data = yaml.load(f, Loader=yaml.FullLoader)
@@ -77,7 +77,7 @@ with open("dict_list.yaml", encoding="utf-8") as f:
     for d in data['course']:
         #print(d)
         print(d)
-```text
+```
 ## pytest fixture
 
 > fixture是在测试函数运行前后，由pytest执行的外壳函数。fixture中的代码可以定制，满足多变的测试需求，包括定义传入测试中的数据集、配置测试前系统的初始状态、为批量测试提供数据源等等。fixture是pytest的精髓所在，类似unittest中setup/teardown，但是比它们要强大、灵活很多，它的优势是可以跨文件共享。
@@ -98,7 +98,7 @@ def test_login(login):
     assert login[0] == "chen"
     assert login[1] == 123456
     assert "chen" in str(login)
-```text
+```
 #### 同一个用例传入多个fixture
 
 ```python
@@ -117,7 +117,7 @@ def test_trans_fixture(user, pwd):
     print(user, pwd)
     assert "cris" in str(user)
     assert pwd == "123456"
-```text
+```
 ### 提供灵活的类似setup和teardown功能
 
 > Pytest的fixture另一个强大的功能就是在函数执行前后增加操作，类似setup和teardown操作，但是比setup和teardown的操作更加灵活；具体使用方式是同样定义一个函数，然后用装饰器标记为fixture，然后在此函数中使用一个yield语句，yield语句之前的就会在测试用例之前使用，yield之后的语句就会在测试用例执行完成之后再执行。
@@ -137,7 +137,7 @@ def test_run_2():
 
 def test_run_3(run_function):
     print("case 3")
-```text
+```
 ### 利用pytest.mark.usefixtures叠加调用多个fixture
 
 > 如果一个方法或者一个class用例想要同时调用多个fixture，可以使用@pytest.mark.usefixtures()进行叠加。注意叠加顺序，先执行的放底层，后执行的放上层。需注意：
@@ -170,7 +170,7 @@ def func_3():
 @pytest.mark.usefixtures("func_1")  # 先执行func_1
 def test_func():
     print("这是测试用例")
-```text
+```
 # reference
 
 1. https://zhuanlan.zhihu.com/p/613431669

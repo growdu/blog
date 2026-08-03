@@ -11,10 +11,10 @@
 go mod init anycode_api
 go env -w GOPROXY=https://proxy.golang.com.cn,direct
 go get github.com/gin-gonic/gin
-```text
+```
 编写main.go，内容如下：
 
-```text
+```
 package main
 
 import (
@@ -50,13 +50,13 @@ func main() {
     // 启动 HTTP 服务器，监听在 8080 端口
     r.Run(url)
 }
-```text
+```
 离线打包，
 
 ```shell
 go mod tidy
 go mod vendor
-```text
+```
 ## 接口测试
 
 接口测试可以使用postman或者apifox（我搜索的是postman，推荐的是apifox）。
@@ -67,4 +67,4 @@ go mod vendor
 
 ```shell
 npm install axios
-```text
+```

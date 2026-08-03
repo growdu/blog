@@ -69,9 +69,9 @@ Shadowsocks 影梭是一个可帮助一些国家的网络用户访问受地理�
 
 打开 Terminal 后，输入命令 ssh root@your_server_ip 连接到服务器。注意把`your_server_ip` 替换成你的服务器的IP。
 
-```text
+```
 ssh root@your_server_ip
-```text
+```
 ## Windows SSH 连接到服务器
 
 如果你是Windows用户，你需要安装额外的程序，因为 Windows 没有内置用于建立SSH 会话的命令行程序。
@@ -92,10 +92,10 @@ SSH 连接端口不用修改，SSH端口是 22，注意第一次连接一个新�
 
 无论你使用上面哪种方法连接服务器，你需要以 root 用户登录服务器，命令行界面会显示 login as。
 
-```text
+```
 login as： root
 root@123.457.145.36's password: 
-```text
+```
 然后命令行界面会询问你的密码，输入密码并回车后就可以登录。注意输入密码时命令行界面里不会显示你输入的字符，不用担心，输入完成后按回车即可。
 
 成功登录后，光标会出现在下面一行之后。注意 `@` 后面是你服务器的主机名称。类似于这样 `root@the-hostname-of-your-server:~#`。
@@ -108,14 +108,14 @@ root@123.457.145.36's password:
 
 安装 Shadowsocks 非常简单，运行命令 `sudo apt install shadowsocks-libev -y`。等待安装完成即可。
 
-```text
+```
 sudo apt install shadowsocks-libev -y
-```text
+```
 Shadowsocks 安装完成后，我们只需要简单修改默认的影梭配置文件即可完成配置。这里需要设置自己的密码。
 
 修改密码的方法很简单，你不需要编辑任何文件，只需要修改下面命令里面的 `你的密码` 就可以。
 
-```text
+```
 sudo bash -c 'cat << "EOF" > /etc/shadowsocks-libev/config.json
 {
     "server":"0.0.0.0",
@@ -127,15 +127,15 @@ sudo bash -c 'cat << "EOF" > /etc/shadowsocks-libev/config.json
     "method":"chacha20-ietf-poly1305"
 }
 EOF'
-```text
+```
 然后将这个命令复制到服务器上运行，命令将会替换默认的影梭配置文件。最后每次修改这个命令中内容你都需要重新启动 Shadowsocks。
 
 运行命令 `sudo systemctl restart shadowsocks-libev.service`。除了重启Shadowsocks 服务，还需要禁用防火墙运行命令 sudo ufw disable && sudo ufw allow 8388。
 
-```text
+```
 sudo systemctl restart shadowsocks-libev.service
 sudo ufw disable && sudo ufw allow 8388
-```text
+```
 现在你已经完成服务器端的配置，接下来就可以配置客户端。
 
 ## ****客户端APP****

@@ -6,7 +6,7 @@ https://github.com/twitter/snowflake
 
 于是，我自己用c语言随便实现了一下，还没有达到工业级别，需要细化，但是基本能用了，上代码。
 
-```text
+```
 1.  /\* 
 2.      snowflake 
 

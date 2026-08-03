@@ -7,7 +7,7 @@
 ```c                   
   XLogRecPtr LogLogicalMessage(const char *prefix, const char *message,                                                 
                                size_t size, bool transactional);
-```text
+```
   关键特性：
   - 前缀机制：每个消息有唯一前缀区分不同插件/应用
   - 事务控制：支持事务性（随事务提交/回滚）和非事务性（立即生效）消息
@@ -42,7 +42,7 @@
       if (polar_enable_sync_ddl_legacy)
           polar_wait_ddl_lock();
   }
-```text
+```
   同步流程：
   1. RW获取本地DDL锁并写入WAL（polar_ddl_lock_lsn）
   2. 等待所有RO回放到该LSN，在RO本地获取相同锁
@@ -71,7 +71,7 @@
       char        ddl_command[1024]; // 完整的DDL SQL（可选）
       TimestampTz execute_time;   // 执行时间戳
   } PolarDDLMessage;
-```text
+```
   3.2 实现位置
 
   在DDL命令执行的关键路径插入消息发送：
@@ -99,7 +99,7 @@
       // 3. 执行实际的DDL操作
       // ...
   }
-```text
+```
   3.3 RO节点消息处理
 
   RO节点通过逻辑解码插件接收并处理DDL消息：
@@ -124,7 +124,7 @@
           polar_ack_ddl_received(ddl_msg, ctx->writer);
       }
   }
-```text
+```
   4. 同步协议优化
 
   4.1 异步DDL锁回放
@@ -144,7 +144,7 @@
       SyncRepWakeQueue(true, POLAR_SYNC_DDL_WAIT_APPLY);
       return true;
   }
-```text
+```
   4.2 消息驱动的状态同步
 
   结合LogicalMessage实现状态机同步：
@@ -171,7 +171,7 @@
   ├──────────┼──────────────┼─────────────────────┤
   │ 可靠性   │ 依赖外部协调 │ 内置WAL保障         │
   └──────────┴──────────────┴─────────────────────┘
-```text
+```
   5.2 技术创新点
 
   1. 双通道同步：DDL锁（安全通道）+ LogicalMessage（元数据通道）
@@ -186,7 +186,7 @@
   -- RW节点执行
 ```c
   ALTER TABLE users ADD COLUMN last_login TIMESTAMP;
-```text
+```
   -- 通过LogLogicalMessage传输，RO节点：
   -- 1. 预知即将新增的列
   -- 2. 调整查询计划缓存
@@ -198,7 +198,7 @@
   CREATE TABLE measurement_2026 PARTITION OF measurement
 ```c
   FOR VALUES FROM ('2026-01-01') TO ('2027-01-01');
-```text
+```
   6.3 跨节点DDL协调
 
   - DDL依赖检测：通过消息传递检测跨节点依赖
@@ -226,16 +226,16 @@
   -- DDL同步状态
 ```c
   SELECT * FROM polar_ddl_sync_status;
-```text
+```
   -- 消息传输统计
   SELECT * FROM polar_message_stats
 ```c
   WHERE prefix = 'polar_ddl';
-```text
+```
   -- 锁等待情况
 ```c
   SELECT * FROM polar_lock_waiters;
-```text
+```
   8. 总结
 
   PolarDB基于LogLogicalMessage实现的DDL自动传输是一个多层次、异步化、智能协调的架构：
@@ -276,7 +276,7 @@
 
   // 全局变量跟踪DDL锁LSN
   extern XLogRecPtr polar_ddl_lock_lsn;
-```text
+```
   关键实现：
 ```c
   // standby.c: DDL锁记录与同步等待
@@ -295,7 +295,7 @@
       if (polar_enable_sync_ddl_legacy)
           polar_wait_ddl_lock();
   }
-```text
+```
   同步等待流程：
 ```c
   // syncrep.c: DDL锁等待实现
@@ -316,7 +316,7 @@
       // 3. 重置LSN标记
       polar_ddl_lock_lsn = InvalidXLogRecPtr;
   }
-```text
+```
   1.2 异步DDL锁回放（性能优化）
 
   问题背景：
@@ -326,7 +326,7 @@
   PolarDB解决方案：
 ```c
   // standby.c: 异步锁回放决策
-```text
+```
   if (polar_allow_alr())  // 检查是否启用异步回放
 ```c
   {
@@ -343,7 +343,7 @@
                                         xlrec->locks[i].dbOid,
                                         xlrec->locks[i].relOid);
   }
-```text
+```
   异步回放架构：
   主回放进程             异步回放worker
 ```c
@@ -355,7 +355,7 @@
       │<─ 锁获取完成通知 ────────│
       │                        │
       └─ 处理后续逻辑          │
-```text
+```
   1.3 DDL等待者唤醒机制
 
   协调机制：
@@ -373,7 +373,7 @@
           SyncRepReleaseWaiters();
       }
   }
-```text
+```
   唤醒逻辑：
 ```c
   // syncrep.c: 计算RO回放位点并唤醒
@@ -389,7 +389,7 @@
       SyncRepWakeQueue(true, POLAR_SYNC_DDL_WAIT_APPLY);
       return true;
   }
-```text
+```
   二、Walsender读取和发送DDL的机制
 
   2.1 传输形式：WAL日志流
@@ -404,7 +404,7 @@
   // lockdefs.h: DDL锁WAL记录格式
   typedef struct xl_standby_lock
   {
-```text
+```
       TransactionId xid;           // 持有锁的事务ID
       Oid         dbOid;           // 数据库OID
       Oid         relOid;          // 表OID
@@ -414,12 +414,12 @@
   // standbydefs.h: 锁记录封装
   typedef struct xl_standby_locks
   {
-```text
+```
       int         nlocks;          // 锁数量
 ```c
       xl_standby_lock locks[FLEXIBLE_ARRAY_MEMBER];
   } xl_standby_locks;
-```text
+```
   2.2 传输流程
 
   1. RW节点写入阶段：
@@ -446,7 +446,7 @@
           LogAccessExclusiveLock(dbOid, relOid);
           break;
   }
-```text
+```
   WAL回放：
 ```c
   // standby_redo: RO节点处理DDL锁
@@ -468,7 +468,7 @@
           }
       }
   }
-```text
+```
   三、与LogLogicalMessage的关系澄清
 
   3.1 误区的澄清
@@ -503,7 +503,7 @@
   ├──────────┼───────────────────────────┼────────────────────┤
   │ 架构依赖 │ 独立存储                  │ 共享存储           │
   └──────────┴───────────────────────────┴────────────────────┘
-```text
+```
   四、架构优势总结
 
   4.1 安全性保障
@@ -529,20 +529,20 @@
   -- 启用同步DDL（默认开启）
 ```c
   SET polar_enable_sync_ddl = on;
-```text
+```
   -- 启用异步锁回放（性能优化）
 ```c
   SET polar_enable_async_lock_replay = on;
-```text
+```
   -- DDL锁等待超时（默认同流复制超时）
 ```c
   SET max_standby_streaming_delay = 30s;
-```text
+```
   -- 监控DDL同步状态
 ```c
   SELECT * FROM polar_ddl_sync_status;
   SELECT * FROM polar_async_lock_replay_stats;
-```text
+```
   六、总结
 
   PolarDB的DDL自动传输机制是基于PostgreSQL热备架构的深度增强，而非通过LogLogicalMessage的新通道。其核心创新在于：

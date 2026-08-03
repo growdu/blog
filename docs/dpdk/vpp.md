@@ -60,13 +60,13 @@ VPP向量报文处理是与传统的标量报文处理相对而言的。传统�
 ./Configure linux-aarch64 --prefix=/home/duanyingshou/code/openssl/build_linux_native_x86/openssl shared
 make -j 8
 make install
-```text
+```
 - dpdk
 
 ```shell
 make config T=x86_64-native-linuxapp-gcc EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic'
 make T=x86_64-native-linuxapp-gcc  -j 8 EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic' install 
-```text
+```
 - vpp
 
 ```shell
@@ -75,7 +75,7 @@ export DPDK_PATH=/home/duanyingshou/code/dpdk/x86_64-native-linuxapp-gcc
 export PLATFORM=vpp
 make wipe
 make build-release
-```text
+```
 ### arm64
 
 - openssl
@@ -86,14 +86,14 @@ export CC=aarch64-linux-gnu-gcc
 ./Configure linux-aarch64 --prefix=/home/duanyingshou/code/openssl/build_linux_aarch64/openssl shared
 make -j 8
 make install
-```text
+```
 - dpdk
 
 ```shell
 export CROSS=aarch64-linux-gnu-
 make config T=arm64-dpaa2-linuxapp-gcc
 make T=arm64-dpaa-linuxapp-gcc install CONFIG_RTE_KNI_KMOD=n CONFIG_RTE_EAL_IGB_UIO=n -j 8
-```text
+```
 - vpp
 
 ### dpaa2
@@ -102,7 +102,7 @@ make T=arm64-dpaa-linuxapp-gcc install CONFIG_RTE_KNI_KMOD=n CONFIG_RTE_EAL_IGB_
 
 ```shell
 fsl-qoriq-glibc-x86_64-fsl-toolchain-aarch64-toolchain-2.5.sh -d /opt/cross
-```text
+```
 若/opt/cross已存在该交叉编译工具无需安装。
 
 注：暂时只能以该交叉工具编译vpp，且openssl、dpdk、vpp都需要以该工具链编译。
@@ -121,7 +121,7 @@ export CC=aarch64-fsl-linux-gcc
 make depend
 make CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC" LD="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-ld" AR="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-ar rv " EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic' -j 8
 make install
-```text
+```
 1. 编译时打包/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-ar失败
 
    解决方法添加rv参数
@@ -137,7 +137,7 @@ make install
 export CROSS=/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-
 make config T=arm64-dpaa2-linuxapp-gcc CROSS=aarch64-fsl-linux- CROSS_COMPILE="aarch64-fsl-linux-" CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC -g"  EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic'
 make T=arm64-dpaa2-linuxapp-gcc CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC" EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic' CONFIG_RTE_KNI_KMOD=n CONFIG_RTE_EAL_IGB_UIO=n install -j 8
-```text
+```
 ```shell
 # support kni
 export CROSS=/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-
@@ -145,7 +145,7 @@ export RTE_KERNELDIR=/home/duanyingshou/linux
 make config T=arm64-dpaa2-linuxapp-gcc CROSS=aarch64-fsl-linux- CROSS_COMPILE="aarch64-fsl-linux-"
 CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC -g"  EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic'
 make T=arm64-dpaa2-linuxapp-gcc CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/bin/aarch64-fsl-linux/aarch64-fsl-linux-gcc --sysroot=/opt/cross/sysroots/aarch64-fsl-linux -fPIC" EXTRA_CFLAGS='-g -Ofast -fPIC -ftls-model=local-dynamic -I/opt/cross/sysroots/aarch64-fsl-linux/usr/include' CONFIG_RTE_KNI_KMOD=y CONFIG_RTE_EAL_IGB_UIO=n install -j 32
-```text
+```
 - vpp
 
 修改vpp下的toolchain.cmake的20和21行如下：
@@ -153,7 +153,7 @@ make T=arm64-dpaa2-linuxapp-gcc CC="/opt/cross/sysroots/x86_64-fslsdk-linux/usr/
 ```shell
 set(CMAKE_C_COMPILER ${toolchain}/usr/bin/$ENV{CROSS_PREFIX}/$ENV{CROSS_PREFIX}-gcc)
 set(CMAKE_CXX_COMPILER ${toolchain}/usr/bin/$ENV{CROSS_PREFIX}/$ENV{CROSS_PREFIX}-g++)
-```text
+```
 ```shell
 #编译vpp
 export PLATFORM=dpaa
@@ -167,7 +167,7 @@ cd build-root
 make distclean
 #TAG可以使用dpaa_debug，编译时不会优化，方便debug，详见 vpp/build-data/platforms/dpaa.mk
 make V=0 PLATFORM=dpaa TAG=dpaa 
-```text
+```
 ## 执行
 
 ## vpp环境准备
@@ -185,7 +185,7 @@ cp ~/code/fastup_nxp/src/fastuplibs/libup/lib/arm64/*  ~/code/fastup_nxp/build-r
 cp ~/code/fastup_nxp/src/fastuplibs/libutils/lib/arm64/* ~/code/fastup_nxp/build-root/install-dpaa-aarch64/vpp/lib
 cd ~/code/fastup_nxp/build-root/install-dpaa-aarch64/
 tar zcvf ~/package/vpp_arm64.tar.gz vpp
-```text
+```
 - 指明lib路径
 
 ```shell
@@ -194,7 +194,7 @@ export LD_LIBRARY_PATH=../lib
 # dpaa2
 export LD_LIBRARY_PATH=/mnt/emmc2/vpp/lib
 export PATH=/mnt/emmc2/vpp/bin:$PATH
-```text
+```
 vpp可以通过配置文件startup.conf进行启动，startup.conf可配置插件等参数。
 
 - 配置
@@ -208,7 +208,7 @@ unix {
 api-trace {
   on
 }
-```text
+```
 - 启动
 
 startup.conf实际配置如下
@@ -277,12 +277,12 @@ plugins {
         plugin fastgtpu_plugin.so { disable }
 
 }
-```text
+```
 ```shell
 ./dynamic_dpl.sh dpmac.4
 groupadd -f -r vpp
 vpp -c startup.conf
-```text
+```
 - 配置
 
 ```shell
@@ -292,7 +292,7 @@ set int ip address TenGigabitEthernet0 192.168.9.24/24
 set interface mac address TenGigabitEthernet0 42:4b:54:ae:6e:05
 set int mtu 1500 TenGigabitEthernet0
 set ip arp static TenGigabitEthernet0 192.168.8.25 90:e2:ba:8d:02:f0
-```text
+```
 ```shell
 vpp# show interface
               Name               Idx    State  MTU (L3/IP4/IP6/MPLS)     Counter          Count
@@ -300,7 +300,7 @@ TenGigabitEthernet0               1     down         9000/0/0/0
 local0                            0     down          0/0/0/0
 vpp#set int state TenGigabitEthernet0 up
 
-```text
+```
 ## 配置详解
 
 - unix

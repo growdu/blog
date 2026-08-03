@@ -148,7 +148,7 @@ pagemap文件为二进制文件，要查看其文件内容可以使用od命名�
 
 ```shell
 od /proc/self/pagemap
-```text
+```
 ## mmap
 
 头文件 sys/mman.h

@@ -6,12 +6,12 @@
 ulimit -c 0              #不产生core文件
 ulimit -c 100            #设置core文件最大为100k
 ulimit -c unlimited      #不限制core文件大小  
-```text
+```
 ```shell
 (base) ┌──(dys㉿kali)-[~]
 └─$ ulimit -c
 0
-```text
+```
 可以看到本机未开启core dump。执行如下命令开启，并且不限制core文件大小。
 
 ```shell
@@ -21,14 +21,14 @@ ulimit -c unlimited      #不限制core文件大小
 (base) ┌──(dys㉿kali)-[~]
 └─$ ulimit -c
 unlimited
-```text
+```
 上述方法只是临时生效，要想永久生效需执行如下命令：
 
 ```shell
 (base) ┌──(dys㉿kali)-[~]
 └─$ echo "ulimit -c unlimited" >> ~/.zshrc
 # 如果是bash就换成~/.bashrc
-```text
+```
 ## 修改core文件位置
 
 那么生成的core文件在哪里呢？
@@ -43,7 +43,7 @@ unlimited
 (base) ┌──(dys㉿kali)-[~]
 └─$ cat /proc/sys/kernel/core_pattern # 生成core文件的路径和格式，默认core且在当前路径下
 core
-```text
+```
 将core文件生成修改为/opt/corefile下。
 
 ```shell
@@ -51,7 +51,7 @@ sudo vim /etc/sysctl.conf
 
 kernel.core_pattern=/opt/corefile/core_%t_%e_%p
 kernel.core_uses_pid=0
-```text
+```
 ```shell
 %c 转储文件的大小上限
 %e 所dump的文件名
@@ -61,7 +61,7 @@ kernel.core_uses_pid=0
 %s 导致本次coredump的信号
 %t 转储时刻(由1970年1月1日起计的秒数)
 %u 所dump进程的实际用户ID
-```text
+```
 执行如下命令生效：
 
 ```shell
@@ -69,7 +69,7 @@ kernel.core_uses_pid=0
 └─$ sudo sysctl -p
 kernel.core_pattern = /opt/corefile/core_%t_%e_%p
 kernel.core_uses_pid = 0
-```text
+```
 测试是否生效：
 
 ```shell
@@ -97,7 +97,7 @@ hello-world  main.c
 (base) ┌──(dys㉿kali)-[/fast1/code/cwork/psc]
 └─$ ./hello-world
 zsh: segmentation fault  ./hello-world
-```text
+```
 可以看到未生成coredump文件。在下列条件下不产生core 文件：
 
 - 进程是设置- 用户-ID ，而且当前用户并非程序文件的所有者；
@@ -129,7 +129,7 @@ zsh: segmentation fault (core dumped)  ./hello-world
 drwxr-xr-x 2 dys  dys    4096  6月 22 15:35 .
 drwxr-xr-x 4 root root   4096  6月 22 15:29 ..
 -rw------- 1 dys  dys  303104  6月 22 15:35 core_1687419341_hello-world_15645
-```text
+```
 修改文件权限后，coredump文件正常生成。
 
 ## 查看coredump文件
@@ -159,4 +159,4 @@ Program terminated with signal SIGSEGV, Segmentation fault.
 #0  0x000055b51d67c14d in main () at main.c:9
 9           printf("Hello world, p is %cn", p->a);
 (gdb)
-```text
+```

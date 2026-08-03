@@ -19,14 +19,14 @@ where publication_object is one of:
 
     TABLE table_and_columns [, ...]
     TABLES IN SCHEMA { schema_name | CURRENT_SCHEMA } [, ...]
-```text
+```
 **扩展后接口：**
 ```sql
 CREATE PUBLICATION name
     [ FOR ALL TABLES
       | FOR publication_object [, ...] ]
     [ WITH ( publication_parameter [= value] [, ... ], ddl [ = value] [, ...]) ]
-```text
+```
 **ddl选项取值范围：**
 - `table` - 表结构变更
 - `index` - 索引变更
@@ -49,14 +49,14 @@ CREATE SUBSCRIPTION subscription_name
     CONNECTION 'conninfo'
     PUBLICATION publication_name [, ...]
     [ WITH ( subscription_parameter [= value] [, ... ] ) ]
-```text
+```
 **扩展后接口：**
 ```sql
 CREATE SUBSCRIPTION subscription_name
     CONNECTION 'conninfo'
     PUBLICATION publication_name [, ...]
     [ WITH ( subscription_parameter [= value] [, ... ], ddl [ = value] [, ... ] ) ]
-```text
+```
 ## 关键设计决策
 
 ### 1. DDL选项限制规则
@@ -77,7 +77,7 @@ CREATE SUBSCRIPTION subscription_name
 ```sql
 -- 为manual选项提供的同步函数
 SELECT pg_sync_ddl('ddl语句');
-```text
+```
 **实现要求：**
 1. `manual`选项表示DDL不会自动同步
 2. 用户必须显式调用`pg_sync_ddl()`函数触发同步
@@ -100,7 +100,7 @@ CREATE TABLE pg_catalog.pg_publication_sync (
     publication text[] NOT NULL,            -- publication名称数组
     message_extra json                      -- 额外信息，JSON格式
 );
-```text
+```
 #### 字段详细说明
 
 1. **lsn** (pg_lsn)
@@ -140,7 +140,7 @@ CREATE INDEX pg_publication_sync_timestamp_idx ON pg_publication_sync(timestamp)
 
 -- publication索引：支持按publication过滤
 CREATE INDEX pg_publication_sync_publication_idx ON pg_publication_sync USING gin(publication);
-```text
+```
 ### 4. DDL提取与发布机制
 
 #### DDL识别机制
@@ -167,7 +167,7 @@ CREATE INDEX pg_publication_sync_publication_idx ON pg_publication_sync USING gi
         "current_user": "postgres"
     }
 }
-```text
+```
 **A/D类型消息发布（表增删变更）：**
 - 参照`AlterSubscription_refresh`的实现逻辑
 - 当表通过`ALTER PUBLICATION ... ADD TABLE`添加到publication时，发布'A'消息
@@ -182,7 +182,7 @@ CREATE INDEX pg_publication_sync_publication_idx ON pg_publication_sync USING gi
     "message_data": "{\"schema\": \"public\", \"table\": \"users\"}",
     "message_extra": {"operation": "add_table_to_publication"}
 }
-```text
+```
 #### 发布条件检查
 
 1. **DDL选项检查**：确认publication启用了相应的ddl选项
@@ -240,7 +240,7 @@ SELECT pg_publication_sync_prune(
     retention_days => 30,      -- 保留最近30天记录
     min_lsn => '0/0'::pg_lsn   -- 清理该LSN之前的记录
 );
-```text
+```
 #### 清理策略
 
 **基于订阅进度清理：**

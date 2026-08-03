@@ -33,7 +33,7 @@ static __rte_always_inline unsigned int rte_ring_sc_dequeue_bulk(struct rte_ring
 static __rte_always_inline unsigned int rte_ring_dequeue_bulk(struct rte_ring *r, void **obj_table, unsigned int n, unsigned int *available) //此函数为批量出队函数，具体安全性质取决于创建队列时的标志(flags)
     
 static inline unsigned rte_ring_count(const struct rte_ring *r) //此函数用于查看队列中元素的数量
-```text
+```
 ## 无锁队列实现
 
 > ```
@@ -83,7 +83,7 @@ struct rte_ring {
                                                          
     char pad2 __rte_cache_aligned; /**< empty cache line */
 };
-```text
+```
 - 生产者：先抢占，再写入，再更新指针
 
   1. 先偏移头指针，说白了就是抢位置。这步主要是为了对付多生产者的情况。

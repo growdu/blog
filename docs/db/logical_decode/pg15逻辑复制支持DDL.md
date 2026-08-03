@@ -16,14 +16,14 @@ PG15 的接口：
 CREATE PUBLICATION pub1
 FOR TABLE t1
 WITH (publish = 'insert, update, delete');
-```text
+```
 可以扩展为：
 
 ```sql
 CREATE PUBLICATION pub1
 FOR TABLE t1
 WITH (publish = 'insert, update, delete, ddl');
-```text
+```
 或者更清晰：
 
 ```sql
@@ -33,7 +33,7 @@ WITH (
     publish = 'insert, update, delete',
     publish_ddl = true
 );
-```text
+```
 推荐第二种，因为：
 
 * 不破坏原 publish 参数解析
@@ -49,7 +49,7 @@ WITH (
     copy_data = true,
     enable_ddl = true
 );
-```text
+```
 ---
 
 # 二、系统表扩展（Catalog）
@@ -58,36 +58,36 @@ WITH (
 
 系统表：
 
-```text
+```
 pg_publication
-```text
+```
 新增字段：
 
-```text
+```
 pubddl bool
-```text
+```
 修改：
 
-```text
+```
 src/include/catalog/pg_publication.h
-```text
+```
 示例：
 
 ```c
 bool pubddl;   /* publish DDL */
-```text
+```
 同时更新：
 
-```text
+```
 pg_publication_rel
 pg_publication_namespace
-```text
+```
 读取函数：
 
-```text
+```
 GetPublication()
 GetPublicationByName()
-```text
+```
 要把 `pubddl` 返回给 replication 逻辑。
 
 ---
@@ -96,14 +96,14 @@ GetPublicationByName()
 
 DDL执行入口：
 
-```text
+```
 standard_ProcessUtility()
-```text
+```
 位置：
 
-```text
+```
 src/backend/tcop/utility.c
-```text
+```
 逻辑：
 
 ```c
@@ -115,26 +115,26 @@ if (IsA(parsetree, CreateStmt) ||
     if (PublicationHasDDL())
         LogDDLLogicalMessage(queryString);
 }
-```text
+```
 关键函数：
 
 ```c
 LogDDLLogicalMessage(queryString)
-```text
+```
 ---
 
 # 四、写入 WAL
 
 PostgreSQL 已经支持 **logical message WAL record**：
 
-```text
+```
 LogLogicalMessage()
-```text
+```
 文件：
 
-```text
+```
 src/backend/replication/logical/logicalfuncs.c
-```text
+```
 实现：
 
 ```c
@@ -143,19 +143,19 @@ LogLogicalMessage(
     queryString,
     strlen(queryString),
     false);
-```text
+```
 写入 WAL：
 
-```text
+```
 RM_LOGICALMSG_ID
-```text
+```
 WAL结构：
 
-```text
+```
 LogicalMessage
    prefix = "pg_ddl_replication"
    message = "CREATE TABLE t1..."
-```text
+```
 这样 WAL 中就包含 DDL。
 
 ---
@@ -164,29 +164,29 @@ LogicalMessage
 
 逻辑复制发送 WAL 时在：
 
-```text
+```
 pgoutput plugin
-```text
+```
 文件：
 
-```text
+```
 src/backend/replication/pgoutput/pgoutput.c
-```text
+```
 需要扩展：
 
-```text
+```
 pgoutput_decode_message()
-```text
+```
 当前逻辑：
 
-```text
+```
 prefix == "pgoutput"
-```text
+```
 新增：
 
-```text
+```
 prefix == "pg_ddl_replication"
-```text
+```
 处理：
 
 ```c
@@ -196,7 +196,7 @@ pq_sendbyte(ctx->out, REPLICATION_MSG_DDL);
 pq_sendstring(ctx->out, message);
 
 OutputPluginWrite(ctx, true);
-```text
+```
 发送到 replication stream。
 
 ---
@@ -205,63 +205,63 @@ OutputPluginWrite(ctx, true);
 
 logical replication protocol 目前消息：
 
-```text
+```
 BEGIN
 COMMIT
 INSERT
 UPDATE
 DELETE
 RELATION
-```text
+```
 新增：
 
-```text
+```
 DDL
-```text
+```
 定义：
 
-```text
+```
 #define LOGICAL_REP_MSG_DDL 'D'
-```text
+```
 数据结构：
 
-```text
+```
 [D][length][ddl_sql]
-```text
+```
 ---
 
 # 七、Subscriber Apply Worker
 
 apply worker 代码：
 
-```text
+```
 src/backend/replication/logical/worker.c
-```text
+```
 主循环：
 
-```text
+```
 LogicalRepApplyLoop()
-```text
+```
 接收消息：
 
-```text
+```
 apply_dispatch()
-```text
+```
 新增处理：
 
 ```c
 case LOGICAL_REP_MSG_DDL:
     apply_handle_ddl(msg);
-```text
+```
 ---
 
 # 八、执行DDL
 
 实现函数：
 
-```text
+```
 apply_handle_ddl()
-```text
+```
 流程：
 
 ```c
@@ -277,7 +277,7 @@ ProcessUtility(
     NULL);
 
 CommitTransactionCommand();
-```text
+```
 关键点：
 
 * 在 subscriber 上执行 SQL
@@ -290,7 +290,7 @@ CommitTransactionCommand();
 
 完整链路如下：
 
-```text
+```
 Publisher
 --------------------------------
 
@@ -342,12 +342,12 @@ ProcessUtility()
 
 ↓
 CREATE TABLE t1
-```text
+```
 ---
 
 # 十、流程图
 
-```text
+```
              Publisher
  ┌──────────────────────────────┐
  │ CREATE TABLE t1              │
@@ -379,7 +379,7 @@ CREATE TABLE t1
  │   ↓                          │
  │ CREATE TABLE t1              │
  └──────────────────────────────┘
-```text
+```
 ---
 
 # 十一、需要修改的核心文件
@@ -388,53 +388,53 @@ CREATE TABLE t1
 
 ## SQL接口
 
-```text
+```
 publicationcmds.c
 subscriptioncmds.c
-```text
+```
 ### catalog
 
-```text
+```
 pg_publication.h
 pg_publication.c
-```text
+```
 ### DDL捕获
 
-```text
+```
 utility.c
-```text
+```
 ### WAL写入
 
-```text
+```
 logical.c
-```text
+```
 ### decoding
 
-```text
+```
 pgoutput.c
-```text
+```
 ### subscriber执行
 
-```text
+```
 worker.c
-```text
+```
 ---
 
 # 十二、实现复杂度评估
 
 代码改动规模大约：
 
-```text
+```
 新增代码      ~1500 行
 修改代码      ~500 行
 新增 catalog   1 列
 新增 replication message 1 种
-```text
+```
 开发量：
 
-```text
+```
 约 2-3 周
-```text
+```
 ---
 
 # 十三、和 pglogical 方案的区别
@@ -480,7 +480,7 @@ CREATE TABLE t(
     id int primary key,
     a int
 );
-```text
+```
 Subscriber
 
 ```sql
@@ -489,12 +489,12 @@ CREATE TABLE t(
     a int,
     b int
 );
-```text
+```
 仍然可以复制：
 
 ```sql
 INSERT INTO t VALUES(1,10);
-```text
+```
 原因：
 
 复制是 **按列名映射**。
@@ -505,24 +505,24 @@ INSERT INTO t VALUES(1,10);
 
 要求：
 
-```text
+```
 replica identity
-```text
+```
 通常是：
 
-```text
+```
 PRIMARY KEY
-```text
+```
 或者：
 
-```text
+```
 REPLICA IDENTITY FULL
-```text
+```
 否则会报错：
 
-```text
+```
 cannot update table because it does not have a replica identity
-```text
+```
 ---
 
 # 二、DDL复制可能导致的冲突
@@ -541,19 +541,19 @@ Publisher
 CREATE TABLE t(
   id int primary key
 );
-```text
+```
 Subscriber
 
 ```sql
 CREATE TABLE t(
   id int
 );
-```text
+```
 如果DDL复制：
 
 ```sql
 ALTER TABLE t ADD PRIMARY KEY(id);
-```text
+```
 可能失败：
 
 * subscriber 已有重复数据
@@ -561,10 +561,10 @@ ALTER TABLE t ADD PRIMARY KEY(id);
 
 结果：
 
-```text
+```
 ERROR
 apply worker crash
-```text
+```
 ---
 
 # 2 列顺序 / 列差异
@@ -573,12 +573,12 @@ Publisher
 
 ```sql
 ALTER TABLE t ADD COLUMN c int;
-```text
+```
 Subscriber
 
 ```sql
 table t already has column c
-```text
+```
 DDL复制会失败。
 
 ---
@@ -589,12 +589,12 @@ Publisher
 
 ```sql
 ALTER TABLE t DROP COLUMN a;
-```text
+```
 Subscriber
 
-```text
+```
 column a still used by application
-```text
+```
 复制会破坏 subscriber。
 
 ---
@@ -603,19 +603,19 @@ column a still used by application
 
 Publisher
 
-```text
+```
 PRIMARY KEY(id)
-```text
+```
 Subscriber
 
-```text
+```
 REPLICA IDENTITY FULL
-```text
+```
 如果DDL复制：
 
-```text
+```
 DROP PRIMARY KEY
-```text
+```
 DML复制可能失效。
 
 ---
@@ -624,16 +624,16 @@ DML复制可能失效。
 
 核心原因就是：
 
-```text
+```
 logical replication
     ≠ schema replication
-```text
+```
 逻辑复制的设计目标：
 
-```text
+```
 允许 schema 演进
 允许 schema 差异
-```text
+```
 DDL replication 会破坏这一点。
 
 ---
@@ -644,15 +644,15 @@ DDL replication 会破坏这一点。
 
 推荐策略：
 
-```text
+```
 DDL replication
 只在 publisher / subscriber schema 完全一致时使用
-```text
+```
 也就是说：
 
-```text
+```
 DDL replication = strict schema mode
-```text
+```
 ---
 
 # 五、具体实现策略
@@ -669,7 +669,7 @@ WITH (
   enable_ddl = true,
   schema_mode = strict
 );
-```text
+```
 模式：
 
 | 模式       | 行为         |
@@ -680,9 +680,9 @@ WITH (
 
 默认：
 
-```text
+```
 disabled
-```text
+```
 ---
 
 # 六、strict schema mode 的规则
@@ -693,55 +693,55 @@ disabled
 
 在 subscription 建立时检查：
 
-```text
+```
 table name
 column name
 column type
 primary key
-```text
+```
 检查位置：
 
-```text
+```
 initial table sync
-```text
+```
 如果不一致：
 
-```text
+```
 ERROR
-```text
+```
 ---
 
 ### 2 禁止 subscriber 手动DDL
 
 可以增加保护：
 
-```text
+```
 DDL guard
-```text
+```
 如果 subscription active：
 
-```text
+```
 subscriber 禁止本地DDL
-```text
+```
 否则：
 
-```text
+```
 schema drift
-```text
+```
 ---
 
 ### 3 自动同步 schema
 
 订阅创建时：
 
-```text
+```
 copy_data
-```text
+```
 可以增加：
 
-```text
+```
 copy_schema
-```text
+```
 例如：
 
 ```sql
@@ -749,17 +749,17 @@ CREATE SUBSCRIPTION sub1
 WITH (
   copy_schema = true
 );
-```text
+```
 实现：
 
-```text
+```
 pg_dump schema
-```text
+```
 或者：
 
-```text
+```
 send CREATE TABLE via replication
-```text
+```
 ---
 
 # 七、DDL复制只允许安全DDL
@@ -768,19 +768,19 @@ send CREATE TABLE via replication
 
 支持：
 
-```text
+```
 CREATE TABLE
 ALTER TABLE ADD COLUMN
 CREATE INDEX
 DROP INDEX
-```text
+```
 不支持：
 
-```text
+```
 DROP COLUMN
 ALTER COLUMN TYPE
 DROP TABLE
-```text
+```
 原因：
 
 这些DDL会破坏复制。
@@ -793,7 +793,7 @@ DROP TABLE
 
 ```sql
 ddl_conflict = error | skip
-```text
+```
 行为：
 
 | 冲突            | error | skip |
@@ -803,16 +803,16 @@ ddl_conflict = error | skip
 
 默认：
 
-```text
+```
 error
-```text
+```
 ---
 
 # 九、推荐最终架构
 
 最终逻辑：
 
-```text
+```
 Publisher
    |
    |  DDL
@@ -845,7 +845,7 @@ schema validation
    |
    v
 ProcessUtility
-```text
+```
 ---
 
 # 十、最佳实践建议
@@ -856,15 +856,15 @@ ProcessUtility
 
 ## 1 标准模式（默认）
 
-```text
+```
 DML replication only
-```text
+```
 ### 2 schema replication mode
 
-```text
+```
 schema_strict = true
 enable_ddl = true
-```text
+```
 这个模式类似：
 
 * MySQL binlog schema replication
@@ -895,10 +895,10 @@ PostgreSQL 是最保守的。
 
 原因：
 
-```text
+```
 logical replication 允许 schema 差异
 DDL replication 会强制 schema 一致
-```text
+```
 正确解决方案：
 
 1️⃣ 增加 **schema_strict 模式**
@@ -908,9 +908,9 @@ DDL replication 会强制 schema 一致
 
 这样才能保证：
 
-```text
+```
 DDL replication
 不会破坏 logical replication
-```text
+```
 ---
 

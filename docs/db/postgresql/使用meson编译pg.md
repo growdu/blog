@@ -11,14 +11,14 @@ meson setup build \
   -Dzlib=enabled \
   --prefix=`pwd`/debug 
 
-```text
+```
 执行生成：
 
 ```shell
 meson compile -C build
-```text
+```
 编译完成后安装：
 
 ```shell
 meson install -C build
-```text
+```

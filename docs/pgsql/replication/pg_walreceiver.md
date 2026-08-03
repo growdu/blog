@@ -7,13 +7,13 @@
 ```mermaid
 graph TB
 main-->PostmasterMain-->StartChildProcess-->fork_process-->AuxiliaryProcessMain-->WalReceiverMain
-```text
+```
 ### 连接主库
 
 ```mermaid
 graph TB
 WalReceiverMain-->walrcv_connect-->libpqrcv_connect
-```text
+```
 ## wal_receiver整体流程
 
 wal_receiver整体流程由三层循环组成，第一层循环使用launch机制，第二层和第三层则使用`for(;;)`实现。
@@ -28,7 +28,7 @@ wal_receiver整体流程由三层循环组成，第一层循环使用launch机�
 graph TB
 loop-->walrcv_receive-->XLogWalRcvProcessMsg-->ProcessWalSndrMessage-->|收到wal数据|XLogWalRcvWrite-->pg_pwrite-->loop
 ProcessWalSndrMessage-->|收到心跳|XLogWalRcvSendReply-->loop
-```text
+```
 1. wal数据接收在walreceiver的第三层循环，通过循环调用`walrcv_receive`收取数据，当返回的数据长度小于等于0时退出；其中等于0时表示没有数据，小于0表示收包遇到错误；
    
    ```c

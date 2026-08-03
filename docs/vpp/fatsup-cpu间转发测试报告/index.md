@@ -22,7 +22,7 @@ cpub需要使用两张网口，一张对外接收x86使用pktgen回放过来的�
 /root/kni/dpaa2/dynamic_dpl.sh dpmac.3 dpmac.4
 export DPRC=dprc.2
 insmod /root/test/nxp_kni_example/rte_kni.ko carrier=on
-```text
+```
 - 配置fastup
 
   fastup startup.conf的配置文件不变，但需要更改interface.txt文件内容为如下内容：
@@ -35,12 +35,12 @@ set interface l2 bridge TenGigabitEthernet0 100
 set interface mac address TenGigabitEthernet1 42:4b:54:ae:6e:05
 set interface mac address TenGigabitEthernet0 92:51:e6:5c:01:d2
 l2fib add 92:51:e6:5c:01:d2 100 TenGigabitEthernet1
-```text
+```
 - 运行
 
 ```shell
 fastup -c /etc/vpp/startup_b2afwd.conf
-```text
+```
 ### cpua
 
 cpua只需要使用一张网口，且无需对外发送数据。<font color="red">需要特别注意cpua和cpub之间通过dpmac.3连通。</font>
@@ -74,7 +74,7 @@ cpua只需要使用一张网口，且无需对外发送数据。<font color="red
 
 ```shell
 ./app/x86_64-native-linuxapp-gcc/pktgen -c 0xe0000 --socket-mem 512 -n 2 -- -P -m [18:19].0 -s 0:5gc.pcap -T --crc-strip
-```text
+```
 ## 三层转发
 
 cpub对外网口1接入，经ip层转发到cpub对内网口2，经ip层转发到cpua对内网口1进行业务逻辑处理。在cpub上未进行业务处理，在cpub上报文仅到达ip层。
@@ -95,7 +95,7 @@ cpub需要使用两张网口，一张对外接收x86使用pktgen回放过来的�
 /root/kni/dpaa2/dynamic_dpl.sh dpmac.3 dpmac.4
 export DPRC=dprc.2
 insmod /root/test/nxp_kni_example/rte_kni.ko carrier=on
-```text
+```
 - 配置fastup
 
   fastup startup.conf的配置文件不变，但需要更改interface.txt文件内容为如下内容：
@@ -109,12 +109,12 @@ set int ip address TenGigabitEthernet1 172.168.1.12/24
 set interface mac address TenGigabitEthernet0 92:51:e6:5c:01:d2
 set ip arp static TenGigabitEthernet1 192.168.8.24 92:51:e6:5c:01:d2
 set ip arp static TenGigabitEthernet0 192.168.8.25 92:51:e6:5c:01:00
-```text
+```
 - 运行
 
 ```shell
 fastup -c /etc/vpp/startup_b2afwd_withoutapp.conf
-```text
+```
 ### cpua
 
 cpua只需要使用一张网口，且无需对外发送数据。需要特别注意cpua和cpub之间通过dpmac.3连通。
@@ -149,7 +149,7 @@ cpua只需要使用一张网口，且无需对外发送数据。需要特别注�
 
 ```shell
 ./app/x86_64-native-linuxapp-gcc/pktgen -c 0xe0000 --socket-mem 512 -n 2 -- -P -m [18:19].0 -s 0:5gc.pcap -T --crc-strip
-```text
+```
 ## 应用层转发
 
 cpub对外网口1接入，网口1先进行业务处理和分流，再将报文由cpub对内网口1发出，cpua对内网口1收包后进行业务处理（fastup收到包后不会进行任何处理，会重新构造一个新的包发出去，即中间的业务逻辑省略了，仅仅是模拟应用层收包发包的过程）。两个cpu都会进行业务处理，在cpub上报文到达应用层后再从应用层发出。
@@ -170,7 +170,7 @@ cpub需要使用两张网口，一张对外接收x86使用pktgen回放过来的�
 /root/kni/dpaa2/dynamic_dpl.sh dpmac.3 dpmac.4
 export DPRC=dprc.2
 insmod /root/test/nxp_kni_example/rte_kni.ko carrier=on
-```text
+```
 - 配置fastup
 
   fastup startup.conf的配置文件不变，但需要更改interface.txt文件内容为如下内容：
@@ -187,12 +187,12 @@ set fastgtpu test ip dst 172.168.8.25
 set fastgtpu test ip src 172.168.8.24
 set fastgtpu test mode 3
 start fastgtpu test
-```text
+```
 - 运行
 
 ```shell
 fastup -c /etc/vpp/startup_b2afwd_withapp.conf
-```text
+```
 ### cpua
 
 cpua只需要使用一张网口，且无需对外发送数据。需要特别注意cpua和cpub之间通过dpmac.3连通。
@@ -226,7 +226,7 @@ cpua只需要使用一张网口，且无需对外发送数据。需要特别注�
 
 ```shell
 ./app/x86_64-native-linuxapp-gcc/pktgen -c 0xe0000 --socket-mem 512 -n 2 -- -P -m [18:19].0 -s 0:5gc.pcap -T --crc-strip
-```text
+```
 ## 测试结果
 
 ### 二层转发

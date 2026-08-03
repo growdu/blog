@@ -8,19 +8,19 @@
 
 ```shell
 npm install npx
-```text
+```
 - 创建app
 
 ```shell
 npx create-react-app automedia
 cd automedia
 npm start
-```text
+```
 - 构建发布版本
 
 ```shell
 npm run build
-```text
+```
 - 安装调试工具
 
 ```shell
@@ -43,14 +43,14 @@ npm run build
             }
     ]
 }
-```text
+```
 安装chrome dev tools插件，然后npm start，再按f5或者运行中开始调试。
 
 - 安装自动格式化代码工具
 
 ```shell
 npm install --save husky lint-staged prettier
-```text
+```
 然后在package.json文件中添加如下内容：
 
 ```shell
@@ -59,14 +59,14 @@ npm install --save husky lint-staged prettier
 +      "pre-commit": "lint-staged"
 +    }
 +  }
-```text
+```
 - 分析包大小
 
 ```shell
 npm install --save source-map-explorer
-```text
+```
 在package.json中的scripts里添加如下内容：
 
 ```shell
 "analyze": "source-map-explorer 'build/static/js/*.js'",
-```text
+```

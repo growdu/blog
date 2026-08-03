@@ -35,7 +35,7 @@ typedef enum ReplayDialect {
         REPLAY_DIALECT_DB2,
         REPLAY_DIALECT_MAX
 } ReplayDialect;
-```text
+```
 - replay上下文定义
 
 ```c
@@ -49,7 +49,7 @@ typedef struct ReplayExecContext
         UserContext ucxt;
         void *adpater_private; // 扩展数据
 } ReplayExecContext;
-```text
+```
 - replay回调函数接口
 
 ```c
@@ -59,7 +59,7 @@ typedef struct ReplayDialectAdapter {
         bool (*execute_ddl)(ReplayExecContext *ctx,const char *sql);
         void (*cleanup_context)(ReplayExecContext *ctx);
 } ReplayDialectAdapter;
-```text
+```
 - replay框架注册初始化
 
 ```c
@@ -68,7 +68,7 @@ void ReplayFrameworkInit(void);
 bool RegisterReplayDialectAdapter(ReplayDialect dialect,ReplayDialectAdapter *adapter);
 
 ReplayDialectAdapter *GetReplayAdapter(ReplayDialect dialect);
-```text
+```
 ### replay 
 
 ## pg replay
@@ -82,7 +82,7 @@ static ReplayDialectAdapter pg_adapter = {
         .execute_ddl = pg_replay_execute_ddl,
         .cleanup_context = pg_replay_cleanup_context,
 };
-```text
+```
 ## sqlserver replay
 
 对于sqlserver来说，由于worker没有和后端进程的TDS端口建立连接，因而需要在worker进程启动的时候构建一个sqlserver parse的上下文。
@@ -111,14 +111,14 @@ static ReplayDialectAdapter tsql_simple_adapter =
         .execute_ddl = tsql_simple_execute_ddl,
         .cleanup_context = tsql_simple_cleanup_context,
 }
-```text
+```
 simple方式实现基本和PG的实现一致，区别主要在init_context,sqlserver模式需要显示设置sql_dialect,
 
 ```c
 (void) set_config_option("babelfishpg_tsql.sql_dialect","tsql",
                         PGC_USERSET, PGC_S_SESSION,
                         GUC_ACTION_SET, true, 0, false);
-```text
+```
 ### sqlserver custom replay
 
 完整的sqlserver上下文构建需要在bbf插件内部注册对应的回调函数，并在bbf插件初始化时注册到replay 框架中。
@@ -134,7 +134,7 @@ bbf_register_tsql_replay_adapter(void)
         RegisterReplayDialectAdapter(REPLAY_DIALECT_TSQL, &bbf_tsql_adapter);
         get_current_dbname_hook = bbf_get_current_dbname;
 }
-```text
+```
 ```c
 static ReplayDialectAdapter pbf_tsql_adapter =
 {
@@ -143,7 +143,7 @@ static ReplayDialectAdapter pbf_tsql_adapter =
         .execute_ddl = bbf_replay_execute_ddl,
         .cleanup_context = bbf_replay_cleanup_context,
 };
-```text
+```
 最终目标为：通过注册回调函数需要内核的worker进程能够拥有完整的sqlserver上下文，使worker进程执行ddl sql和客户端连接到TDS端口执行一致。
 
 ### 运行机制

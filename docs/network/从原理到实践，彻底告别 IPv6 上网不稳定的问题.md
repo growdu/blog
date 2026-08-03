@@ -49,7 +49,7 @@ MTU描述了数据链路层的收发能力，IP层也需要知道它进行正确
 
 Linux 上的 ifconfig 命令可以查看某个网络接口的 MTU 大小，如：
 
-```text
+```
 # ifconfig
 ppp0      Link encap:Point-to-Point Protocol  
           inet addr:112.91.246.207  P-t-P:113.90.244.1  Mask:255.255.255.255
@@ -65,10 +65,10 @@ eth2      Link encap:Ethernet  HWaddr 20:76:93:53:E0:93
           collisions:0 txqueuelen:1000 
           RX bytes:2931869236 (2.7 GiB)  TX bytes:1896190225 (1.7 GiB)
           Interrupt:11
-```text
+```
 Windows 上查看网络接口 MTU 的命令如下：
 
-```text
+```
 C:\> netsh interface ipv4 show subinterfaces
 
    MTU  MediaSenseState   传入字节  传出字节      接口
@@ -76,17 +76,17 @@ C:\> netsh interface ipv4 show subinterfaces
 4294967295                1          0    1039833  Loopback Pseudo-Interface 1
   1500                2  116351254   52169177  WLAN
   1500                1   29136662    9016213  以太网
-```text
+```
 Windows 上设置 MTU 的命令为 (需要管理员身份运行命令提示符)：
 
-```text
+```
 netsh interface ipv4 set subinterface "需修改的连接名" mtu=值 store=persistent
-```text
+```
 其中，需修改的连接名 和 值 要用相应的值来代替。例如，我这里需要输入：
 
-```text
+```
 netsh interface ipv4 set subinterface "WLAN" mtu=1492 store=persistent
-```text
+```
 ## MTU 与 IP 分片
 
 IPv4 的分片现象发生在网络层，是网络层重要的功能。当源节点收到上层下发的IP 包，或者中间路由器收到要转发的IP包，如果包大小大于设定的 MTU 时，需要对这个IP包进行分片，分成两个或多个IP包依次发送。每个分片所承载数据的首字节在原包的索引都要记录到包头的偏移字段中（以8字节为单位），而且只要不是最后一片，包头的 MF (More Fragment) 标记都应设为 1，以方便目标端对这些分片进行正确重组。
@@ -146,7 +146,7 @@ ping 程序的ICMP不可到达错误，就是采用PMTU动态探测的方法， 
 
 我们可以使用 `ping -f -l [SIZE] [目标IP或域名]` 命令来探测到指定目的节点的PMTU，其中 -f 表示强制不分片，-l 用于指定 ping 数据包的大小，最大能正常ping 通的 SIZE 加上ICMP包头的28字节即为 MTU，如：
 
-```text
+```
 C:\> ping -f -l 1465 www.baidu.com
 正在 Ping www.a.shifen.com [14.119.104.254] 具有 1465 字节的数据:
 需要拆分数据包但是设置 DF。
@@ -155,7 +155,7 @@ C:\> ping -f -l 1465 www.baidu.com
 C:\> ping -f -l 1464 www.baidu.com
 正在 Ping www.a.shifen.com [14.119.104.254] 具有 1464 字节的数据:
 来自 14.119.104.254 的回复: 字节=1464 时间=7ms TTL=56
-```text
+```
 实际环境下捕获的ICMP需要分片但DF位置一的差错报文，下图为其解码格式\[5\]：
 
 ![](https://pic4.zhimg.com/v2-55785c722b16f0e38c16d2ae7a25c4cb_b.jpg)
@@ -291,16 +291,16 @@ MSS 钳制
 
 家用路由器如果是拨号上网，厂商为了网络稳定，一般默认就开启 MSS Clamping，如基于华硕系统修改的 Padavan ，执行命令 `iptables -L` 可以看到这样一条转发规则：
 
-```text
+```
 [XXX-Router /home/root]# iptables -L
 ...
 Chain FORWARD (policy DROP)
 ...
 TCPMSS   tcp  --  anywhere      anywhere      tcp flags:SYN,RST/SYN TCPMSS clamp to PMTU
-```text
+```
 Linux 的 iptables / ip6tables 也支持 MSS Clamping，可以创建基于 mangle 表的 forward 链 `--set-mss [size]` 或 `--clamp-mss-to-pmtu` 选项的规则来启用 MSS 钳制，可以指定具体的 MSS 值，也可以直接钳制到 PMTU（其实就是本机的MTU），如 \[11\]：
 
-```text
+```
 # 下面命令钳制到 1452，适合 PPPoE 用户
 iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1452
 ip6tables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-mss 1452
@@ -308,27 +308,27 @@ ip6tables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --set-ms
 # 下面命令是自动钳制到PMTU，此时应设置本机正确的 MTU，如 PPPoE 为1492
 iptables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
 ip6tables -t mangle -A FORWARD -p tcp --tcp-flags SYN,RST SYN -j TCPMSS --clamp-mss-to-pmtu
-```text
+```
 如果要指定只对某一网络接口进行钳制，而不是对所有转发的包都钳制，可以操作 PREROUTING 表，并指定拨号的接口名称（ppp0），如：
 
-```text
+```
 ip6tables -t mangle -A POSTROUTING -p tcp --tcp-flags SYN,RST SYN -o ppp0 -j TCPMSS --clamp-mss-to-pmtu
-```text
+```
 注意IPv4 和 IPv6 要分别配置。其它基于 iptables 的路由器（如 Padavan）都可以参考这个方法。
 
 在 OpenWrt 路由器上，除了上面的通过修改 iptables 规则的方法，还可以通过 Luci 界面进行配置：在【网络】【防火墙】【基本设置】【区域】处，在对应接口上勾选【MSS 钳制】即可。
 
 RouterOS 路由器设置MSS Clamping 的命令如下(其中pppoe-out1是wan口，1432是要MSS值，请根据需要修改)：
 
-```text
+```
 /ipv6 firewall mangle add chain=forward out-interface=pppoe-out1 protocol=tcp tcp-flags=syn action=change-mss new-mss=1432
-```text
+```
 UBNT Edgerouter 系列设备 设置 MSS Clamping 的命令如下：
 
-```text
+```
 set firewall options mss-clamp6 interface-type pppoe
 set firewall options mss-clamp6 mss 1432
-```text
+```
 其它中低端的路由器，配置界面上可能看不到相关信息，但 IPv4 一般都默认开启了 MSS Clamping，而 IPv6 就不一定了。
 
 ## 蜂窝 4G 网络的 MSS 的分析
@@ -345,13 +345,13 @@ set firewall options mss-clamp6 mss 1432
 
 此时 Windows 电脑上 WLAN 连接的 MTU 被改为 1410：
 
-```text
+```
 C:\> netsh interface ipv6 show subinterfaces
    MTU  MediaSenseState   传入字节  传出字节      接口
 ------  ---------------  ---------  ---------  -------------
   1410                1  117539374   58911024  WLAN
   1500                5          0        152  本地连接* 1
-```text
+```
 作为对比，这是同一台电脑用连接PPPoE拨号路由器的WIFI后，访问知乎 IPv6 服务器的截图：
 
 ![](https://pic4.zhimg.com/v2-db461f4d3a4496f08d67114b49a3c8f7_b.jpg)
@@ -362,13 +362,13 @@ C:\> netsh interface ipv6 show subinterfaces
 
 此时 Windows 电脑上 WLAN 连接的 MTU 恢复为正常的 1500：
 
-```text
+```
 C:\> netsh interface ipv6 show subinterfaces
    MTU  MediaSenseState   传入字节  传出字节      接口
 ------  ---------------  ---------  ---------  -------------
   1500                1  118029364   62131090  WLAN
   1500                5          0        152  本地连接* 1
-```text
+```
 可以看到，安卓系统AP程序 或运营商的 4G 网关把 IPv6 的 MSS 砍到了 1300，把 IPv4 的 MSS 也砍到了 1370，比我们 PPPoE 拨号网络小很多。
 
 这里有几个疑惑没有弄懂：

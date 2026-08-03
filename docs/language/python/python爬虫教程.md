@@ -17,7 +17,7 @@ if __name__ == '__main__':
     req = requests.get(url = target)
     req.encoding = 'utf-8'
     print(req.text)
-```text
+```
 - post
 
 ```python
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     #读取信息并解码
     html = response.read().decode('utf-8')
     print(html)
-```text
+```
 - put
 - delete
 
@@ -58,9 +58,9 @@ if __name__ == "__main__":
 
 ```shell
 pip install fake_useragent
-```text
+```
 ### 模拟登录
 
 ```shell
 pip install selenium
-```text
+```

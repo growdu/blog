@@ -104,7 +104,7 @@ SRP细分为三个子协议：
 graph LR
 id1((a1))-->|m1m2m3|p1--->p2-->p3-->p4-->p1
 p1-->id2>m1m2m3]
-```text
+```
 如上图：
 
 1. a1请求p1依次广播m1m2m3,这些消息暂存在p1的消息队列中；
@@ -114,7 +114,7 @@ p1-->id2>m1m2m3]
 ```mermaid
 graph 
 id1((a1))-->|m1m2m3|p1(p1 recv m1m2m3)--->|seq:3 aru:3 aru_id:p1 rtr:|p2(p2 recv m1m2)-->p3(p3 recv m1m2m3)-->p4(p4 recv m1m2m3)-->p1
-```text
+```
 如上图：
 
 1. p2只收到m2m3,p3和p4收到m1m2m3；
@@ -125,21 +125,21 @@ id1((a1))-->|m1m2m3|p1(p1 recv m1m2m3)--->|seq:3 aru:3 aru_id:p1 rtr:|p2(p2 recv
 graph 
 id1((a1))-->|m1m2m3|p1(p1 recv m1m2m3)--->p2(p2 recv m1m2)-->|seq:3 aru:2 aru_id:p2 rtr:3|p3(p3 recv m1m2m3)-->p4(p4 recv m1m2m3)-->p1
 p3-->id3>m3]
-```text
+```
 1. p2把token传递给p3，更新token的aru（all received up to）为2，在token的重传请求列表rtr中记录未收到的seq：3；
 2. p3收到token后，向集群广播M3，清楚rtr后，将token传给p4；
 
 ```mermaid
 graph 
 id1((a1))-->|m1m2m3|p1(p1 recv m1m2m3)--->p2(p2 recv m1m2)-->p3(p3 recv m1m2m3)-->|seq:3 aru:2 aru_id:p2 rtr:|p4(p4 recv m1m2m3)-->p1
-```text
+```
 1. p2收到p3的广播信息m3，其他节点忽略广播消息；
 2. p4收到p3传过来的token，没做任何事情，把token传给p1；
 
 ```mermaid
 graph 
 id1((a1))-->|m1m2m3|p1(p1 recv m1m2m3)--->|seq:3 aru:2 aru_id:p2 rtr:|p2(p2 recv m1m2)-->p3(p3 recv m1m2m3)-->p4(p4 recv m1m2m3)-->p1
-```text
+```
 1. p1收到p4传过来的token，没做任何事情，将token传给p2；
 2. p2发现token中aru_id是自己，并且知道自己已经收到m3，p2更新token中的aru为3，至此p2知道所有的集群都收到了m3m2m1；
 3. p2把更新后的token传给p3；

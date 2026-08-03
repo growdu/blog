@@ -32,7 +32,7 @@
 ```shell
 reconnect_attempts=5
 reconnect_interval=6
-```text
+```
 则数据库处于少数派的时间超过**5*6-10=20秒时**，就会停止数据库。
 
 #### 备库停库原因分析
@@ -98,13 +98,13 @@ observer在连接上生成中心的kbha服务后，其超时重传机制将会�
 ```shell
 reconnect_attempts=5
 reconnect_interval=6
-```text
+```
 后续建议修改为：
 
 ```shell
 reconnect_attempts=6
 reconnect_interval=10
-```text
+```
 <font color="red">调整允许的corosync网络波动时间不需要更新补丁，仅需修改各节点的repmgr.conf文件中的配置，并重启kbha和repmgrd进程。但需要出操作文档。</font>
 
 2. observer未触发跨中心切换的原因为当前处理逻辑中，若observer在生产中心故障后，在跨中心切换时间内重新连上corosync后不会进行跨中心切换，需要用户介入，手动启动生产中心的数据库；后续会增加配置开关，允许用户配置是否开启该功能：若observer在生产中心故障后，即使在跨中心切换时间内重新连上corosync，也会自动进行跨中心切换。

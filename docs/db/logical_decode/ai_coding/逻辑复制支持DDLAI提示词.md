@@ -24,7 +24,7 @@ where publication_object is one of:
 and table_and_columns is:
 
     [ ONLY ] table_name [ * ] [ ( column_name [, ... ] ) ] [ WHERE ( expression ) ]
-```text
+```
 需要增加ddl选项，接口变更为：
 
 ```sql
@@ -41,7 +41,7 @@ where publication_object is one of:
 and table_and_columns is:
 
     [ ONLY ] table_name [ * ] [ ( column_name [, ... ] ) ] [ WHERE ( expression ) ]
-```text
+```
 其中，ddl可取的值如下：
 
 - table
@@ -71,7 +71,7 @@ CREATE SUBSCRIPTION subscription_name
     CONNECTION 'conninfo'
     PUBLICATION publication_name [, ...]
     [ WITH ( subscription_parameter [= value] [, ... ] ) ]
-```text
+```
 同样的增加ddl选项，接口变更为：
 
 ```sql
@@ -79,7 +79,7 @@ CREATE SUBSCRIPTION subscription_name
     CONNECTION 'conninfo'
     PUBLICATION publication_name [, ...]
     [ WITH ( subscription_parameter [= value] [, ... ], ddl [ = value] [, ... ] ) ]
-```text
+```
 ddl的取值范围与publication一致。publication用于控制发布，subscription用于控制是否订阅。
 
 subscription在订阅时需要确定publication是否存在对应的发布，不存在需要报错。
@@ -123,7 +123,7 @@ pg_publication_sync表的定义如下：
     "message_extra": "版本、语法模式、关键参数",   --apply时使用的必要的额外信息，json格式，按需添加
 }
 
-```text
+```
 2.发步同步消息（message_type=‘A/D’）
 
 ```json
@@ -133,7 +133,7 @@ pg_publication_sync表的定义如下：
     "message_data": " {schema='nsp', table_name='tbl'} "  --新增的表对象，可以用json格式
 }
 
-```text
+```
 pg_publication_sync需要跟随DML发布。
 
 所有ddl都需要发布Q消息，A/D消息是用于发布变更，A消息细节可以参考：AlterSubscription_refresh,D消息可以参考AlterSubscription_refresh。

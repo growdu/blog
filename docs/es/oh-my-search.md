@@ -16,7 +16,7 @@ mkdir -p /es/data
 mkdir -p /es/logs
 mkdir -p /es/config
 vim docker-compose.yml
-```text
+```
 编辑docker-compose.yml文件，内容如下：
 
 ```shell
@@ -46,20 +46,20 @@ services:
            memory: 1000M
         reservations:
            memory: 200M
-```text
+```
 其中./es/config/elasticsearch.yml的内容如下，可按需修改：
 
 ```yaml
 cluster.name: "elasticsearch"
 network.host: 0.0.0.0
-```text
+```
 - 启动elasticsearch
 
 配置完成后，启动elasticsearch。
 
 ```shell
 docker-compose --compatibility up -d
-```text
+```
 同时进入elasticsearch容器内部，修改密码。
 
 ```shell
@@ -70,14 +70,14 @@ elasticsearch@4c37fcfb6f13:~$ ls
 LICENSE.txt  NOTICE.txt  README.asciidoc  bin  config  data  jdk  lib  logs  modules  plugins
 elasticsearch@4c37fcfb6f13:~$ bin/elasticsearch-reset-password --username elastic -i
 bin/elasticsearch-reset-password --username kibana -i
-```text
+```
 ## 搭建kibana
 
 ```shell
 mkdir kibana
 cd kibana
 vim docker-compose.yml
-```text
+```
 docker-compose.yml的内容如下：
 
 ```yaml
@@ -97,7 +97,7 @@ services:
            memory: 1000M
         reservations:
            memory: 200M
-```text
+```
 kibana.yml的文件内容如下，可按需修改：
 
 ```yaml
@@ -108,12 +108,12 @@ server.host: "0.0.0.0"
 server.name: kibana
 xpack.monitoring.ui.container.elasticsearch.enabled: true
 i18n.locale: zh-CN
-```text
+```
 启动kibana，
 
 ```shell
 docker-compose --compatibility up -d
-```text
+```
 ### 同时搭建eleasticsearch和kibana
 
 - 使用docker-compose启动elasticsearch
@@ -155,7 +155,7 @@ services:
       - ./es/config/kibana:/usr/share/kibana/config/kibana.yaml
     ports:
       - 5601:5601
-```text
+```
 其中kibana.yaml的内容如下：
 
 ```shell
@@ -164,7 +164,7 @@ server.host: "0.0.0.0"
 server.name: kibana
 xpack.monitoring.ui.container.elasticsearch.enabled: true
 i18n.locale: zh-CN
-```text
+```
 - 进入elasticsearch终端，修改elasticsearch密码
 
 ```shell
@@ -184,14 +184,14 @@ Enter password for [elastic]:
 Re-enter password for [elastic]: 
 Password for the [elastic] user successfully reset.
 elasticsearch@4c37fcfb6f13:~$
-```text
+```
 - 生成kibana的token
 
 ```shell
 # 重启容器然后进入容器内部生成kibana的token
 docker exec -it elasticsearch bash
 elasticsearch@4c37fcfb6f13:~$ bin/elasticsearch-create-enrollment-token -s kibana
-```text
+```
 - 获取kibana验证码
 
 ```shell
@@ -201,7 +201,7 @@ kibana@fce2ab8aec1e:~$ ls
 LICENSE.txt  NOTICE.txt  README.txt  bin  config  data  logs  node  node_modules  package.json  packages  plugins  src  x-pack
 kibana@fce2ab8aec1e:~$ bin/kibana-verification-code 
 Your verification code is:  042 943 
-```text
+```
 ## 搭建search-ui
 
 - 创建search-ui项目
@@ -212,12 +212,12 @@ npm install -g  create-react-app
 create-react-app doc_index --use-npm
 cd doc_index
 npm install --save @elastic/react-search-ui @elastic/search-ui-app-search-connector @elastic/search-ui-elasticsearch-connector
-```text
+```
 - 启动search-ui项目
 
 ```shell
 npm start
-```text
+```
 - 创建api_key
 
 登录kibana，进入到/app/management/security/api_keys/，创建一个api_key并记录api_key.
@@ -258,7 +258,7 @@ PUT /doc_index/_settings
     "max_result_window": 500000
   }
 }
-```text
+```
 - 导入数据
 
 ```shell
@@ -277,12 +277,12 @@ POST /doc_index/_bulk
 {"title":"ddssd","category":"test","url":"http://localhost:3003"}
 {"index":{}}
 {"title":"测试","category":"test","url":"http://localhost:3004"}
-```text
+```
 当然也可以用命令行插入，如使用curl命令：
 
 ```shell
 curl --username username:password -H "Content-Type: application/json" -XPOST  192.168.56.130:9200/bank/account/_bulk?pretty --data-binary "@test.json"
-```text
+```
 其中--username指定elasticsearch的用户名和密码，test.json的内容如下：
 
 ```json
@@ -294,7 +294,7 @@ curl --username username:password -H "Content-Type: application/json" -XPOST  19
 {"title":"ddssd","category":"test","url":"http://localhost:3003"}
 {"index":{}}
 {"title":"测试","category":"test","url":"http://localhost:3004"}
-```text
+```
 完整数据插入命令如下：
 
 ```shell
@@ -337,7 +337,7 @@ POST /doc_index/_bulk
 {"title":"ddssd","category":"test","url":"http://localhost:3003"}
 {"index":{}}
 {"title":"测试","category":"test","url":"http://localhost:3004"}
-```text
+```
 ## 完善search-ui
 
 search-ui下载下来之后，还没有绑定数据，此时还需要修改app.js来进行适配。
@@ -415,9 +415,9 @@ export default function App() {
     </SearchProvider>
   );
 }
-```text
+```
 还可以修改一下public下面的title标签，修改成自己的项目标签。如：
 
 ```html
 <title>doc_index</title>
-```text
+```

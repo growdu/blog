@@ -17,7 +17,7 @@ export RTE_SDK=<path to DPDK source code, where compilation was done>
 export RTE_TARGET=arm64-dpaa-linuxapp-gcc
 make -C examples/l3fwd # for the L3 forwarding application
 make -C examples/<Name of examples directory>
-```text
+```
 - kni
   1. 声明内核头文件路径
   2. 设置交叉编译器路径
@@ -27,13 +27,13 @@ make -C examples/<Name of examples directory>
 export RTE_KERNELDIR=<Path to compiled Linux kernel to compile KNI kernel module>
 export CROSS=<path to cross-compile toolchain>
 export OPENSSL_PATH=<path to installed OpenSSL>
-```text
+```
 ```c
 make T=arm64-dpaa-linuxapp-gcc install DESTDIR=<location to install DPDK>
 make T=arm64-dpaa-linuxapp-gcc CONFIG_RTE_KNI_KMOD=n CONFIG_RTE_EAL_IGB_UIO=n CONFIG_RTE_EAL_IGB_UIO=n install
 make T=arm64-dpaa-linuxapp-gcc CONFIG_RTE_LIBRTE_PMD_OPENSSL=y EXTRA_CFLAGS="-I${OPENSSL_PATH}/include/" EXTRA_LDFLAGS="-L${OPENSSL_PATH}/lib/" install
 
-```text
+```
 ## dpdk配置
 
 1. 设置大页内存

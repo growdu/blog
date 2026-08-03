@@ -20,28 +20,28 @@
 
 ```shell
 nmcli conn add type bridge con-name br0 ifname br0
-```text
+```
 上面的命令创建了一个连接名称为br0，网桥名称也为br0的网桥。
 
 ### 设置网桥静态ip
 
 ```shell
 nmcli connection modify br0 ipv4.addresses '192.168.0.100/24' ipv4.gateway '192.168.0.1' ipv4.method manual
-```text
+```
 将eth0的ip设置到网桥br0上，这样可以保证物理机器的访问ip不变。
 
 ### 将物理网卡连接到网桥br0上
 
 ```shell
 nmcli conn add type ethernet slave-type bridge con-name br0-eth0 ifname eth0 master br0
-```text
+```
 这个就是把eth0连接到br0上。
 
 ### 打开网桥并关闭网卡
 
 ```shell
 nmcli conn up br0; nmcli conn down eth0
-```text
+```
 这两个命令最好合在一条命令里执行，因为执行完后会短暂的断网，需要隔几秒才能恢复。
 
 等网络恢复后，如果ping 192.168.0.100能ping通，说明网桥配置成功。
@@ -53,12 +53,12 @@ nmcli conn up br0; nmcli conn down eth0
 ```shell
 git clone https://github.com/jpetazzo/pipework
 cp pipework/pipework /usr/local/bin/
-```text
+```
 然后创建一个容器，比如创建的容器名为update，则使用如下命令创建容器独立ip：
 
 ```shell
 pipework br0 update 192.168.0.101/24@192.168.0.1
-```text
+```
 上面的命令将192.168.0.101分配给了容器update，其中@前面的是ip地址，@后面的是网关。
 
 最后在物理机上ping 192.168.0.101验证是否可以ping通。

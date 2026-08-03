@@ -8,7 +8,7 @@
 
 ```c
 int rte_eal_init(int argc, char **argv);
-```text
+```
 ### 通用参数配置
 
 ```shell
@@ -22,7 +22,7 @@ int rte_eal_init(int argc, char **argv);
 -n force number of channels
 -r force number of ranks
 -d force loading of external driver
-```text
+```
 DPDK多进程使用的关键启动参数：
 
 ```shell
@@ -32,7 +32,7 @@ DPDK多进程使用的关键启动参数：
 如果想运行多个主进程，这个参数就必须指定！
 --socket-mem：设置从hugepages分配多大的存储空间。默认会用掉所有的hugepages，所以建议指定这个参数，不管是单cpu还是在NUMA中。
 eg：单socket，--socket-mem=512；在numa中，--socket-mem=512,512；多个socket间用‘,’号隔开；
-```text
+```
 ## 网口管理
 
 ## 内存管理
@@ -51,7 +51,7 @@ DPDK的内存初始化工作，主要是将hugetlbfs的配置的大内存页，�
  */
 int
 eal_hugepage_info_init(void)
-```text
+```
 eal_hugepage_info_init()主要是获取配置好的Hugetlbfs的相关信息，并将其保存在struct internal_config数据结构中。
 
 1. 读取/sys/kernel/mm/hugepages目录下的各个子目录，通过判断目录名称中包含"hugepages-"字符串，获取hugetlbfs的相关子目录，并获取hugetlbfs配置的内存页大小。
@@ -69,13 +69,13 @@ eal_hugepage_info_init()主要是获取配置好的Hugetlbfs的相关信息，�
  * processes. */
 static void
 rte_eal_config_create(void)
-```text
+```
 rte_eal_config_create()主要是初始化rte_config.mem_config。如果是以root用户运行dpdk程序的话，rte_config.mem_config指向/var/run/.rte_config文件mmap的一段sizeof(struct rte_mem_config)大小的内存
 
 ```c
 int
 rte_eal_hugepage_init(void)
-```text
+```
 rte_eal_hugepage_init()主要是在/mnt/huge目录下创建hugetlbfs配置的内存页数（在本文中就是64）的rtemap_xx文件，并为每个rtemap_xx文件做mmap映射，保证mmap后的虚拟地址与实际的物理地址是一样的.
 
 1. 创建nr_hugepages个struct hugepage_file数组，即有多少个内存页，创建多少个struct hugepage_file数据结构
@@ -88,7 +88,7 @@ rte_eal_hugepage_init()主要是在/mnt/huge目录下创建hugetlbfs配置的内
 ```c
 static int
 rte_eal_memdevice_init(void)
-```text
+```
 rte_eal_memdevice_init()初始化rte_config.mem_config->nchannel和rte_config.mem_config->nrank。
 
 　　rte_config.mem_config->nchannel = 启动参数中“-n”指定的值，不能为0，不能大于4。
@@ -101,7 +101,7 @@ rte_eal_memdevice_init()初始化rte_config.mem_config->nchannel和rte_config.me
  */
 int
 rte_eal_memzone_init(void)
-```text
+```
 rte_eal_memzone_init()主要负责初始化rte_config.mem_config->free_memseg[]及rte_config.mem_config->memzone[]。其中,rte_config.mem_config->free_memseg[]记录空闲的rte_config.mem_config->memseg[]。
 
 ### rte_mempool内存管理
@@ -122,7 +122,7 @@ struct rte_mempool *
 rte_mempool_create_empty(const char *name, unsigned n, unsigned elt_size,
 	unsigned cache_size, unsigned private_data_size,
 	int socket_id, unsigned flags);
-```text
+```
 rte_mempool由函数rte_mempool_create()负责创建。首先创建rte_ring，再创建rte_mempool，并建立两者之间的关联。
 
 1. rte_ring_create()创建rte_ring无锁队列
@@ -161,7 +161,7 @@ int rte_eth_rx_queue_setup(uint16_t port_id, uint16_t rx_queue_id,
 int rte_eth_tx_queue_setup(uint16_t port_id, uint16_t tx_queue_id,
 		uint16_t nb_tx_desc, unsigned int socket_id,
 		const struct rte_eth_txconf *tx_conf);
-```text
+```
 - 配置下发 rte_eth_dev_configure
 
    rte_eth_dev_configure接口使得应用层可以对网卡进行配置下发操作，将应用层提供的网卡信息保存到网卡数据空间struct  rte_eth_dev_data中，这样pmd用户态驱动就可以根据应用层提供的配置对网卡进行设置操作。另外这个接口还会为网卡的发送队列，接收队列开辟二级指针空间；
@@ -176,12 +176,12 @@ int rte_eth_tx_queue_setup(uint16_t port_id, uint16_t tx_queue_id,
 
 ```c
 rte_eth_rx_burst
-```text
+```
 - 发包
 
 ```c
 rte_eth_tx_burst
-```text
+```
 ## 样例
 
 ```c
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 {
     int ret = rte_eal_init(argc, argv);
 }
-```text
+```
 # reference
 
 1. https://www.sdnlab.com/24519.html

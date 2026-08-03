@@ -16,7 +16,7 @@ git-bash安装地址点击[这里](https://git-scm.com/install/)
 node --version
 npm --version
 git --version
-```text
+```
 上述命令没有报错说明安装完成。
 
 ## 安装claude
@@ -30,7 +30,7 @@ npm install -g @anthropic-ai/claude-code
 
 # 验证安装
 claude  --version
-```text
+```
 刚开始登陆由于没有配置api key，所以无法使用。需要注册购买api key。
 
 ## 注册购买deepseek
@@ -60,7 +60,7 @@ $env:API_TIMEOUT_MS="600000"
 $env:ANTHROPIC_MODEL="deepseek-chat"
 $env:ANTHROPIC_SMALL_FAST_MODEL="deepseek-chat"
 $env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1"
-```text
+```
 可以参考这个[文档](https://api-docs.deepseek.com/zh-cn/guides/anthropic_api)。
 
 ### 下载cc switch
@@ -85,7 +85,7 @@ $env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC="1"
 
 ```shell
 cluade
-```text
+```
 ![alt text](./fc31c7efa4cd0f07ccc5938624cb8065.png)
 
 ## 安装龙虾
@@ -94,5 +94,5 @@ cluade
 
 ```shell
 npm i -g openclaw
-```text
+```
 需要自行去了解配置。

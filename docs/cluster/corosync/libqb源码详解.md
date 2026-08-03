@@ -17,7 +17,7 @@ enum qb_ipc_type {
 	QB_IPC_SYSV_MQ,
 	QB_IPC_NATIVE,
 };
-```text
+```
 ipc同样分为客户端和服务端，服务端接口以ipcs为前缀，客户端接口以ipcc为前缀。
 
 - 创建ipc

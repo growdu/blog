@@ -12,15 +12,15 @@ ___
 
 命令的入口在src/backend/main/main.c。这个main()函数所做的工作不多：
 
-```text
+```
 做一下基本的初始化(主要是调用MemoryContextInit函数启动error和memory management子系统，还有其他的locale设置等)；
 根据命令行的第一个参数分派不同的函数去处理。
-```text
+```
 我们用postgres命令来启动一个数据库的时候，虽然参数很多。最简单的是对于"–help, --version"这两个参数的处理。对于这两个参数我们只需要简单的返回一下帮助信息即可返回。对于剩下的参数，我们不急着处理，因为我们首先要根据第一个参数确定的是我们希望database工作在何种模式？
 
 要回答这个问题的话，我们看一下src/backend/main/main.c，在main函数里，有以下代码：
 
-```text
+```
 if (argc > 1 && strcmp(argv[1], "--boot") == 0)
 AuxiliaryProcessMain(argc, argv);/* does not return */    --->后端子进程，bootstrap
 else if (argc > 1 && strcmp(argv[1], "--describe-config") == 0)
@@ -31,7 +31,7 @@ PostgresMain(argc, argv,
  strdup(get_user_name_or_exit(progname)));/* does not return */--->backend进程
 else
 PostmasterMain(argc, argv);/* does not return */--->后台主进程
-```text
+```
 我们来一一分析。
 
 > 首先是bootstrap("--boot"参数指定)模式。
@@ -43,29 +43,29 @@ PostmasterMain(argc, argv);/* does not return */--->后台主进程
 答案就是在调用工作在"bootstrap"模式下的postgres命令，启动一个"standalone bootstrap process"。也就是说，以"内核"模式启动postgres服务器，从而进行这一系列的数据库操作。证据何在？我们看看initdb.c:  
 代码调用栈如下：
 
-```text
+```
 main()
     ->initialize_data_directory()
         ->bootstrap_template1()
-```text
+```
 在bootstrap_template1中，有以下代码：
 
-```text
+```
 snprintf(cmd, sizeof(cmd),
  "\"%s\" --boot -x1 %s %s %s",
  backend_exec,
  data_checksums ? "-k" : "",
  boot_options, talkargs);
-```text
+```
 可以说是非常清晰了。
 
 > 接下来是"--describe-config"参数。
 
 这个参数在官方手册是有定义说明的，我直接抄下来吧：
 
-```text
+```
 这个选项会用制表符分隔的COPY格式导出服务器的内部配置变量、描述以及默认值。设计它的目的是用于管理工具。
-```text
+```
 所以还是打印信息，只不过是打印数据库的内部的配置参数信息的，其实还是蛮实用的。
 
 > single("--single"参数指定)模式
@@ -126,14 +126,14 @@ postmaster部分的处理主函数是PostmasterMain()。这个函数的处理内
 
 做好了上面这些配置和设置，这里终于可以进行数据库的启动操作了。这里我们调用StartupDataBase()函数(其实就是一个宏)来启动数据库集群，这里主要发挥作用的是StartupProcessMain(void)函数，这个函数相当于启动数据库的Main函数。详细的调用栈如下，有兴趣的读者可以看看：
 
-```text
+```
 PostmasterMain()
     ->StartupDataBase()
         ->StartChildProcess()
             ->AuxiliaryProcessMain()
                 ->StartupProcessMain(void)
                     ->StartupXLOG()
-```text
+```
 > 11.服务端主循环(ServerLoop())
 
 既然数据库终于启动起来了，我们终于可以接受客户端发起的连接请求了，这里的ServerLoop()函数就是一个死循环。循环读取客户端的请求并进行相关处理。
@@ -142,7 +142,7 @@ PostmasterMain()
 
 我们看PostmasterMain()函数里面关于上面的10和11的代码如下：
 
-```text
+```
     StartupPID = StartupDataBase();
 Assert(StartupPID != 0);
 StartupStatus = STARTUP_RUNNING;
@@ -152,7 +152,7 @@ pmState = PM_STARTUP;
 maybe_start_bgworker();
 
 status = ServerLoop();
-```text
+```
 关于上面的代码，我们发现，正是由StartupDataBase()函数启动了数据库，然后在ServerLoop()函数里面接受连接。
 
 但是，我们看到在进入ServerLoop()函数之前，pmState的值还是PM_STARTUP，而只有在PM_RUN状态，数据库才是真正的启动起来了。
@@ -163,7 +163,7 @@ status = ServerLoop();
 
 接下来，我们再看ServerLoop()里面到底做了什么。
 
-```text
+```
 　PostmasterMain()
 　  |->ServerLoop()
 　      |->initMasks()
@@ -180,7 +180,7 @@ status = ServerLoop();
 　              |->BackendRun()
 　                  |->PostgresMain()
             |->ConnFree()       <--释放connection相关的数据结构
-```text
+```
 我们再看看关于ServerLoop()中的关于socket和信号处理：  
 ![](https://images2018.cnblogs.com/blog/579102/201804/579102-20180408221956346-1712021714.png)
 

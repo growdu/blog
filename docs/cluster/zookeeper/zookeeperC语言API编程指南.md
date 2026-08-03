@@ -12,14 +12,14 @@ zookeeper官方主要提供了java语言版本的API以及C语言API。下面基
 
 ```shell
 https://dlcdn.apache.org/zookeeper/zookeeper-3.8.0/apache-zookeeper-3.8.0-bin.tar.gz
-```text
+```
 下载该文件后直接解压即可运行。
 
 若要使用C语言API则需要下载zookeeper的源码，如下：
 
 ```shell
 https://dlcdn.apache.org/zookeeper/zookeeper-3.8.0/apache-zookeeper-3.8.0.tar.gz
-```text
+```
 编译C语言API需要依赖java生成zookeeper.jute.c，用于序列化信息，因而编译zookeeper-c-client有两种方式：
 
 1. 先用maven编译zookeeper，编译完成后会在zookeeper-client-c目录自动生成generated目录，里面含有zookeeper-c-client依赖的zookeeper.jute.c和zookeeper.jute.h；然后再编译zookeeper-client-c，大致流程步骤如下：

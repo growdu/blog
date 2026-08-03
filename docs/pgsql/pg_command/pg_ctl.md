@@ -21,4 +21,4 @@ Undefined command: "pcmd".  Try "help".
 $1 = 0x55555556e140 "exec \"/usr/local/postgresql/bin/postgres\" -D \"data\"  < \"/dev/null\" 2>&1"
 (gdb) ...........................
 
-```text
+```

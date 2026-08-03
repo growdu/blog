@@ -8,7 +8,7 @@ checkpoint又名检查点，一般checkpoint会将某个时间点之前的脏数
 
 在xlog.h文件中，有如下代码对checkpoint进行了相应的分类：
 
-```text
+```
 /*
  * OR-able request flag bits for checkpoints.  The "cause" bits are used only
  * for logging purposes.  Note: the flags must be defined so that it's
@@ -29,7 +29,7 @@ checkpoint又名检查点，一般checkpoint会将某个时间点之前的脏数
 #define CHECKPOINT_CAUSE_TIME0x0040/* Elapsed time */
 #define CHECKPOINT_FLUSH_ALL0x0080/* Flush all pages, including those
  * belonging to unlogged tables */
-```text
+```
 也就是说，以下几种情况会触发数据库操作系统做检查点操作：
 
 1. 超级用户（其他用户不可）执行CHECKPOINT命令
@@ -65,7 +65,7 @@ checkpoint又名检查点，一般checkpoint会将某个时间点之前的脏数
 
 PostgreSQL 控制文件pg_control里存储的数据是一个ControlFileData结构，具体如下：
 
-```text
+```
 typedefstruct ControlFileData
 {
     uint64    system_identifier;
@@ -86,7 +86,7 @@ XLogRecPtrbackupStartPoint;
 XLogRecPtrbackupEndPoint;
 boolbackupEndRequired;
    ......
-```text
+```
 其中，minRecoveryPoint和minRecoveryPointTLI确定数据库启动前，如果做归档恢复，我们必须恢复到的最小检查点。其中minRecoveryPoint指向该检查点对应的LSN位置，minRecoveryPointTLI指向该检查点对应的时间线。其具体的用法，我们将在之后的PostgreSQL崩溃恢复中分析，这里我们主要分析下PostgreSQL中的时间线概念。
 
 PostgreSQL中WAL日志段名称，由时间线ID、日志ID、段ID的八位16进制数依次构成。例如：
@@ -105,7 +105,7 @@ PostgreSQL中WAL日志段名称，由时间线ID、日志ID、段ID的八位16�
 
 CheckPointGuts函数将共享内存里的数据刷出并文件同步到磁盘，具体定义如下：
 
-```text
+```
 staticvoid
 CheckPointGuts(XLogRecPtrcheckPointRedo,int flags)
 {
@@ -118,7 +118,7 @@ CheckPointGuts(XLogRecPtrcheckPointRedo,int flags)
    /* We deliberately delay 2PC checkpointingas long as possible */
    CheckPointTwoPhase(checkPointRedo);
 }
-```text
+```
 可以看出，CheckPointGuts根据不同的缓存类型，把clog、subtrans、multixact、predicate、relationmap、buffer（数据文件）和twophase相应缓存分别调用不同的方法，将缓存刷到磁盘中：
 
 - 提交事务日志管理器的方法CheckPointClog

@@ -270,7 +270,7 @@ nxp使用l3fwd进行转发，l3fwd是dpdk提供的三层转发example。
 
 ```shell
 ./app/x86_64-native-linuxapp-gcc/pktgen -c 0x31 --socket-mem 2048 -n 2 -- -P -m [4:5].0 -s 0:5gc.pcap -T --crc-strip
-```text
+```
 在实际机器上运行时，pktgen的rx和tx并非独占：
 
 ![](./l3fwd_test/cpu_045_use.png)
@@ -279,7 +279,7 @@ nxp使用l3fwd进行转发，l3fwd是dpdk提供的三层转发example。
 
 ```shell
 ./app/x86_64-native-linuxapp-gcc/pktgen -c 0xe0000 --socket-mem 2048 -n 2 -- -P -m [18:19].0 -s 0:5gc.pcap -T --crc-strip
-```text
+```
 <font color="red">在执行程序时，需留意现有cpu核的使用情况，尽量使程序独占核，避免与其他系统上的程序发送调度。</font>
 
 ### 无丢包结果

@@ -22,7 +22,7 @@ lvm与ext4这样的文件系统最大的区别是，ext4针对是某个磁盘的
 ```mermaid
 graph TB
 a(磁盘/分区)-->b(创建物理卷pv)-->c(创建逻辑卷vg,vg可以有多个pv组成)-->d(创建逻辑卷lv)-->e(格式化并挂载)
-```text
+```
 ## lvm有什么用
 
 1. 卷组VG可以使多个硬盘空间看起来像是一个大硬盘。
@@ -44,7 +44,7 @@ a(磁盘/分区)-->b(创建物理卷pv)-->c(创建逻辑卷vg,vg可以有多个p
 ```shell
 pvcreate /dev/sda
 pvs
-```text
+```
 创建完成后，使用lsblk -f查看文件系统类型时已经变更为了LVM2_member.
 
 ```shell
@@ -52,12 +52,12 @@ pvs
 NAME            FSTYPE      LABEL UUID                                   MOUNTPOINT
 sda                                                                      
 └─sda1          LVM2_member       6xxxxxxxxxxxxxxxx
-```text
+```
 可以使用pvdisplay查看pv的详细情况。
 
 ```shell
 pvdisplay /dev/sda1
-```text
+```
 3. 创建vg
 
 使用vgcreate创建vg，命令如下：
@@ -65,28 +65,28 @@ pvdisplay /dev/sda1
 ```shell
 # 这里的vg_data就是vg的名称
 vgcreate vg_data /dev/sda1
-```text
+```
 创建完成后使用如下命令查看vg的详细情况：
 
 ```shell
 vgs
 vgdisplay vg_data
-```text
+```
 4. 创建逻辑卷lv
 
 ```shell
 lvcreate -n lvname -L lvsize(M，G) vgname
-```text
+```
 ```shell
 lvcreate -n lv_data -L 64M vg_data
-```text
+```
 5. 格式化分区，并将其挂载
 
 ```shell
 mkfs.ext4 /dev/vg/lv_data
 mkdir /data
 mount /dev/vg/lv_data /data
-```text
+```
 6. lv扩容
 
 lvm最重要的功能就是动态调整分区大小，如果之前创建的vg还有剩余的空间，则可以直接在原有lv的基础上扩容，使用如下命令扩展：
@@ -94,7 +94,7 @@ lvm最重要的功能就是动态调整分区大小，如果之前创建的vg还
 ```shell
 lvextend -L +100M /dev/vg/lv_data
 resize2fs /dev/vg/lv_data
-```text
+```
 如果vg里的所有空间都已经分配完了，则需要先扩展vg，再扩展lv。
 
 缩容则采用如下命令：
@@ -102,7 +102,7 @@ resize2fs /dev/vg/lv_data
 ```shell
 lvreduce -L 100M  /dev/vg/lv_data
 resize2fs /dev/vg/lv_data
-```text
+```
 7. 扩展vg
 
 扩展vg一般是增加了一块磁盘，这个时候就可以把这块磁盘扩展到vg里，比如sdb。
@@ -110,7 +110,7 @@ resize2fs /dev/vg/lv_data
 ```shell
 pvcreate /dev/sdb
 vgextend vg_data /dev/sdb
-```text
+```
 ## 关于lvm的一些疑问
 
 ### lvm创建的文件是如何分配到具体的物理磁盘上的
@@ -127,26 +127,26 @@ lvm创建的文件分配到磁盘上有多个策略，具体如下：
 
 ```shell
 lvcreate -n lv_data -L 64M vg_data -i 2
-```text
+```
 3. 镜像分配(mirrored)
 
 每一份数据都会有多个镜像副本存储，提高数据容错性。需要在使用lvcreate时用-m指定镜像数。
 
-```text
+```
 lvcreate -n lv_data -L 64M vg_data -m 2
-```text
+```
 4. 条带镜像分配
 
 这个是条带分配和镜像分配的结合，需要使用lvcreate时用-m指定镜像数，用-i指定条带数
 
 ```shell
 lvcreate -n lv_data -L 64M vg_data -i 2 -m 2
-```text
+```
 若要查看lvm当前的磁盘分配策略，可以使用如下命令查看：
 
 ```shell
 lvdisplay type
-```text
+```
 比如下面的就是linear
 
 ```shell
@@ -160,7 +160,7 @@ lvdisplay type
     Type                linear
     Physical volume     /dev/sda1
     Physical extents    0 to 524286
-```text
+```
 - 线性方式（linear）：以一块盘为基础进行读写。当数据写入到一个物理卷（盘）时，写满后才会开始写入下一个物理卷。这种方式的性能较低，因为它无法充分利用多个盘的并行读写能力。
 
 - 条带方式（striped）：以多块盘并行读写数据。数据被分成大小相等的条带，然后同时写入到多个物理卷中的相应条带位置。这样可以充分利用多个盘的并行读写能力，从而提高读写性能。

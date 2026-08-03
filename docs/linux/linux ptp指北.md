@@ -103,7 +103,7 @@ usage: ptp4l [options]
  -q        do not print messages to the syslog
  -v        prints the software version and exits
  -h        prints this message and exits
-```text
+```
 ### 使用
 
 - 边界时钟
@@ -222,7 +222,7 @@ use_syslog
     Print messages to the system log if enabled. The default is 1 (enabled). 
 time_stamping
     The time stamping method. The allowed values are hardware, software and legacy. The default is hardware.
-```text
+```
 ### default.cfg
 
 ```shell
@@ -339,4 +339,4 @@ revisionData            ;;
 manufacturerIdentity    00:00:00
 userDescription         ;
 timeSource              0xA0
-```text
+```

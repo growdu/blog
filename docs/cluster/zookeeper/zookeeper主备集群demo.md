@@ -13,14 +13,14 @@ kazoo的安装流程如下：
 
 ```shell
 pip install kazoo
-```text
+```
 也可以从github上下载源码进行安装，
 
 ```shell
 git clone https://github.com/python-zk/kazoo.git
 cd kazoo
 python3 setup.py install
-```text
+```
 ## zookeeper部署
 
 使用两台机器部署zookeeper，部署过程如下：
@@ -202,7 +202,7 @@ def run():
 
 if __name__ == "__main__":
     run()
-```text
+```
 demo模拟一个调度器的服务，且同一时刻仅有一个master节点在提供调度服务。
 
 - 当有新节点加入时，自动成为备节点，仅作为备份，不提供服务
@@ -212,7 +212,7 @@ demo模拟一个调度器的服务，且同一时刻仅有一个master节点在�
 
 ```shell
 python3 run.py
-```text
+```
 注册服务的大致流程如下：
 
 1. 首先服务启动时会先向zookeeper注册，注册会在/dmonitor/master/下创建节点，命名方式为本机ip和zookeeper生成的sequence，并用“-”连接，如127.0.1.1-0000000001；
@@ -227,7 +227,7 @@ python3 run.py
 ```shell
 [zk: localhost:2181(CONNECTED) 1] ls /
 [my, zookeeper]
-```text
+```
 ### 启动主节点调度服务
 
 首先启动节点1的调度服务，其执行结果如下：
@@ -238,7 +238,7 @@ ha@machine1:~/code/kazoo_test$ python3 run.py
 ########## 开启调度器成功 ############
 ######### 我被选为master, 我以前不是master, 注册调度 ##########
 ########## 选主完成 ############
-```text
+```
 当只有一个节点有调度服务时，节点1的调度服务被选为主节点。此时再来查看zookeeper的znode信息，可以看到znode多了存储master信息的节点：
 
 ```shell
@@ -248,7 +248,7 @@ ha@machine1:~/code/kazoo_test$ python3 run.py
 [192.168.145.131-0000000000]
 [zk: localhost:2181(CONNECTED) 2] get /dmonitor/master/192.168.145.131-0000000000
 test
-```text
+```
 可以看到/dmonitor/master节点下面存储了成为主服务的ip信息，此时master为192.168.145.131。
 
 ### 启动备节点调度服务
@@ -257,7 +257,7 @@ test
 
 ```shell
 python3 run.py
-```text
+```
 其执行结果如下，因为已经存在master了，所以成为slaver服务。
 
 ```shell
@@ -265,7 +265,7 @@ ha@machine2:~/code/kazoo_test$ python3 run.py
 ########## 选主开始 ############
 ######### 我被选为slave, 我以前是slave, 不再关闭调度 ##########
 ########## 选主完成 ############
-```text
+```
 同时因为master设置对/dmonitor/maste的watch，因而当新节点插入时，也会进入选master的阶段。
 
 ```shell
@@ -278,7 +278,7 @@ ha@machine1:~/code/kazoo_test$ python3 run.py
 ########## 选主开始 ############
 ######### 我被选为master, 我以前是master, 不再注册调度 ##########
 ########## 选主完成 ############
-```text
+```
 但此时master不变，仍然为192.168.145.131。
 
 此时查看zookeeper的znode，结果如下所示：
@@ -286,7 +286,7 @@ ha@machine1:~/code/kazoo_test$ python3 run.py
 ```shell
 [zk: localhost:2181(CONNECTED) 2] ls /dmonitor/master
 [192.168.145.130-0000000001, 192.168.145.131-0000000000]
-```text
+```
 可以看到/dmonitor/master当前有两个ip信息。
 
 ### 主备切换
@@ -307,13 +307,13 @@ ha@machine2:~/code/kazoo_test$ python3 run.py
 ########## 开启调度器成功 ############
 ######### 我被选为master, 我以前不是master, 注册调度 ##########
 ########## 选主完成 ############
-```text
+```
 在查看zookeeper的znode信息，
 
 ```shell
 [zk: localhost:2181(CONNECTED) 10] ls /dmonitor/master
 [192.168.145.130-0000000001]
-```text
+```
 可以看到192.168.145.131的信息已经从zookeeper中删除了，此时192.168.145.130机器的调度服务升级为master。
 
 ### 重启master服务器
@@ -337,7 +337,7 @@ ha@machine2:~/code/kazoo_test$ python3 run.py
 ########## 关闭调度器成功 ############
 ######### 我被选为slave, 我以前不是slave, 关闭调度 ##########
 ########## 选主完成 ############
-```text
+```
 而新启动的192.168.145.131则直接成为master。
 
 ```shell
@@ -346,13 +346,13 @@ ha@machine1:~/code/kazoo_test$ python3 run.py
 ########## 开启调度器成功 ############
 ######### 我被选为master, 我以前不是master, 注册调度 ##########
 ########## 选主完成 ###########
-```text
+```
 查看zookeeper的znode信息，可以看到ip信息已更新。
 
 ```shell
 [zk: localhost:2181(CONNECTED) 11] ls /dmonitor/master
 [192.168.145.130-0000000001, 192.168.145.131-0000000002]
-```text
+```
 # reference
 
 1. https://cloud.tencent.com/developer/article/1050471

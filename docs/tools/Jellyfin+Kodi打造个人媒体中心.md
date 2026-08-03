@@ -16,9 +16,9 @@ Jellyfin的功能简单来说就是作为媒体服务器，统一管理影片，
 
 首先禁用自带的jellyfin：
 
-```text
+```
 # 禁用启动项mv /etc/init.d/S99jellyfin /etc/S99jellyfin.disabled# 关闭运行的jellyfinkillall jellyfin
-```text
+```
 我使用的是docker镜像是`jellyfin/jellyfin:nightly`。
 
 新建Container，端口映射8096/tcp，然后设置/cache，/media和/config三个分区即可。
@@ -27,14 +27,14 @@ Jellyfin的功能简单来说就是作为媒体服务器，统一管理影片，
 
 使用指令一键安装：
 
-```text
+```
 docker run -d -p 8096:8096 -v /your/config:/config -v /your/media:/media -v /your/cache:/cache jellyfin/jellyfin:nightly
-```text
+```
 此外，也可以采用`linuxserver/jellyfin`的镜像：
 
-```text
+```
 docker create \  --name=jellyfin \  -e PUID=$(id -u jellyfin) \  -e PGID=$(cat /etc/group | grep -e '^users' | cut -d':' -f3) \  -e TZ=Europe/London \  -e UMASK_SET=022 `#optional` \  -p 8096:8096 \  -p 8920:8920 `#optional` \  -v /path/to/library:/config \  -v /path/to/tvseries:/data/tvshows \  -v /path/to/movies:/data/movies \  -v /opt/vc/lib:/opt/vc/lib `#optional` \  --device /dev/dri:/dev/dri `#optional` \  --device /dev/vchiq:/dev/vchiq `#optional` \  --device /dev/video10:/dev/video10 `#optional` \  --device /dev/video11:/dev/video11 `#optional` \  --device /dev/video12:/dev/video12 `#optional` \  --restart unless-stopped \  linuxserver/jellyfin
-```text
+```
 更详细的安装过程也可以参考这篇[教程](https://post.smzdm.com/p/a6lnxg3g/)。
 
 ## 整理电影资料库

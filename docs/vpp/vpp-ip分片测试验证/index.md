@@ -12,26 +12,26 @@ fastup后续需考虑大包，会涉及到ip分片，需要分析验证fastup是
 
 ```shell
 ifconfig eth3 192.168.8.25/16
-```text
+```
 - x86端
 
 ```shell
 ifconfig p4p1 192.168.8.24/16
-```text
+```
 ## ping大包
 
 此处使用4800byte长度的ping报文。
 
 ```shell
 ping -s 4800 192.168.8.25
-```text
+```
 ### 抓包
 
 在x86端进行抓包，抓包命令如下
 
 ```shell
 tcpdump -i p4p1 -vvv icmp -w ping_big.pcap
-```text
+```
 抓到包后，因为报文中含有对端回复的报文，因而需要将抓到的包进行过滤。
 
 ![](./vpp_image/icmp_frag.png)
@@ -46,7 +46,7 @@ tcpdump -i p4p1 -vvv icmp -w ping_big.pcap
 
 ```shell
 ./app/x86_64-native-linuxapp-gcc/pktgen -c 0xe0000 --socket-mem 1024 -n 2 -- -P -m [18:19].0 -s 0:ping_big.pcap -T --crc-strip
-```text
+```
 <font color="red">需要特别注意的是，为了保证收到报文的完整性，需要设置pktgen的发送模式为发包个数，且发包个数需为4的整数倍，否则会导致发送异常报文。</font>
 
 ## 抓包验证
@@ -71,7 +71,7 @@ pcap tx capture is on: 48 of 1000 pkts..
 vpp# pcap tx trace off
 captured 48 pkts...
 saved to /tmp/vppTest.pcap...
-```text
+```
 实际抓包结果如下图：
 
 ![](./vpp_image/vpp_icmp_frag.png)

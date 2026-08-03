@@ -40,7 +40,7 @@ WAL 日志 → │ WAL Reader   │
            ┌──────────────┐
            │ OutputPlugin  │ ← test_decoding / wal2json 等
            └──────────────┘
-```text
+```
 ## 逻辑解码和物理复制的区别
 
 | 对比点   | 物理复制（Physical Replication） | 逻辑解码（Logical Decoding） |

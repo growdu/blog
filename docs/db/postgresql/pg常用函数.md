@@ -10,14 +10,14 @@ DefineCustomIntVariable(...)
 DefineCustomStringVariable(...)
 DefineCustomEnumVariable(...)
 DefineCustomRealVariable(...)
-```text
+```
 注册之后就可以像原生的guc参数一样修改。
 
 ```sql
 ALTER SYSTEM
 SET
 SHOW
-```text
+```
 ```c
 DefineCustomEnumVariable("pglogical.conflict_log_level",
 							 gettext_noop("Sets log level used for logging resolved conflicts."),
@@ -27,14 +27,14 @@ DefineCustomEnumVariable("pglogical.conflict_log_level",
 							 server_message_level_options,
 							 PGC_SUSET, 0,
 							 NULL, NULL, NULL);
-```text
+```
 ```sql
 postgres=# show pglogical.conflict_log_level;
  pglogical.conflict_log_level 
 ------------------------------
  log
 (1 row)
-```text
+```
 采用hook函数机制实现：
 
 - check_hook 检查参数是否合法

@@ -20,7 +20,7 @@ WAL即 Write-Ahead Logging，是一种实现事务日志的标准方法。WAL �
 
 为了标记每个数据页最后修改它的日志记录号，在每个数据页的PageHeaderData结构中引入了一个LSN标记，如下：
 
-```text
+```
 typedef struct PageHeaderData
 {
 PageXLogRecPtr pd_lsn; //指向最后修改页面的日志记录
@@ -33,7 +33,7 @@ uint16   pd_pagesize_version;
 TransactionId     pd_prune_xid; 
 ItemIdData       pd_linp[1];
 } PageHeaderData;
-```text
+```
 其中PageXLogRecPtr结构是一个无符号的64位整数，它的含义如下：
 
 | 32位     | 8位  | 13位 | 11位  |
@@ -59,7 +59,7 @@ WAL共享缓存区的大小可以通过设置postgresql.conf文件参数wal_buff
 
 为了标示当前WAL共享缓存区的状态，引入了XLogCtlData结构如下：
 
-```text
+```
 typedef struct XLogCtlData
 {
 XLogwrtRqst LogwrtRqst;/* 表示当前请求写入系统缓冲区或同步写入磁盘的日志位置*/
@@ -70,16 +70,16 @@ intXLogCacheBlck;/* WAL缓存区的大小，单位为页 */
         char              *pages;      /* 指向WAL缓存Buffer的首地址 */
 ......
 }
-```text
+```
 其中，LogwrtRqst表示当前请求写入系统缓冲区或同步写入磁盘的日志位置，由info_lck轻量锁保护，结构如下：
 
-```text
+```
 typedef struct XLogwrtRqst
 {
 XLogRecPtr     Write;
 XLogRecPtr  Flush;
 } XLogwrtRqst;
-```text
+```
 这里需要**注意**的是，因为很多操作系统会维护一个操作系统缓存，用来对磁盘的I/O操作进行合并，这就可能造成操作系统返回给内核写文件成功的地址和真实文件写到磁盘的地址是有差异的。为了区分这个差异，这里引入了2个变量，其中：
 
 - Write表示在此位置之前的日志记录已经写出Wal缓冲区，可能在操作系统缓存区
@@ -96,13 +96,13 @@ asyncXactLSN是一个XLogRecPtr类型的成员变量，表示最近需要异步�
 
 LogwrtResult表示当前已经写入系统缓冲区或者同步写入磁盘的日志位置，由info_lck 和 WALWriteLock 锁保护，结构如下：
 
-```text
+```
 typedef struct XLogwrtResult
 {
 XLogRecPtr   Write;
 XLogRecPtr  Flush;
 } XLogwrtResult;
-```text
+```
 可以看出，XLogwrtResult和XLogwrtRqst的结构相同，其原因也是为了区分是否真正写入到磁盘。
 
 Xlblocks是一个XLogRecPtr \*类型的成员变量，表示指向每个WAL缓存开始的LSN数组的首地址，可以根据这个变量加上日志缓存的偏移量就可以得到具体的对应LSN。

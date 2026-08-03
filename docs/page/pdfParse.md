@@ -40,11 +40,11 @@
 
 ## 整合折中
 
-```text
+```
 <table><tr><td bgcolor="Khaki">
 但一个表格中至少有相连两行节点数相同，也不存在跨行跨列。
 这将作为先判断表格中间行的依据。</td></table>
-```text
+```
 ## 判断表格
 
 第一遍先计算节点数，当节点数符合条件，计算距离。当两者均满足条件时，确定表格，然后再根据起始点和距离去寻找表格边框。
@@ -62,7 +62,7 @@ List<int []> form=new ArrayList<int[]>();
 List<Form> forms=new ArrayList<Form>();
 //存放所有的文本内容
 List<TextRow> content=new ArrayList<TextRow>();
-```text
+```
 ## static关键字(修饰方法时方便在没有创建对象的情况下来进行调用)
 
 ### static方法
@@ -140,7 +140,7 @@ SuppressWarning用来阻止警告。
     public static <T extends Comparable<? super T>> void sort(List<T> list) {
         list.sort(null);
     }
-```text
+```
 能调用sort方法进行排序，list中的元素必须是实现了Comparable接口的类或者其子类，通过`<T extends Comparable<? super T\>\>`来进行限定。
 
 Java采取的是类型擦除的方法来实现泛型，并通过extends和super关键字来约束泛型的上界和下界。
@@ -235,7 +235,7 @@ public class TextPositonExtracter extends PDFTextStripper {
         }
     }
 }
-```text
+```
 ### 字符识别节点及删除多余数据
 
 目前的节点识别主要包括以下几点：
@@ -276,7 +276,7 @@ public class TextPositonExtracter extends PDFTextStripper {
     //部分文档解析会误把两个单元格的内容合并到一起,同一个单元格里面内容的最大距离
     //目前调整为14，后续若其他方法无法解决节点划分问题时可对其进行修改
     private static final int CHARTHRESHOLD = 14;//20;
-```text
+```
 ###  表格名称误删除问题解决
 
 查看表名称是否在页的顶部，同时查看表名称的关键字是否包含在用于判断的正则表达式中。 对于表名称主要使用TextPositonExtracte类中的isSpecialChinese进行匹配，主要代码如下：
@@ -286,7 +286,7 @@ public class TextPositonExtracter extends PDFTextStripper {
  Pattern isSpecialChinese=Pattern.compile("^.*表|^.*損益.*|^.*收益.*|^.*全面.*|^.*財務.*|^.*變動.*|^.*损益.*|^.*收益.*|^.*财务.*|^.*資産.*|"
             + "^.*綜合.*|^.*簡明.*|簡|明|綜|合|損|益|及|其|他|全|面|收|財|務|狀|況|權|變|動|現|金|流|量|简|"
             + "明|综|财|务|状|况|损|现|权|股|变|动|資|産|產|利|潤|润|併|負|債|東|截|止|年|月|日|[0-9]|料|本|东");
-```text
+```
 ### 页脚页码未删除
 
 删除页脚主要判断每一页底部的三行，即筛选出三个最大的Y坐标，对这三个坐标内的字符进行判别。

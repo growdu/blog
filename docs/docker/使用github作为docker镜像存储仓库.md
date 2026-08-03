@@ -20,29 +20,29 @@ docker因为其便利性和隔离性已经成为日常开发中非常常见的�
 # -u 后面跟github用户名
 # -p 后面跟github的token，也可以不用token，用密码也行
 docker login docker.pkg.github.com -u username -p token
-```text
+```
 当然docker.pkg.github.com一般不常用，常用的是ghcr.io，其登录方式类似
 
 ```shell
 # username和token需要换成自己的
 docker login ghcr.io -u username -p token
-```text
+```
 - 为自己的镜像添加tag（docker commit）
 
 这里的tag有一定的规则在里面，其形式类似于这样：ghcr.io/username/repo_name/image_name:tag，比如我的实例如下：
 
 ```shell
 docker commit -a "growdu" -m "add coder to sudoers,map hosts to solve can't visit github"  973641cea3f7 ghcr.io/growdu/oh-my-code/coder:v1.2
-```text
+```
 - 推送镜像到远程仓库（docker push）
 
 到这里就可以把镜像上传，然后在其他机器拉取镜像开发了。
 
 ```shell
 docker push ghcr.io/growdu/oh-my-code/coder:v1.2
-```text
+```
 - 拉取镜像进行开发（docker pull）
 
 ```shell
 docker pull ghcr.io/growdu/oh-my-code/coder:v1.2
-```text
+```

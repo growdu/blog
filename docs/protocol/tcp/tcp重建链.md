@@ -18,7 +18,7 @@ unsigned int timeout = 10000;
 if (-1 == setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &timeout, sizeof(timeout))) {
     fprintf(stderror, "set TCP_USER_TIMEOUT option error: %s", strerror(errno));
 }
-```text
+```
 ## SIOCOUTQ
 
 > linux提供了ioctl(fd, SIOCOUTQ, &count)方法来查询一个tcp socket的write buffer是否清空。发送方一般可以用这个方法来判断对端是否收到报文。当底层网卡将缓冲区的数据全部发送成功时，获取的count=0.
@@ -31,7 +31,7 @@ if (-1 == setsockopt(fd, IPPROTO_TCP, TCP_USER_TIMEOUT, &timeout, sizeof(timeout
 int value;
  
 ioctl(client_fd,SIOCOUTQ,&value);
-```text
+```
 ## tcp_retries2
 
 > 在丢弃激活(已建立通讯状况)的TCP连接之前﹐需要进行多少次重试。默认值为15，根据RTO的值来决定，相当于13-30分钟(RFC1122规定，必须大于100秒).(这个值根据目前的网络设置,可以适当地改小,我的网络内修改为了5)
@@ -47,7 +47,7 @@ value = ... // Change value if it needed
 if(!sysctl(name, sizeof(name)/sizeof(name[0]), NULL, NULL, &value, size) {
   // Value in /proc/sys/net/ipv4/tcp_retries2 changed successfully
 }
-```text
+```
 tcp_retries2指定的是tcp重传的次数，其超时时间与RTO的计算有关。RTO最小值默认为200ms，最大为120s，在tcp的重传过程中，以200ms为基础，每次重传超时时间翻倍，但最大只能为120s。
 
 在linux中tcp_retries2默认为15，因而其超时时间为：(2^9 -1)*0.2 + (16 - 9) * 120s = 924.6s.

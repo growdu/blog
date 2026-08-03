@@ -28,14 +28,14 @@
 
 推荐的客户使用流程：
 
-```text
+```
 1. 在订阅端预建基础对象，或确认基础对象可由 DDL 同步创建。
 2. 创建订阅时指定 copy_data=false。
 3. 手动导入发布端已有历史数据。
 4. 启动订阅，开始同步后续 DML。
 5. 后续 DDL 只执行本文档允许的写法。
 6. 对不支持自动同步的对象，在发布端和订阅端按同一变更单分别执行。
-```text
+```
 ---
 
 ## 1. 物化视图不支持自动同步
@@ -75,9 +75,9 @@
 
 **限制描述**：Babelfish 重写了 `ViewStmt` 的处理逻辑，内部通过先 `DROP` 再 `CREATE` 来模拟 `ALTER VIEW`。该路径仅在 TDS 连接或标记了 T-SQL 会话的 PG 连接下可用。逻辑复制 apply worker 既不是 TDS 客户端，也不是 PG-T-SQL 标记连接，因此如果直接在订阅端回放 `ALTER VIEW`，`Is_TSQL_CLIENT()` 会返回 false，并触发防护性报错：
 
-```text
+```
 ERROR: TSQL ALTER VIEW is not supported from PostgreSQL endpoint.
-```text
+```
 当前 DDL 同步实现已经对 view 相关 DDL 做了限制：SQL Server 模式下不自动同步 `CREATE VIEW`、`ALTER VIEW`、`DROP VIEW` 等 view 相关 DDL，因此这类语句不会进入订阅端自动回放链路。
 
 **触发场景**：
@@ -105,7 +105,7 @@ ERROR: TSQL ALTER VIEW is not supported from PostgreSQL endpoint.
 DROP VIEW dbo.v1;
 CREATE VIEW dbo.v1 AS
 SELECT ...
-```text
+```
 **规避方案**：
 
 - SQL Server 模式下已限制捕获或同步 view 相关 DDL。
@@ -180,7 +180,7 @@ SELECT ...
 
 ```sql
 ALTER TABLE t1 ADD col1 INT, col2 VARCHAR(50);
-```text
+```
 该写法可能报语法错误，例如 `syntax error at or near "col2"`。
 
 **触发场景**：
@@ -204,7 +204,7 @@ ALTER TABLE t1 ADD col1 INT, col2 VARCHAR(50);
 ALTER TABLE t1 ADD col1 INT;
 ALTER TABLE t1 ADD col2 VARCHAR(50);
 ALTER TABLE t1 ADD col3 BIT;
-```text
+```
 **规避方案**：
 
 - 变更脚本生成工具应将多列 `ADD` 自动拆分为多条单列语句。
@@ -248,16 +248,16 @@ ALTER TABLE t1 ADD col3 BIT;
 
 **限制描述**：在 T-SQL / SQL Server 模式下创建逻辑复制订阅时，`copy_data=true` 选项不可用。订阅表的 initial data sync 会持续失败，日志可能循环报错：
 
-```text
+```
 ERROR: table copy could not start transaction on publisher:
 ERROR: syntax error at or near "READ" at character 7
 STATEMENT: BEGIN READ ONLY ISOLATION LEVEL REPEATABLE READ
-```text
+```
 **原因**：`copy_data=true` 会触发 table sync worker 通过 libpq 向发布端发送：
 
 ```sql
 BEGIN READ ONLY ISOLATION LEVEL REPEATABLE READ
-```text
+```
 由于 `sql-dialect='tsql'` 是全局配置，libpq 复制连接也会走 T-SQL 语法解析路径，而 T-SQL 的 `BEGIN` 语法不支持 `READ ONLY` / `ISOLATION LEVEL` 修饰符，导致 initial data sync 失败。
 
 **触发场景**：
@@ -295,7 +295,7 @@ if (logical)
         "ELSE NULL END;");
     PQclear(res);
 }
-```text
+```
 **方案要点**：
 
 1. `current_setting(..., true)` 条件检测：`missing_ok=true` 使 GUC 不存在时返回 `NULL` 而非报错。非 Babelfish 发布端（vanilla PG）不会出错，`set_config` 不被调用。

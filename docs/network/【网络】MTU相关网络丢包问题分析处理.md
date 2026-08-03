@@ -28,43 +28,43 @@ Windows主机中: 执行ping x.x.x.x -l 1472 -f ，x.x.x.x是目标地址，-l�
 
 从路径上看，丢包点大致可以有下面几个位置：
 
-```text
+```
 1. 数据中心外部丢包
 
 2. 数据中心内部丢包
 
 3. 主机内部丢包
-```text
+```
 对于数据中心内部丢包问题，最重要的是能 “界定问题边界”，换句话说，这是谁的锅？  
 拥有自己数据中心的，往往会由网络工程师负责配置网络，系统工程师管理主机/虚拟化环境。界定的边界办法可以是：
 
-```text
+```
 1）长ping 网关地址，如果出现丢包，十有八九是网络设备有问题。
 
 2）使用MTR看路径上丢包点。
 
 3）抓包分析
 
-```text
+```
 MTU丢包
 
-```text
+```
 1.检查接口MTU配置，ifconfig eth1/eth0，默认是1500；
 
 2.进行MTU探测，然后设置接口对应的MTU值；
-```text
+```
 ![](https://upload-images.jianshu.io/upload_images/12979420-0581f0cf5a955a5f.png?imageMogr2/auto-orient/strip|imageView2/2/w/1080/format/webp)
 
 image.png
 
 解决方案：
 
-```text
+```
 1. 根据实际情况，设置正确MTU值；
 
 2. 设置合理的tcp mss，启用TCP MTU Probe
-```text
-```text
+```
+```
 # cat /proc/sys/net/ipv4/tcp_mtu_probing
 
 tcp_mtu_probing - INTEGER Controls TCP Packetization-Layer Path MTU Discovery.
@@ -72,7 +72,7 @@ Takes three values:
 0 - Disabled 
 1 - Disabled by default, enabled when an ICMP black hole detected
 2 - Always enabled, use initial MSS of tcp_base_mss.
-```text
+```
 ![](https://upload-images.jianshu.io/upload_images/12979420-de7e38b913fab5d3.png?imageMogr2/auto-orient/strip|imageView2/2/w/1129/format/webp)
 
 image.png
@@ -129,7 +129,7 @@ image.png
 
 image.png
 
-```text
+```
 1. 在DF位没有置1情况下，IP数据包大小超过接口MTU值时，IP数据包会切片(framed)
 
 2. 在DF位没有置1情况下，已经切片的IP数据包在转发过程中不会组装
@@ -137,7 +137,7 @@ image.png
 注：如直连的2个接口，一个MTU为1500，另一个MTU不是1500，可能会产生丢包
 （原因：MTU就是MRU；切片发生在数据包发出时，不发生在接收时）
 
-```text
+```
 MTU一经确定不再改变？
 
 实际上MTU并不是确定了之后就一直不变的，每个端上查看到的MTU并非是最终的MTU大小，这个怎么理解呢？

@@ -33,7 +33,7 @@ UIO与内核的关系如下：
 ```shell
 [root@localhost ~]# ls /sys/class/uio/uio0/
 dev        device/    event      maps/      name       power/     subsystem/ uevent     version
-```text
+```
 ### igb_uio分析
 
 在进行DPDK的测试中，使用的都是igb_uio这个驱动；igb_uio是Intel igb网卡驱动的UIO实现，分成igb_uio内核驱动、内核uio框架、uio用户态三部分。
@@ -96,7 +96,7 @@ group 是IOMMU能够进行DMA隔离的最小硬件单元，一个group内可能�
 +--------------------------------------------------------------+
 |  iommu driver          |  pci_bus driver                     |
 +--------------------------------------------------------------+
-```text
+```
 - 最上层VFIO Interface Layer，它负责向用户态提供统一访问的接口，用户态通过约定的ioctl设置和调用VFIO的各种能力。
 
 - 中间层分别是vfio_iommu和vfio_pci
@@ -111,7 +111,7 @@ linux内核设备驱动充分利用了“一切皆文件”的思想，VFIO驱�
 ```shell
 root@HX-Technical-A:~# ls /dev/vfio/
 8  vfio
-```text
+```
 # reference
 
 1. https://blog.csdn.net/u013982161/article/details/51584900
