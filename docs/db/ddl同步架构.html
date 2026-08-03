@@ -1,0 +1,1681 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DDL同步架构</title>
+    <style>
+        :root {
+            --primary: #2c5aa0;
+            --primary-light: #4a7fc7;
+            --secondary: #6c5ce7;
+            --accent: #00b894;
+            --bg-dark: #1a1a2e;
+            --bg-light: #f8f9fa;
+            --text-dark: #2d3436;
+            --text-light: #636e72;
+            --border: #dfe6e9;
+            --shadow: rgba(0,0,0,0.1);
+            --pub-color: #0984e3;
+            --trans-color: #6c5ce7;
+            --sub-color: #00b894;
+            --adapter-color: #fdcb6e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: var(--bg-light);
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 25px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2em;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        header p {
+            margin-top: 8px;
+            opacity: 0.9;
+            font-size: 1em;
+        }
+
+        .content {
+            padding: 25px;
+        }
+
+        h2 {
+            color: var(--text-dark);
+            font-size: 1.5em;
+            margin: 30px 0 20px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid var(--primary);
+            display: inline-block;
+        }
+
+        h2:first-child {
+            margin-top: 0;
+        }
+
+        h3 {
+            color: var(--text-dark);
+            font-size: 1.2em;
+            margin: 20px 0 12px;
+            padding-left: 10px;
+            border-left: 4px solid var(--primary);
+        }
+
+        p {
+            font-size: 0.95em;
+            line-height: 1.7;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+        }
+
+        /* Flowchart Styles */
+        .flowchart {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+            margin: 30px 0;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--shadow);
+        }
+
+        .layer {
+            width: 100%;
+            max-width: 900px;
+            position: relative;
+        }
+
+        .layer-box {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(44, 90, 160, 0.3);
+        }
+
+        .layer-box.pub { background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%); }
+        .layer-box.trans { background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%); }
+        .layer-box.sub { background: linear-gradient(135deg, #00b894 0%, #55efc4 100%); }
+        .layer-box.adapter { background: linear-gradient(135deg, #fdcb6e 0%, #ffeaa7 100%); color: var(--text-dark); }
+
+        .layer-title {
+            font-size: 1.2em;
+            font-weight: 600;
+        }
+
+        .layer-subtitle {
+            font-size: 0.85em;
+            opacity: 0.85;
+            margin-top: 5px;
+        }
+
+        .node-row {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+
+        .node {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 0.9em;
+            color: var(--text-dark);
+            box-shadow: 0 2px 10px var(--shadow);
+            transition: all 0.3s ease;
+            min-width: 180px;
+            text-align: center;
+        }
+
+        .node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px var(--shadow);
+            border-color: var(--primary);
+        }
+
+        .node.highlight {
+            border-color: var(--accent);
+            background: linear-gradient(135deg, #00b894 0%, #55efc4 100%);
+            color: white;
+        }
+
+        .arrow-down {
+            text-align: center;
+            padding: 5px 0;
+            color: var(--text-light);
+            font-size: 1.2em;
+        }
+
+        /* Connection Lines */
+        .connector {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 0;
+        }
+
+        .connector-line {
+            width: 3px;
+            height: 40px;
+            background: linear-gradient(to bottom, var(--primary), var(--secondary));
+            border-radius: 2px;
+        }
+
+        .connector-line.green {
+            background: linear-gradient(to bottom, var(--pub-color), var(--trans-color));
+        }
+
+        .connector-line.purple {
+            background: linear-gradient(to bottom, var(--trans-color), var(--sub-color));
+        }
+
+        /* Adapter Grid */
+        .adapter-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .adapter-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .adapter-box {
+            background: linear-gradient(135deg, #fdcb6e 0%, #f39c12 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 500;
+            box-shadow: 0 3px 10px rgba(243, 156, 18, 0.3);
+        }
+
+        .adapter-box.pg { background: linear-gradient(135deg, #0984e3 0%, #74b9ff 100%); }
+        .adapter-box.oracle { background: linear-gradient(135deg, #e74c3c 0%, #ff7675 100%); }
+        .adapter-box.mysql { background: linear-gradient(135deg, #00b894 0%, #55efc4 100%); }
+        .adapter-box.babelfish { background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%); }
+        .adapter-box.db2 { background: linear-gradient(135deg, #e67e22 0%, #f39c12 100%); }
+
+        /* Simple Vertical Flowchart */
+        .simple-flow {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .simple-flow .node {
+            margin: 5px 0;
+        }
+
+        /* Horizontal Flow */
+        .h-flow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .h-flow .node {
+            min-width: 150px;
+        }
+
+        .h-arrow {
+            color: var(--text-light);
+            font-size: 1.5em;
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .legend-color.pub { background: var(--pub-color); }
+        .legend-color.trans { background: var(--trans-color); }
+        .legend-color.sub { background: var(--sub-color); }
+        .legend-color.adapter { background: var(--adapter-color); }
+
+        /* ========================================
+           PPT-Style Horizontal Flowchart (16:9)
+           ======================================== */
+        .ppt-flowchart {
+            width: 100%;
+            height: 500px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px var(--shadow);
+            padding: 12px 25px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ppt-title {
+            text-align: center;
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+
+        .ppt-row {
+            display: flex;
+            align-items: stretch;
+            flex: 1;
+            gap: 0;
+        }
+
+        .ppt-col {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            padding: 0 8px;
+        }
+
+        .ppt-col.pub-col { flex: 1.2; }
+        .ppt-col.trans-col { flex: 0.8; }
+        .ppt-col.sub-col { flex: 1.2; }
+
+        .ppt-box {
+            width: 100%;
+            text-align: center;
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        .ppt-box.blue { background: linear-gradient(135deg, #0984e3, #74b9ff); }
+        .ppt-box.purple { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
+        .ppt-box.green { background: linear-gradient(135deg, #00b894, #55efc4); }
+        .ppt-box.gold { background: linear-gradient(135deg, #fdcb6e, #f39c12); color: var(--text-dark); }
+
+        .ppt-node {
+            background: white;
+            border: 2px solid #dfe6e9;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.85em;
+            color: var(--text-dark);
+            text-align: center;
+            width: 100%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .ppt-node.glow {
+            border-color: #00b894;
+            background: linear-gradient(135deg, #00b894, #55efc4);
+            color: white;
+        }
+
+        .ppt-rule {
+            background: #f8f9fa;
+            border-left: 3px solid #6c5ce7;
+            border-radius: 4px;
+            padding: 4px 8px;
+            width: 100%;
+        }
+
+        .ppt-rule-title {
+            font-size: 0.7em;
+            color: var(--text-light);
+            margin-bottom: 3px;
+        }
+
+        .ppt-rule-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .ppt-tag {
+            background: white;
+            border: 1px solid #dfe6e9;
+            border-radius: 10px;
+            padding: 1px 5px;
+            font-size: 0.65em;
+            color: var(--text-dark);
+        }
+
+        .ppt-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5em;
+            color: #b2bec3;
+            padding: 0 5px;
+        }
+
+        .ppt-arrow-v {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #b2bec3;
+            font-size: 1em;
+            padding: 3px 0;
+        }
+
+        .ppt-adapter-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .ppt-adapter {
+            padding: 6px 4px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.75em;
+            font-weight: 500;
+            color: white;
+        }
+
+        .ppt-adapter.pg { background: linear-gradient(135deg, #0984e3, #74b9ff); }
+        .ppt-adapter.babelfish { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
+        .ppt-adapter.oracle { background: linear-gradient(135deg, #e74c3c, #ff7675); }
+        .ppt-adapter.mysql { background: linear-gradient(135deg, #00b894, #55efc4); }
+        .ppt-adapter.db2 { background: linear-gradient(135deg, #e67e22, #f39c12); }
+
+        .ppt-connector {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            padding: 2px 0;
+        }
+
+        .ppt-connector-line {
+            width: 4px;
+            height: 15px;
+            background: linear-gradient(to bottom, #0984e3, #6c5ce7);
+            border-radius: 2px;
+        }
+
+        .ppt-connector-line.green {
+            background: linear-gradient(to bottom, #6c5ce7, #00b894);
+        }
+
+        /* Summary Box */
+        .summary-box {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-top: 20px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .summary-title {
+            font-size: 1em;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .summary-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px 20px;
+        }
+
+        .summary-list li {
+            font-size: 0.85em;
+            color: var(--text-dark);
+            padding: 4px 0;
+        }
+
+        .summary-list li strong {
+            color: var(--primary);
+        }
+
+        /* Highlight Box */
+        .highlight-box {
+            background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-top: 20px;
+            border-left: 4px solid #4caf50;
+        }
+
+        .highlight-title {
+            font-size: 1em;
+            font-weight: 700;
+            color: #2e7d32;
+            margin-bottom: 10px;
+        }
+
+        .highlight-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px 20px;
+        }
+
+        .highlight-list li {
+            font-size: 0.85em;
+            color: #2e7d32;
+            padding: 4px 0;
+        }
+
+        .highlight-list li strong {
+            color: #1b5e20;
+        }
+
+        /* Info Box (for background/context) */
+        .info-box {
+            background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ff9800;
+        }
+
+        .info-box p {
+            margin-bottom: 8px;
+        }
+
+        .info-box ol, .info-box ul {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        .info-box li {
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        /* Code Block */
+        .code-block {
+            background: #1e1e2e;
+            color: #cdd6f4;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+            font-family: "JetBrains Mono", "Fira Code", "SF Mono", Monaco, Consolas, monospace;
+            font-size: 0.82em;
+            line-height: 1.6;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            white-space: pre;
+        }
+
+        .code-block .keyword { color: #cba6f7; }
+        .code-block .type { color: #89b4fa; }
+        .code-block .string { color: #a6e3a1; }
+        .code-block .comment { color: #6c7086; font-style: italic; }
+        .code-block .func { color: #f9e2af; }
+        .code-block .macro { color: #fab387; }
+
+        /* Replay Framework Specific Styles */
+        .replay-overview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .replay-overview {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .replay-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px var(--shadow);
+            border-top: 4px solid var(--primary);
+        }
+
+        .replay-card h4 {
+            font-size: 1em;
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+
+        .replay-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .replay-card li {
+            font-size: 0.85em;
+            padding: 6px 0;
+            border-bottom: 1px solid #f1f1f1;
+            color: var(--text-dark);
+        }
+
+        .replay-card li:last-child {
+            border-bottom: none;
+        }
+
+        .replay-card li strong {
+            color: var(--primary);
+        }
+
+        /* Dialect Selector Visual */
+        .dialect-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        @media (max-width: 768px) {
+            .dialect-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .dialect-item {
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .dialect-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .dialect-item .dialect-name {
+            font-weight: 600;
+            font-size: 0.9em;
+            color: var(--text-dark);
+        }
+
+        .dialect-item .dialect-enum {
+            font-size: 0.7em;
+            color: var(--text-light);
+            margin-top: 4px;
+            font-family: monospace;
+        }
+
+        .dialect-item.pg { border-color: #0984e3; }
+        .dialect-item.pg .dialect-name { color: #0984e3; }
+        .dialect-item.tsql { border-color: #6c5ce7; }
+        .dialect-item.tsql .dialect-name { color: #6c5ce7; }
+        .dialect-item.oracle { border-color: #e74c3c; }
+        .dialect-item.oracle .dialect-name { color: #e74c3c; }
+        .dialect-item.mysql { border-color: #00b894; }
+        .dialect-item.mysql .dialect-name { color: #00b894; }
+        .dialect-item.db2 { border-color: #e67e22; }
+        .dialect-item.db2 .dialect-name { color: #e67e22; }
+
+        /* Interface Card */
+        .interface-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 4px 15px var(--shadow);
+            border-left: 4px solid var(--secondary);
+        }
+
+        .interface-card h4 {
+            font-size: 1em;
+            color: var(--secondary);
+            margin-bottom: 12px;
+        }
+
+        .interface-params {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 6px 15px;
+            font-size: 0.85em;
+        }
+
+        .interface-params dt {
+            font-weight: 600;
+            color: var(--primary);
+            font-family: monospace;
+        }
+
+        .interface-params dd {
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        /* Flow Steps */
+        .flow-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin: 20px 0;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9em;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            flex: 1;
+            padding: 8px 0;
+        }
+
+        .step-content h4 {
+            font-size: 0.95em;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .step-content p {
+            font-size: 0.85em;
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        .step-arrow {
+            text-align: center;
+            padding: 5px 0;
+            color: var(--text-light);
+            font-size: 1.2em;
+        }
+
+        /* Comparison Table */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .comparison-table th {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 12px 15px;
+            font-size: 0.9em;
+            text-align: left;
+        }
+
+        .comparison-table td {
+            padding: 10px 15px;
+            font-size: 0.85em;
+            border-bottom: 1px solid #f1f1f1;
+            color: var(--text-dark);
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .comparison-table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+
+        .comparison-table td strong {
+            color: var(--primary);
+        }
+
+        /* Mechanism Flow */
+        .mechanism-flow {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 15px 0;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .mechanism-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+        }
+
+        .mechanism-step:not(:last-child) {
+            border-bottom: 1px dashed #dfe6e9;
+        }
+
+        .mechanism-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8em;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .mechanism-icon.check { background: #00b894; }
+        .mechanism-icon.fallback { background: #fdcb6e; color: var(--text-dark); }
+        .mechanism-icon.run { background: #0984e3; }
+
+        .mechanism-text {
+            font-size: 0.9em;
+            color: var(--text-dark);
+        }
+
+        .mechanism-text strong {
+            color: var(--primary);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-dark);
+            color: var(--text-light);
+            text-align: center;
+            padding: 15px;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>DDL 同步架构</h1>
+            <p>Logical Replication DDL Synchronization Platform</p>
+        </header>
+
+        <div class="content">
+            <!-- Section 1: Overall Architecture - PPT Horizontal Layout -->
+            <h2>整体架构</h2>
+            <div class="ppt-flowchart">
+                <div class="ppt-title">DDL Synchronization Architecture</div>
+                <div class="ppt-row">
+                    <!-- Publisher Side -->
+                    <div class="ppt-col pub-col">
+                        <div class="ppt-box blue">Publisher Side</div>
+                        <div class="ppt-node">ProcessUtility()</div>
+                        <div class="ppt-arrow-v">↓</div>
+                        <div class="ppt-node glow">CapturePublicationSyncDDL()</div>
+                        <div class="ppt-arrow-v">↓</div>
+                        <div class="ppt-rule">
+                            <div class="ppt-rule-title">DDL Rule Filter</div>
+                            <div class="ppt-rule-tags">
+                                <span class="ppt-tag">Type</span>
+                                <span class="ppt-tag">Schema</span>
+                                <span class="ppt-tag">Regex</span>
+                                <span class="ppt-tag">Plugin</span>
+                            </div>
+                        </div>
+                        <div class="ppt-arrow-v">↓</div>
+                        <div class="ppt-node glow">pg_publication_sync</div>
+                    </div>
+
+                    <!-- Arrow -->
+                    <div class="ppt-arrow">→</div>
+
+                    <!-- Logical Replication Layer -->
+                    <div class="ppt-col trans-col">
+                        <div class="ppt-box purple">Logical Replication</div>
+                        <div class="ppt-node">Logical Decoding</div>
+                        <div class="ppt-arrow-v">↓</div>
+                        <div class="ppt-node">pgoutput</div>
+                        <div class="ppt-arrow-v">↓</div>
+                        <div class="ppt-node">Replication Protocol</div>
+                    </div>
+
+                    <!-- Arrow -->
+                    <div class="ppt-arrow">→</div>
+
+                    <!-- Subscriber Side -->
+                    <div class="ppt-col sub-col">
+                        <div class="ppt-box green">Subscriber Side</div>
+                        <div class="ppt-node glow">apply_handle_ddl()</div>
+                        <div class="ppt-arrow-v">↓</div>
+                        <div class="ppt-rule">
+                            <div class="ppt-rule-title">DDL Rule Filter</div>
+                            <div class="ppt-rule-tags">
+                                <span class="ppt-tag">subddl</span>
+                                <span class="ppt-tag">Security</span>
+                                <span class="ppt-tag">Object</span>
+                                <span class="ppt-tag">Regex</span>
+                            </div>
+                        </div>
+                        <div class="ppt-arrow-v">↓</div>
+                        <div class="ppt-node glow">Replay Framework</div>
+                        <div class="ppt-arrow-v">↓</div>
+                        <div class="ppt-node glow">execute_publication_sync_sql_command()</div>
+                    </div>
+                </div>
+
+                <div class="ppt-connector">
+                    <div class="ppt-connector-line"></div>
+                </div>
+
+                <!-- Adapter Row -->
+                <div class="ppt-adapter-row">
+                    <div class="ppt-adapter pg">PostgreSQL Adapter</div>
+                    <div class="ppt-adapter babelfish">Babelfish Adapter</div>
+                    <div class="ppt-adapter oracle">Oracle Adapter</div>
+                    <div class="ppt-adapter mysql">MySQL Adapter</div>
+                </div>
+            </div>
+
+            <div class="summary-box">
+                <div class="summary-title">核心特性</div>
+                <ul class="summary-list">
+                    <li><strong>统一架构</strong>：复用内核逻辑复制能力，最小化改造</li>
+                    <li><strong>双向过滤</strong>：发布端+订阅端双重规则过滤</li>
+                    <li><strong>多方言适配</strong>：按目标数据库方言原样执行DDL，不依赖语法转换</li>
+                    <li><strong>基于数据表的过滤规则</strong>：支持按表、Schema、类型等多维度过滤</li>
+                </ul>
+            </div>
+
+            <!-- Section 2: Background -->
+            <h2>设计背景</h2>
+            <div class="info-box">
+                <p><strong>当前流程：</strong>逻辑复制DDL同步已适配PG模式，整体流程如下：</p>
+                <ol>
+                    <li>后端进程捕获客户端的原始DDL存入系统表（相当于队列）</li>
+                    <li>通过逻辑复制协议将DDL同步到订阅端</li>
+                    <li>订阅端识别到DDL后，对DDL进行replay（使用原始DDL SQL走parse再execute执行）</li>
+                </ol>
+                <p><strong>核心挑战：</strong>replay最重要的就是apply worker需要有对应数据库模式的上下文。</p>
+                <ul>
+                    <li>对于<strong>PG模式</strong>：sql解析引擎是PG，天生具有对应的DDL执行上下文，可直接调用<code>pg_parse_query</code>执行</li>
+                    <li>对于<strong>SQL Server模式</strong>：使用bbf插件实现，采用TCP端口区分，worker进程没有数据库连接，当前机制无法构造完整的SQL Server执行上下文</li>
+                    <li>考虑到后续可能适配<strong>MySQL、Oracle、DB2</strong>等模式，需要一种通用的replay框架方便扩展</li>
+                </ul>
+            </div>
+
+            <!-- Section: Key Constraints -->
+            <h2>关键约束</h2>
+            <div class="replay-overview">
+                <div class="replay-card" style="border-top-color: #0984e3;">
+                    <h4>传输端口约束</h4>
+                    <ul>
+                        <li><strong>逻辑复制只能通过 PG 端口进行同步</strong></li>
+                        <li>创建订阅时，指定的发布端端口<strong>必须是 PG 端口</strong></li>
+                        <li>不能使用 TDS 端口或其他数据库方言端口作为复制传输通道</li>
+                        <li>原因：逻辑复制协议是 PostgreSQL 原生能力，依赖于 PG 端口的协议栈</li>
+                    </ul>
+                </div>
+                <div class="replay-card" style="border-top-color: #6c5ce7;">
+                    <h4>DDL 捕获匹配规则</h4>
+                    <ul>
+                        <li><strong>只捕获与当前数据库模式匹配的 DDL 语句</strong></li>
+                        <li>例如：SQL Server 模式下<strong>不会捕获 PG SQL</strong></li>
+                        <li>PG 模式下<strong>不会捕获 T-SQL</strong></li>
+                        <li>原因：不同方言的 DDL 语法不同，捕获非匹配方言的语句会导致 replay 失败</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="flowchart">
+                <div class="simple-flow">
+                    <div class="node-row" style="width: 100%; justify-content: space-around;">
+                        <div class="node" style="border-color: #0984e3; flex: 1; min-width: 250px;">
+                            <strong style="color: #0984e3;">PG 端口传输</strong><br>
+                            <small>创建订阅 → 连接 PG 端口 → 逻辑复制协议</small><br>
+                            <span style="color: #e74c3c;">× 不能使用 TDS 端口</span>
+                        </div>
+                        <div class="node" style="border-color: #6c5ce7; flex: 1; min-width: 250px;">
+                            <strong style="color: #6c5ce7;">方言匹配捕获</strong><br>
+                            <small>TSQL 模式 → 仅捕获 T-SQL DDL</small><br>
+                            <small>PG 模式 → 仅捕获 PG DDL</small><br>
+                            <span style="color: #e74c3c;">× 不会跨方言捕获</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Layered Architecture -->
+            <h2>分层架构</h2>
+            <div class="flowchart">
+                <div class="layer">
+                    <div class="layer-box pub">
+                        <div class="layer-title">DDL Producer</div>
+                        <div class="layer-subtitle">DDL 生产者</div>
+                    </div>
+                    <div class="node-row">
+                        <div class="node">Capture</div>
+                        <div class="node">Rule Filter</div>
+                        <div class="node">Message Store</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="connector-line green"></div>
+                </div>
+
+                <div class="layer">
+                    <div class="layer-box trans">
+                        <div class="layer-title">Replication Transport</div>
+                        <div class="layer-subtitle">复制传输层</div>
+                    </div>
+                    <div class="node-row">
+                        <div class="node">Logical Decoding</div>
+                        <div class="node">pgoutput</div>
+                        <div class="node">Protocol</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="connector-line purple"></div>
+                </div>
+
+                <div class="layer">
+                    <div class="layer-box sub">
+                        <div class="layer-title">DDL Replay Framework</div>
+                        <div class="layer-subtitle">DDL 回放框架</div>
+                    </div>
+                    <div class="node-row">
+                        <div class="node">Apply Worker</div>
+                        <div class="node">Rule Filter</div>
+                        <div class="node">Replay Engine</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="connector-line"></div>
+                </div>
+
+                <div class="layer">
+                    <div class="layer-box adapter">
+                        <div class="layer-title">Adapter Framework</div>
+                        <div class="layer-subtitle">适配器框架</div>
+                    </div>
+                    <div class="adapter-grid">
+                        <div class="adapter-box babelfish">Babelfish<br>Adapter</div>
+                        <div class="adapter-box oracle">Oracle<br>Adapter</div>
+                        <div class="adapter-box mysql">MySQL<br>Adapter</div>
+                        <div class="adapter-box db2">DB2<br>Adapter</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <div class="highlight-title">分层架构优势</div>
+                <ul class="highlight-list">
+                    <li><strong>职责分离</strong>：各层专注自身职责，便于维护和扩展</li>
+                    <li><strong>标准接口</strong>：层间通过标准接口通信，解耦设计</li>
+                    <li><strong>插件式适配器</strong>：新增数据库支持只需实现新适配器</li>
+                    <li><strong>可测试性</strong>：各层可独立测试，保证质量</li>
+                </ul>
+            </div>
+
+            <!-- Section 4: Replay Framework Detail -->
+            <h2>Replay Framework</h2>
+
+            <!-- 4.1 Architecture Diagram -->
+            <h3>Replay 架构总览</h3>
+            <div class="flowchart">
+                <div class="simple-flow">
+                    <div class="node" style="background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white;">Apply Worker 收到 DDL 消息</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node highlight">Replay Framework 调度层</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node-row" style="width: 100%; justify-content: space-around;">
+                        <div class="node" style="border-color: #0984e3; flex: 1;">
+                            <strong style="color: #0984e3;">PG Replay</strong><br>
+                            <small>直接调用 pg_parse_query</small>
+                        </div>
+                        <div class="node" style="border-color: #6c5ce7; flex: 1;">
+                            <strong style="color: #6c5ce7;">TSQL Simple</strong><br>
+                            <small>设置 sql_dialect 后 parse</small>
+                        </div>
+                        <div class="node" style="border-color: #e74c3c; flex: 1;">
+                            <strong style="color: #e74c3c;">TSQL Custom</strong><br>
+                            <small>bbf插件注册完整上下文</small>
+                        </div>
+                        <div class="node" style="border-color: #00b894; flex: 1;">
+                            <strong style="color: #00b894;">Extension</strong><br>
+                            <small>MySQL/Oracle/DB2...</small>
+                        </div>
+                    </div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node" style="background: linear-gradient(135deg, #00b894, #55efc4); color: white; min-width: 200px;">目标数据库执行 DDL</div>
+                </div>
+            </div>
+
+            <!-- 4.2 Dialect Definition -->
+            <h3>数据库方言定义</h3>
+            <div class="dialect-grid">
+                <div class="dialect-item pg">
+                    <div class="dialect-name">PostgreSQL</div>
+                    <div class="dialect-enum">REPLAY_DIALECT_PG</div>
+                </div>
+                <div class="dialect-item tsql">
+                    <div class="dialect-name">T-SQL (SQL Server)</div>
+                    <div class="dialect-enum">REPLAY_DIALECT_TSQL</div>
+                </div>
+                <div class="dialect-item oracle">
+                    <div class="dialect-name">Oracle</div>
+                    <div class="dialect-enum">REPLAY_DIALECT_ORACLE</div>
+                </div>
+                <div class="dialect-item mysql">
+                    <div class="dialect-name">MySQL</div>
+                    <div class="dialect-enum">REPLAY_DIALECT_MYSQL</div>
+                </div>
+                <div class="dialect-item db2">
+                    <div class="dialect-name">DB2</div>
+                    <div class="dialect-enum">REPLAY_DIALECT_DB2</div>
+                </div>
+            </div>
+
+            <div class="code-block">
+<span class="keyword">typedef enum</span> ReplayDialect {
+    REPLAY_DIALECT_PG      = <span class="string">0</span>,   <span class="comment">// PostgreSQL</span>
+    REPLAY_DIALECT_TSQL,           <span class="comment">// SQL Server (T-SQL)</span>
+    REPLAY_DIALECT_ORACLE,         <span class="comment">// Oracle</span>
+    REPLAY_DIALECT_MYSQL,          <span class="comment">// MySQL</span>
+    REPLAY_DIALECT_DB2,            <span class="comment">// IBM DB2</span>
+    REPLAY_DIALECT_MAX
+} ReplayDialect;</div>
+
+            <!-- 4.3 Replay Context -->
+            <h3>Replay 上下文</h3>
+            <div class="interface-card">
+                <h4>ReplayExecContext 结构体</h4>
+                <div class="interface-params">
+                    <dt>dialect</dt>
+                    <dd>数据库方言类型 (ReplayDialect)</dd>
+                    <dt>dbname</dt>
+                    <dd>逻辑数据库名称</dd>
+                    <dt>search_path</dt>
+                    <dd>搜索路径设置</dd>
+                    <dt>user_oid</dt>
+                    <dd>用户对象ID</dd>
+                    <dt>switched_user</dt>
+                    <dd>是否已切换用户</dd>
+                    <dt>ucxt</dt>
+                    <dd>用户上下文 (UserContext)</dd>
+                    <dt>adapter_private</dt>
+                    <dd>扩展数据指针 (void*)</dd>
+                </div>
+            </div>
+
+            <div class="code-block">
+<span class="keyword">typedef struct</span> ReplayExecContext
+{
+    ReplayDialect dialect;       <span class="comment">// 数据库模式</span>
+    <span class="type">char</span>       *dbname;          <span class="comment">// 逻辑数据库名称</span>
+    <span class="type">char</span>       *search_path;     <span class="comment">// 搜索路径</span>
+    <span class="type">Oid</span>         user_oid;        <span class="comment">// 用户对象ID</span>
+    <span class="type">bool</span>        switched_user;   <span class="comment">// 是否已切换用户</span>
+    UserContext ucxt;            <span class="comment">// 用户上下文</span>
+    <span class="type">void</span>       *adapter_private; <span class="comment">// 扩展数据（各适配器私有）</span>
+} ReplayExecContext;</div>
+
+            <!-- 4.4 Interface Definition -->
+            <h3>接口定义</h3>
+
+            <div class="interface-card">
+                <h4>ReplayDialectAdapter 回调接口</h4>
+                <p style="font-size: 0.85em; color: var(--text-light); margin-bottom: 10px;">每个数据库方言适配器必须实现以下三个核心回调函数：</p>
+                <div class="interface-params">
+                    <dt>name</dt>
+                    <dd>适配器名称标识</dd>
+                    <dt>init_context(ctx)</dt>
+                    <dd>初始化replay执行上下文，返回bool表示成功/失败</dd>
+                    <dt>execute_ddl(ctx, sql)</dt>
+                    <dd>执行DDL语句，在已构建的上下文中parse并execute</dd>
+                    <dt>cleanup_context(ctx)</dt>
+                    <dd>清理replay执行上下文，释放资源</dd>
+                </div>
+            </div>
+
+            <div class="code-block">
+<span class="keyword">typedef struct</span> ReplayDialectAdapter {
+    <span class="keyword">const char</span> *name;
+    <span class="type">bool</span> (*<span class="func">init_context</span>)(ReplayExecContext *ctx);
+    <span class="type">bool</span> (*<span class="func">execute_ddl</span>)(ReplayExecContext *ctx, <span class="keyword">const char</span> *sql);
+    <span class="type">void</span> (*<span class="func">cleanup_context</span>)(ReplayExecContext *ctx);
+} ReplayDialectAdapter;</div>
+
+            <div class="interface-card">
+                <h4>Replay Framework 注册初始化接口</h4>
+                <div class="interface-params">
+                    <dt>ReplayFrameworkInit()</dt>
+                    <dd>框架全局初始化，注册内置适配器</dd>
+                    <dt>RegisterReplayDialectAdapter(dialect, adapter)</dt>
+                    <dd>注册/覆盖某个方言的适配器实现</dd>
+                    <dt>GetReplayAdapter(dialect)</dt>
+                    <dd>根据方言类型获取对应适配器</dd>
+                </div>
+            </div>
+
+            <div class="code-block">
+<span class="comment">// 框架全局初始化</span>
+<span class="type">void</span> <span class="func">ReplayFrameworkInit</span>(<span class="type">void</span>);
+
+<span class="comment">// 注册方言适配器</span>
+<span class="type">bool</span> <span class="func">RegisterReplayDialectAdapter</span>(ReplayDialect dialect,
+                                   ReplayDialectAdapter *adapter);
+
+<span class="comment">// 获取方言适配器</span>
+ReplayDialectAdapter* <span class="func">GetReplayAdapter</span>(ReplayDialect dialect);</div>
+
+            <!-- 4.5 Interface Flow -->
+            <h3>接口使用流程</h3>
+
+            <div class="flowchart">
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>框架初始化</h4>
+                            <p>Postmaster启动时调用 <code>ReplayFrameworkInit()</code>，注册PG内置适配器和Simple TSQL适配器</p>
+                        </div>
+                    </div>
+                    <div class="step-arrow">↓</div>
+                    <div class="flow-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>插件注册（可选）</h4>
+                            <p>Babelfish插件在 <code>_PG_init()</code> 中调用 <code>RegisterReplayDialectAdapter()</code> 注册Custom TSQL适配器，覆盖Simple模式</p>
+                        </div>
+                    </div>
+                    <div class="step-arrow">↓</div>
+                    <div class="flow-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>DDL消息到达</h4>
+                            <p>Apply Worker收到DDL消息后，从消息中解析出 <code>ReplayDialect</code> 类型</p>
+                        </div>
+                    </div>
+                    <div class="step-arrow">↓</div>
+                    <div class="flow-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>获取适配器</h4>
+                            <p>调用 <code>GetReplayAdapter(dialect)</code> 获取对应方言的适配器实现</p>
+                        </div>
+                    </div>
+                    <div class="step-arrow">↓</div>
+                    <div class="flow-step">
+                        <div class="step-number">5</div>
+                        <div class="step-content">
+                            <h4>执行DDL</h4>
+                            <p>依次调用 <code>init_context()</code> → <code>execute_ddl()</code> → <code>cleanup_context()</code></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interface Usage Flow Diagram -->
+            <div class="mechanism-flow">
+                <h4 style="margin-bottom: 15px; color: var(--primary);">Replay 执行流程</h4>
+                <div class="flowchart" style="padding: 15px; box-shadow: none; background: transparent;">
+                    <div class="simple-flow">
+                        <div class="node" style="background: #6c5ce7; color: white; min-width: 250px;">Apply Worker 收到DDL消息</div>
+                        <div class="arrow-down">↓</div>
+                        <div class="node">GetReplayAdapter(dialect)</div>
+                        <div class="arrow-down">↓</div>
+                        <div class="node" style="border-color: #fdcb6e; background: #fff9e6;">
+                            <strong>adapter-&gt;init_context(ctx)</strong>                            <small>构建执行上下文（PG跳过，TSQL设置dialect/bbf上下文）</small>
+                        </div>
+                        <div class="arrow-down">↓</div>
+                        <div class="node" style="border-color: #00b894; background: #e8f5e9;">
+                            <strong>adapter-&gt;execute_ddl(ctx, sql)</strong>                            <small>pg_parse_query → 执行计划 → ExecutorRun</small>
+                        </div>
+                        <div class="arrow-down">↓</div>
+                        <div class="node" style="border-color: #e74c3c; background: #ffeaea;">
+                            <strong>adapter-&gt;cleanup_context(ctx)</strong>                            <small>恢复GUC设置、释放资源、清理adapter_private</small>
+                        </div>
+                        <div class="arrow-down">↓</div>
+                        <div class="node" style="background: #00b894; color: white; min-width: 200px;">DDL回放完成</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4.6 PG Replay -->
+            <h3>PostgreSQL Replay</h3>
+            <div class="info-box">
+                <p>对于PG replay来说，只是封装一下replay ddl函数即可，<strong>不需要初始化和清理上下文</strong>。因为PG的apply worker天然具有PG执行上下文。</p>
+            </div>
+
+            <div class="code-block">
+<span class="keyword">static</span> ReplayDialectAdapter pg_adapter = {
+    .name             = <span class="string">"postgres"</span>,
+    .init_context     = pg_replay_init_context,
+    .execute_ddl      = pg_replay_execute_ddl,
+    .cleanup_context  = pg_replay_cleanup_context,
+};
+
+<span class="comment">// PG实现：直接调用pg_parse_query，无需额外上下文设置</span>
+<span class="keyword">static bool</span>
+<span class="func">pg_replay_execute_ddl</span>(ReplayExecContext *ctx, <span class="keyword">const char</span> *sql)
+{
+    List *parsetree_list = pg_parse_query(sql);
+    <span class="comment">// ... parse -> plan -> execute</span>
+    <span class="keyword">return true</span>;
+}</div>
+
+            <!-- 4.7 SQL Server Replay -->
+            <h3>SQL Server Replay</h3>
+            <div class="info-box">
+                <p>对于SQL Server来说，worker没有和后端进程的TDS端口建立连接，需要在worker进程启动时构建SQL Server parse上下文。构建上下文分为<strong>两种情况</strong>：</p>
+                <ol>
+                    <li><strong>简单上下文</strong>：仅修改worker进程内的 <code>sql_dialect</code>，让捕获到的TSQL走bbf的parse</li>
+                    <li><strong>完整上下文</strong>：需要在bbf内部设置逻辑数据库，使worker执行DDL与客户端连接TDS端口执行一致</li>
+                </ol>
+            </div>
+
+            <!-- Comparison Table -->
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>对比项</th>
+                        <th>Simple Replay</th>
+                        <th>Custom (Full) Replay</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>实现位置</strong></td>
+                        <td>内核源码</td>
+                        <td>bbf插件源码</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DDL支持范围</strong></td>
+                        <td>有限（基础DDL）</td>
+                        <td>更完整（复杂DDL）</td>
+                    </tr>
+                    <tr>
+                        <td><strong>上下文构建</strong></td>
+                        <td>仅设置 sql_dialect</td>
+                        <td>完整bbf上下文+逻辑数据库</td>
+                    </tr>
+                    <tr>
+                        <td><strong>是否需要改插件</strong></td>
+                        <td>不需要</td>
+                        <td>需要实现并注册回调</td>
+                    </tr>
+                    <tr>
+                        <td><strong>注册方式</strong></td>
+                        <td>内核默认注册</td>
+                        <td>插件 _PG_init() 中注册</td>
+                    </tr>
+                    <tr>
+                        <td><strong>执行一致性</strong></td>
+                        <td>部分一致</td>
+                        <td>与TDS端口执行完全一致</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Simple Replay -->
+            <h4>Simple Replay 实现</h4>
+            <div class="code-block">
+<span class="keyword">static</span> ReplayDialectAdapter tsql_simple_adapter = {
+    .name             = <span class="string">"tsql-simple"</span>,
+    .init_context     = tsql_simple_init_context,
+    .execute_ddl      = tsql_simple_execute_ddl,
+    .cleanup_context  = tsql_simple_cleanup_context,
+};
+
+<span class="comment">// Simple方式核心：设置sql_dialect让bbf的parser生效</span>
+(<span class="type">void</span>) <span class="func">set_config_option</span>(<span class="string">"babelfishpg_tsql.sql_dialect"</span>, <span class="string">"tsql"</span>,
+                        PGC_USERSET, PGC_S_SESSION,
+                        GUC_ACTION_SET, <span class="keyword">true</span>, <span class="string">0</span>, <span class="keyword">false</span>);</div>
+
+            <!-- Custom Replay -->
+            <h4>Custom (Full) Replay 实现</h4>
+            <div class="info-box">
+                <p>完整的SQL Server上下文构建需要在bbf插件内部注册对应的回调函数，并在bbf插件初始化时注册到replay框架中。</p>
+            </div>
+
+            <div class="code-block">
+<span class="comment">// 在babelfishpg_tsql插件的_PG_init_函数中注册</span>
+<span class="type">void</span>
+<span class="func">bbf_register_tsql_replay_adapter</span>(<span class="type">void</span>)
+{
+    <span class="func">RegisterReplayDialectAdapter</span>(REPLAY_DIALECT_TSQL, &amp;bbf_tsql_adapter);
+    get_current_dbname_hook = bbf_get_current_dbname;
+}
+
+<span class="keyword">static</span> ReplayDialectAdapter bbf_tsql_adapter = {
+    .name             = <span class="string">"tsql"</span>,
+    .init_context     = bbf_replay_init_context,
+    .execute_ddl      = bbf_replay_execute_ddl,
+    .cleanup_context  = bbf_replay_cleanup_context,
+};</div>
+
+            <!-- 4.8 Running Mechanism -->
+            <h3>运行机制</h3>
+            <div class="mechanism-flow">
+                <h4 style="margin-bottom: 15px; color: var(--primary);">Simple vs Custom 回退机制</h4>
+                <div class="mechanism-step">
+                    <div class="mechanism-icon check">1</div>
+                    <div class="mechanism-text"><strong>Simple Replay默认注册</strong>：内核启动时自动注册Simple TSQL适配器</div>
+                </div>
+                <div class="mechanism-step">
+                    <div class="mechanism-icon check">2</div>
+                    <div class="mechanism-text"><strong>插件检查</strong>：如果bbf插件实现了对应的replay回调函数并注册到框架</div>
+                </div>
+                <div class="mechanism-step">
+                    <div class="mechanism-icon fallback">3</div>
+                    <div class="mechanism-text"><strong>覆盖注册</strong>：Custom适配器覆盖Simple适配器，不再使用Simple模式</div>
+                </div>
+                <div class="mechanism-step">
+                    <div class="mechanism-icon run">4</div>
+                    <div class="mechanism-text"><strong>降级保障</strong>：如果bbf插件未实现回调，自动降级为Simple Replay模式执行DDL</div>
+                </div>
+            </div>
+
+            <!-- Mechanism Flow Diagram -->
+            <div class="flowchart">
+                <div class="simple-flow">
+                    <div class="node" style="background: linear-gradient(135deg, #fdcb6e, #f39c12); color: var(--text-dark); min-width: 280px;">内核启动 → 注册 Simple TSQL Adapter</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node" style="min-width: 280px;">
+                        <strong>Babelfish插件加载</strong>                        <small>调用 _PG_init()</small>
+                    </div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node" style="border-color: #fdcb6e; background: #fff9e6; min-width: 300px;">
+                        <strong>是否实现了 bbf_register_tsql_replay_adapter()？</strong>
+                    </div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node-row" style="width: 100%; justify-content: space-around;">
+                        <div class="node" style="border-color: #00b894; background: #e8f5e9; flex: 1;">
+                            <strong style="color: #00b894;">Yes</strong>                            注册 Custom Adapter                            覆盖 Simple Adapter                            <small>→ 完整上下文执行</small>
+                        </div>
+                        <div class="node" style="border-color: #fdcb6e; background: #fff9e6; flex: 1;">
+                            <strong style="color: #e67e22;">No</strong>                            保持 Simple Adapter                            使用默认实现                            <small>→ 简单上下文执行</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4.9 Extension Guide -->
+            <h3>扩展新数据库模式</h3>
+            <div class="info-box">
+                <p>新增数据库模式（如MySQL、Oracle、DB2）只需实现以下步骤：</p>
+            </div>
+
+            <div class="flowchart">
+                <div class="flow-steps">
+                    <div class="flow-step">
+                        <div class="step-number">1</div>
+                        <div class="step-content">
+                            <h4>添加方言枚举</h4>
+                            <p>在 <code>ReplayDialect</code> 枚举中添加新类型（如 <code>REPLAY_DIALECT_MYSQL</code>）</p>
+                        </div>
+                    </div>
+                    <div class="step-arrow">↓</div>
+                    <div class="flow-step">
+                        <div class="step-number">2</div>
+                        <div class="step-content">
+                            <h4>实现三个回调函数</h4>
+                            <p><code>init_context()</code> → <code>execute_ddl()</code> → <code>cleanup_context()</code></p>
+                        </div>
+                    </div>
+                    <div class="step-arrow">↓</div>
+                    <div class="flow-step">
+                        <div class="step-number">3</div>
+                        <div class="step-content">
+                            <h4>构造适配器结构体</h4>
+                            <p>填充 <code>ReplayDialectAdapter</code> 结构体，设置name和三个函数指针</p>
+                        </div>
+                    </div>
+                    <div class="step-arrow">↓</div>
+                    <div class="flow-step">
+                        <div class="step-number">4</div>
+                        <div class="step-content">
+                            <h4>注册到框架</h4>
+                            <p>在插件初始化时调用 <code>RegisterReplayDialectAdapter(REPLAY_DIALECT_XXX, &amp;xxx_adapter)</code></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="code-block">
+<span class="comment">// 扩展示例：MySQL适配器</span>
+<span class="keyword">static</span> ReplayDialectAdapter mysql_adapter = {
+    .name             = <span class="string">"mysql"</span>,
+    .init_context     = mysql_replay_init_context,
+    .execute_ddl      = mysql_replay_execute_ddl,
+    .cleanup_context  = mysql_replay_cleanup_context,
+};
+
+<span class="keyword">static bool</span>
+<span class="func">mysql_replay_init_context</span>(ReplayExecContext *ctx)
+{
+    <span class="comment">// 设置MySQL dialect，初始化parser上下文</span>
+    <span class="comment">// 例如：设置兼容模式、字符集等</span>
+    <span class="keyword">return true</span>;
+}
+
+<span class="keyword">static bool</span>
+<span class="func">mysql_replay_execute_ddl</span>(ReplayExecContext *ctx, <span class="keyword">const char</span> *sql)
+{
+    <span class="comment">// 调用MySQL兼容层的parse和execute</span>
+    <span class="comment">// 例如：mysql_parse_query(sql) -> execute</span>
+    <span class="keyword">return true</span>;
+}
+
+<span class="comment">// 在插件初始化时注册</span>
+<span class="type">void</span> <span class="func">_PG_init</span>(<span class="type">void</span>)
+{
+    <span class="func">RegisterReplayDialectAdapter</span>(REPLAY_DIALECT_MYSQL, &amp;mysql_adapter);
+}</div>
+
+            <!-- Section: DDL Replication Platform -->
+            <h2>DDL Replication Platform</h2>
+            <div class="legend">
+                <div class="legend-item"><div class="legend-color pub"></div>DDL Producer Layer</div>
+                <div class="legend-item"><div class="legend-color trans"></div>Replication Transport Layer</div>
+                <div class="legend-item"><div class="legend-color sub"></div>DDL Replay Framework</div>
+                <div class="legend-item"><div class="legend-color adapter"></div>Adapter Framework</div>
+            </div>
+            <div class="flowchart">
+                <div class="layer">
+                    <div class="layer-box pub">
+                        <div class="layer-title">L1: DDL Producer Layer</div>
+                    </div>
+                    <div class="node-row">
+                        <div class="node">Capture Framework</div>
+                        <div class="node">Rule Filter Framework</div>
+                        <div class="node">Message Store<br><small>pg_publication_sync</small></div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="connector-line green"></div>
+                </div>
+
+                <div class="layer">
+                    <div class="layer-box trans">
+                        <div class="layer-title">L2: Replication Transport Layer</div>
+                    </div>
+                    <div class="node-row">
+                        <div class="node">Logical Decoding</div>
+                        <div class="node">pgoutput</div>
+                        <div class="node">Replication Protocol</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="connector-line purple"></div>
+                </div>
+
+                <div class="layer">
+                    <div class="layer-box sub">
+                        <div class="layer-title">L3: DDL Replay Framework</div>
+                    </div>
+                    <div class="node-row">
+                        <div class="node">Apply Worker</div>
+                        <div class="node">Rule Filter</div>
+                        <div class="node">Replay Engine</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="connector-line"></div>
+                </div>
+
+                <div class="layer">
+                    <div class="layer-box adapter">
+                        <div class="layer-title">L4: Adapter Framework</div>
+                    </div>
+                    <div class="adapter-grid">
+                        <div class="adapter-box pg">PostgreSQL</div>
+                        <div class="adapter-box babelfish">Babelfish</div>
+                        <div class="adapter-box oracle">Oracle</div>
+                        <div class="adapter-box mysql">MySQL</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="summary-box">
+                <div class="summary-title">平台亮点</div>
+                <ul class="summary-list">
+                    <li><strong>复用内核能力</strong>：利用 PostgreSQL 原生逻辑复制能力</li>
+                    <li><strong>高扩展</strong>：四层架构，每层可独立演进</li>
+                    <li><strong>多支持</strong>：同时支持 Babelfish/Oracle/MySQL</li>
+                    <li><strong>易集成</strong>：与现有复制体系无缝融合</li>
+                </ul>
+            </div>
+
+            <!-- Section: Dual Rule Filter -->
+            <h2>Dual Rule Filter Framework</h2>
+            <div class="flowchart">
+                <div class="h-flow">
+                    <div class="node">DDL SQL</div>
+                    <div class="h-arrow">→</div>
+                    <div class="node highlight">Publisher<br>Rule Filter</div>
+                    <div class="h-arrow">→</div>
+                    <div class="node">DDL Message</div>
+                    <div class="h-arrow">→</div>
+                    <div class="node highlight">Subscriber<br>Rule Filter</div>
+                    <div class="h-arrow">→</div>
+                    <div class="node">Replay Engine</div>
+                </div>
+            </div>
+
+            <div class="summary-box">
+                <div class="summary-title">双重过滤机制</div>
+                <ul class="summary-list">
+                    <li><strong>发布端过滤</strong>：控制哪些 DDL 需要同步，支持类型/Schema/正则/插件规则</li>
+                    <li><strong>订阅端过滤</strong>：安全校验、对象存在性检查、冲突检测</li>
+                    <li><strong>配置灵活</strong>：两端规则可独立配置，按需调整</li>
+                    <li><strong>调试方便</strong>：双重过滤便于追踪 DDL 流转全过程</li>
+                </ul>
+            </div>
+
+            <!-- Section: Full Flow -->
+            <h2>DDL Replication Platform</h2>
+            <div class="flowchart">
+                <div class="simple-flow">
+                    <div class="node">DDL SQL</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node highlight">Capture Framework</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node highlight">Rule Filter Framework</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node">DDL Message</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node">Replication Transport</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node highlight">Replay Framework</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node highlight">Adapter Framework</div>
+                    <div class="arrow-down">↓</div>
+                    <div class="node">Target Database</div>
+                </div>
+            </div>
+
+            <div class="highlight-box">
+                <div class="highlight-title">端到端流程</div>
+                <ul class="highlight-list">
+                    <li><strong>捕获</strong>：ProcessUtility 钩子捕获 DDL 语句</li>
+                    <li><strong>过滤</strong>：规则引擎过滤需要同步的 DDL</li>
+                    <li><strong>传输</strong>：逻辑复制协议将消息送达订阅端</li>
+                    <li><strong>回放</strong>：适配器按方言原样执行 DDL 到目标库</li>
+                </ul>
+            </div>
+        </div>
+
+        <footer>
+            DDL Synchronization Architecture Documentation
+        </footer>
+    </div>
+</body>
+</html>
