@@ -788,3 +788,76 @@ if os.path.isfile(post_meta_path):
             print('Appended busuanzi per-page PV at end of post-meta.ejs (no trailing </div>)')
 else:
     print('WARNING: post-meta.ejs not found — per-page PV not wired')
+
+
+# --- 8. Reading-time speed + unit '分钟' (instead of matery's default '分') ---
+# Two small edits:
+#   (a) languages/zh-CN.yml: change `Minutes: 分` to `Minutes: 分钟` so the
+#       unit shown after the minutes value reads naturally in Chinese
+#       (the source theme ships a single-character "分" which feels
+#       truncated).
+#   (b) layout/_partial/post-detail.ejs: pass `{cn: 450, en: 250}` to the
+#       `min2read()` helper call.  hexo-wordcount's defaults (cn=300,
+#       en=160) skew on the conservative side and inflate every post's
+#       reading time; bumping cn/en by ~50% gives a noticeably snappier
+#       estimate that still matches comfortable reading speed for tech
+#       articles (Chinese ≈ 450 字/min, English ≈ 250 wpm).
+# Both edits are idempotent via markers.
+
+# (a) Patch zh-CN.yml
+zh_lang_path = os.path.join(theme_dir, 'languages', 'zh-CN.yml')
+if os.path.isfile(zh_lang_path):
+    with open(zh_lang_path, encoding='utf-8') as f:
+        zhc = f.read()
+    if 'minutes-fullword-patched' in zhc:
+        print('zh-CN.yml: Minutes already patched to 分钟')
+    else:
+        # Match `Minutes: 分` with optional whitespace; tolerate both
+        # quoted and unquoted forms (Hexo's language YAML is unquoted).
+        new_zhc, n = re.subn(
+            r'^Minutes:\s*\S+',
+            'Minutes: 分钟    # minutes-fullword-patched',
+            zhc,
+            flags=re.MULTILINE,
+        )
+        if n and new_zhc != zhc:
+            with open(zh_lang_path, 'w', encoding='utf-8') as f:
+                f.write(new_zhc)
+            print(f'Renamed `Minutes: 分` to `Minutes: 分钟` in '
+                  f'{os.path.relpath(zh_lang_path, theme_dir)}')
+        else:
+            print(f'No `Minutes:` line found in '
+                  f'{os.path.relpath(zh_lang_path, theme_dir)} (skipping)')
+else:
+    print(f'WARNING: {zh_lang_path} not found — skipping Minutes unit fix')
+
+# (b) Patch post-detail.ejs
+post_detail_path = os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs')
+if os.path.isfile(post_detail_path):
+    with open(post_detail_path, encoding='utf-8') as f:
+        pdc = f.read()
+    if 'min2read-speed-patched' in pdc:
+        print('post-detail.ejs: min2read() speed already patched')
+    else:
+        # The line we want to replace is exactly:
+        #     <%= min2read(page.content) %> <%= __('Minutes') %>
+        # We pass {cn: 450, en: 250} to hexo-wordcount's helper for a
+        # tighter estimate and add an idempotency marker comment.
+        old_call = '<%= min2read(page.content) %>'
+        new_call = (
+            '<%# min2read-speed-patched: cn=450/en=250 (~1.5x faster '
+            'than hexo-wordcount defaults of 300/160) %>\n'
+            '<%= min2read(page.content, {cn: 450, en: 250}) %>'
+        )
+        if old_call in pdc:
+            pdc = pdc.replace(old_call, new_call, 1)
+            with open(post_detail_path, 'w', encoding='utf-8') as f:
+                f.write(pdc)
+            print(f'Replaced {old_call!r} with cn/en=450/250 in '
+                  f'{os.path.relpath(post_detail_path, theme_dir)}')
+        else:
+            print(f'WARN: did not find {old_call!r} in '
+                  f'{os.path.relpath(post_detail_path, theme_dir)} '
+                  f'(template may have changed upstream)')
+else:
+    print(f'WARNING: {post_detail_path} not found — min2read speed not patched')
