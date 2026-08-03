@@ -90,6 +90,76 @@ for src_name, dst_name in reward_pairs:
 if reward_copied:
     print(f'Published {len(reward_copied)} reward QR(s) into {os.path.relpath(REWARD_DIR, theme_dir)}: {", ".join(reward_copied)}')
 
+# --- 1.8. Override reward.ejs partial with a centered-modal UI ---
+# matery's stock reward.ejs is a hover-to-reveal popover that's anchored
+# under the trigger button — which makes the QR codes hard to reach on
+# mobile and easy to miss on desktop.  Replace it with a fixed-position,
+# centered modal that opens on click, contains both QRs at fixed 200x200
+# (object-fit: contain so the user's non-square scans never stretch),
+# and closes on backdrop click, X button, or Escape.
+reward_ejs = r"""<% if (theme.reward && theme.reward.enable) { %>
+<div class="reward-row">
+  <button type="button" class="reward-open-btn" data-reward-open aria-label="打赏">
+    <i class="fa fa-heart"></i>&nbsp;<span>打赏支持</span>
+  </button>
+</div>
+
+<div id="reward-modal" class="reward-modal" hidden role="dialog" aria-modal="true">
+  <div class="reward-modal-backdrop" data-reward-close></div>
+  <div class="reward-modal-content">
+    <button type="button" class="reward-modal-close" data-reward-close aria-label="关闭">
+      <i class="fa fa-times"></i>
+    </button>
+    <h3 class="reward-modal-title"><%= theme.reward.title || '您的支持是我持续更新的最大动力' %></h3>
+    <div class="reward-modal-qrs">
+      <% if (theme.reward.wechat) { %>
+      <div class="reward-modal-qr">
+        <img src="<%= theme.reward.wechat %>" alt="微信支付">
+        <p><i class="fab fa-weixin"></i>&nbsp;微信支付</p>
+      </div>
+      <% } %>
+      <% if (theme.reward.alipay) { %>
+      <div class="reward-modal-qr">
+        <img src="<%= theme.reward.alipay %>" alt="支付宝">
+        <p><i class="fab fa-alipay"></i>&nbsp;支付宝</p>
+      </div>
+      <% } %>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var modal = document.getElementById('reward-modal');
+  if (!modal) return;
+  function open(){
+    modal.removeAttribute('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    modal.setAttribute('hidden', '');
+    document.body.style.overflow = '';
+  }
+  document.querySelectorAll('[data-reward-open]').forEach(function(b){
+    b.addEventListener('click', open);
+  });
+  modal.addEventListener('click', function(e){
+    if (e.target && e.target.hasAttribute && e.target.hasAttribute('data-reward-close')) {
+      close();
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && !modal.hasAttribute('hidden')) close();
+  });
+})();
+</script>
+<% } %>"""
+
+reward_ejs_path = os.path.join(theme_dir, 'layout', '_partial', 'reward.ejs')
+with open(reward_ejs_path, 'w', encoding='utf-8') as f:
+    f.write(reward_ejs)
+print(f'Wrote {os.path.relpath(reward_ejs_path, theme_dir)} (centered-modal reward UI)')
+
 # --- 2. Inject prism.js CSS + Mermaid.js ---
 inject_css = """<meta property="og:title" content="<%= page.title || config.title %>">
 <meta name="theme-color" content="#009688">
@@ -420,6 +490,22 @@ a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2p
 .hot-sidebar .hot-views{font-size:12px;color:#ee5a24;margin-left:auto;display:flex;align-items:center;gap:2px}
 .hot-sidebar .hot-views i{font-size:10px}
 @media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
+
+/* --- Reward modal: centered fixed-position popup with 200x200 QRs --- */
+.reward-row{text-align:center;margin:30px 0 10px}
+.reward-open-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 22px;background:linear-gradient(135deg,#ff6b6b,#ee5a52);color:#fff;border:none;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 2px 8px rgba(238,90,82,.35)}
+.reward-open-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(238,90,82,.5)}
+.reward-modal{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center}
+.reward-modal[hidden]{display:none}
+.reward-modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.reward-modal-content{position:relative;background:#fff;border-radius:12px;padding:28px 36px 24px;max-width:92vw;max-height:90vh;box-shadow:0 20px 60px rgba(0,0,0,.25);text-align:center}
+.reward-modal-close{position:absolute;top:10px;right:12px;background:transparent;border:none;font-size:18px;color:#888;cursor:pointer;padding:4px 8px;line-height:1}
+.reward-modal-close:hover{color:#333}
+.reward-modal-title{margin:0 0 18px;font-size:16px;font-weight:600;color:#333}
+.reward-modal-qrs{display:flex;gap:24px;justify-content:center;flex-wrap:wrap}
+.reward-modal-qr p{margin:8px 0 0;font-size:13px;color:#666}
+.reward-modal-qr img{display:block;width:200px;height:200px;max-width:45vw;max-height:45vw;object-fit:contain;border:1px solid #eee;border-radius:6px;background:#fff}
+@media(prefers-color-scheme:dark){.reward-modal-content{background:#1f1f1f}.reward-modal-title{color:#eee}.reward-modal-qr p{color:#bbb}.reward-modal-qr img{background:#fff;border-color:#444}.reward-modal-close{color:#aaa}.reward-modal-close:hover{color:#fff}}
 </style>"""
 
 custom_js = """<script id="custom-blog-script">
