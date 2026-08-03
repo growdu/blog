@@ -600,53 +600,13 @@ stats_block = r"""<% if (theme.wordcount && theme.wordcount.enable) { %>
 <br>
 &nbsp;<i class="fas fa-chart-area"></i>&nbsp;站点总字数:&nbsp;<span class="white-color"><%= totalcount(site) %></span>&nbsp;字
 <% } %>
+<%# GoatCounter SaaS (growdu.goatcounter.com) does not expose the JSON
+    counter endpoint across origins — every fetch hits CORS + 403, and
+    the SVG image counter is also blocked.  We therefore only embed the
+    tracker script (which silently records pageviews) and do NOT show
+    site-wide PV/UV numbers on the page.  Counts are visible in the
+    GoatCounter dashboard. %>
 <% if (theme.siteCounter && theme.siteCounter.enable && theme.goatcounter && theme.goatcounter.code) { %>
-<span id="site-counter-pv">&nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;总访问量:&nbsp;<span id="goatcounter-site-pv" class="white-color">…</span>&nbsp;次</span>
-<span id="site-counter-uv">&nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;总访问人数:&nbsp;<span id="goatcounter-site-uv" class="white-color">…</span>&nbsp;人</span>
-<script>
-// GoatCounter: prefer JSON endpoint (controllable typography); fall back
-// to the SVG image counter when the API path returns 404 (e.g. before any
-// hits are recorded for that namespace, or on private/self-hosted
-// instances that don't expose the JSON API).
-(function(){
-  var CODE = '<%= theme.goatcounter.code %>';
-  function gcImage(el, path, unique){
-    var u = 'https://' + CODE + '.goatcounter.com/counter/'
-          + encodeURIComponent(path) + '.svg'
-          + (unique ? '?unique' : '');
-    el.innerHTML = '<img src="' + u + '" alt="counter" '
-      + 'style="display:inline;vertical-align:middle;height:1em">';
-  }
-  function gcFill(id, path, unique){
-    var el = document.getElementById(id);
-    if (!el) return;
-    fetch('https://' + CODE + '.goatcounter.com/counter/'
-          + encodeURIComponent(path) + '.json', {cache: 'no-store'})
-      .then(function(r){ return r.ok ? r.json() : null; })
-      .then(function(d){
-        if (d && typeof d.count !== 'undefined') {
-          el.textContent = unique ? (d.count_unique || '—') : d.count;
-        } else {
-          gcImage(el, path, unique);
-        }
-      })
-      .catch(function(){ gcImage(el, path, unique); });
-  }
-  gcFill('goatcounter-site-pv', '', false);
-  gcFill('goatcounter-site-uv', '', true);
-  // Absolute timeout: if neither JSON nor image succeeds within 5s
-  // (offline / blocked / unconfigured), show em-dashes so the footer
-  // never displays an unresolved ellipsis.
-  setTimeout(function(){
-    ['goatcounter-site-pv','goatcounter-site-uv'].forEach(function(id){
-      var el = document.getElementById(id);
-      if (el && (el.textContent === '…' || el.textContent === '')) {
-        el.textContent = '—';
-      }
-    });
-  }, 5000);
-})();
-</script>
 <script src="//gc.zgo.at/count.js" data-goatcounter="https://<%= theme.goatcounter.code %>.goatcounter.com/count" async></script>
 <% } %>"""
 
@@ -716,56 +676,17 @@ if busuanzi_removed:
 #   (b) Inject a single <%- partial('_partial/post-wordcount') %> line
 #       into post-detail.ejs right after the post-meta include.
 # Both edits are idempotent via a 'post-wordcount-ejs' marker.
-post_wordcount_ejs = r"""<% if ((page.layout === 'post') &&
-     ((theme.postInfo && (theme.postInfo.wordCount || theme.postInfo.min2read)) ||
-      (theme.siteCounter && theme.siteCounter.enable))) { %>
+post_wordcount_ejs = r"""<% if (page.layout === 'post' &&
+     theme.postInfo && (theme.postInfo.wordCount || theme.postInfo.min2read)) { %>
 <div class="post-wordcount-info">
-  <% if (theme.postInfo && theme.postInfo.wordCount) { %>
+  <% if (theme.postInfo.wordCount) { %>
     <i class="fa fa-file-word-o"></i>&nbsp;字数统计:&nbsp;<span class="white-color"><%= wordcount(page.content) %></span>&nbsp;字
   <% } %>
-  <% if (theme.postInfo && theme.postInfo.min2read) { %>
+  <% if (theme.postInfo.min2read) { %>
     <% if (theme.postInfo.wordCount) { %>&nbsp;|&nbsp;<% } %>
     <i class="fa fa-clock-o"></i>&nbsp;阅读时长:&nbsp;<span class="white-color"><%= min2read(page.content) %></span>&nbsp;分钟
   <% } %>
-  <% if (theme.siteCounter && theme.siteCounter.enable && theme.goatcounter && theme.goatcounter.code) { %>
-    <% if (theme.postInfo.wordCount || theme.postInfo.min2read) { %>&nbsp;|&nbsp;<% } %>
-    <i class="fa fa-eye"></i>&nbsp;阅读次数:&nbsp;<span id="goatcounter-page-pv" class="white-color">…</span>
-  <% } %>
 </div>
-<% if (theme.siteCounter && theme.siteCounter.enable && theme.goatcounter && theme.goatcounter.code) { %>
-<script>
-// GoatCounter per-page PV: same JSON-prefer / SVG-image-fallback
-// pattern as the site-level counter in section 6, but for the current
-// post's path.
-(function(){
-  var CODE = '<%= theme.goatcounter.code %>';
-  function gcImage(el, path){
-    el.innerHTML = '<img src="https://' + CODE + '.goatcounter.com/counter/'
-      + encodeURIComponent(path) + '.svg" alt="counter" '
-      + 'style="display:inline;vertical-align:middle;height:1em">';
-  }
-  var el = document.getElementById('goatcounter-page-pv');
-  if (!el) return;
-  var path = location.pathname;
-  fetch('https://' + CODE + '.goatcounter.com/counter/'
-        + encodeURIComponent(path) + '.json', {cache: 'no-store'})
-    .then(function(r){ return r.ok ? r.json() : null; })
-    .then(function(d){
-      if (d && typeof d.count !== 'undefined') {
-        el.textContent = d.count;
-      } else {
-        gcImage(el, path);
-      }
-    })
-    .catch(function(){ gcImage(el, path); });
-  setTimeout(function(){
-    if (el && (el.textContent === '…' || el.textContent === '')) {
-      el.textContent = '—';
-    }
-  }, 5000);
-})();
-</script>
-<% } %>
 <% } %>"""
 
 post_wordcount_partial = os.path.join(theme_dir, 'layout', '_partial', 'post-wordcount.ejs')
