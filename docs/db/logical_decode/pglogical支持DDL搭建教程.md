@@ -326,7 +326,6 @@ postgres=# \d
  Schema |  Name   | Type  | Owner 
 --------+---------+-------+-------
  public | test_lo | table | dys
-```text
 可以看到源库和目标库都有了test_lo表。
 
 重新生成测试数据。
@@ -356,9 +355,7 @@ postgres=# select * from test_lo;
 ------+-------+----------------------------
  1001 | check | 2026-03-09 03:28:47.696612
 (1 row)
-```text
 可以看到新插入的数据已经同步。
-```text
 # reference
 
 1.https://www.cnblogs.com/lottu/p/10972773.html
