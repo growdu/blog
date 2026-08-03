@@ -168,6 +168,95 @@ def process(filepath, cats):
     with open(out, 'w', encoding='utf-8') as f:
         f.write(fm_out + body_out)
     return True
+def process_html(filepath, cats):
+    """Sync a .html (or .htm) file from docs/ into source/_posts/.
+
+    Source files in docs/<section>/<name>.html become Hexo posts at
+    source/_posts/<section>/<name>.html with front matter that has
+    `layout: false` so the entire HTML body is published as a
+    standalone page (matching the user's "本来就是 html 格式"
+    expectation — the document is already formatted, just publish
+    it).
+
+    Title extraction:
+        1. <title>...</title> at the top of the file (case-insensitive).
+        2. Stripping any inner HTML tags from the title.
+        3. Fallback to filename (via fallback_title()).
+    The <title> tag is stripped from the body after extraction so
+    the rendered page does not carry it twice.
+
+    Date: same git_date() walk as markdown posts.
+
+    Images in the body are NOT rewritten — pass-through rendering
+    keeps the HTML verbatim. Users who want images should reference
+    them by absolute path (e.g. /blog/images/foo.png) or external URL,
+    or place them next to the HTML file and reference them relatively.
+    """
+    rel = os.path.relpath(filepath, DOCS)
+    fdir = os.path.dirname(rel)
+    base = os.path.basename(filepath)
+
+    if base in ('_index.html', '_index.htm'):
+        return False
+
+    with open(filepath, encoding='utf-8') as f:
+        html_text = f.read()
+
+    # title extraction from <title> tag (case-insensitive), with
+    # optional inner HTML stripped.
+    title_m = re.search(
+        '<title[^>]*>(.*?)</title>',
+        html_text, re.IGNORECASE | re.DOTALL,
+    )
+    title = None
+    if title_m:
+        inner = title_m.group(1)
+        inner = re.sub(r'<[^>]+>', '', inner).strip()
+        if inner:
+            title = inner
+    if not title:
+        title = fallback_title(filepath)
+
+    date = git_date(filepath)
+    section = rel.split(os.sep)[0] if os.sep in rel else ''
+    cat = cats.get(section, section or '随笔')
+
+    top_val = FEATURED_POSTS.get(rel)
+    top_line = f'\ntop: {top_val}' if top_val else ''
+    fm_out = (
+        f'---\n'
+        f'title: "{yaml_escape(title)}"\n'
+        f'date: {date}\n'
+        f'author: growdu{top_line}\n'
+        f'categories:\n'
+        f'  - {cat}\n'
+        f'tags:\n'
+        f'  - {cat}\n'
+        f'layout: false\n'
+        f'---\n'
+    )
+
+    body_out = html_text
+    if title_m:
+        body_out = re.sub(
+            r'<title[^>]*>.*?</title>',
+            '',
+            body_out,
+            count=1,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+
+    if base in ('index.html', 'index.htm'):
+        name = os.path.basename(os.path.dirname(filepath))
+        parent = os.path.dirname(fdir)
+        out = os.path.join(POSTS, parent, f'{name}.html')
+    else:
+        out = os.path.join(POSTS, fdir, base)
+
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, 'w', encoding='utf-8') as f:
+        f.write(fm_out + body_out)
+    return True
 
 
 def create_theme_pages():
@@ -323,17 +412,23 @@ def main():
     copy_images()
     print('Images copied')
 
-    n = 0
+    n_md = 0
+    n_html = 0
     for root, _, files in os.walk(DOCS):
         for f in sorted(files):
-            if f.endswith('.md'):
-                fp = os.path.join(root, f)
-                try:
+            ext = os.path.splitext(f)[1].lower()
+            fp = os.path.join(root, f)
+            try:
+                if ext == '.md':
                     if process(fp, cats):
-                        n += 1
-                except Exception as e:
-                    print(f'ERROR {fp}: {e}', file=sys.stderr)
-    print(f'Posts: {n}')
+                        n_md += 1
+                elif ext in ('.html', '.htm'):
+                    if process_html(fp, cats):
+                        n_html += 1
+            except Exception as e:
+                print(f'ERROR {fp}: {e}', file=sys.stderr)
+    print(f'Markdown posts: {n_md}')
+    print(f'HTML docs:      {n_html}')
 
 
     # robots.txt for SEO
