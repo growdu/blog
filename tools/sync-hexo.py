@@ -223,19 +223,11 @@ def process_html(filepath, cats):
 
     top_val = FEATURED_POSTS.get(rel)
     top_line = f'\ntop: {top_val}' if top_val else ''
-    # Pin a stable slug that disambiguates from any markdown twin in the
-    # same section.  hexo would otherwise lowercase the title and slugify
-    # both `ddl同步架构.md` (title "ddl同步架构") and `ddl同步架构.html`
-    # (title "DDL同步架构") to the same `ddl同步架构` slug, causing the
-    # HTML file to overwrite the markdown file's permalink.  Suffixing
-    # with -html makes the URL distinct (and it stays human-readable).
-    slug = f'{title}-html'
     fm_out = (
         f'---\n'
         f'title: "{yaml_escape(title)}"\n'
         f'date: {date}\n'
         f'author: growdu{top_line}\n'
-        f'slug: "{yaml_escape(slug)}"\n'
         f'categories:\n'
         f'  - {cat}\n'
         f'tags:\n'
@@ -254,12 +246,25 @@ def process_html(filepath, cats):
             flags=re.IGNORECASE | re.DOTALL,
         )
 
+    # Rename the file (not the front matter title) so hexo\'s filename-
+    # derived slug carries a -html suffix.  Hexo 7\'s post processor
+    # sets `data.slug = info.title` from the filename, OVERWRITING any
+    # `slug:` value set in the front matter (see node_modules/hexo/dist/
+    # plugins/processor/post.js line 49: `data.slug = info.title;`).
+    # The suffix keeps HTML posts out of any markdown twin\'s permalink
+    # without relying on a front-matter field that hexo silently ignores.
+    out_base, out_ext = os.path.splitext(base)
+    if out_base.endswith('-html'):
+        out_basename = base
+    else:
+        out_basename = f'{out_base}-html{out_ext}'
+
     if base in ('index.html', 'index.htm'):
         name = os.path.basename(os.path.dirname(filepath))
         parent = os.path.dirname(fdir)
-        out = os.path.join(POSTS, parent, f'{name}.html')
+        out = os.path.join(POSTS, parent, out_basename)
     else:
-        out = os.path.join(POSTS, fdir, base)
+        out = os.path.join(POSTS, fdir, out_basename)
 
     os.makedirs(os.path.dirname(out), exist_ok=True)
     with open(out, 'w', encoding='utf-8') as f:
