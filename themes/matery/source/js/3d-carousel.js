@@ -1,6 +1,6 @@
 /**
- * 3D 旋转卡片轮播
- * 将文章卡片排列成 3D 圆形，支持自动旋转、拖拽、导航
+ * 3D 封面流卡片轮播
+ * 只显示 5 张卡片（当前 + 左右各 2），中间突出，两侧逐渐淡化缩小
  */
 $(function() {
     $('.carousel-3d-wrapper').each(function() {
@@ -18,65 +18,59 @@ function initCarousel($wrapper) {
 
     var total = $cards.length;
     if (total < 2) {
-        // 只有一张卡片时直接显示，不需要轮播
-        $cards.addClass('active');
+        $cards.addClass('pos-0');
         $wrapper.find('.carousel-3d-nav, .carousel-3d-dots').hide();
         return;
     }
 
     var current = 0;
-    var angleStep = 360 / total;
-    var radius = 380;
     var autoTimer = null;
     var isDragging = false;
     var startX = 0;
-    var startAngle = 0;
+    var startIdx = 0;
     var autoInterval = 4000;
+    var visibleRange = 2; // 左右各显示 2 张
 
-    // 响应式半径
-    function updateRadius() {
-        var w = $(window).width();
-        if (w < 480) radius = 220;
-        else if (w < 768) radius = 280;
-        else radius = 380;
+    // 计算每张卡相对于当前索引的位置偏移
+    function getPositionOffset(cardIdx) {
+        var diff = cardIdx - current;
+        // 环形处理：让 diff 在 [-total/2, total/2] 范围内
+        if (diff > total / 2) diff -= total;
+        if (diff < -total / 2) diff += total;
+        return diff;
     }
 
-    // 排列卡片
-    function arrangeCards() {
-        updateRadius();
+    // 更新所有卡片的 position class
+    function updatePositions() {
         $cards.each(function(i) {
-            var angle = angleStep * i;
-            $(this).css('transform', 'rotateY(' + angle + 'deg) translateZ(' + radius + 'px)');
+            var offset = getPositionOffset(i);
+            var cls;
+            if (Math.abs(offset) <= visibleRange) {
+                cls = 'pos-' + offset;
+            } else {
+                cls = 'pos-hidden';
+            }
+            $(this).attr('class', 'carousel-3d-card ' + cls);
         });
     }
 
     // 旋转到指定索引
     function rotateTo(index) {
         current = ((index % total) + total) % total;
-        var angle = -angleStep * current;
-        $container.css('transform', 'rotateY(' + angle + 'deg)');
-
-        $cards.removeClass('active');
-        $cards.eq(current).addClass('active');
+        updatePositions();
 
         $dots.find('.carousel-3d-dot').removeClass('active');
         $dots.find('.carousel-3d-dot').eq(current).addClass('active');
     }
 
-    // 下一张
-    function next() {
-        rotateTo(current + 1);
-    }
+    function next() { rotateTo(current + 1); }
+    function prev() { rotateTo(current - 1); }
 
-    // 上一张
-    function prev() {
-        rotateTo(current - 1);
-    }
-
-    // 自动播放
     function startAuto() {
         stopAuto();
-        autoTimer = setInterval(next, autoInterval);
+        if (total > 1) {
+            autoTimer = setInterval(next, autoInterval);
+        }
     }
 
     function stopAuto() {
@@ -93,27 +87,16 @@ function initCarousel($wrapper) {
     }
 
     // 初始化
-    arrangeCards();
-    rotateTo(0);
+    updatePositions();
     startAuto();
 
     // 导航按钮
-    $prev.on('click', function() {
-        prev();
-        stopAuto();
-        startAuto();
-    });
+    $prev.on('click', function() { prev(); stopAuto(); startAuto(); });
+    $next.on('click', function() { next(); stopAuto(); startAuto(); });
 
-    $next.on('click', function() {
-        next();
-        stopAuto();
-        startAuto();
-    });
-
-    // 指示点点击
+    // 指示点
     $dots.on('click', '.carousel-3d-dot', function() {
-        var idx = $(this).data('index');
-        rotateTo(idx);
+        rotateTo(parseInt($(this).data('index')));
         stopAuto();
         startAuto();
     });
@@ -121,15 +104,8 @@ function initCarousel($wrapper) {
     // 键盘导航
     $(document).on('keydown.carousel3d', function(e) {
         if (!$wrapper.is(':visible')) return;
-        if (e.key === 'ArrowLeft') {
-            prev();
-            stopAuto();
-            startAuto();
-        } else if (e.key === 'ArrowRight') {
-            next();
-            stopAuto();
-            startAuto();
-        }
+        if (e.key === 'ArrowLeft')  { prev(); stopAuto(); startAuto(); }
+        if (e.key === 'ArrowRight') { next(); stopAuto(); startAuto(); }
     });
 
     // 鼠标拖拽
@@ -138,75 +114,52 @@ function initCarousel($wrapper) {
         stopAuto();
         var ev = e.type === 'touchstart' ? e.originalEvent.touches[0] : e;
         startX = ev.clientX;
-        startAngle = current;
-        $container.css('transition', 'none');
+        startIdx = current;
     });
 
     $(document).on('mousemove touchmove', function(e) {
         if (!isDragging) return;
         var ev = e.type === 'touchmove' ? e.originalEvent.touches[0] : e;
         var dx = ev.clientX - startX;
-        var sensitivity = total > 6 ? 200 : 300;
+        var sensitivity = 180;
         var offset = Math.round(dx / sensitivity);
-        var newIndex = startAngle + offset;
-        var angle = -angleStep * newIndex;
-        $container.css('transform', 'rotateY(' + angle + 'deg)');
+        var newIdx = ((startIdx - offset) % total + total) % total;
+        if (newIdx !== current) {
+            rotateTo(newIdx);
+        }
     });
 
     $(document).on('mouseup touchend', function() {
         if (!isDragging) return;
         isDragging = false;
-
-        var currentAngle = parseFloat($container.css('transform').split(',')[4]) || 0;
-        // 从矩阵中提取角度
-        var style = $container.attr('style') || '';
-        var match = style.match(/rotateY\(([-\d.]+)deg\)/);
-        if (match) {
-            currentAngle = parseFloat(match[1]);
-        }
-
-        var rawIndex = -currentAngle / angleStep;
-        var snapIndex = Math.round(rawIndex);
-        $container.css('transition', 'transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)');
-        rotateTo(snapIndex);
         startAuto();
     });
 
-    // 鼠标悬停暂停
-    $wrapper.on('mouseenter', function() {
-        stopAuto();
-    });
-
+    // 悬停暂停
+    $wrapper.on('mouseenter', stopAuto);
     $wrapper.on('mouseleave', function() {
-        if (!isDragging) {
-            startAuto();
-        }
+        if (!isDragging) startAuto();
     });
 
-    // 窗口大小改变时重新排列
-    var resizeTimer;
+    // 窗口大小变化
     $(window).on('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function() {
-            arrangeCards();
-            rotateTo(current);
-        }, 200);
+        updatePositions();
     });
 
-    // 卡片点击跳转
+    // 卡片点击：中间卡片直接跳转，侧边卡片先旋转到中间
     $cards.on('click', function(e) {
         var $link = $(this).find('a.card-link');
-        if ($link.length) {
-            // 如果点击的是当前激活的卡片，直接跳转
-            if ($(this).hasClass('active')) {
-                window.location.href = $link.attr('href');
-            } else {
-                // 否则先旋转到该卡片
-                var idx = $cards.index(this);
-                rotateTo(idx);
-                stopAuto();
-                startAuto();
-            }
+        if (!$link.length) return;
+
+        var offset = getPositionOffset($cards.index(this));
+        if (offset === 0) {
+            // 当前激活卡片，直接跳转
+            window.location.href = $link.attr('href');
+        } else {
+            // 旋转到该卡片
+            rotateTo(($cards.index(this) + total) % total);
+            stopAuto();
+            startAuto();
         }
     });
 }
