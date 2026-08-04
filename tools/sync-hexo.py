@@ -172,11 +172,15 @@ def process_html(filepath, cats):
     """Sync a .html (or .htm) file from docs/ into source/_posts/.
 
     Source files in docs/<section>/<name>.html become Hexo posts at
-    source/_posts/<section>/<name>.html with front matter that has
-    `layout: false` so the entire HTML body is published as a
-    standalone page (matching the user's "本来就是 html 格式"
-    expectation — the document is already formatted, just publish
-    it).
+    source/_posts/<section>/<name>.html with no `layout` field, so
+    they inherit `_config.yml`'s `default_layout: post`. The
+    html renderer (scripts/html-renderer.js) strips the surrounding
+    <html>/<head>/<body> wrapper; the resulting body lands in
+    matery's `post.ejs` article slot, giving HTML posts the same
+    header/footer/reward/comments/related/prev-next chrome as
+    markdown posts — matching the user's "本来就是 html 格式"
+    expectation: keep the rich HTML body, but surface it with the
+    blog's normal chrome.
 
     Title extraction:
         1. <title>...</title> at the top of the file (case-insensitive).
@@ -232,7 +236,6 @@ def process_html(filepath, cats):
         f'  - {cat}\n'
         f'tags:\n'
         f'  - {cat}\n'
-        f'layout: false\n'
         f'---\n'
     )
 

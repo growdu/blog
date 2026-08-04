@@ -1,29 +1,37 @@
 'use strict';
 
-// Pass-through renderer for .html and .htm files in source/_posts/.
+// HTML renderer for .html and .htm files in source/_posts/.
 //
-// Hexo's default renderer registry has no entry for the .html extension,
-// so a bare HTML doc in source/_posts/ would error during generation.
-// We register a synchronous renderer that returns the file body verbatim
-// — no transformation, no wrapping.
+// Strips the outer <html>/<head>/<body> wrapper from self-contained
+// HTML documents and returns only the <style> blocks + <body> content.
+// This lets Hexo wrap the result in matery's post layout, which adds
+// header, footer, reward, comments, related posts, and prev/next nav.
 //
-// Layout behaviour:
-//   * With `layout: false` in front matter (set by sync-hexo.py for HTML
-//     docs so they publish as standalone pages), the rendered HTML body
-//     is written directly to public/<slug>/index.html — useful for
-//     self-contained HTML pages.
-//   * Without `layout: false`, Hexo wraps the body in matery's post
-//     layout (article chrome + footer). Useful if you want HTML
-//     fragments inside a normal post.
+// If the input doesn't have a <body> tag, the entire content is
+// returned as-is (defensive fallback).
 //
-// Either way, scripts/mermaid.js and any other `before_post_render`
-// filters in this folder still run on every post, so HTML content is
-// processed by them just like markdown.
+// scripts/mermaid.js and other before_post_render filters still run
+// on every post, so HTML content is processed by them just like
+// markdown.
+
+const STYLE_RE = /<style[\s\S]*?<\/style>/gi;
+const BODY_RE  = /<body[^>]*>([\s\S]*)<\/body>/i;
+
+function extractBodyAndStyles(html) {
+  const styles = [];
+  let m;
+  while ((m = STYLE_RE.exec(html)) !== null) {
+    styles.push(m[0]);
+  }
+  const bodyMatch = BODY_RE.exec(html);
+  const body = bodyMatch ? bodyMatch[1].trim() : html;
+  return styles.join('\n') + '\n' + body;
+}
 
 hexo.extend.renderer.register('html', 'html', function (data) {
-  return data.text;
+  return extractBodyAndStyles(data.text);
 }, true);
 
 hexo.extend.renderer.register('htm', 'html', function (data) {
-  return data.text;
+  return extractBodyAndStyles(data.text);
 }, true);
