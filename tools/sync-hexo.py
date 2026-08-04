@@ -223,11 +223,19 @@ def process_html(filepath, cats):
 
     top_val = FEATURED_POSTS.get(rel)
     top_line = f'\ntop: {top_val}' if top_val else ''
+    # Pin a stable slug that disambiguates from any markdown twin in the
+    # same section.  hexo would otherwise lowercase the title and slugify
+    # both `ddl同步架构.md` (title "ddl同步架构") and `ddl同步架构.html`
+    # (title "DDL同步架构") to the same `ddl同步架构` slug, causing the
+    # HTML file to overwrite the markdown file's permalink.  Suffixing
+    # with -html makes the URL distinct (and it stays human-readable).
+    slug = f'{title}-html'
     fm_out = (
         f'---\n'
         f'title: "{yaml_escape(title)}"\n'
         f'date: {date}\n'
         f'author: growdu{top_line}\n'
+        f'slug: "{yaml_escape(slug)}"\n'
         f'categories:\n'
         f'  - {cat}\n'
         f'tags:\n'
