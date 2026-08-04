@@ -1,6 +1,6 @@
 # Build output
 public/
-source/
+/source/
 
 # Dependencies
 node_modules/
