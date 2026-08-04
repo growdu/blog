@@ -42,12 +42,6 @@ jobs:
         run: npm install
       - name: Security audit
         run: npm audit --audit-level=high || true
-      - name: Install matery theme
-        run: |
-          mkdir -p themes
-          git clone --depth 1 https://github.com/blinkfox/hexo-theme-matery.git themes/matery
-          python3 tools/patch-theme.py
-          python3 tools/localize-cdn.py
       - name: Sync content to Hexo
         run: python3 tools/sync-hexo.py
       - name: Copy vendor assets

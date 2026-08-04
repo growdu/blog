@@ -1,0 +1,34 @@
+<%
+  var related = [];
+  var pageCats = {};
+  if (page.categories && page.categories.data) {
+    page.categories.data.forEach(function(c) { pageCats[c.name] = true; });
+  }
+  if (Object.keys(pageCats).length > 0) {
+    site.posts.data.forEach(function(p) {
+      if (p.path === page.path) return;
+      if (p.categories && p.categories.data) {
+        for (var i = 0; i < p.categories.data.length; i++) {
+          if (pageCats[p.categories.data[i].name]) { related.push(p); break; }
+        }
+      }
+    });
+    related.sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+    related = related.slice(0, 6);
+  }
+%>
+<% if (related.length > 0) { %>
+<div class="card related-posts-card" data-aos="fade-up">
+  <div class="card-content">
+    <div class="related-posts-title"><i class="fas fa-link"></i> 相关文章</div>
+    <div class="related-posts-grid">
+      <% related.forEach(function(post) { %>
+      <a href="<%- url_for(post.path) %>" class="related-post-item">
+        <span class="related-post-name"><%= post.title %></span>
+        <span class="related-post-date"><%- date(post.date, 'YYYY-MM-DD') %></span>
+      </a>
+      <% }); %>
+    </div>
+  </div>
+</div>
+<% } %>

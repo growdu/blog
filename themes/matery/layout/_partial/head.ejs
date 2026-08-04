@@ -1,0 +1,258 @@
+<%
+    var title = page.title;
+
+    // tags, categories, about pages title
+    if (title == 'tags') {
+        title = __('tags');
+    } else if (title == 'categories') {
+        title = __('categories');
+    } else if (title == 'about') {
+        title = __('about');
+    }
+
+    // archives, category, tag pages title
+    if (is_archive()) {
+        title = __('archives');
+        if (is_month()) {
+            title += ': ' + page.year + '/' + page.month;
+        } else if (is_year()) {
+            title += ': ' + page.year;
+        }
+    } else if (is_category()) {
+        title = __('category') + ': ' + page.category;
+    } else if (is_tag()) {
+        title = __('tag') + ': ' + page.tag;
+    }
+
+    // final page title.
+    var pageTitle = title ? title + ' | ' + config.title : config.title;
+
+    // keywords.
+    var keyWords = config.keywords ? config.keywords : config.title;
+    if (page.keywords) {
+        keyWords = page.keywords;
+    } else {
+    	keyWords = title ? title  + ', ' + keyWords : keyWords;
+    }
+
+    // description.
+    var description = config.description ? config.description : config.title;
+    if (page.summary) {
+        description = page.summary;
+    } else if (page.hasOwnProperty('__post') && page.__post) {
+        description = strip_html(page.content).substring(0, 120);
+    }
+
+    let iconType = 'image/png'
+    let faviconExt = theme.favicon.substr(theme.favicon.lastIndexOf('.') + 1, theme.favicon.length)
+    if (faviconExt === 'png') {
+        iconType = 'image/png'
+    } else if (faviconExt === 'svg') {
+        iconType = 'image/svg+xml'
+    } else if (faviconExt === 'gif') {
+        iconType = 'image/gif'
+    } else if (faviconExt === 'jpeg') {
+        iconType = 'image/jpeg'
+    } else if (faviconExt === 'jpg') {
+        iconType = 'image/jpeg'
+    } else if (faviconExt === 'ico') {
+        iconType = 'image/x-icon, image/vnd.microsoft.icon'
+    }
+%>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="keywords" content="<%= keyWords %>">
+    <meta name="description" content="<%= description %>">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="renderer" content="webkit|ie-stand|ie-comp">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <%- partial('_partial/google-analytics') %>
+    <title><%= pageTitle %></title>
+    <link rel="icon" type="<%= iconType %>" href="<%- theme.jsDelivr.url %><%- url_for(theme.favicon) %>">
+    <%- partial('_partial/main-style') %>
+
+    <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.jquery) %>"></script>
+
+<meta property="og:title" content="<%= page.title || config.title %>">
+<meta name="theme-color" content="#009688">
+<link rel="preconnect" href="https://vercount.one">
+<link rel="dns-prefetch" href="https://vercount.one">
+<link rel="preconnect" href="https://api.github.com">
+<link rel="dns-prefetch" href="https://api.github.com">
+<meta property="og:site_name" content="<%= config.title %>">
+<meta property="og:type" content="<%= page.layout === 'post' ? 'article' : 'website' %>">
+<meta property="og:url" content="<%- config.url %><%- url_for(page.path) %>">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:description" content="<%= (page.description || config.description || '').replace(/"/g, '&quot;') %>">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="<%= page.title || config.title %>">
+<meta name="twitter:description" content="<%= (page.description || config.description || '').replace(/"/g, '&quot;') %>">
+<% if (page.layout === 'post') { %>
+<meta property="article:author" content="<%= config.author %>">
+<meta property="article:published_time" content="<%- date(page.date, 'YYYY-MM-DD') %>">
+<% if (page.categories && page.categories.data && page.categories.data.length > 0) { %>
+<meta property="article:section" content="<%= page.categories.data[0].name %>">
+<% } %>
+<% if (page.tags && page.tags.data) { %>
+<% page.tags.data.forEach(function(tag) { %>
+<meta property="article:tag" content="<%= tag.name %>">
+<% }); %>
+<% } %>
+<% } %>
+<meta property="og:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
+<meta name="twitter:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
+<link rel="manifest" href="/blog/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/blog/favicon.svg">
+<link rel="canonical" href="<%- config.url %><%- url_for(page.path) %>">
+<% if (page.layout === 'post') { %>
+<% var _cat = (page.categories && page.categories.data && page.categories.data.length > 0) ? page.categories.data[0].name : ''; %>
+<% var _tags = (page.tags && page.tags.data) ? page.tags.data.map(function(t) { return t.name; }).join(', ') : ''; %>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"<%= page.title %>","datePublished":"<%- date(page.date, 'YYYY-MM-DD') %>","author":{"@type":"Person","name":"<%= config.author %>"},"publisher":{"@type":"Organization","name":"<%= config.title %>"},"mainEntityOfPage":{"@type":"WebPage","@id":"<%- config.url %><%- url_for(page.path) %>"}<% if (_cat) { %>,"articleSection":"<%= _cat %>"<% } %><% if (_tags) { %>,"keywords":"<%= _tags %>"<% } %>}</script>
+<% } else { %>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"<%= config.title %>","url":"<%- config.url %>"}</script>
+<% } %>
+<link href="/blog/lib/prism/prism-tomorrow.min.css" rel="stylesheet"/>
+<style>
+pre[class*="language-"]{background:#263238!important;border-radius:6px;padding:14px 16px;font-size:14px;margin:16px 0;overflow-x:auto;line-height:1.55}
+code[class*="language-"]{background:transparent!important;padding:0;font-family:Consolas,Monaco,'Source Code Pro',monospace;font-size:14px}
+:not(pre)>code[class*="language-"]{background:#f5f5f5!important;padding:2px 6px;border-radius:4px}
+.mermaid{text-align:center;margin:16px 0}
+</style>
+<style id="custom-blog-style">
+/* Article typography */
+#articleContent{font-size:16px;line-height:1.85}
+#articleContent p{margin-bottom:1.3em}
+#articleContent h2{margin-top:1.8em;margin-bottom:.8em;padding-bottom:.3em;border-bottom:2px solid #e0e0e0;font-weight:700}
+#articleContent h3{margin-top:1.5em;margin-bottom:.6em;font-weight:600}
+#articleContent blockquote{border-left:4px solid #009688;background:#f5f5f5;padding:12px 20px;margin:16px 0;border-radius:0 8px 8px 0;color:#666}
+#articleContent :not(pre)>code{background:#f5f5f5;padding:2px 6px;border-radius:4px;font-size:.9em}
+#articleContent pre>code{background:transparent;padding:0;font-size:inherit;border-radius:0}
+#articleContent table{width:100%;border-collapse:collapse;margin:16px 0;display:block;overflow-x:auto}
+#articleContent th,#articleContent td{border:1px solid #e0e0e0;padding:8px 12px;text-align:left}
+#articleContent th{background:#f5f5f5;font-weight:600}
+#articleContent img{border-radius:8px;max-width:100%}
+/* Reading progress bar */
+.reading-progress{position:fixed;top:0;left:0;height:3px;width:0;background:#009688;z-index:99999;transition:width .1s ease}
+/* Card hover */
+.card{transition:transform .25s ease,box-shadow .25s ease}
+.card:hover{transform:translateY(-4px);box-shadow:0 8px 20px rgba(0,0,0,.1)}
+/* Related posts */
+.related-posts-card{margin:20px 0}
+.related-posts-title{font-size:18px;font-weight:700;margin-bottom:12px;color:#333}
+.related-posts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.related-post-item{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#f9f9f9;border-radius:8px;text-decoration:none;color:#555;transition:background .2s}
+.related-post-item:hover{background:#e8f5e9}
+.related-post-name{font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:200px}
+.related-post-date{font-size:12px;color:#aaa;white-space:nowrap;margin-left:8px}
+/* Scrollbar */
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:#f5f5f5}
+::-webkit-scrollbar-thumb{background:#bbb;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#999}
+/* Selection & scroll polish */
+::selection{background:#009688;color:#fff}
+html{scroll-behavior:smooth}
+a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2px}
+/* Print styles */
+@media print{.cat-sidebar,.hot-sidebar,.reading-progress,.nav-wrapper,.bg-cover,footer,.prev-next,.gitalk-card,.related-posts-card,#back-top{display:none!important}#articleContent{font-size:12pt;line-height:1.5}main.content{margin:0!important;width:100%!important}.card{box-shadow:none!important;border:1px solid #ddd}}
+/* Hero typing effect */
+.hero-typing{text-align:center;color:#fff;font-size:18px;margin-top:14px;min-height:27px;text-shadow:0 2px 8px rgba(0,0,0,.4);font-weight:500}
+/* Hero tech badges */
+.hero-tech{display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+.hero-badge{background:rgba(255,255,255,.15);color:#fff;padding:5px 14px;border-radius:20px;font-size:13px;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.2)}
+/* Skill bars */
+.skill-bar{margin:10px 0}
+.skill-bar .skill-row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
+.skill-bar .skill-track{height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+.skill-bar .skill-fill{height:100%;background:linear-gradient(90deg,#009688,#00bcd4);border-radius:4px;transition:width .8s ease}
+/* GitHub stats card */
+.gh-stats{display:flex;gap:16px;margin:20px 0;flex-wrap:wrap}
+.gh-stat{flex:1;min-width:100px;text-align:center;padding:16px;background:#f5f5f5;border-radius:10px}
+.gh-stat-num{font-size:24px;font-weight:700;color:#009688}
+.gh-stat-label{font-size:13px;color:#666;margin-top:4px}
+/* About page project cards */
+.project-card{display:flex;gap:12px;padding:14px;margin:8px 0;background:#f9f9f9;border-radius:8px;border-left:3px solid #009688}
+.project-card .proj-name{font-weight:600;font-size:15px}
+.project-card .proj-desc{font-size:13px;color:#666;margin-top:4px}
+/* Projects page - grid of repo cards */
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin:24px 0}
+.proj-grid-card{display:flex;flex-direction:column;padding:18px;background:#fff;border-radius:12px;border:1px solid #eee;box-shadow:0 2px 8px rgba(0,0,0,.04);transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;text-decoration:none;color:inherit;overflow:hidden}
+.proj-grid-card:hover{transform:translateY(-4px);box-shadow:0 10px 24px rgba(0,150,136,.15);border-color:#009688}
+.proj-grid-card .proj-grid-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.proj-grid-card .proj-grid-icon{width:36px;height:36px;border-radius:8px;background:linear-gradient(135deg,#009688,#00bcd4);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0}
+.proj-grid-card .proj-grid-name{font-size:16px;font-weight:700;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.proj-grid-card .proj-grid-lang{font-size:12px;color:#fff;background:#009688;padding:2px 8px;border-radius:10px;margin-left:auto;flex-shrink:0}
+.proj-grid-card .proj-grid-desc{font-size:13px;color:#666;line-height:1.6;margin:6px 0 10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.proj-grid-card .proj-grid-foot{display:flex;align-items:center;gap:14px;font-size:12px;color:#999;margin-top:auto;padding-top:8px;border-top:1px dashed #eee}
+.proj-grid-card .proj-grid-foot .pg-stat{display:flex;align-items:center;gap:4px}
+.proj-grid-card .proj-grid-foot .pg-stat i{font-size:11px;color:#ee5a24}
+.proj-grid-card .proj-grid-foot .pg-link{margin-left:auto;color:#009688;text-decoration:none;font-weight:600}
+.proj-grid-card .proj-grid-foot .pg-link:hover{text-decoration:underline}
+.proj-empty{padding:20px;text-align:center;color:#999;background:#f9f9f9;border-radius:8px}
+/* Database landing page - skill grid */
+.db-skill-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:18px 0 24px}
+.db-skill-card{padding:16px 18px;background:#f9f9f9;border-radius:10px;border-left:3px solid #009688;transition:transform .2s ease,box-shadow .2s ease}
+.db-skill-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,150,136,.12)}
+.db-skill-card .db-skill-name{font-size:15px;font-weight:700;color:#333;margin-bottom:6px}
+.db-skill-card .db-skill-bar{height:6px;background:#e0e0e0;border-radius:3px;overflow:hidden;margin-bottom:8px}
+.db-skill-card .db-skill-fill{height:100%;background:linear-gradient(90deg,#009688,#00bcd4);border-radius:3px;transition:width .6s ease}
+.db-skill-card .db-skill-meta{font-size:12px;color:#777;line-height:1.5}
+/* Timeline */
+.timeline-item{position:relative;padding-left:24px;margin:12px 0;border-left:2px solid #e0e0e0}
+.timeline-item::before{content:'';position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:#009688}
+.timeline-date{font-size:13px;color:#009688;font-weight:600}
+/* Hero statistics */
+.hero-stats{display:flex;justify-content:center;gap:48px;margin-top:28px}
+.hero-stats .hero-stat{text-align:center;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4)}
+.hero-stats .hero-stat-num{font-size:32px;font-weight:800}
+.hero-stats .hero-stat-label{font-size:14px;opacity:.85;margin-top:2px}
+/* Category sidebar (left) */
+.cat-sidebar{position:fixed;left:12px;top:80px;width:270px;max-height:75vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
+.cat-sidebar .cat-title{font-size:18px;font-weight:700;padding:12px 16px;color:#fff;background:linear-gradient(135deg,#009688,#00bcd4);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px}
+.cat-sidebar .cat-list{padding:6px 0}
+.cat-sidebar a{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:15px;color:#555;transition:all .2s;border-left:3px solid transparent}
+.cat-sidebar a:hover{background:linear-gradient(90deg,rgba(0,150,136,.08),transparent);color:#009688;border-left-color:#009688}
+.cat-sidebar a i{font-size:13px;color:#009688;width:16px;flex-shrink:0}
+.cat-sidebar .cat-count{margin-left:auto;color:#999;font-size:13px;background:#f0f0f0;padding:1px 8px;border-radius:10px;flex-shrink:0}
+.cat-sidebar a:hover .cat-count{background:#009688;color:#fff}
+/* Hot posts sidebar (right) - matched width with cat-sidebar */
+.hot-sidebar{position:fixed;right:12px;top:80px;width:270px;max-height:75vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
+.hot-sidebar .hot-title{font-size:18px;font-weight:700;padding:12px 16px;color:#fff;background:linear-gradient(135deg,#ee5a24,#ff6b6b);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px}
+.hot-sidebar .hot-list{padding:6px 0}
+.hot-sidebar a{display:flex;align-items:flex-start;gap:8px;padding:9px 14px;font-size:14px;color:#555;transition:all .2s;border-left:3px solid transparent;border-bottom:1px solid #f5f5f5}
+.hot-sidebar a:last-child{border-bottom:none}
+.hot-sidebar a:hover{background:linear-gradient(90deg,rgba(238,90,36,.06),transparent);color:#ee5a24;border-left-color:#ee5a24}
+.hot-sidebar .hot-rank{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#e0e0e0;color:#888;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
+.hot-sidebar .rank-1{background:linear-gradient(135deg,#ffd700,#ffa500);color:#fff}
+.hot-sidebar .rank-2{background:linear-gradient(135deg,#e0e0e0,#bdbdbd);color:#555}
+.hot-sidebar .rank-3{background:linear-gradient(135deg,#cd7f32,#a0522d);color:#fff}
+.hot-sidebar .hot-content{flex:1;min-width:0}
+.hot-sidebar .hot-name{line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hot-sidebar .hot-meta{display:flex;align-items:center;gap:6px;margin-top:3px}
+.hot-sidebar .hot-cat{font-size:11px;color:#888;background:#f5f5f5;padding:1px 6px;border-radius:4px}
+.hot-sidebar .hot-views{font-size:12px;color:#ee5a24;margin-left:auto;display:flex;align-items:center;gap:2px}
+.hot-sidebar .hot-views i{font-size:10px}
+@media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
+
+/* --- Reward: button + inline-expand.  No modal/fixed positioning
+       so it sits as a plain sibling of related-posts below the article
+       body and never collides with sidebars / scripts. --- */
+.reward-row{text-align:center;margin:30px 0 0}
+.reward-open-btn{display:inline-flex;align-items:center;gap:6px;padding:9px 22px;background:linear-gradient(135deg,#ff6b6b,#ee5a52);color:#fff;border:none;border-radius:24px;font-size:14px;font-weight:500;cursor:pointer;transition:transform .15s ease,box-shadow .15s ease;box-shadow:0 2px 8px rgba(238,90,82,.35)}
+.reward-open-btn:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(238,90,82,.5)}
+.reward-content{display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 16px;background:#fafafa;border-radius:12px;margin:16px 0 32px;border:1px solid #eee}
+.reward-content[hidden]{display:none}
+.reward-title{margin:0;font-size:14px;color:#666;font-weight:500}
+.reward-qrs{display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.reward-qr{display:flex;flex-direction:column;align-items:center}
+.reward-qr img{display:block;width:200px;height:200px;max-width:60vw;max-height:60vw;object-fit:contain;border:1px solid #e0e0e0;border-radius:8px;background:#fff}
+.reward-qr p{margin:8px 0 0;font-size:13px;color:#666}
+@media(prefers-color-scheme:dark){.reward-content{background:#1f1f1f;border-color:#333}.reward-title{color:#bbb}.reward-qr p{color:#aaa}.reward-qr img{background:#fff;border-color:#444}}
+</style>
+</head>

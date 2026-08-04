@@ -1,0 +1,41 @@
+<% if (theme.reward && theme.reward.enable) { %>
+<div class="reward-row">
+  <button type="button" class="reward-open-btn" data-reward-toggle aria-expanded="false" aria-controls="reward-content">
+    <i class="fa fa-heart"></i>&nbsp;<span class="reward-open-text">打赏支持</span>
+  </button>
+</div>
+
+<div id="reward-content" class="reward-content" hidden>
+  <h4 class="reward-title"><%= theme.reward.title || '您的支持是我持续更新的最大动力' %></h4>
+  <div class="reward-qrs">
+    <div class="reward-qr">
+      <img src="<%= url_for('/medias/reward/weixin.jpg') %>" alt="微信支付">
+      <p><i class="fab fa-weixin"></i>&nbsp;微信支付</p>
+    </div>
+    <div class="reward-qr">
+      <img src="<%= url_for('/medias/reward/zhifubao.jpg') %>" alt="支付宝">
+      <p><i class="fab fa-alipay"></i>&nbsp;支付宝</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var btn = document.querySelector('[data-reward-toggle]');
+  var content = document.getElementById('reward-content');
+  if (!btn || !content) return;
+  btn.addEventListener('click', function(){
+    var label = btn.querySelector('.reward-open-text');
+    if (content.hasAttribute('hidden')) {
+      content.removeAttribute('hidden');
+      btn.setAttribute('aria-expanded', 'true');
+      if (label) label.textContent = '收起打赏';
+    } else {
+      content.setAttribute('hidden', '');
+      btn.setAttribute('aria-expanded', 'false');
+      if (label) label.textContent = '打赏支持';
+    }
+  });
+})();
+</script>
+<% } %>
