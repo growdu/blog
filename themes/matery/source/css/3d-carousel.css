@@ -306,3 +306,19 @@ body.dark .carousel-3d-card .card-action {
     .carousel-3d-nav.prev { left: 2px; }
     .carousel-3d-nav.next { right: 2px; }
 }
+
+/* 计数器 */
+.carousel-3d-counter {
+    font-size: 15px;
+    color: #888;
+    font-weight: 500;
+    background: #f5f5f5;
+    padding: 4px 16px;
+    border-radius: 20px;
+    letter-spacing: 1px;
+}
+
+body.dark .carousel-3d-counter {
+    color: #aaa;
+    background: #333;
+}

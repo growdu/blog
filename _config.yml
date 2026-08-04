@@ -46,7 +46,7 @@ prismjs:
 # Home page
 index_generator:
   path: ''
-  per_page: 20
+  per_page: 0
   order_by: -date
 
 # Category & Tag
@@ -55,12 +55,12 @@ category_map:
 tag_map:
 
 # Pagination
-per_page: 20
+per_page: 0
 pagination_dir: page
 
 # Archive pagination (473 posts - paginate for performance)
 archive_generator:
-  per_page: 20
+  per_page: 0
   yearly: true
   monthly: true
 
