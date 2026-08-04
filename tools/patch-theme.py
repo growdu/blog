@@ -861,3 +861,71 @@ if os.path.isfile(post_detail_path):
                   f'(template may have changed upstream)')
 else:
     print(f'WARNING: {post_detail_path} not found — min2read speed not patched')
+
+
+# --- 9. Inject 3D rotating carousel for article listing ---
+# Replaces the standard grid layout on index, category, and tag pages
+# with a 3D rotating carousel that arranges cards in a circle.
+
+# 9a. Ensure CSS and JS files exist under themes/matery/source/
+carousel_css = os.path.join(theme_dir, 'source', 'css', '3d-carousel.css')
+carousel_js = os.path.join(theme_dir, 'source', 'js', '3d-carousel.js')
+
+if not os.path.exists(carousel_css):
+    print(f'WARNING: {carousel_css} not found — 3D carousel CSS missing')
+if not os.path.exists(carousel_js):
+    print(f'WARNING: {carousel_js} not found — 3D carousel JS missing')
+
+# 9b. Add carousel3d entries to _config.yml libs section
+config_path = os.path.join(theme_dir, '_config.yml')
+with open(config_path, encoding='utf-8') as f:
+    config_content = f.read()
+
+# Add CSS lib entry
+if 'carousel3d:' not in config_content:
+    config_content = config_content.replace(
+        '    mycss: /css/my.css',
+        '    mycss: /css/my.css\n    carousel3d: /css/3d-carousel.css'
+    )
+    print('Added carousel3d CSS to theme config')
+
+# Add JS lib entry
+if 'carousel3d: /js/3d-carousel.js' not in config_content:
+    config_content = config_content.replace(
+        '    matery: /js/matery.js',
+        '    matery: /js/matery.js\n    carousel3d: /js/3d-carousel.js'
+    )
+    print('Added carousel3d JS to theme config')
+
+with open(config_path, 'w', encoding='utf-8') as f:
+    f.write(config_content)
+
+# 9c. Add CSS link in main-style.ejs
+ms_path = os.path.join(theme_dir, 'layout', '_partial', 'main-style.ejs')
+with open(ms_path, encoding='utf-8') as f:
+    ms_content = f.read()
+
+if 'carousel3d' not in ms_content:
+    ms_content = ms_content.replace(
+        '<link rel="stylesheet" type="text/css" href="<%- theme.jsDelivr.url %><%- url_for(theme.libs.css.mycss) %>">',
+        '<link rel="stylesheet" type="text/css" href="<%- theme.jsDelivr.url %><%- url_for(theme.libs.css.mycss) %>">\n<link rel="stylesheet" type="text/css" href="<%- theme.jsDelivr.url %><%- url_for(theme.libs.css.carousel3d) %>">'
+    )
+    with open(ms_path, 'w', encoding='utf-8') as f:
+        f.write(ms_content)
+    print('Added 3D carousel CSS link to main-style.ejs')
+
+# 9d. Add JS script in layout.ejs
+layout_path = os.path.join(theme_dir, 'layout', 'layout.ejs')
+with open(layout_path, encoding='utf-8') as f:
+    layout_content = f.read()
+
+if 'carousel3d' not in layout_content:
+    layout_content = layout_content.replace(
+        '<script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.matery) %>"></script>',
+        '<script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.matery) %>"></script>\n    <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.carousel3d) %>"></script>'
+    )
+    with open(layout_path, 'w', encoding='utf-8') as f:
+        f.write(layout_content)
+    print('Added 3D carousel JS script to layout.ejs')
+
+print('3D carousel injection complete')

@@ -424,6 +424,7 @@ libs:
   css:
     matery: /css/matery.css
     mycss: /css/my.css
+    carousel3d: /css/3d-carousel.css
     post: /css/post.css
     reward: /css/reward.css
     dark: /css/dark.css
@@ -445,6 +446,7 @@ libs:
     justifiedGallery: /libs/justifiedGallery/justifiedGallery.min.css
   js:
     matery: /js/matery.js
+    carousel3d: /js/3d-carousel.js
     sc2tc: /js/tw_cn.js
     jquery: /libs/jquery/jquery-3.6.0.min.js  #3.6.0 20211109
     materialize: /libs/materialize/materialize.min.js # 1.2.1 20230106
