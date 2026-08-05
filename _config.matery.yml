@@ -149,3 +149,11 @@ reward:
   title: 您的支持是我持续更新的最大动力
   wechat: /medias/reward/weixin.jpg
   alipay: /medias/reward/zhifubao.jpg
+
+# Disable Tencent Captcha (not used)
+tcaptcha:
+  enable: false
+
+# Disable click love effect
+clicklove:
+  enable: false

@@ -191,11 +191,13 @@ code[class*="language-"]{background:transparent!important;padding:0;font-family:
 .mermaid{text-align:center;margin:16px 0}
 </style>"""
 
-inject_js = """<script src="/blog/lib/prism/prism-core.min.js"></script>
+inject_js = """<% if (is_post()) { %>
+<script src="/blog/lib/prism/prism-core.min.js"></script>
 <script src="/blog/lib/prism/prism-autoloader.min.js"></script>
 <script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/blog/lib/prism/components/';}</script>
 <script src="/blog/lib/mermaid/mermaid.min.js"></script>
 <script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>
+<% } %>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/blog/sw.js').catch(function(){})}</script>"""
 
 for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
@@ -943,3 +945,36 @@ if 'blinkfox/hexo-theme-matery' in cfg:
     with open(config_path, 'w', encoding='utf-8') as f:
         f.write(cfg)
     print('Updated githubLink to growdu/blog')
+
+
+# --- 11. Disable unused features (tcaptcha, clicklove) and remove masonry ---
+# tcaptcha and clicklove are enabled by default in the theme but not needed.
+# masonry.js is no longer needed since we use 3D carousel instead of grid.
+
+# 11a. Disable tcaptcha in matery config
+matery_config = os.path.join(theme_dir, '_config.yml')
+with open(matery_config, encoding='utf-8') as f:
+    mc = f.read()
+if 'tcaptcha:\n  enable: true' in mc:
+    mc = mc.replace('tcaptcha:\n  enable: true', 'tcaptcha:\n  enable: false')
+    with open(matery_config, 'w', encoding='utf-8') as f:
+        f.write(mc)
+    print('Disabled tcaptcha in theme config')
+
+# 11b. Disable clicklove in matery config
+if 'clicklove:\n  enable: true' in mc:
+    mc = mc.replace('clicklove:\n  enable: true', 'clicklove:\n  enable: false')
+    with open(matery_config, 'w', encoding='utf-8') as f:
+        f.write(mc)
+    print('Disabled clicklove in theme config')
+
+# 11c. Remove masonry.js from layout (replaced by 3D carousel)
+layout_path = os.path.join(theme_dir, 'layout', 'layout.ejs')
+with open(layout_path, encoding='utf-8') as f:
+    lc = f.read()
+masonry_line = '    <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.masonry) %>"></script>\n'
+if masonry_line in lc:
+    lc = lc.replace(masonry_line, '')
+    with open(layout_path, 'w', encoding='utf-8') as f:
+        f.write(lc)
+    print('Removed masonry.js from layout')

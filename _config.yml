@@ -60,7 +60,7 @@ pagination_dir: page
 
 # Archive pagination (473 posts - paginate for performance)
 archive_generator:
-  per_page: 0
+  per_page: 30
   yearly: true
   monthly: true
 

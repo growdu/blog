@@ -13,7 +13,6 @@
     <%- partial('_partial/back-top') %>
 
     <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.materialize) %>"></script>
-    <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.masonry) %>"></script>
     <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.aos) %>"></script>
     <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.scrollProgress) %>"></script>
     <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.lightgallery) %>"></script>
@@ -169,11 +168,13 @@
     <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.instantpage) %>" type="module"></script>
     <% } %>
 
+<% if (is_post()) { %>
 <script src="/blog/lib/prism/prism-core.min.js"></script>
 <script src="/blog/lib/prism/prism-autoloader.min.js"></script>
 <script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/blog/lib/prism/components/';}</script>
 <script src="/blog/lib/mermaid/mermaid.min.js"></script>
 <script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>
+<% } %>
 <script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/blog/sw.js').catch(function(){})}</script>
 <script id="custom-blog-script">
 (function(){
