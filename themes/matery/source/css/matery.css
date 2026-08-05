@@ -781,8 +781,8 @@ header .go-back i {
 .recommend .post-card {
     position: relative;
     width: 100%;
-    height: 300px;
-    max-height: 300px;
+    height: 200px;
+    max-height: 200px;
     margin-bottom: 15px;
     margin-top: 15px;
     text-align: center;
@@ -797,7 +797,7 @@ header .go-back i {
 .recommend .post-card .post-body {
     position: relative;
     margin: 0 auto;
-    padding: 1.8rem 1.25rem;
+    padding: 1rem 1rem;
     z-index: 2;
 }
 
@@ -817,7 +817,7 @@ header .go-back i {
 }
 
 .recommend .post-card .post-title {
-    height: 48px;
+    height: 34px;
     margin-top: 10px;
     margin-bottom: 5px;
 }
@@ -825,9 +825,9 @@ header .go-back i {
 .recommend .post-card .post-description {
     margin: 20px auto;
     max-width: 500px;
-    height: 65px;
-    max-height: 65px;
-    font-size: 14px;
+    height: 45px;
+    max-height: 45px;
+    font-size: 12px;
     color: hsla(0, 0%, 100%, .78) !important;
 }
 
@@ -1910,11 +1910,11 @@ p.search-result-summary{
 .top-scroll .btn-floating {
     background: linear-gradient(to bottom right, #FF5E3A 0%, #FF2A68 100%);
     width: 48px;
-    height: 48px;
+    height: 34px;
 }
 
 .top-scroll .btn-floating i {
-    line-height: 48px;
+    line-height: 34px;
     font-size: 1.8rem;
 }
 
