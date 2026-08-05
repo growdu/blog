@@ -116,7 +116,7 @@ indexbtn:
   enable: true
   name: Github
   icon: fab fa-github-alt
-  url: https://github.com/blinkfox/hexo-theme-matery
+  url: https://github.com/growdu/blog
 
 # The configurations of the second line of home banner
 # icon/button will not show up if you leave the corresponding socialLink empty
@@ -370,7 +370,7 @@ changyan:
 # 配置是否在 header 中显示 fork me on github 的图标，默认为true，你可以修改为你的仓库地址.
 githubLink:
   enable: true
-  url: https://github.com/blinkfox/hexo-theme-matery
+  url: https://github.com/growdu/blog
   title: Fork Me
 
 # The configuration of the Twikoo comment module is not activated by default.

@@ -929,3 +929,17 @@ if 'carousel3d' not in layout_content:
     print('Added 3D carousel JS script to layout.ejs')
 
 print('3D carousel injection complete')
+
+
+# --- 10. Change fork-me-on-github link to growdu's repo ---
+config_path = os.path.join(theme_dir, '_config.yml')
+with open(config_path, encoding='utf-8') as f:
+    cfg = f.read()
+if 'blinkfox/hexo-theme-matery' in cfg:
+    cfg = cfg.replace(
+        'https://github.com/blinkfox/hexo-theme-matery',
+        'https://github.com/growdu/blog'
+    )
+    with open(config_path, 'w', encoding='utf-8') as f:
+        f.write(cfg)
+    print('Updated githubLink to growdu/blog')
