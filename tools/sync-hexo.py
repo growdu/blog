@@ -69,7 +69,16 @@ def git_date(filepath):
                     earliest = d
         except Exception:
             continue
-    return earliest if earliest else '2024-01-01 00:00:00'
+    if not earliest:
+        return '2024-01-01 00:00:00'
+    # Drop the trailing `+0800` / `+0000` offset.  Hexo's date path
+    # generation goes through `node_modules/hexo/dist/plugins/processor/
+    # common.js:51` `timezone()` which double-applies the offset when
+    # the CI container TZ is UTC, shifting dates by one day for any
+    # article that crosses UTC midnight.  Emitting a wall-clock string
+    # without offset (and clearing `timezone:` in _config.yml) keeps
+    # the rendered Y/M/D identical to the author-time wall clock.
+    return earliest.split(' +')[0].split(' -')[0]
 
 
 def extract_title(content):
@@ -489,215 +498,19 @@ def main():
     print('Created database landing page')
 
 def create_database_landing_page():
-    """Generate a rich database landing page that reflects growdu's
-    day-to-day work as a database kernel engineer (PostgreSQL /
-    openGauss DCF / 分布式一致性)."""
+    """Copy the curated database landing page from tools/templates/ into
+    Hexo's source/ tree. The template is plain markdown + front matter,
+    editable in any editor with full syntax highlighting.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    template = os.path.join(here, 'templates', 'database.md')
     db_path = os.path.join(SRC, 'database', 'index.md')
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
-
-    fm = '---\ntitle: 数据库专题\ndate: 2026-07-29 00:00:00\ntype: "database"\nlayout: "page"\n---\n\n'
-
-    lines = [
-        '# 数据库专题',
-        '',
-        '> 数据库内核是计算机系统软件中最复杂的领域之一。本专题收录我在 PostgreSQL / openGauss 内核开发、分布式一致性（Raft / DCF）、逻辑解码与双向同步、存储引擎等方向的实战笔记与源码解读，希望对同样走在这条路上的同行有所启发。',
-        '',
-        '作为长期在 PostgreSQL 与 openGauss 内核一线搬砖的工程师，我日常的工作内容大致涵盖：**内核源码阅读与 Bug 定位**、**新特性设计（如 DDL-Replay 双向同步）**、**分布式一致性模块开发（DCF / Raft）**、**性能调优与故障排查**。下面把博客里相关的文章按主题串成一张导览图，方便按需取用。',
-        '',
-        '## 核心技术栈',
-        '',
-        '<div class="db-skill-grid">',
-        '  <div class="db-skill-card">',
-        '    <div class="db-skill-name">PostgreSQL 内核</div>',
-        '    <div class="db-skill-bar"><div class="db-skill-fill" style="width:95%"></div></div>',
-        '    <div class="db-skill-meta">进程模型 · 存储引擎 · WAL · 复制 · 执行器 · MVCC</div>',
-        '  </div>',
-        '  <div class="db-skill-card">',
-        '    <div class="db-skill-name">openGauss / DCF</div>',
-        '    <div class="db-skill-bar"><div class="db-skill-fill" style="width:90%"></div></div>',
-        '    <div class="db-skill-meta">分布式一致性 · 日志复制 · 投票机制 · 网络模块</div>',
-        '  </div>',
-        '  <div class="db-skill-card">',
-        '    <div class="db-skill-name">分布式协议</div>',
-        '    <div class="db-skill-bar"><div class="db-skill-fill" style="width:88%"></div></div>',
-        '    <div class="db-skill-meta">Raft · 多数派 · Quorum 动态调整 · Leader 选举</div>',
-        '  </div>',
-        '  <div class="db-skill-card">',
-        '    <div class="db-skill-name">逻辑解码与双向同步</div>',
-        '    <div class="db-skill-bar"><div class="db-skill-fill" style="width:85%"></div></div>',
-        '    <div class="db-skill-meta">pgoutput · pglogical · DDL-Replay · 跨版本迁移</div>',
-        '  </div>',
-        '  <div class="db-skill-card">',
-        '    <div class="db-skill-name">多数据库架构对比</div>',
-        '    <div class="db-skill-bar"><div class="db-skill-fill" style="width:80%"></div></div>',
-        '    <div class="db-skill-meta">PostgreSQL / MySQL / SQLServer / TDengine 横向评测</div>',
-        '  </div>',
-        '  <div class="db-skill-card">',
-        '    <div class="db-skill-name">性能调优与故障排查</div>',
-        '    <div class="db-skill-bar"><div class="db-skill-fill" style="width:85%"></div></div>',
-        '    <div class="db-skill-meta">Checkpoint · WAL · 锁等待 · 慢 SQL · 崩溃恢复</div>',
-        '  </div>',
-        '</div>',
-        '',
-        '## 学习路径建议',
-        '',
-        '如果你刚接触数据库内核开发，建议按下面这条路线循序渐进，每一档都附上对应的站内文章入口：',
-        '',
-        '1. **入门**：[PostgreSQL 基操](/blog/categories/PostgreSQL/) → [源码编译](/blog/tags/源码编译/) → [启动流程](/blog/tags/启动流程/)。先把一份能跑、能断点的内核源码环境搭起来。',
-        '2. **存储与 WAL**：[FSM 文件解析](/blog/tags/存储/) → [full_page_writes](/blog/tags/full_page_writes/) → [WAL 机制浅析](/blog/tags/wal/) → [崩溃恢复](/blog/tags/崩溃恢复/)。理解"数据页 + WAL + 检查点"这一数据库的基石三角。',
-        '3. **进程与执行器**：[BgWriter](/blog/tags/BgWriter/) → [Checkpoint](/blog/tags/Checkpoint/) → [WalWriter](/blog/tags/WalWriter/) → [insert 语句执行过程](/blog/tags/executor/)。把后台进程和查询执行的主干打通。',
-        '4. **复制与高可用**：[流复制与 WAL 日志](/blog/tags/复制/) → [同步流复制原理](/blog/tags/同步流复制/) → [WalReceiver / WalSender 交互](/blog/tags/WalReceiver/) → [repmgr 实现原理](/blog/tags/repmgr/) → [伪双写](/blog/tags/伪双写/)。',
-        '5. **事务与并发控制**：[事务管理](/blog/tags/事务管理/) → [并发控制](/blog/tags/并发控制/) → [MVCC 源码解读](/blog/tags/MVCC/) → [锁等待排查](/blog/tags/锁/)。',
-        '6. **逻辑解码与双向同步**：[逻辑复制源码分析](/blog/tags/逻辑复制/) → [PG15 逻辑复制支持 DDL](/blog/tags/逻辑解码/) → [pglogical 详解](/blog/tags/pglogical/) → [DDL-Replay 框架设计](/blog/tags/DDL-Replay/) → [AI 逻辑解码](/blog/tags/AI/)。',
-        '7. **分布式一致性**：[Raft 重要概念](/blog/tags/Raft/) → [一文读懂 openGauss DCF 网络模块](/blog/tags/DCF/) → [DCF 投票系统详解](/blog/tags/DCF/) → [DCF 运行机制](/blog/tags/DCF/) → [DCF 写入机制](/blog/tags/DCF/) → [Raft 协议动态调整 quorum](/blog/tags/Raft/)。',
-        '',
-        '## 专题导览',
-        '',
-        '### PostgreSQL 内核',
-        '',
-        'PostgreSQL 是研究数据库内核最好的教科书。本节文章覆盖源码结构、进程模型、执行器、统计信息、对象管理等。',
-        '',
-        '- [PostgreSQL 主结构](/blog/tags/PostgreSQL/) — 一张图看懂内核子目录划分与启动链路。',
-        '- [postmaster 启动代码解析（--boot / --single）](/blog/tags/postmaster/) — 两个特殊启动模式的差异与适用场景。',
-        '- [PostgreSQL 时间线解析](/blog/tags/PostgreSQL/) — 时间线（Timeline）在 PITR 与复制里的关键作用。',
-        '- [源码对象管理](/blog/tags/源码/) — pg_class / pg_attribute / pg_type 背后的对象系统。',
-        '- [触发器详解](/blog/tags/触发器/) — 行级 / 语句级触发器的执行时机与性能开销。',
-        '- [统计信息](/blog/tags/统计信息/) — pg_stat 系列视图与查询规划器的统计来源。',
-        '- [扩展机制（pg_extension）](/blog/tags/扩展/) — contrib 与第三方扩展的工作方式。',
-        '- [pg_io_调优](/blog/tags/性能调优/) — 内核视角的 I/O 配置与诊断。',
-        '',
-        '### 存储与 WAL',
-        '',
-        '存储引擎是数据库最核心的子系统。下面的文章从页结构、FSM、VM 一直追到 WAL、checkpoint、崩溃恢复。',
-        '',
-        '- [PostgreSQL 存储总览](/blog/tags/存储/) — 表 / 索引 / toast 文件的组织方式。',
-        '- [FSM 文件解析](/blog/tags/FSM/) — Free Space Map 的页面级空间管理。',
-        '- [full_page_writes](/blog/tags/full_page_writes/) — 为什么需要整页写入，以及关掉它的代价。',
-        '- [WAL 机制浅析](/blog/tags/WAL/) — XLOG 记录格式、LSN、刷盘策略。',
-        '- [pg_checksum](/blog/tags/pg_checksum/) — 数据页校验开启与性能影响。',
-        '- [共享内存](/blog/tags/共享内存/) — shmem、clog、subtrans 等共享数据结构。',
-        '- [数据库崩溃恢复](/blog/tags/崩溃恢复/) — REDO 流程与一致性恢复原理。',
-        '- [数据表文件底层结构布局分析](/blog/tags/存储/) — heap page 的物理布局与 tuple 指针。',
-        '',
-        '### 复制与高可用',
-        '',
-        '从物理复制、逻辑复制到 repmgr 自动化与伪双写方案，把可用性这一块的内容一次说清。',
-        '',
-        '- [PostgreSQL 流复制与 WAL 日志](/blog/tags/流复制/) — 物理复制的核心链路。',
-        '- [同步流复制原理与代码浅析](/blog/tags/同步流复制/) — synchronous_commit 与多数派同步。',
-        '- [流复制同异步分析](/blog/tags/异步复制/) — async / sync / remote_apply 的取舍。',
-        '- [WalReceiver 与 Startup 交互](/blog/tags/WalReceiver/) — 备机启动、回放与晋升流程。',
-        '- [WalSender 源码分析](/blog/tags/WalSender/) — 主机的复制槽管理。',
-        '- [复制槽实操](/blog/tags/复制槽/) — 防止 WAL 被过早回收的实战经验。',
-        '- [repmgr 实现原理](/blog/tags/repmgr/) — 自动 failover 与 witness 节点。',
-        '- [HAProxy 支持 PostgreSQL 伪双写](/blog/tags/HAProxy/) — 双写避免脑裂的工程方案。',
-        '- [PostgreSQL 伪双写](/blog/tags/伪双写/) — 在没有共享存储的情况下做"类双活"。',
-        '- [详解完整恢复及基于时间点的恢复（PITR）](/blog/tags/PITR/) — backup_label 与 recovery_target 的关系。',
-        '',
-        '### 事务与并发控制',
-        '',
-        'MVCC 是 PostgreSQL 的灵魂，事务与并发控制则是工程化路上最容易踩坑的子系统。',
-        '',
-        '- [事务管理](/blog/tags/事务管理/) — xid 分配、CLOG、Hint Bits。',
-        '- [并发控制](/blog/tags/并发控制/) — 行级锁、表级锁、Advisory Lock 与死锁检测。',
-        '- MVCC 实现细节 — 通过 HeapTupleHeader 的 xmin/xmax 跟踪事务可见性。',
-        '- 多版本可见性判断 — HeapTupleSatisfiesXXX 系列宏的实现。',
-        '- 两阶段提交与 PREPARE TRANSACTION — 跨库分布式事务的落地方式。',
-        '- 锁等待排查 — pg_stat_activity / pg_locks 的联合诊断套路。',
-        '',
-        '### 逻辑解码与双向同步',
-        '',
-        '这是我个人投入最多的方向：从最初梳理逻辑复制源码，到后来为内核加上 DDL 同步支持，整个过程沉淀在这里。',
-        '',
-        '- [逻辑复制源码分析](/blog/tags/逻辑复制/) — pgoutput plugin 与 reorder buffer。',
-        '- [PostgreSQL 逻辑复制 - DML](/blog/tags/逻辑复制/) — 从 WAL 到逻辑变更的转换路径。',
-        '- [PG15 逻辑复制支持 DDL](/blog/tags/逻辑解码/) — 内核侧为 DDL 同步打下的底座。',
-        '- [pglogical 详解](/blog/tags/pglogical/) — 第三方双向同步方案的核心机制。',
-        '- [逻辑解码 DDL-Replay 框架设计](/blog/tags/DDL-Replay/) — 自研框架的整体架构。',
-        '- [DDL 同步架构](/blog/tags/双向同步/) — 同构、异构数据库之间的 DDL 同步模式。',
-        '- [AI 逻辑解码](/blog/tags/AI/) — 把大模型引入逻辑解码，自动修复 DDL 不一致。',
-        '- [LogLogicalMessage 详解](/blog/tags/LogLogicalMessage/) — 自定义消息通道的协议细节。',
-        '- [polardb 逻辑解码源码解读](/blog/tags/polardb/) — 阿里 PolarDB 在逻辑解码上的增强。',
-        '',
-        '### openGauss DCF（分布式一致性框架）',
-        '',
-        "openGauss 的 DCF 是国内为数不多的工业级 Multi-Paxos 实现，与 etcd / braft 在工程思路上异曲同工。这组文章从网络层一路拆到投票层。",
-        '',
-        '- [一文读懂 openGauss DCF 网络模块](/blog/tags/DCF/) — TCP/QUIC 选型、心跳与连接管理。',
-        '- [DCF 网络模块详解](/blog/tags/DCF/) — 报文编解码、连接复用、批量发送。',
-        '- [DCF 运行机制](/blog/tags/DCF/) — 节点生命周期与角色切换。',
-        '- [DCF 写入机制](/blog/tags/DCF/) — 从客户端写入到多数派落盘的全链路。',
-        '- [DCF 投票系统详解](/blog/tags/DCF/) — Leader 选举与 Term 管理。',
-        '- [openGauss 源码阅读](/blog/tags/openGauss/) — DCF 周边模块的辅助阅读笔记。',
-        '- [openGauss 技术架构](/blog/tags/openGauss/) — 整体架构、存储、SQL 引擎的鸟瞰。',
-        '- [常用压缩算法编程](/blog/tags/压缩/) — DCF 日志压缩所用到的基础算法。',
-        '',
-        '### 分布式协议（Raft / 一致性）',
-        '',
-        '分布式一致性是数据库从单机走向分布式的灵魂。Raft 以可读性著称，是入门一致性协议的最佳选择。',
-        '',
-        '- [Raft 重要概念](/blog/tags/Raft/) — Leader / Follower / Candidate 与 Term。',
-        '- [Raft 协议动态调整 quorum](/blog/tags/Raft/) — 业务驱动的多数派动态变更方案。',
-        '- [C-Raft 分布式存储方案](/blog/tags/C-Raft/) — 用 C 语言实现的轻量 Raft 库。',
-        '- [c-rart](/blog/tags/Raft/) — 极简 Raft 实现，便于教学。',
-        '',
-        '### 多数据库对比与选型',
-        '',
-        '工程实践中往往要在多种数据库之间做选型，下面是我对几种主流数据库的横向分析与落地经验。',
-        '',
-        '- [PostgreSQL](/blog/categories/PostgreSQL/) — 强事务、丰富生态、可扩展性极强的"瑞士军刀"。',
-        '- [MySQL](/blog/categories/MySQL/) — 互联网时代的事实标准，分库分表套路成熟。',
-        '- [SQLServer](/blog/categories/SQLServer/) — 企业级特性的集大成者，与 .NET 生态深度绑定。',
-        '- [TDengine](/blog/categories/TDengine/) — 面向 IoT 的时序数据库，存储压缩比惊人。',
-        '- [PolarDB 竞争力分析](/blog/categories/数据库深入/) — 云原生分布式数据库的工程亮点。',
-        '- [多数据库模式命名空间问题](/blog/tags/命名空间/) — 同名数据库在多源汇聚时的冲突与解决。',
-        '- [命名空间](/blog/tags/命名空间/) — 跨库统一视图的设计思路。',
-        '',
-        '### 性能调优与故障排查',
-        '',
-        "生产环境里 90% 的稳定性问题来自错误的配置、不合理的查询、以及对内核机制的误解。这里整理了一些高频排查套路。",
-        '',
-        '- [Checkpointer 机制浅析](/blog/tags/Checkpoint/) — 检查点触发时机与刷盘策略。',
-        '- [WAL Writer](/blog/tags/WalWriter/) — 异步刷盘的延迟与吞吐平衡。',
-        '- [统计信息采样](/blog/tags/统计信息/) — ANALYZE 频率与规划器稳定性的关系。',
-        '- [PG 复制 keepalive](/blog/tags/keepalive/) — 跨地域复制的网络参数调优。',
-        '- [PG IO 调优](/blog/tags/性能调优/) — shared_buffers / wal_buffers / effective_cache_size 的取舍。',
-        '- [HA 元信息常见存储方式](/blog/tags/HA/) — etcd / 自建表 / 文件系统的权衡。',
-        '- [多地多中心方案调研](/blog/tags/多中心/) — 同城双活、两地三中心、单元化架构对比。',
-        '- [code-server 调试 PostgreSQL](/blog/tags/debug/) — 云端断点调试 PostgreSQL 的工程实践。',
-        '',
-        '## 实战经验沉淀',
-        '',
-        '- **内核 Bug 定位**：熟悉 gdb / perf / bpftrace 的组合用法，能从 panic 日志反推到具体的代码行。',
-        '- **补丁贡献**：曾向 PostgreSQL 社区提交过若干小补丁（包括 PG15 逻辑复制 DDL 支持），熟悉社区 patch 提交流程与 code review 风格。',
-        '- **性能优化**：在 openGauss 内核侧主导过 WAL 写入路径优化、复制槽回收策略改造等专项，单节点写入吞吐有数倍提升。',
-        '- **架构设计**：完整设计过一套基于 DCF 的两地三中心高可用方案，覆盖网络分区、脑裂、自动切换、降级运行等场景。',
-        '- **自动化工具**：写过一个内部用的"内核健康巡检"脚本，能在分钟级自动扫描数百个 PG 实例并给出风险项。',
-        '',
-        '## 推荐阅读顺序',
-        '',
-        '如果你只想读 5 篇文章理解数据库内核的脉络，我会推荐：',
-        '',
-        '1. [PostgreSQL 主结构](/blog/tags/PostgreSQL/)',
-        '2. [WAL 机制浅析](/blog/tags/WAL/)',
-        '3. [PostgreSQL 流复制与 WAL 日志](/blog/tags/流复制/)',
-        '4. [一文读懂 openGauss DCF 网络模块](/blog/tags/DCF/)',
-        '5. [逻辑解码 DDL-Replay 框架设计](/blog/tags/DDL-Replay/)',
-        '',
-        '这五篇涵盖了存储、复制、分布式一致性与逻辑同步四条主线，足以勾勒出数据库内核的整体图景。',
-        '',
-        '## 写在最后',
-        '',
-        '数据库内核开发是一个“慢就是快”的领域：每一次对一行代码的深入理解，最终都会在某个深夜的故障排查里兑现回报。本专题会持续更新，把每一段新的源码阅读笔记、每一次新的故障复盘都沉淀下来。也欢迎通过 [GitHub](https://github.com/growdu) 与我交流。',
-        '',
-    ]
-
-    body = chr(10).join(lines)
-
+    with open(template, encoding='utf-8') as f:
+        content = f.read()
     with open(db_path, 'w', encoding='utf-8') as f:
-        f.write(fm + body)
+        f.write(content)
     print('Created ' + os.path.relpath(db_path, '.'))
-
 
 
 
