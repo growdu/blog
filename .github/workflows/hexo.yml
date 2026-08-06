@@ -156,7 +156,7 @@ jobs:
             grep -A1 "clientSecret" "$FIRST_POST" | head -3
           fi
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: ./public
 
