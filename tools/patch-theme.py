@@ -979,15 +979,15 @@ if masonry_line in lc:
         f.write(lc)
     print('Removed masonry.js from layout')
 
-# --- 12. Replace recommend widget with post-grid layout ---
-# Replaces the 3D carousel recommend widget with a clean card grid layout
-# matching the recent-posts and article sections on the home page.
+# --- 12. Replace recommend widget with 3D carousel ---
+# Replaces the grid-based recommend widget with the same 3D rotating carousel
+# used for the article listing. Includes prev/next nav buttons.
 
 recommend_path = os.path.join(theme_dir, 'layout', '_widget', 'recommend.ejs')
 with open(recommend_path, encoding='utf-8') as f:
     recommend_content = f.read()
 
-if 'post-grid' not in recommend_content and 'carousel-3d-wrapper' in recommend_content:
+if 'carousel-3d-wrapper' not in recommend_content:
     new_recommend = """<%
     // get all top posts.
     var topPosts = [];
@@ -1017,50 +1017,66 @@ if 'post-grid' not in recommend_content and 'carousel-3d-wrapper' in recommend_c
 %>
 
 <% if (theme.recommend.showTitle) { %>
-<div class="post-grid-title"><i class="far fa-thumbs-up"></i>&nbsp;&nbsp;<%- __('recommendedPosts') %></div>
+<div class="title"><i class="far fa-thumbs-up"></i>&nbsp;&nbsp;<%- __('recommendedPosts') %></div>
 <% } %>
 
-<div class="post-grid-section">
-<div class="post-grid">
-    <% topPosts.forEach(function(post) { %>
-    <% if (post.hide != true) { %>
-    <div class="post-grid-card">
-        <a href="<%- url_for(post.path) %>" class="pg-image">
-            <% if (post.img) { %>
-            <img src="<%- url_for(post.img) %>" alt="<%= post.title %>">
-            <% } else { %>
-            <% var featureImages = theme.featureImages; %>
-            <img src="<%- theme.jsDelivr.url %><%- url_for(featureImages[Math.abs(hashCode(post.title) % featureImages.length)]) %>" alt="<%= post.title %>">
-            <% } %>
-            <span class="pg-title"><%= post.title %></span>
-        </a>
-        <div class="pg-body">
-            <div class="pg-summary">
-                <% if (theme.recommend.useConfig) { %>
-                    <%- (post.summary || '') %>
-                <% } else { %>
-                    <%- smart_summary(post) %>
-                <% } %>
-            </div>
-            <div class="pg-meta">
-                <span><i class="far fa-clock fa-fw"></i><%= date(post.date, config.date_format) %></span>
-                <span>
-                    <% if (post.categories && post.categories.length > 0) { %>
-                    <i class="fas fa-bookmark fa-fw"></i>
-                    <% post.categories.forEach(function(cat, idx) { %>
-                        <% if (idx > 0) { %> / <% } %>
-                        <a href="<%- url_for(cat.path) %>"><%- cat.name %></a>
-                    <% }); %>
-                    <% } else { %>
-                    <i class="fas fa-user fa-fw"></i><%- config.author %>
+<!-- 3D 旋转卡片轮播 - 推荐文章 -->
+<div class="carousel-3d-wrapper">
+    <div class="carousel-3d-stage">
+        <div class="carousel-3d-container">
+            <% topPosts.forEach(function(post, index) { %>
+            <div class="carousel-3d-card<%= index === 0 ? ' active' : '' %>">
+                <div class="card">
+                    <a href="<%- url_for(post.path) %>" class="card-link">
+                        <div class="card-image">
+                            <% if (post.img) { %>
+                            <img src="<%- url_for(post.img) %>" class="responsive-img" alt="<%= post.title %>">
+                            <% } else { %>
+                            <% var featureImages = theme.featureImages; %>
+                            <img src="<%- theme.jsDelivr.url %><%- url_for(featureImages[Math.abs(hashCode(post.title) % featureImages.length)]) %>" class="responsive-img" alt="<%= post.title %>">
+                            <% } %>
+                            <span class="card-title"><%= post.title %></span>
+                        </div>
+                    </a>
+                    <div class="card-content article-content">
+                        <div class="summary block-with-text">
+                            <% if (theme.recommend.useConfig) { %>
+                                <%- (post.summary || '') %>
+                            <% } else { %>
+                                <%- smart_summary(post) %>
+                            <% } %>
+                        </div>
+                        <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i><%= date(post.date, config.date_format) %>
+                            </span>
+                            <span class="publish-author">
+                                <% if (post.categories && post.categories.length > 0) { %>
+                                <i class="fas fa-bookmark fa-fw icon-category"></i>
+                                <% post.categories.forEach(category => { %>
+                                <a href="<%- url_for(category.path) %>" class="post-category"><%- category.name %></a>
+                                <% }); %>
+                                <% } else { %>
+                                <i class="fas fa-user fa-fw"></i><%- config.author %>
+                                <% } %>
+                            </span>
+                        </div>
+                    </div>
+                    <% if(post.tags && post.tags.length > 0) { %>
+                    <div class="card-action article-tags">
+                        <% post.tags.forEach(tag => { %>
+                        <a href="<%- url_for(tag.path) %>"><span class="chip bg-color"><%= tag.name %></span></a>
+                        <% }); %>
+                    </div>
                     <% } %>
-                </span>
+                </div>
             </div>
+            <% }); %>
         </div>
     </div>
-    <% } %>
-    <% }); %>
-</div>
+    <div class="carousel-3d-nav prev" aria-label="上一页"><i class="fas fa-chevron-left"></i></div>
+    <div class="carousel-3d-nav next" aria-label="下一页"><i class="fas fa-chevron-right"></i></div>
+    <div class="carousel-3d-dots"></div>
 </div>
 <% } %>
 """
@@ -1069,161 +1085,3 @@ if 'post-grid' not in recommend_content and 'carousel-3d-wrapper' in recommend_c
     print('Replaced recommend widget with 3D carousel')
 else:
     print('Recommend widget already uses 3D carousel')
-
-# --- 13. Post grid layout (replaces 3D carousel on home page) ---
-# Card grid layout for featured, recent, and all articles sections.
-# Responsive: 3 columns on desktop, 2 on tablet, 1 on mobile.
-# No carousel/sliding - plain cards in a grid.
-
-grid_css = os.path.join(theme_dir, 'source', 'css', 'my.css')
-grid_css_marker = '/* POST-GRID-LAYOUT */'
-
-if os.path.exists(grid_css):
-    with open(grid_css, encoding='utf-8') as f:
-        gc = f.read()
-    if grid_css_marker not in gc:
-        gc += """
-
-/* POST-GRID-LAYOUT */
-.post-grid-section {
-    margin: 20px 0;
-    padding: 0 10px;
-}
-
-.post-grid-title {
-    font-size: 1.6rem;
-    font-weight: 700;
-    margin: 30px 10px 20px;
-    color: #333;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.post-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-}
-
-.post-grid-card {
-    background: #fff;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
-    transition: all 0.3s;
-    display: flex;
-    flex-direction: column;
-}
-
-.post-grid-card:hover {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-    transform: translateY(-4px);
-}
-
-.post-grid-card .pg-image {
-    height: 180px;
-    overflow: hidden;
-    position: relative;
-    display: block;
-}
-
-.post-grid-card .pg-image img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.3s;
-}
-
-.post-grid-card:hover .pg-image img {
-    transform: scale(1.05);
-}
-
-.post-grid-card .pg-title {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    padding: 14px 16px 10px;
-    background: linear-gradient(transparent, rgba(0,0,0,0.75));
-    color: #fff;
-    font-size: 15px;
-    font-weight: 600;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-.post-grid-card .pg-body {
-    padding: 14px 16px;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-.post-grid-card .pg-summary {
-    font-size: 13px;
-    color: #666;
-    line-height: 1.6;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin-bottom: 12px;
-    flex: 1;
-}
-
-.post-grid-card .pg-meta {
-    display: flex;
-    justify-content: space-between;
-    font-size: 12px;
-    color: #999;
-    border-top: 1px solid #f5f5f5;
-    padding-top: 10px;
-}
-
-.post-grid-card .pg-meta a {
-    color: #999;
-}
-
-.post-grid-card .pg-meta a:hover {
-    color: #009688;
-}
-
-/* Responsive: tablet 2 cols, mobile 1 col */
-@media only screen and (max-width: 992px) {
-    .post-grid { grid-template-columns: repeat(2, 1fr); }
-}
-
-@media only screen and (max-width: 601px) {
-    .post-grid { grid-template-columns: 1fr; }
-    .post-grid-card .pg-image { height: 160px; }
-}
-
-/* Dark mode */
-body.dark .post-grid-card {
-    background: #2a2a2a;
-}
-
-body.dark .post-grid-card .pg-summary {
-    color: #bbb;
-}
-
-body.dark .post-grid-card .pg-meta {
-    border-top-color: #444;
-    color: #888;
-}
-
-body.dark .post-grid-title {
-    color: #ddd;
-}
-"""
-        with open(grid_css, 'w', encoding='utf-8') as f:
-            f.write(gc)
-        print('Added post-grid CSS')
-    else:
-        print('Post-grid CSS already present')
-else:
-    print('my.css not found - skipping post-grid CSS')

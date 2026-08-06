@@ -27,49 +27,65 @@
 %>
 
 <% if (theme.recommend.showTitle) { %>
-<div class="post-grid-title"><i class="far fa-thumbs-up"></i>&nbsp;&nbsp;<%- __('recommendedPosts') %></div>
+<div class="title"><i class="far fa-thumbs-up"></i>&nbsp;&nbsp;<%- __('recommendedPosts') %></div>
 <% } %>
 
-<div class="post-grid-section">
-<div class="post-grid">
-    <% topPosts.forEach(function(post) { %>
-    <% if (post.hide != true) { %>
-    <div class="post-grid-card">
-        <a href="<%- url_for(post.path) %>" class="pg-image">
-            <% if (post.img) { %>
-            <img src="<%- url_for(post.img) %>" alt="<%= post.title %>">
-            <% } else { %>
-            <% var featureImages = theme.featureImages; %>
-            <img src="<%- theme.jsDelivr.url %><%- url_for(featureImages[Math.abs(hashCode(post.title) % featureImages.length)]) %>" alt="<%= post.title %>">
-            <% } %>
-            <span class="pg-title"><%= post.title %></span>
-        </a>
-        <div class="pg-body">
-            <div class="pg-summary">
-                <% if (theme.recommend.useConfig) { %>
-                    <%- (post.summary || '') %>
-                <% } else { %>
-                    <%- smart_summary(post) %>
-                <% } %>
-            </div>
-            <div class="pg-meta">
-                <span><i class="far fa-clock fa-fw"></i><%= date(post.date, config.date_format) %></span>
-                <span>
-                    <% if (post.categories && post.categories.length > 0) { %>
-                    <i class="fas fa-bookmark fa-fw"></i>
-                    <% post.categories.forEach(function(cat, idx) { %>
-                        <% if (idx > 0) { %> / <% } %>
-                        <a href="<%- url_for(cat.path) %>"><%- cat.name %></a>
-                    <% }); %>
-                    <% } else { %>
-                    <i class="fas fa-user fa-fw"></i><%- config.author %>
+<!-- 3D 旋转卡片轮播 - 推荐文章 -->
+<div class="carousel-3d-wrapper">
+    <div class="carousel-3d-stage">
+        <div class="carousel-3d-container">
+            <% topPosts.forEach(function(post, index) { %>
+            <div class="carousel-3d-card<%= index === 0 ? ' active' : '' %>">
+                <div class="card">
+                    <a href="<%- url_for(post.path) %>" class="card-link">
+                        <div class="card-image">
+                            <% if (post.img) { %>
+                            <img src="<%- url_for(post.img) %>" class="responsive-img" alt="<%= post.title %>">
+                            <% } else { %>
+                            <% var featureImages = theme.featureImages; %>
+                            <img src="<%- theme.jsDelivr.url %><%- url_for(featureImages[Math.abs(hashCode(post.title) % featureImages.length)]) %>" class="responsive-img" alt="<%= post.title %>">
+                            <% } %>
+                            <span class="card-title"><%= post.title %></span>
+                        </div>
+                    </a>
+                    <div class="card-content article-content">
+                        <div class="summary block-with-text">
+                            <% if (theme.recommend.useConfig) { %>
+                                <%- (post.summary || '') %>
+                            <% } else { %>
+                                <%- smart_summary(post) %>
+                            <% } %>
+                        </div>
+                        <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i><%= date(post.date, config.date_format) %>
+                            </span>
+                            <span class="publish-author">
+                                <% if (post.categories && post.categories.length > 0) { %>
+                                <i class="fas fa-bookmark fa-fw icon-category"></i>
+                                <% post.categories.forEach(category => { %>
+                                <a href="<%- url_for(category.path) %>" class="post-category"><%- category.name %></a>
+                                <% }); %>
+                                <% } else { %>
+                                <i class="fas fa-user fa-fw"></i><%- config.author %>
+                                <% } %>
+                            </span>
+                        </div>
+                    </div>
+                    <% if(post.tags && post.tags.length > 0) { %>
+                    <div class="card-action article-tags">
+                        <% post.tags.forEach(tag => { %>
+                        <a href="<%- url_for(tag.path) %>"><span class="chip bg-color"><%= tag.name %></span></a>
+                        <% }); %>
+                    </div>
                     <% } %>
-                </span>
+                </div>
             </div>
+            <% }); %>
         </div>
     </div>
-    <% } %>
-    <% }); %>
-</div>
+    <div class="carousel-3d-nav prev" aria-label="上一页"><i class="fas fa-chevron-left"></i></div>
+    <div class="carousel-3d-nav next" aria-label="下一页"><i class="fas fa-chevron-right"></i></div>
+    <div class="carousel-3d-dots"></div>
 </div>
 <% } %>
