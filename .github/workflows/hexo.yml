@@ -1,4 +1,4 @@
-name: Deploy Hexo to GitHub Pages
+name: Deploy Hexo
 
 on:
   push:
@@ -8,12 +8,10 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
   issues: write
 
 concurrency:
-  group: pages
+  group: deploy
   cancel-in-progress: false
 
 jobs:
@@ -53,7 +51,7 @@ jobs:
       - name: Publish Vercount verification file
         run: |
           mkdir -p public/.well-known
-          cp source/.well-known/vercount-verify-zd5pj09shdfkbm6h83ra5zzk.txt public/.well-known/
+          cp source/.well-known/vercount-verify-zd5pj09shdfkbm6h83ra5zzk.txt public/.well-known/ 2>/dev/null || true
       - name: Fix XML escaping in sitemap and feed
         run: |
           python3 -c "
@@ -73,100 +71,51 @@ jobs:
         run: node tools/init-gitalk-issues.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Debug - customizations
-        run: |
-          echo "=== CDN manifest ==="
-          cat tools/cdn-manifest.json 2>/dev/null || echo "NOT FOUND"
-          echo "=== Localized lib files ==="
-          find source/lib -type f 2>/dev/null | sort | head -30
-          echo "=== Theme libs section ==="
-          grep -A 30 '^libs:' themes/matery/_config.yml 2>/dev/null || echo "NOT FOUND"
-          echo "=== jsDelivr setting ==="
-          grep -A 2 '^jsDelivr:' themes/matery/_config.yml 2>/dev/null || echo "NOT FOUND"
-          echo "=== custom-blog-style in layout files? ==="
-          grep -rl 'custom-blog-style' themes/matery/layout/ 2>/dev/null || echo "NOT FOUND"
-          echo "=== post-detail-toc.ejs (first 15 lines) ==="
-          head -15 themes/matery/layout/_partial/post-detail-toc.ejs 2>/dev/null || echo "NOT FOUND"
-          echo "=== footer counters (busuanzi + goatcounter embed) ==="
-          grep -nE 'busuanzi-footer-injected|busuanzi_value_site_pv|busuanzi_value_site_uv|gc.zgo.at/count.js' themes/matery/layout/_partial/footer.ejs 2>/dev/null || echo "NOT FOUND"
-          echo "=== per-page PV in post-meta? ==="
-          grep -n 'busuanzi_value_page_pv' themes/matery/layout/_partial/post-meta.ejs 2>/dev/null || echo "NOT INJECTED"
-          echo "=== reward QR images published? ==="
-          ls -la themes/matery/source/medias/reward/ 2>/dev/null || echo "NOT FOUND"
-          FIRST_POST=$(find public -name 'index.html' -path '*/202[0-9]/*' 2>/dev/null | head -1)
-          if [ -n "$FIRST_POST" ]; then
-            echo "Checking: $FIRST_POST"
-            grep -oE 'busuanzi_value_site_pv|busuanzi_value_site_uv|busuanzi_value_page_pv|busuanzi\.pure\.mini|gc.zgo.at/count.js' "$FIRST_POST" 2>/dev/null | sort | uniq -c
-          else
-            echo "NO POSTS FOUND"
-          fi
-          echo "=== TOC elements in generated posts ==="
-          FIRST_POST=$(find public -name "index.html" -path "*/202[0-9]/*" 2>/dev/null | head -1)
-          echo "Checking: $FIRST_POST"
-          grep -oE 'id="toc[^"]*"|class="[^"]*toc[^"]*"' "$FIRST_POST" 2>/dev/null | sort | uniq -c || echo "NO TOC ELEMENTS"
-          echo "=== hero-stats in cover files? ==="
-          grep -rl 'hero-stats' themes/matery/layout/ 2>/dev/null || echo "NOT FOUND"
-          echo "=== custom-blog-script in layout files? ==="
-          grep -rl 'custom-blog-script' themes/matery/layout/ 2>/dev/null || echo "NOT FOUND"
-          echo "=== homepage stats ==="
-          grep -o 'stat-card\|category-card\|reading-progress\|分类导航' public/index.html 2>/dev/null | sort | uniq -c
-          echo "=== github hrefs ==="
-          grep -o 'href="[^"]*github[^"]*"' public/index.html 2>/dev/null | head -5
-
-      - name: Diagnose render
-        run: |
-          echo "===== recommend card distribution on homepage ====="
-          echo "  total post-card divs:        $(grep -oE 'class=\"post-card\"' public/index.html | wc -l)"
-          echo "  cards WITHOUT data-aos:      $(grep -oE 'class=\"col s12 m6\"' public/index.html | wc -l)"
-          echo "  cards WITH data-aos attr:    $(grep -oE 'data-aos=\"zoom-in-up\"' public/index.html | wc -l)"
-          echo ""
-          echo "===== layout.ejs scripts actually rendered on homepage ====="
-          for kw in materialize.min.js aos.js scrollProgress lightgallery matery.js 3d-carousel.js; do
-            n=$(grep -c "$kw" public/index.html)
-            echo "  $kw: $n"
-          done
-          echo ""
-          echo "===== AOS data attributes on homepage ====="
-          for anim in fade-up zoom-in-up fade-down; do
-            n=$(grep -oE "data-aos=\"$anim\"" public/index.html | wc -l)
-            echo "  data-aos=$anim: $n"
-          done
-          echo ""
-          echo "===== top: values in synced _posts ====="
-          grep -rh "^top:" source/_posts/ 2>/dev/null | sort -u
-          echo ""
-          echo "===== posts with non-empty top ====="
-          count=$(grep -lr "^top:" source/_posts/ 2>/dev/null | wc -l)
-          echo "  total posts with top: $count"
-          echo ""
-          echo "===== gitalk config (post CI inject) ====="
-          grep -E "clientID|clientSecret|__GITALK" _config.matery.yml
-          echo ""
-          echo "===== gitalk assets in public ====="
-          ls -la public/lib/gitalk/ 2>/dev/null || echo "  NOT FOUND"
-          echo ""
-          echo "===== gitalk-container in sample post page ====="
-          FIRST_POST=$(find public -name "index.html" -path "*/2026/*" 2>/dev/null | head -1)
-          echo "  sample post: $FIRST_POST"
-          if [ -n "$FIRST_POST" ]; then
-            echo "  gitalk-container div:    $(grep -c 'gitalk-container' "$FIRST_POST")"
-            echo "  new Gitalk(...) call:    $(grep -c 'new Gitalk' "$FIRST_POST")"
-            echo "  data-aos=fade-up:        $(grep -oE 'data-aos=\"fade-up\"' "$FIRST_POST" | wc -l)"
-            echo "  clientSecret interpolation:"
-            grep -A1 "clientSecret" "$FIRST_POST" | head -3
-          fi
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
         with:
+          name: blog-public
           path: ./public
+          retention-days: 3
 
-  deploy:
+  deploy-server:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: blog-public
+          path: ./public
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -p ${{ secrets.DEPLOY_PORT }} ${{ secrets.DEPLOY_HOST }} >> ~/.ssh/known_hosts
+      - name: Deploy via rsync
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_PORT: ${{ secrets.DEPLOY_PORT }}
+        run: |
+          set -euo pipefail
+          TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
+          REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
+          # 1. rsync 到新的 release 目录
+          rsync -avz --delete \
+            -e "ssh -p ${DEPLOY_PORT}" \
+            ./public/ \
+            "${REMOTE}:/var/www/blog/releases/${TIMESTAMP}/"
+          # 2. 原子切换 symlink
+          ssh -p ${DEPLOY_PORT} "${REMOTE}" "
+            ln -sfn /var/www/blog/releases/${TIMESTAMP} /var/www/blog/current.new && \
+            mv -Tf /var/www/blog/current.new /var/www/blog/current
+          "
+          # 3. 清理 7 天前的旧 release（保留最近 10 个）
+          ssh -p ${DEPLOY_PORT} "${REMOTE}" "
+            cd /var/www/blog/releases && \
+            ls -1t | tail -n +11 | xargs -r rm -rf
+          "
+          echo "Deployed: ${TIMESTAMP}"
+          echo "Live at: https://growdu.cn/"

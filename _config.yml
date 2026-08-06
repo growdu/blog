@@ -8,8 +8,8 @@ description: 资深后端研发工程师的技术博客，专注数据库内核�
 keywords: PostgreSQL,openGauss,数据库,分布式系统,Raft,DCF,DPDK,VPP,C语言,后端开发,编程,存储,高可用
 
 # URL
-url: https://growdu.github.io/blog
-root: /blog/
+url: https://growdu.cn
+root: /
 permalink: :year/:month/:day/:title/
 permalink_defaults:
 

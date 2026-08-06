@@ -82,8 +82,8 @@ video:
 # Gitalk comments (https://github.com/gitalk/gitalk)
 # Uses GitHub Issues - no extra services needed
 # Setup: 1) Go to GitHub Settings > Developer settings > OAuth Apps > New OAuth App
-#        2) Homepage URL: https://growdu.github.io/blog/
-#        3) Callback URL: https://growdu.github.io/blog/
+#        2) Homepage URL: https://growdu.cn/
+#        3) Callback URL: https://growdu.cn/
 #        4) Copy Client ID and generate Client Secret
 gitalk:
   enable: true
@@ -110,7 +110,7 @@ wordcount:
   post_wordcount: true
 
 # Site-level + per-page PV/UV via GoatCounter (https://www.goatcounter.com).
-# Register a free account, point it at https://growdu.github.io/blog/, and
+# Register a free account, point it at https://growdu.cn/, and
 # paste your personal code (the slug in your *.goatcounter.com URL) below.
 # Leave empty to disable.
 goatcounter:
