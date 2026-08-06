@@ -44,6 +44,8 @@ jobs:
         run: npm audit --audit-level=high || true
       - name: Sync content to Hexo
         run: python3 tools/sync-hexo.py
+      - name: Apply theme patches
+        run: python3 tools/patch-theme.py
       - name: Copy vendor assets
         run: python3 tools/copy-vendor.py
       - name: Build with Hexo
