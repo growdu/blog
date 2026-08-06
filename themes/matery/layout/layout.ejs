@@ -213,7 +213,7 @@
   });
 %>
 <div class="hot-sidebar">
-  <div class="hot-title" onclick="toggleSidebar('hot')"><i class="fas fa-fire"></i> 热门文章</div>
+  <div class="hot-title" onclick="toggleSidebar('hot')"><i class="fas fa-fire"></i> 最热文章</div>
   <div class="hot-list" id="hot-posts-list">
     <% hotPosts.slice(0, 20).forEach(function(post, i) { %>
     <a href="<%- url_for(post.path) %>"><span class="hot-rank rank-<%= i+1 %>"><%= i+1 %></span><div class="hot-content"><span class="hot-name"><%= post.title %></span><div class="hot-meta"><% var _cats = (post.categories && post.categories.data) || []; if (_cats.length > 0) { %><span class="hot-cat"><%= _cats[0].name %></span><% } %><% var _wc = post.content ? String(post.content).replace(/<[^>]+>/g, "").length : 0; %><span class="hot-views">🔥 <%= Math.max(5, Math.floor(_wc / 50)) %></span></div></div></a>
@@ -224,12 +224,13 @@
 <script>
 (function(){
   function apply(){
-    if(localStorage.getItem('sb-cat')==='1'){
+    // Default collapsed. Only expand if user explicitly set '0'.
+    if(localStorage.getItem('sb-cat')!=='0'){
       var el=document.querySelector('.cat-sidebar');
       if(el)el.classList.add('collapsed');
       document.body.classList.add('cat-collapsed');
     }
-    if(localStorage.getItem('sb-hot')==='1'){
+    if(localStorage.getItem('sb-hot')!=='0'){
       var el=document.querySelector('.hot-sidebar');
       if(el)el.classList.add('collapsed');
       document.body.classList.add('hot-collapsed');
