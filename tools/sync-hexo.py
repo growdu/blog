@@ -21,10 +21,22 @@ IMG_EXT = {'.png','.jpg','.jpeg','.gif','.svg','.webp','.bmp','.ico'}
 FEATURED_POSTS = {
     '00-intro.md': 100,
     '01-how_to_learn_program.md': 90,
-    'cluster/分布式存储需要解决的问题.md': 80,
-    'es/oh-my-search.md': 70,
-    'db/logical_decode/逻辑解码DDL-Replay框架设计/index.md': 60,
-    'cluster/DCF/一文读懂openguass dcf网络模块.md': 50,
+    'cluster/分布式存储需要解决的问题.md': 85,
+    'es/oh-my-search.md': 80,
+    'db/logical_decode/逻辑解码DDL-Replay框架设计/index.md': 75,
+    'cluster/DCF/一文读懂openguass dcf网络模块.md': 70,
+    'cluster/分布式一致性协议.md': 65,
+    'cluster/分布式系统设计必知必会.md': 60,
+    'pgsql/postgresql基操.md': 55,
+    'linux/linux内核指北.md': 50,
+    'dpdk/dpdk常用接口指北.md': 45,
+    'docker/docker基础指北.md': 40,
+    'ai/07_ChatGPT为什么能对话一篇引用17万次的论文.md': 35,
+    'db/logical_decode/逻辑解码/index.md': 30,
+    'language/rust/rust设计原则.md': 25,
+    'tools/那些你不得不会的提高工作效率的软件神器.md': 20,
+    'network/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md': 15,
+    'ai/01_开场白目录.md': 10,
 }
 
 
