@@ -112,6 +112,49 @@ jobs:
           grep -o 'stat-card\|category-card\|reading-progress\|分类导航' public/index.html 2>/dev/null | sort | uniq -c
           echo "=== github hrefs ==="
           grep -o 'href="[^"]*github[^"]*"' public/index.html 2>/dev/null | head -5
+
+      - name: Diagnose render
+        run: |
+          echo "===== recommend card distribution on homepage ====="
+          echo "  total post-card divs:        $(grep -oE 'class=\"post-card\"' public/index.html | wc -l)"
+          echo "  cards WITHOUT data-aos:      $(grep -oE 'class=\"col s12 m6\"' public/index.html | wc -l)"
+          echo "  cards WITH data-aos attr:    $(grep -oE 'data-aos=\"zoom-in-up\"' public/index.html | wc -l)"
+          echo ""
+          echo "===== layout.ejs scripts actually rendered on homepage ====="
+          for kw in materialize.min.js aos.js scrollProgress lightgallery matery.js 3d-carousel.js; do
+            n=$(grep -c "$kw" public/index.html)
+            echo "  $kw: $n"
+          done
+          echo ""
+          echo "===== AOS data attributes on homepage ====="
+          for anim in fade-up zoom-in-up fade-down; do
+            n=$(grep -oE "data-aos=\"$anim\"" public/index.html | wc -l)
+            echo "  data-aos=$anim: $n"
+          done
+          echo ""
+          echo "===== top: values in synced _posts ====="
+          grep -rh "^top:" source/_posts/ 2>/dev/null | sort -u
+          echo ""
+          echo "===== posts with non-empty top ====="
+          count=$(grep -lr "^top:" source/_posts/ 2>/dev/null | wc -l)
+          echo "  total posts with top: $count"
+          echo ""
+          echo "===== gitalk config (post CI inject) ====="
+          grep -E "clientID|clientSecret|__GITALK" _config.matery.yml
+          echo ""
+          echo "===== gitalk assets in public ====="
+          ls -la public/lib/gitalk/ 2>/dev/null || echo "  NOT FOUND"
+          echo ""
+          echo "===== gitalk-container in sample post page ====="
+          FIRST_POST=$(find public -name "index.html" -path "*/2026/*" 2>/dev/null | head -1)
+          echo "  sample post: $FIRST_POST"
+          if [ -n "$FIRST_POST" ]; then
+            echo "  gitalk-container div:    $(grep -c 'gitalk-container' "$FIRST_POST")"
+            echo "  new Gitalk(...) call:    $(grep -c 'new Gitalk' "$FIRST_POST")"
+            echo "  data-aos=fade-up:        $(grep -oE 'data-aos=\"fade-up\"' "$FIRST_POST" | wc -l)"
+            echo "  clientSecret interpolation:"
+            grep -A1 "clientSecret" "$FIRST_POST" | head -3
+          fi
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v4
         with:
