@@ -978,3 +978,110 @@ if masonry_line in lc:
     with open(layout_path, 'w', encoding='utf-8') as f:
         f.write(lc)
     print('Removed masonry.js from layout')
+
+# --- 12. Replace recommend widget with 3D carousel ---
+# Replaces the grid-based recommend widget with the same 3D rotating carousel
+# used for the article listing. Includes prev/next nav buttons.
+
+recommend_path = os.path.join(theme_dir, 'layout', '_widget', 'recommend.ejs')
+with open(recommend_path, encoding='utf-8') as f:
+    recommend_content = f.read()
+
+if 'carousel-3d-wrapper' not in recommend_content:
+    new_recommend = """<%
+    // get all top posts.
+    var topPosts = [];
+    if (theme.recommend.useConfig) {
+        topPosts = site.data.recommends;
+    } else {
+        site.posts.forEach(function (post) {
+            if (post.top) {
+                topPosts.push(post);
+            }
+        });
+    }
+    var topPostsCount = topPosts.length;
+%>
+
+<% if (topPostsCount > 0) { %>
+<%
+    var hashCode = function (str) {
+        if (!str && str.length === 0) { return 0; }
+        var hash = 0;
+        for (var i = 0, len = str.length; i < len; i++) {
+            hash = ((hash << 5) - hash) + str.charCodeAt(i);
+            hash |= 0;
+        }
+        return hash;
+    };
+%>
+
+<% if (theme.recommend.showTitle) { %>
+<div class="title"><i class="far fa-thumbs-up"></i>&nbsp;&nbsp;<%- __('recommendedPosts') %></div>
+<% } %>
+
+<!-- 3D 旋转卡片轮播 - 推荐文章 -->
+<div class="carousel-3d-wrapper">
+    <div class="carousel-3d-stage">
+        <div class="carousel-3d-container">
+            <% topPosts.forEach(function(post, index) { %>
+            <div class="carousel-3d-card<%= index === 0 ? ' active' : '' %>">
+                <div class="card">
+                    <a href="<%- url_for(post.path) %>" class="card-link">
+                        <div class="card-image">
+                            <% if (post.img) { %>
+                            <img src="<%- url_for(post.img) %>" class="responsive-img" alt="<%= post.title %>">
+                            <% } else { %>
+                            <% var featureImages = theme.featureImages; %>
+                            <img src="<%- theme.jsDelivr.url %><%- url_for(featureImages[Math.abs(hashCode(post.title) % featureImages.length)]) %>" class="responsive-img" alt="<%= post.title %>">
+                            <% } %>
+                            <span class="card-title"><%= post.title %></span>
+                        </div>
+                    </a>
+                    <div class="card-content article-content">
+                        <div class="summary block-with-text">
+                            <% if (theme.recommend.useConfig) { %>
+                                <%- (post.summary || '') %>
+                            <% } else { %>
+                                <%- smart_summary(post) %>
+                            <% } %>
+                        </div>
+                        <div class="publish-info">
+                            <span class="publish-date">
+                                <i class="far fa-clock fa-fw icon-date"></i><%= date(post.date, config.date_format) %>
+                            </span>
+                            <span class="publish-author">
+                                <% if (post.categories && post.categories.length > 0) { %>
+                                <i class="fas fa-bookmark fa-fw icon-category"></i>
+                                <% post.categories.forEach(category => { %>
+                                <a href="<%- url_for(category.path) %>" class="post-category"><%- category.name %></a>
+                                <% }); %>
+                                <% } else { %>
+                                <i class="fas fa-user fa-fw"></i><%- config.author %>
+                                <% } %>
+                            </span>
+                        </div>
+                    </div>
+                    <% if(post.tags && post.tags.length > 0) { %>
+                    <div class="card-action article-tags">
+                        <% post.tags.forEach(tag => { %>
+                        <a href="<%- url_for(tag.path) %>"><span class="chip bg-color"><%= tag.name %></span></a>
+                        <% }); %>
+                    </div>
+                    <% } %>
+                </div>
+            </div>
+            <% }); %>
+        </div>
+    </div>
+    <div class="carousel-3d-nav prev" aria-label="上一页"><i class="fas fa-chevron-left"></i></div>
+    <div class="carousel-3d-nav next" aria-label="下一页"><i class="fas fa-chevron-right"></i></div>
+    <div class="carousel-3d-dots"></div>
+</div>
+<% } %>
+"""
+    with open(recommend_path, 'w', encoding='utf-8') as f:
+        f.write(new_recommend)
+    print('Replaced recommend widget with 3D carousel')
+else:
+    print('Recommend widget already uses 3D carousel')
