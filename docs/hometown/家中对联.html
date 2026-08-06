@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>家中对联</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Songti SC", "Noto Serif CJK SC", "STSong", "SimSun", "KaiTi", serif;
+    background: #fefefe;
+    color: #2c2c2c;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2em 1.5em 4em;
+    line-height: 1.8;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 2em;
+    letter-spacing: 0.3em;
+    margin-bottom: 0.5em;
+    color: #3a3a3a;
+  }
+  .intro {
+    text-align: center;
+    color: #888;
+    line-height: 2.2;
+    margin-bottom: 2em;
+  }
+
+  /* ===== 对联卡片 ===== */
+  .couplet-card {
+    margin: 2.5em 0;
+    padding: 2em 1.5em 1.5em;
+    background: linear-gradient(135deg, #fdf8f0 0%, #faf3e6 100%);
+    border: 1px solid #d4c5a9;
+    border-radius: 6px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    page-break-inside: avoid;
+  }
+  .couplet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.2em;
+  }
+  .couplet-title {
+    font-size: 1.15em;
+    font-weight: bold;
+    color: #8b4513;
+    letter-spacing: 0.1em;
+  }
+  .couplet-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.8em; height: 1.8em;
+    background: #8b4513;
+    color: #fff;
+    border-radius: 50%;
+    font-size: 0.85em;
+    margin-right: 0.4em;
+  }
+  .stars { color: #c41e3a; letter-spacing: 0.1em; font-size: 0.9em; }
+
+  /* ===== 横批 ===== */
+  .couplet-hengpi {
+    display: flex;
+    justify-content: center;
+    gap: 0.5em;
+    margin-bottom: 1em;
+  }
+  .couplet-hengpi span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.6em; height: 2.6em;
+    font-size: 1.35em;
+    font-weight: bold;
+    color: #fff;
+    background: #8b4513;
+    border-radius: 3px;
+  }
+
+  /* ===== 上下联主体 ===== */
+  .couplet-body {
+    display: flex;
+    justify-content: center;
+    gap: 3em;
+    align-items: flex-start;
+    padding: 0.8em 0;
+  }
+  .couplet-shanglian, .couplet-xialian {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    font-size: 1.85em;
+    line-height: 2;
+    letter-spacing: 0.25em;
+    color: #2c2c2c;
+    padding: 0.7em 0.4em;
+    border-left:  2px solid #c41e3a;
+    border-right: 2px solid #c41e3a;
+    background: rgba(255,255,255,0.5);
+    min-height: 6em;
+  }
+  /* 七言联稍调间距 */
+  .short .couplet-shanglian,
+  .short .couplet-xialian {
+    line-height: 2.3;
+    letter-spacing: 0.4em;
+  }
+  .couplet-label-row {
+    display: flex;
+    justify-content: center;
+    gap: 3em;
+    margin-top: 0.5em;
+    font-size: 0.85em;
+    color: #aaa;
+    letter-spacing: 0.3em;
+  }
+
+  /* ===== 注释区 ===== */
+  .couplet-note {
+    margin-top: 1.2em;
+    padding: 0.9em 1em;
+    background: rgba(139,69,19,0.04);
+    border-left: 3px solid #d4c5a9;
+    font-size: 0.95em;
+    color: #555;
+    line-height: 1.85;
+  }
+  .couplet-note blockquote {
+    margin: 0.4em 0 0.8em;
+    padding: 0.4em 0.9em;
+    border-left: 2px solid #c41e3a;
+    color: #8b4513;
+    background: rgba(196,30,58,0.03);
+    font-size: 0.94em;
+  }
+  .couplet-note blockquote strong { color: #6b3010; }
+  .duizhang {
+    font-size: 0.92em;
+    color: #777;
+    line-height: 1.7;
+  }
+  .duizhang::before {
+    content: "对仗自检：";
+    font-weight: bold;
+    color: #8b4513;
+  }
+
+  /* ===== 表格 ===== */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5em 0;
+    font-size: 0.92em;
+  }
+  th, td {
+    padding: 0.6em 0.5em;
+    border: 1px solid #e0d5c0;
+    text-align: center;
+  }
+  th { background: #faf3e6; color: #8b4513; font-weight: bold; }
+  tr:nth-child(even) td { background: rgba(139,69,19,0.02); }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 640px) {
+    body { padding: 1em 0.8em 3em; }
+    h1 { font-size: 1.5em; }
+    .couplet-shanglian, .couplet-xialian {
+      font-size: 1.3em;
+      line-height: 1.8;
+      letter-spacing: 0.15em;
+      padding: 0.4em 0.25em;
+    }
+    .couplet-body { gap: 1.2em; }
+    .couplet-label-row { gap: 1.2em; }
+    .couplet-hengpi span { width: 2.2em; height: 2.2em; font-size: 1.15em; }
+    .couplet-note { font-size: 0.88em; }
+  }
+
+  @media print {
+    body { max-width: 100%; }
+    .couplet-card { box-shadow: none; break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<h1>家中对联</h1>
+<p class="intro">
+年少时只知山是山，水是水。<br>
+出去久了才知道，山不是山，水不是水。<br>
+挣扎过后才明白，山还是山，水还是水。
+</p>
+
+<!-- ============================================================ -->
+<!-- 一、书香故里 -->
+<!-- ============================================================ -->
+<div class="couplet-card">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">一</span>书香故里</span>
+  <span class="stars">★★★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>里</span><span>故</span><span>香</span><span>书</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">凝神笔底行间明月是家乡</div>
+  <div class="couplet-shanglian">展卷灯前字里青山皆故土</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+灯下翻开书卷，每一个字里的青山都是故乡的山；凝神落笔时，每一行之间的明月都照着家乡。读书不是为了逃离，而是为了看清——看清每一座山都与故土相连。「青山」与「明月」是唐诗里最经典的对仗搭档，这里让它们分别藏在字里和行间，书不再是身外之物，书就是家。
+<div class="duizhang">展卷/凝神（动作/状态）、灯前/笔底（空间）、字里/行间（书中方位）、青山/明月（唐诗经典对）、故土/家乡（读过书后，故土与家乡合而为一）。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 二、山水书窗 -->
+<!-- ============================================================ -->
+<div class="couplet-card">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">二</span>山水书窗</span>
+  <span class="stars">★★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>窗</span><span>书</span><span>水</span><span>山</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">门含万壑墨气横流翠壁间</div>
+  <div class="couplet-shanglian">窗纳千峰书声直上青霄外</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+窗子收纳千座山峰，读书声一直飘到青天之外；门扉含着万道山谷，墨的气息弥漫在翠绿的崖壁之间。不是人在屋里读书，而是书声和山色互相渗透。「纳」是接纳，「含」是涵养，门窗不是隔断，是连通器。
+<div class="duizhang">窗/门、纳/含（同义动词）、千峰/万壑（数字+地形）、书声/墨气（听觉/嗅觉）、直上/横流（垂直/水平）、青霄外/翠壁间（颜色+空间方位）。全联无一字落空。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 三、厚德载物 -->
+<!-- ============================================================ -->
+<div class="couplet-card">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">三</span>厚德载物</span>
+  <span class="stars">★★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>物</span><span>载</span><span>德</span><span>厚</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">自强无畏终凭器识立乾坤</div>
+  <div class="couplet-shanglian">厚德不言自有春风盈世泽</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+<blockquote>「学问」→「器识」：原联「春风」（自然意象）对「学问」（抽象概念），词类错位。器识（器度+见识）是古典成词，与「春风」同为双字雅词，节奏统一。<br>
+横批「宁静致远」→「厚德载物」：厚德载物由上联自然化出，「载物」与下联「立乾坤」形成承载/挺立的呼应。</blockquote>
+没有写「勤劳」二字——厚德里面，已经包含了父母一辈所有品质。
+<div class="duizhang">厚德/自强（品德/行动）、不言/无畏（否定式工对）、自有/终凭（虚词结构一致）、春风/器识（意象/才识）、盈/立（充盈/树立）、世泽/乾坤（家族/天下，格局递进）。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 四、山外有山 · 返璞归真 -->
+<!-- ============================================================ -->
+<div class="couplet-card">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">四</span>山外有山 · 返璞归真</span>
+  <span class="stars">★★★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>真</span><span>归</span><span>璞</span><span>返</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">心中无惧行千里始见家山</div>
+  <div class="couplet-shanglian">山外有山读万卷方知天地</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+<blockquote>原横批「宁静致远」→「返璞归真」。宁静致远侧重求学心境，但这副的核心是出走半生后的回归。返璞归真直接点题——洗尽铅华，家山才是真山。</blockquote>
+小时候，山就是家。后来，山外还有山。最后回头才知道——真正的山，一直都在心里。与腾冲的山城环境天然契合。「天地」对外，「家山」对内，由远及近，布局完整。
+<div class="duizhang">山外/心中（空间对内心）、有山/无惧（有无对照）、读万卷/行千里（数量工对）、方知/始见（虚词+动词）、天地/家山（博观/归处）。无瑕疵。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 五、守拙耕心 · 耕读传家 -->
+<!-- ============================================================ -->
+<div class="couplet-card">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">五</span>守拙耕心 · 耕读传家</span>
+  <span class="stars">★★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>家</span><span>传</span><span>读</span><span>耕</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">读世明伦自强方见大乾坤</div>
+  <div class="couplet-shanglian">守拙耕心积善终成真境界</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+<blockquote>原联「厚德立身…明理读世…」横批「自强不息」。改动三处：<br>
+<strong>「厚德」→「积善」</strong>——厚德是静态禀赋，积善是动态修行，与下联「自强」形成向内修/向外行的张力。<br>
+<strong>「明理读世」→「读世明伦」</strong>——先读世（阅历）后明伦（人伦），与上联「守拙→耕心」结构对称。<br>
+<strong>横批「自强不息」→「耕读传家」</strong>——不再重复下联，且呼应「耕心」「读世」双线。</blockquote>
+三阶段：<strong>守拙</strong>（父母一代的根基）→ <strong>读世</strong>（子女走出大山）→ <strong>真境界</strong>（回归、和解）。就是「山还是山」。
+<div class="duizhang">守/读（动词工对）、拙/世（所守/所读对象）、耕/明（修心/明理）、心/伦（内心/人际）、积善/自强（德行/行动）。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 六、春秋代序 -->
+<!-- ============================================================ -->
+<div class="couplet-card">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">六</span>春秋代序</span>
+  <span class="stars">★★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>序</span><span>代</span><span>秋</span><span>春</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">寒灯伴读半榻秋山半榻书</div>
+  <div class="couplet-shanglian">布谷催耕一犁春水一犁雨</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+布谷声里的春天，犁尖划开的是水和雨；寒灯下的秋天，半张榻上是山影和书卷。农耕的一天对应读书的一年，「一犁…一犁」与「半榻…半榻」的叠句让整副对联有了呼吸感。横批「春秋代序」出自《离骚》——春耕秋读，四时轮转，代代如此。
+<div class="duizhang">布谷/寒灯（声/光，暖/寒）、催耕/伴读（动宾工对）、一犁/半榻（数量）、春水/秋山（季节+自然）。「一犁春水一犁雨」化自清代农谚。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 七、耕读致远 -->
+<!-- ============================================================ -->
+<div class="couplet-card short">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">七</span>耕读致远</span>
+  <span class="stars">★★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>远</span><span>致</span><span>读</span><span>耕</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">书卷堆成渡海舟</div>
+  <div class="couplet-shanglian">梯田叠作登天路</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+梯田一层层叠上去，叠成登天的路；书一本本堆起来，堆成渡海的船。耕种是纵向的超越，读书是横向的远行。腾冲的梯田本身就是「登天路」的视觉写照。
+<div class="duizhang">梯田/书卷（实物）、叠作/堆成（累积动词）、登天路/渡海舟（天/海，路/舟，空间隐喻工对）。七言联，简洁利落。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 八、归去来兮 -->
+<!-- ============================================================ -->
+<div class="couplet-card">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">八</span>归去来兮</span>
+  <span class="stars">★★★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>兮</span><span>来</span><span>去</span><span>归</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">桑麻此日方知寸土即桃源</div>
+  <div class="couplet-shanglian">书剑当年不解家山藏太古</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+年轻时带着书和剑出门，不懂得家山藏着天地初开时的太古之气；如今守着桑麻过日子，才明白每一寸土地就是桃花源。「书剑」是青年的行囊（书以求知，剑以立志），「桑麻」是中年的归宿。横批「归去来兮」借用陶渊明——出去再回来，才是完整的人生。
+<div class="duizhang">书剑/桑麻（青年工具/中年作物）、当年/此日（时间对仗）、不解/方知（认知转折）、家山/寸土（宏观/微观）、藏太古/即桃源（太古的时间纵深/桃源的空间归宿）。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 九、返本开新 -->
+<!-- ============================================================ -->
+<div class="couplet-card short">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">九</span>返本开新</span>
+  <span class="stars">★★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>新</span><span>开</span><span>本</span><span>返</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">归土始知种德深</div>
+  <div class="couplet-shanglian">出山方觉读书浅</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+走出了山，才发现读的书太浅；回到了土，才知道种的德有多深。七言联，没有任何修饰词，但「浅」和「深」之间囊括了半生的体悟。「种德深」是点睛之笔——把耕作从农事升华为道德修行。父母在土里种下的不是庄稼，是德。
+<div class="duizhang">出山/归土（空间方向相反）、方觉/始知（时间虚词）、读书浅/种德深（浅/深对比，收束在全联最重的一个字上）。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 十、知行合一 -->
+<!-- ============================================================ -->
+<div class="couplet-card">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">十</span>知行合一</span>
+  <span class="stars">★★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>一</span><span>合</span><span>行</span><span>知</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">明心立志诚意济世见本真</div>
+  <div class="couplet-shanglian">厚德立身耕读传家知天地</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+<blockquote>核心修复：「见乾坤」→「见本真」。原联「知天地」「见乾坤」合掌——天地即乾坤，对联大忌。改为「知天地/见本真」：上联向外探索世界，下联向内照见本真。<br>
+「自强处世」→「诚意济世」：诚意出自《大学》，形成「明心→诚意→立志→济世」的内在修身链条。</blockquote>
+知天地——从乡村走向世界；见本真——经历世界后更懂自己。不是逃离土地，而是理解土地。
+<div class="duizhang">厚德/明心（德性/心性）、立身/立志（安身/定志）、耕读/诚意（农+学/内心修为）、知天地/见本真（外求/内观）。合掌已消除。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 十一、与人为善 · 守正笃行 -->
+<!-- ============================================================ -->
+<div class="couplet-card">
+<div class="couplet-header">
+  <span class="couplet-title"><span class="couplet-num">十一</span>与人为善 · 守正笃行</span>
+  <span class="stars">★★★</span>
+</div>
+<div class="couplet-hengpi">
+  <span>行</span><span>笃</span><span>正</span><span>守</span>
+</div>
+<div class="couplet-body">
+  <div class="couplet-xialian">以学立身凭正道自强不息</div>
+  <div class="couplet-shanglian">与人为善守本心行稳致远</div>
+</div>
+<div class="couplet-label-row">
+  <span>下 联</span>
+  <span>上 联</span>
+</div>
+<div class="couplet-note">
+<blockquote>横批「自强不息」→「守正笃行」。原横批直接复现于下联末尾。「守正」覆盖「本心+正道」，「笃行」覆盖「行稳致远+自强不息」——横批成为上下联的交集而非重复。</blockquote>
+没有一句说鬼神，但已经回答了一切。真正决定命运的，不是神，而是：本心、正道、学问。
+<div class="duizhang">与人/以学（处世/立身）、为善/立身（行善/修己）、守/凭（动词工对）、本心/正道（内在/外在）、行稳致远/自强不息（四字成语收尾，节奏齐整）。</div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- 总览 -->
+<!-- ============================================================ -->
+<h2 style="text-align:center;color:#8b4513;letter-spacing:0.2em;margin-top:3em;">总览</h2>
+
+<table>
+<thead><tr><th>#</th><th>对联</th><th>横批</th><th>核心意象</th><th>推荐</th></tr></thead>
+<tbody>
+<tr><td>一</td><td>展卷灯前·字里青山</td><td>书香故里</td><td>灯、字、青山、明月</td><td>★★★★★</td></tr>
+<tr><td>二</td><td>窗纳千峰·门含万壑</td><td>山水书窗</td><td>窗、峰、书声、墨气</td><td>★★★★</td></tr>
+<tr><td>三</td><td>厚德不言·自强无畏</td><td>厚德载物</td><td>春风、器识、世泽、乾坤</td><td>★★★★</td></tr>
+<tr><td>四</td><td>山外有山·心中无惧</td><td>返璞归真</td><td>天地、家山</td><td>★★★★★</td></tr>
+<tr><td>五</td><td>守拙耕心·读世明伦</td><td>耕读传家</td><td>守拙、读世、真境界</td><td>★★★★</td></tr>
+<tr><td>六</td><td>布谷催耕·寒灯伴读</td><td>春秋代序</td><td>犁、雨、灯、山</td><td>★★★★</td></tr>
+<tr><td>七</td><td>梯田叠路·书卷成舟</td><td>耕读致远</td><td>梯田、书卷、天路、海舟</td><td>★★★★</td></tr>
+<tr><td>八</td><td>书剑当年·桑麻此日</td><td>归去来兮</td><td>书剑、桑麻、太古、桃源</td><td>★★★★★</td></tr>
+<tr><td>九</td><td>出山归土·读书种德</td><td>返本开新</td><td>山、土、读书、种德</td><td>★★★★</td></tr>
+<tr><td>十</td><td>厚德立身·明心立志</td><td>知行合一</td><td>天地、本真</td><td>★★★★</td></tr>
+<tr><td>十一</td><td>与人为善·以学立身</td><td>守正笃行</td><td>本心、正道、学问</td><td>★★★</td></tr>
+</tbody>
+</table>
+
+<p style="text-align:center;color:#8b4513;margin:1.5em 0;">
+十一副对联，十一副横批，无一重复。
+</p>
+
+</body>
+</html>
