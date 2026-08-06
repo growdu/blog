@@ -185,7 +185,7 @@
 </script>
 <% if (site.categories && site.categories.length) { %>
 <div class="cat-sidebar">
-  <div class="cat-title"><i class="fas fa-folder-tree"></i> 分类导航</div>
+  <div class="cat-title" onclick="toggleSidebar('cat')"><i class="fas fa-folder-tree"></i> 分类导航</div>
   <div class="cat-list">
     <% var _ci={'数据库':'fa-database','数据库深入':'fa-database','PostgreSQL':'fa-database','openGauss':'fa-database','存储':'fa-hard-drive','分布式':'fa-sitemap','算法':'fa-calculator','集群':'fa-server','网络':'fa-network-wired','AI':'fa-robot','ChatGPT':'fa-comments','DPDK':'fa-bolt','VPP':'fa-bolt','编程基础':'fa-code','Linux':'fa-terminal','Docker':'fab fa-docker','工具':'fa-toolbox','协议':'fa-handshake','C语言':'fa-code','Python':'fa-code','Go':'fa-code','前端':'fa-laptop-code','汇编':'fa-microchip','GUI':'fa-window-restore','视频':'fa-video','邮件':'fa-envelope','环境':'fa-cog','FAQ':'fa-question-circle','路径':'fa-road','wiki':'fa-book','股票':'fa-chart-line','OPC':'fa-microchip','page':'fa-file','pcap':'fa-wireshark','web':'fa-globe'}; %>
     <% site.categories.each(function(category) { %>
@@ -213,7 +213,7 @@
   });
 %>
 <div class="hot-sidebar">
-  <div class="hot-title"><i class="fas fa-fire"></i> 热门文章</div>
+  <div class="hot-title" onclick="toggleSidebar('hot')"><i class="fas fa-fire"></i> 热门文章</div>
   <div class="hot-list" id="hot-posts-list">
     <% hotPosts.slice(0, 20).forEach(function(post, i) { %>
     <a href="<%- url_for(post.path) %>"><span class="hot-rank rank-<%= i+1 %>"><%= i+1 %></span><div class="hot-content"><span class="hot-name"><%= post.title %></span><div class="hot-meta"><% var _cats = (post.categories && post.categories.data) || []; if (_cats.length > 0) { %><span class="hot-cat"><%= _cats[0].name %></span><% } %><% var _wc = post.content ? String(post.content).replace(/<[^>]+>/g, "").length : 0; %><span class="hot-views">🔥 <%= Math.max(5, Math.floor(_wc / 50)) %></span></div></div></a>
@@ -221,6 +221,31 @@
   </div>
 </div>
 <% if (is_home()) { %>
+<script>
+(function(){
+  function apply(){
+    if(localStorage.getItem('sb-cat')==='1'){
+      var el=document.querySelector('.cat-sidebar');
+      if(el)el.classList.add('collapsed');
+      document.body.classList.add('cat-collapsed');
+    }
+    if(localStorage.getItem('sb-hot')==='1'){
+      var el=document.querySelector('.hot-sidebar');
+      if(el)el.classList.add('collapsed');
+      document.body.classList.add('hot-collapsed');
+    }
+  }
+  apply();
+  window.toggleSidebar=function(name){
+    var sel=name==='cat'?'.cat-sidebar':'.hot-sidebar';
+    var el=document.querySelector(sel);
+    if(!el)return;
+    var collapsed=el.classList.toggle('collapsed');
+    document.body.classList.toggle(name+'-collapsed',collapsed);
+    localStorage.setItem('sb-'+name,collapsed?'1':'0');
+  };
+})();
+</script>
 <script id="hot-posts-json" type="application/json"><%- JSON.stringify(hotData) %></script>
 <script>
 (function(){

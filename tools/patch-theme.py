@@ -1085,3 +1085,110 @@ if 'carousel-3d-wrapper' not in recommend_content:
     print('Replaced recommend widget with 3D carousel')
 else:
     print('Recommend widget already uses 3D carousel')
+
+# --- 14. Constrain main content width on wide screens to avoid sidebars ---
+# On screens >1400px, fixed sidebars (270px each + 12px gap) appear.
+# Force main.content to stay within the safe zone between the two sidebars.
+
+main_css_marker = '/* MAIN-CONTENT-SAFE-MARGIN */'
+main_css_path = os.path.join(theme_dir, 'source', 'css', 'my.css')
+if os.path.exists(main_css_path):
+    with open(main_css_path, encoding='utf-8') as f:
+        mc = f.read()
+    if main_css_marker not in mc:
+        mc += """
+
+/* MAIN-CONTENT-SAFE-MARGIN */
+/* On wide screens (>1400px), fixed sidebars (270px + 12px gap each) are visible.
+   Force main.content to stay within the safe zone so carousel nav buttons
+   and other content don't get hidden behind the sidebars. */
+@media (min-width: 1401px) {
+    main.content {
+        margin-left: 294px !important;
+        margin-right: 294px !important;
+        max-width: calc(100vw - 588px) !important;
+    }
+}
+"""
+        with open(main_css_path, 'w', encoding='utf-8') as f:
+            f.write(mc)
+        print('Added main-content safe margin CSS')
+    else:
+        print('Main-content safe margin CSS already present')
+else:
+    print('my.css not found')
+
+# --- 15. Collapsible sidebars ---
+# Click sidebar title to collapse/expand. Collapsed = thin icon strip (48px).
+# State saved in localStorage. main.content margins adjust accordingly.
+
+collapse_css_marker = '/* COLLAPSIBLE-SIDEBARS */'
+collapse_css_path = os.path.join(theme_dir, 'source', 'css', 'my.css')
+if os.path.exists(collapse_css_path):
+    with open(collapse_css_path, encoding='utf-8') as f:
+        cc = f.read()
+    if collapse_css_marker not in cc:
+        cc += """
+
+/* COLLAPSIBLE-SIDEBARS */
+/* Collapsed state: thin icon strip, only icon visible */
+.cat-sidebar.collapsed,
+.hot-sidebar.collapsed {
+    width: 48px;
+    overflow: hidden;
+}
+.cat-sidebar.collapsed .cat-title,
+.hot-sidebar.collapsed .hot-title {
+    font-size: 0;
+    padding: 12px 0;
+    justify-content: center;
+    border-radius: 12px 12px 0 0;
+}
+.cat-sidebar.collapsed .cat-title i,
+.hot-sidebar.collapsed .hot-title i {
+    font-size: 20px;
+}
+.cat-sidebar.collapsed .cat-list,
+.hot-sidebar.collapsed .hot-list {
+    display: none;
+}
+/* Cursor and hover hint */
+.cat-sidebar .cat-title,
+.hot-sidebar .hot-title {
+    cursor: pointer;
+    user-select: none;
+}
+.cat-sidebar .cat-title:hover,
+.hot-sidebar .hot-title:hover {
+    filter: brightness(1.08);
+}
+/* Smooth transition */
+.cat-sidebar,
+.hot-sidebar {
+    transition: width 0.3s ease;
+}
+
+/* Adjust main.content margins when sidebars are collapsed.
+   Each collapsed sidebar takes 48px + 12px gap = 60px.
+   Expanded sidebar takes 270px + 12px gap = 282px. */
+@media (min-width: 1401px) {
+    body.cat-collapsed main.content {
+        margin-left: 60px !important;
+    }
+    body.hot-collapsed main.content {
+        margin-right: 60px !important;
+    }
+    body.cat-collapsed.hot-collapsed main.content {
+        margin-left: 60px !important;
+        margin-right: 60px !important;
+        max-width: calc(100vw - 120px) !important;
+    }
+}
+"""
+        with open(collapse_css_path, 'w', encoding='utf-8') as f:
+            f.write(cc)
+        print('Added collapsible sidebars CSS')
+    else:
+        print('Collapsible sidebars CSS already present')
+else:
+    print('my.css not found')

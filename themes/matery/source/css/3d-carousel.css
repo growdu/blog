@@ -2,14 +2,14 @@
 .carousel-3d-wrapper {
     position: relative;
     width: 100%;
-    padding: 20px 0 50px;
+    padding: 15px 0 30px;
     overflow: hidden;
 }
 
 .carousel-3d-stage {
     position: relative;
     width: 100%;
-    height: 520px;
+    height: 380px;
     display: flex;
     align-items: center;
     justify-content: center;
