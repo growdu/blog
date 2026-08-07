@@ -1269,19 +1269,19 @@ if os.path.exists(all_page_path):
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 18px;
-    background: linear-gradient(135deg, #009688, #00bcd4);
-    color: #fff !important;
-    border-radius: 18px;
-    font-size: 13px;
+    padding: 10px 22px;
+    background: rgba(0,0,0,0.08);
+    color: #444 !important;
+    border-radius: 22px;
+    font-size: 15px;
+    font-weight: 500;
     text-decoration: none !important;
-    box-shadow: 0 2px 8px rgba(0, 150, 136, 0.25);
-    transition: transform 0.2s, box-shadow 0.2s;
+    transition: background 0.2s, transform 0.2s;
 }
 .all-page-back:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 14px rgba(0, 150, 136, 0.4);
-    color: #fff !important;
+    background: rgba(0,0,0,0.16);
+    color: #222 !important;
+    transform: translateX(-2px);
 }
 body.dark .all-page-header h1 { color: #ddd; }
 body.dark .all-page-subtitle { color: #aaa; }
@@ -1392,6 +1392,8 @@ body.dark .rec-page-all-top {
     color: #fff !important;
 }
 body.dark .rec-page-back { background: rgba(255,255,255,0.1); color: #ccc !important; }
+body.dark .all-page-back { background: rgba(255,255,255,0.1); color: #ccc !important; }
+body.dark .all-page-back:hover { background: rgba(255,255,255,0.2); color: #fff !important; }
 body.dark .rec-page-back:hover { background: rgba(255,255,255,0.2); color: #fff !important; }
 body.dark .rec-section-title { color: #bbb; }
 
@@ -1418,3 +1420,26 @@ main.rec-page {
         print('Added rec-page-layout CSS')
 else:
     print('my.css not found')
+
+/* FIXED HEADER/FOOTER COLORS - 跨页面统一深色主题 */
+/* Header (nav-wrapper) 固定深色背景 */
+.Navbar {
+    background: #263238 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+/* Footer 固定深色背景 */
+footer.footer {
+    background: #263238 !important;
+    color: rgba(255,255,255,0.8) !important;
+}
+footer.footer a {
+    color: rgba(255,255,255,0.7) !important;
+}
+footer.footer a:hover {
+    color: #fff !important;
+}
+/* /recommended/ 和 /all/ 顶部 header 不用深色(保持白底浅灰) */
+/* 因为它们有特殊渐变背景,需要浅色头 */
+.rec-page-header, .all-page-header {
+    /* 浅色 header 已在各自的 section 样式中定义 */
+}
