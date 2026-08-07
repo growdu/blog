@@ -238,7 +238,10 @@ body.dark .view-all-btn {
 
 /* ALL-PAGE-HEADER */
 .all-page {
-    padding-top: 20px;
+    padding-top: 30px;
+}
+.all-page .carousel-3d-wrapper {
+    margin-top: 40px;
 }
 .all-page-header {
     text-align: center;
