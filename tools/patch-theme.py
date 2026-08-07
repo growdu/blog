@@ -183,7 +183,7 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <% } else { %>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"<%= config.title %>","url":"<%- config.url %>"}</script>
 <% } %>
-<link href="/libs/prism/prism-tomorrow.min.css" rel="stylesheet"/>
+<link href="/libs/prism/prism.min.css" rel="stylesheet"/>
 <style>
 pre[class*="language-"]{background:#263238!important;border-radius:6px;padding:14px 16px;font-size:14px;margin:16px 0;overflow-x:auto;line-height:1.55}
 code[class*="language-"]{background:transparent!important;padding:0;font-family:Consolas,Monaco,'Source Code Pro',monospace;font-size:14px}
