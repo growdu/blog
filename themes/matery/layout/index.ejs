@@ -7,7 +7,7 @@
 <main class="content">
 
     <% if (page.current === 1 && theme.recommend.enable) { %>
-    <div id="recommend-sections" class="recommend">
+    <div id="recommend-sections" class="recommend" style="text-align:center">
         <%- partial('_widget/recommend') %>
     </div>
     <% } %>
@@ -31,7 +31,7 @@
 
     <% if (page.current === 1 && recentPosts.length > 0) { %>
     <!-- 最近文章 - 最新 18 篇 -->
-    <div class="title"><i class="far fa-clock"></i>&nbsp;&nbsp;最近文章</div>
+    <div class="title" style="text-align:center;margin:10px 0 5px"><i class="far fa-clock"></i>&nbsp;&nbsp;最近文章</div>
     <div class="carousel-3d-wrapper" id="recent-posts-carousel">
         <div class="carousel-3d-stage">
             <div class="carousel-3d-container">
@@ -93,6 +93,7 @@
     <% } %>
 
     <!-- 全部文章 3D 旋转卡片轮播 -->
+    <div class="title" style="text-align:center;margin:10px 0 5px"><i class="fas fa-list"></i>&nbsp;&nbsp;全部文章</div>
     <div class="carousel-3d-wrapper">
         <div class="carousel-3d-stage">
             <div class="carousel-3d-container">
