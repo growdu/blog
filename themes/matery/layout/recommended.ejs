@@ -1,9 +1,10 @@
 <main class="content rec-page">
 <div class="rec-page-header">
-    <h1><i class="far fa-newspaper"></i>&nbsp;推荐与最近</h1>
-    <p class="rec-page-subtitle">精选推荐 + 最新发布的文章</p>
-    <a href="<%- config.root %>" class="rec-page-back"><i class="fas fa-arrow-left"></i>&nbsp;返回封面</a>
-    <a href="<%- url_for('/all/') %>" class="rec-page-all"><i class="fas fa-th-list"></i>&nbsp;阅读全部 →</a>
+    <div class="rec-page-title-area">
+        <h1><i class="far fa-newspaper"></i>&nbsp;推荐与最近</h1>
+        <p class="rec-page-subtitle">精选推荐 + 最新发布的文章</p>
+    </div>
+    <a href="<%- config.root %>" class="rec-page-back" title="返回封面"><i class="fas fa-arrow-left"></i>&nbsp;返回</a>
 </div>
 
 <%
@@ -16,6 +17,7 @@ var hashCodeRec = function (str) {
     }
     return hash;
 };
+var featureImages = theme.featureImages;
 %>
 
 <!-- 推荐文章 -->
@@ -26,6 +28,10 @@ var hashCodeRec = function (str) {
    });
 %>
 <% if (topPosts.length > 0) { %>
+<div class="rec-section-title">
+    <i class="far fa-thumbs-up"></i>&nbsp;推荐文章
+    <span class="rec-section-count">· <%= topPosts.length %> 篇</span>
+</div>
 <div class="carousel-3d-wrapper" id="recommended-posts-carousel">
     <div class="carousel-3d-stage">
         <div class="carousel-3d-container">
@@ -37,7 +43,6 @@ var hashCodeRec = function (str) {
                             <% if (post.img) { %>
                             <img src="<%- url_for(post.img) %>" alt="<%= post.title %>">
                             <% } else { %>
-                            <% var featureImages = theme.featureImages; %>
                             <img src="<%- theme.jsDelivr.url %><%- url_for(featureImages[Math.abs(hashCodeRec(post.title) % featureImages.length)]) %>" alt="<%= post.title %>">
                             <% } %>
                             <span class="card-title"><%= post.title %></span>
@@ -78,18 +83,20 @@ var hashCodeRec = function (str) {
     </div>
     <div class="carousel-3d-nav prev" aria-label="上一页"><i class="fas fa-chevron-left"></i></div>
     <div class="carousel-3d-nav next" aria-label="下一页"><i class="fas fa-chevron-right"></i></div>
+    <div class="carousel-3d-dots"></div>
 </div>
-<div class="carousel-3d-dots"></div>
 <% } %>
 <% } %>
 
 <!-- 最近文章 -->
 <%
 var recentPosts = site.posts.sort('-date').limit(18).toArray();
-var featureImages = theme.featureImages;
 %>
 <% if (recentPosts.length > 0) { %>
-<div class="rec-section-title"><i class="far fa-clock"></i>&nbsp;最近文章</div>
+<div class="rec-section-title">
+    <i class="far fa-clock"></i>&nbsp;最近文章
+    <span class="rec-section-count">· <%= recentPosts.length %> 篇</span>
+</div>
 <div class="carousel-3d-wrapper" id="recent-posts-carousel">
     <div class="carousel-3d-stage">
         <div class="carousel-3d-container">
@@ -143,8 +150,15 @@ var featureImages = theme.featureImages;
     </div>
     <div class="carousel-3d-nav prev" aria-label="上一页"><i class="fas fa-chevron-left"></i></div>
     <div class="carousel-3d-nav next" aria-label="下一页"><i class="fas fa-chevron-right"></i></div>
+    <div class="carousel-3d-dots"></div>
 </div>
-<div class="carousel-3d-dots"></div>
 <% } %>
+
+<!-- 阅读全部按钮(放在两个轮播下方,作为导航到全部文章) -->
+<div class="rec-page-actions">
+    <a href="<%- url_for('/all/') %>" class="rec-page-all-btn">
+        <i class="fas fa-th-list"></i>&nbsp;阅读全部 <%= site.posts.length %> 篇文章&nbsp;<i class="fas fa-arrow-right"></i>
+    </a>
+</div>
 
 </main>

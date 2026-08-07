@@ -1291,3 +1291,106 @@ body.dark .all-page-subtitle { color: #aaa; }
         print('Added all-page-header CSS')
 else:
     print('my.css not found')
+
+# --- 18. Recommended page layout improvements ---
+rec_marker = '/* REC-PAGE-LAYOUT */'
+rec_path = os.path.join(theme_dir, 'source', 'css', 'my.css')
+if os.path.exists(rec_path):
+    with open(rec_path, encoding='utf-8') as f:
+        rc = f.read()
+    if rec_marker not in rc:
+        rc += """
+
+/* REC-PAGE-LAYOUT */
+.rec-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 30px 20px 16px;
+    margin-bottom: 8px;
+}
+.rec-page-title-area {
+    text-align: center;
+}
+.rec-page-title-area h1 {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin: 0 0 6px;
+    color: #333;
+}
+.rec-page-subtitle {
+    color: #888;
+    font-size: 13px;
+    margin: 0;
+}
+.rec-page-back {
+    position: absolute;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 14px;
+    background: rgba(0,0,0,0.06);
+    color: #555 !important;
+    border-radius: 16px;
+    font-size: 12px;
+    text-decoration: none !important;
+    transition: background 0.2s;
+}
+.rec-page-back:hover {
+    background: rgba(0,0,0,0.12);
+    color: #333 !important;
+}
+.rec-section-title {
+    text-align: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 16px 10px 4px;
+    color: #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+.rec-section-count {
+    font-size: 12px;
+    font-weight: 400;
+    color: #999;
+}
+.rec-page-actions {
+    text-align: center;
+    margin: 20px 0 30px;
+}
+.rec-page-all-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 28px;
+    background: linear-gradient(135deg, #009688, #00bcd4);
+    color: #fff !important;
+    border-radius: 22px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none !important;
+    box-shadow: 0 3px 12px rgba(0, 150, 136, 0.3);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.rec-page-all-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 18px rgba(0, 150, 136, 0.45);
+    color: #fff !important;
+}
+body.dark .rec-page-title-area h1 { color: #ddd; }
+body.dark .rec-page-subtitle { color: #aaa; }
+body.dark .rec-page-back { background: rgba(255,255,255,0.08); color: #ccc !important; }
+body.dark .rec-page-back:hover { background: rgba(255,255,255,0.16); color: #fff !important; }
+body.dark .rec-section-title { color: #bbb; }
+"""
+        with open(rec_path, 'w', encoding='utf-8') as f:
+            f.write(rc)
+        print('Added rec-page-layout CSS')
+else:
+    print('my.css not found')
