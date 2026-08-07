@@ -430,18 +430,24 @@ fetch('https://api.github.com/users/growdu')
 
 
 def main():
+    # Preserve custom pages (source/all/, source/recommended/) across regeneration
+    import tempfile
+    preserved = tempfile.mkdtemp()
+    all_path = os.path.join(SRC, 'all')
+    rec_path = os.path.join(SRC, 'recommended')
+    all_preserved = os.path.isdir(all_path)
+    rec_preserved = os.path.isdir(rec_path)
+    if all_preserved:
+        shutil.move(all_path, os.path.join(preserved, 'all'))
+    if rec_preserved:
+        shutil.move(rec_path, os.path.join(preserved, 'recommended'))
     if os.path.exists(SRC):
-        # Preserve source/all/ (custom /all/ page) across regeneration
-        preserved_dir = None
-        all_path = os.path.join(SRC, 'all')
-        if os.path.isdir(all_path):
-            import tempfile
-            preserved_dir = tempfile.mkdtemp()
-            shutil.move(all_path, os.path.join(preserved_dir, 'all'))
         shutil.rmtree(SRC)
-        if preserved_dir:
-            shutil.move(os.path.join(preserved_dir, 'all'), all_path)
-            shutil.rmtree(preserved_dir)
+    if all_preserved:
+        shutil.move(os.path.join(preserved, 'all'), all_path)
+    if rec_preserved:
+        shutil.move(os.path.join(preserved, 'recommended'), rec_path)
+    shutil.rmtree(preserved)
     os.makedirs(POSTS)
 
     verification_dir = os.path.join(SRC, '.well-known')

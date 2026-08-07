@@ -2,6 +2,7 @@
 public/
 /source/
 !/source/all/
+!/source/recommended/
 
 # Dependencies
 node_modules/

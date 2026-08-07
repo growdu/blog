@@ -24,7 +24,7 @@ var coverPostsCount = coverPosts.length;
             <%- partial('_partial/bg-cover-content') %>
 
             <div class="cover-btns">
-                <a href="#recommended-posts-carousel" class="waves-effect waves-light btn">
+                <a href="<%- url_for('/recommended/') %>" class="waves-effect waves-light btn">
                     <i class="fa fa-angle-double-down"></i><%- __('startRead') %>
                 </a>
 
