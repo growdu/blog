@@ -1421,11 +1421,26 @@ main.rec-page {
 else:
     print('my.css not found')
 
-/* FIXED HEADER/FOOTER COLORS - 跨页面统一深色主题 */
-/* Header (nav-wrapper) 固定深色背景 */
+
+# --- 19. Fixed header/footer colors (unified dark theme) ---
+header_footer_marker = '/* FIXED-HEADER-FOOTER */'
+header_footer_path = os.path.join(theme_dir, 'source', 'css', 'my.css')
+if os.path.exists(header_footer_path):
+    with open(header_footer_path, encoding='utf-8') as f:
+        hf = f.read()
+    if header_footer_marker not in hf:
+        hf += """
+
+
+/* FIXED-HEADER-FOOTER */
+/* Navbar 固定深色背景(跨所有页面统一) */
 .Navbar {
     background: #263238 !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+.Navbar .brand-logo,
+.Navbar .m-nav-item a {
+    color: rgba(255,255,255,0.9) !important;
 }
 /* Footer 固定深色背景 */
 footer.footer {
@@ -1438,8 +1453,9 @@ footer.footer a {
 footer.footer a:hover {
     color: #fff !important;
 }
-/* /recommended/ 和 /all/ 顶部 header 不用深色(保持白底浅灰) */
-/* 因为它们有特殊渐变背景,需要浅色头 */
-.rec-page-header, .all-page-header {
-    /* 浅色 header 已在各自的 section 样式中定义 */
-}
+"""
+        with open(header_footer_path, 'w', encoding='utf-8') as f:
+            f.write(hf)
+        print('Added fixed header/footer CSS')
+else:
+    print('my.css not found')
