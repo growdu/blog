@@ -97,7 +97,7 @@ gitalk:
 # with Homepage URL: https://growdu.github.io/blog
 # and Callback URL: https://growdu.github.io/blog
 gitalk_pages:
-  enable: false
+  enable: true
   clientID: "__GITALK_PAGES_CLIENT_ID__"
   clientSecret: "__GITALK_PAGES_CLIENT_SECRET__"
   repo: blog

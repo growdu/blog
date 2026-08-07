@@ -21,16 +21,21 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Inject Gitalk secret
+      - name: Inject Gitalk secrets
         env:
           GITALK_SECRET: ${{ secrets.GITALK_CLIENT_SECRET }}
+          GITALK_PAGES_SECRET: ${{ secrets.GITALK_PAGES_CLIENT_SECRET }}
         run: |
           python3 -c "
           import os
           with open('_config.matery.yml','r') as f: c=f.read()
           c=c.replace('__GITALK_CLIENT_SECRET__',os.environ.get('GITALK_SECRET',''))
+          c=c.replace('__GITALK_PAGES_CLIENT_SECRET__',os.environ.get('GITALK_PAGES_SECRET',''))
+          c=c.replace('__GITALK_PAGES_CLIENT_ID__',os.environ.get('GITALK_PAGES_CLIENT_ID',''))
           with open('_config.matery.yml','w') as f: f.write(c)
-          print('Gitalk secret injected' if os.environ.get('GITALK_SECRET') else 'WARNING: GITALK_CLIENT_SECRET not set')
+          print('Gitalk cn secret injected' if os.environ.get('GITALK_SECRET') else 'WARNING: GITALK_CLIENT_SECRET not set')
+          print('Gitalk pages secret injected' if os.environ.get('GITALK_PAGES_SECRET') else 'WARNING: GITALK_PAGES_CLIENT_SECRET not set')
+          print('Gitalk pages id injected' if os.environ.get('GITALK_PAGES_CLIENT_ID') else 'WARNING: GITALK_PAGES_CLIENT_ID not set')
           "
       - name: Setup Node.js
         uses: actions/setup-node@v4
