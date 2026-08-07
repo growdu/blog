@@ -1,6 +1,9 @@
 <main class="content rec-page">
 <div class="rec-page-header">
-    <a href="<%- config.root %>" class="rec-page-back" title="返回封面"><i class="fas fa-arrow-left"></i>&nbsp;返回首页</a>
+    <div class="rec-page-nav">
+        <a href="<%- config.root %>" class="rec-page-back" title="返回封面"><i class="fas fa-arrow-left"></i>&nbsp;返回首页</a>
+        <a href="<%- url_for('/all/') %>" class="rec-page-all-top" title="阅读全部文章"><i class="fas fa-th-list"></i>&nbsp;阅读全部文章</a>
+    </div>
 </div>
 
 <%
@@ -150,11 +153,6 @@ var recentPosts = site.posts.sort('-date').limit(18).toArray();
 </div>
 <% } %>
 
-<!-- 阅读全部按钮(放在两个轮播下方,作为导航到全部文章) -->
-<div class="rec-page-actions">
-    <a href="<%- url_for('/all/') %>" class="rec-page-all-btn">
-        <i class="fas fa-th-list"></i>&nbsp;阅读全部 <%= site.posts.length %> 篇文章&nbsp;<i class="fas fa-arrow-right"></i>
-    </a>
-</div>
+<!-- 阅读全部按钮已移至顶部 -->
 
 </main>
