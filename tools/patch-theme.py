@@ -1303,52 +1303,32 @@ if os.path.exists(rec_path):
 
 /* REC-PAGE-LAYOUT */
 .rec-page-header {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    padding: 30px 20px 16px;
-    margin-bottom: 8px;
-}
-.rec-page-title-area {
-    text-align: center;
-}
-.rec-page-title-area h1 {
-    font-size: 1.8rem;
-    font-weight: 700;
-    margin: 0 0 6px;
-    color: #333;
-}
-.rec-page-subtitle {
-    color: #888;
-    font-size: 13px;
-    margin: 0;
+    padding: 20px 20px 4px;
+    margin-bottom: 4px;
 }
 .rec-page-back {
-    position: absolute;
-    left: 20px;
-    top: 50%;
-    transform: translateY(-50%);
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 6px 14px;
-    background: rgba(0,0,0,0.06);
-    color: #555 !important;
-    border-radius: 16px;
-    font-size: 12px;
+    gap: 6px;
+    padding: 10px 22px;
+    background: rgba(0,0,0,0.08);
+    color: #444 !important;
+    border-radius: 22px;
+    font-size: 15px;
+    font-weight: 500;
     text-decoration: none !important;
-    transition: background 0.2s;
+    transition: background 0.2s, transform 0.2s;
 }
 .rec-page-back:hover {
-    background: rgba(0,0,0,0.12);
-    color: #333 !important;
+    background: rgba(0,0,0,0.16);
+    color: #222 !important;
+    transform: translateX(-2px);
 }
 .rec-section-title {
     text-align: center;
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     font-weight: 600;
-    margin: 16px 10px 4px;
+    margin: 18px 10px 6px;
     color: #555;
     display: flex;
     align-items: center;
@@ -1356,37 +1336,35 @@ if os.path.exists(rec_path):
     gap: 6px;
 }
 .rec-section-count {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 400;
     color: #999;
 }
 .rec-page-actions {
     text-align: center;
-    margin: 20px 0 30px;
+    margin: 24px 0 36px;
 }
 .rec-page-all-btn {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 10px 28px;
+    gap: 10px;
+    padding: 14px 40px;
     background: linear-gradient(135deg, #009688, #00bcd4);
     color: #fff !important;
-    border-radius: 22px;
-    font-size: 14px;
+    border-radius: 26px;
+    font-size: 17px;
     font-weight: 500;
     text-decoration: none !important;
-    box-shadow: 0 3px 12px rgba(0, 150, 136, 0.3);
+    box-shadow: 0 4px 16px rgba(0, 150, 136, 0.35);
     transition: transform 0.2s, box-shadow 0.2s;
 }
 .rec-page-all-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 18px rgba(0, 150, 136, 0.45);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 22px rgba(0, 150, 136, 0.5);
     color: #fff !important;
 }
-body.dark .rec-page-title-area h1 { color: #ddd; }
-body.dark .rec-page-subtitle { color: #aaa; }
-body.dark .rec-page-back { background: rgba(255,255,255,0.08); color: #ccc !important; }
-body.dark .rec-page-back:hover { background: rgba(255,255,255,0.16); color: #fff !important; }
+body.dark .rec-page-back { background: rgba(255,255,255,0.1); color: #ccc !important; }
+body.dark .rec-page-back:hover { background: rgba(255,255,255,0.2); color: #fff !important; }
 body.dark .rec-section-title { color: #bbb; }
 """
         with open(rec_path, 'w', encoding='utf-8') as f:
