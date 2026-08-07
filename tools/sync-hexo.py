@@ -431,7 +431,17 @@ fetch('https://api.github.com/users/growdu')
 
 def main():
     if os.path.exists(SRC):
+        # Preserve source/all/ (custom /all/ page) across regeneration
+        preserved_dir = None
+        all_path = os.path.join(SRC, 'all')
+        if os.path.isdir(all_path):
+            import tempfile
+            preserved_dir = tempfile.mkdtemp()
+            shutil.move(all_path, os.path.join(preserved_dir, 'all'))
         shutil.rmtree(SRC)
+        if preserved_dir:
+            shutil.move(os.path.join(preserved_dir, 'all'), all_path)
+            shutil.rmtree(preserved_dir)
     os.makedirs(POSTS)
 
     verification_dir = os.path.join(SRC, '.well-known')
