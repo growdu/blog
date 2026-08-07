@@ -1235,3 +1235,59 @@ body.dark .view-all-btn {
         print('Added view-all-btn CSS')
 else:
     print('my.css not found')
+
+# --- 17. All-posts page header (替代 bg-cover) ---
+all_page_marker = '/* ALL-PAGE-HEADER */'
+all_page_path = os.path.join(theme_dir, 'source', 'css', 'my.css')
+if os.path.exists(all_page_path):
+    with open(all_page_path, encoding='utf-8') as f:
+        ap = f.read()
+    if all_page_marker not in ap:
+        ap += """
+
+/* ALL-PAGE-HEADER */
+.all-page {
+    padding-top: 20px;
+}
+.all-page-header {
+    text-align: center;
+    padding: 30px 20px 20px;
+    margin-bottom: 10px;
+}
+.all-page-header h1 {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: #333;
+}
+.all-page-subtitle {
+    color: #888;
+    font-size: 14px;
+    margin: 0 0 16px;
+}
+.all-page-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 18px;
+    background: linear-gradient(135deg, #009688, #00bcd4);
+    color: #fff !important;
+    border-radius: 18px;
+    font-size: 13px;
+    text-decoration: none !important;
+    box-shadow: 0 2px 8px rgba(0, 150, 136, 0.25);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.all-page-back:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 150, 136, 0.4);
+    color: #fff !important;
+}
+body.dark .all-page-header h1 { color: #ddd; }
+body.dark .all-page-subtitle { color: #aaa; }
+"""
+        with open(all_page_path, 'w', encoding='utf-8') as f:
+            f.write(ap)
+        print('Added all-page-header CSS')
+else:
+    print('my.css not found')
