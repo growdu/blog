@@ -183,7 +183,7 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <% } else { %>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"<%= config.title %>","url":"<%- config.url %>"}</script>
 <% } %>
-<link href="/lib/prism/prism-tomorrow.min.css" rel="stylesheet"/>
+<link href="/libs/prism/prism-tomorrow.min.css" rel="stylesheet"/>
 <style>
 pre[class*="language-"]{background:#263238!important;border-radius:6px;padding:14px 16px;font-size:14px;margin:16px 0;overflow-x:auto;line-height:1.55}
 code[class*="language-"]{background:transparent!important;padding:0;font-family:Consolas,Monaco,'Source Code Pro',monospace;font-size:14px}
@@ -192,9 +192,9 @@ code[class*="language-"]{background:transparent!important;padding:0;font-family:
 </style>"""
 
 inject_js = """<% if (is_post()) { %>
-<script src="/lib/prism/prism-core.min.js"></script>
-<script src="/lib/prism/prism-autoloader.min.js"></script>
-<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/lib/prism/components/';}</script>
+<script src="/libs/prism/prism-core.min.js"></script>
+<script src="/libs/prism/prism-autoloader.min.js"></script>
+<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/libs/prism/components/';}</script>
 <script src="/lib/mermaid/mermaid.min.js"></script>
 <script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>
 <% } %>
@@ -211,7 +211,7 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
         if '</head>' in c and 'prism-tomorrow' not in c:
             c = c.replace('</head>', inject_css + '\n</head>', 1)
             changed = True
-        if '</body>' in c and '/lib/prism/prism-core.min.js' not in c:
+        if '</body>' in c and '/libs/prism/prism-core.min.js' not in c:
             c = c.replace('</body>', inject_js + '\n</body>', 1)
             changed = True
         if changed:
