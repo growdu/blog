@@ -173,8 +173,8 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <% } %>
 <meta property="og:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
 <meta name="twitter:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
-<link rel="manifest" href="/blog/manifest.json">
-<link rel="icon" type="image/svg+xml" href="/blog/favicon.svg">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="canonical" href="<%- config.url %><%- url_for(page.path) %>">
 <% if (page.layout === 'post') { %>
 <% var _cat = (page.categories && page.categories.data && page.categories.data.length > 0) ? page.categories.data[0].name : ''; %>
@@ -183,7 +183,7 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <% } else { %>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"<%= config.title %>","url":"<%- config.url %>"}</script>
 <% } %>
-<link href="/blog/lib/prism/prism-tomorrow.min.css" rel="stylesheet"/>
+<link href="/lib/prism/prism-tomorrow.min.css" rel="stylesheet"/>
 <style>
 pre[class*="language-"]{background:#263238!important;border-radius:6px;padding:14px 16px;font-size:14px;margin:16px 0;overflow-x:auto;line-height:1.55}
 code[class*="language-"]{background:transparent!important;padding:0;font-family:Consolas,Monaco,'Source Code Pro',monospace;font-size:14px}
@@ -192,13 +192,13 @@ code[class*="language-"]{background:transparent!important;padding:0;font-family:
 </style>"""
 
 inject_js = """<% if (is_post()) { %>
-<script src="/blog/lib/prism/prism-core.min.js"></script>
-<script src="/blog/lib/prism/prism-autoloader.min.js"></script>
-<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/blog/lib/prism/components/';}</script>
-<script src="/blog/lib/mermaid/mermaid.min.js"></script>
+<script src="/lib/prism/prism-core.min.js"></script>
+<script src="/lib/prism/prism-autoloader.min.js"></script>
+<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/lib/prism/components/';}</script>
+<script src="/lib/mermaid/mermaid.min.js"></script>
 <script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>
 <% } %>
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/blog/sw.js').catch(function(){})}</script>"""
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){})}</script>"""
 
 for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
     for fname in files:
@@ -211,7 +211,7 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
         if '</head>' in c and 'prism-tomorrow' not in c:
             c = c.replace('</head>', inject_css + '\n</head>', 1)
             changed = True
-        if '</body>' in c and '/blog/lib/prism/prism-core.min.js' not in c:
+        if '</body>' in c and '/lib/prism/prism-core.min.js' not in c:
             c = c.replace('</body>', inject_js + '\n</body>', 1)
             changed = True
         if changed:
@@ -237,9 +237,9 @@ gitalk_card_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
 <div class="card" data-aos="fade-up">
   <div class="card-content">
     <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
-    <link rel="stylesheet" href="/blog/lib/gitalk/gitalk.css">
+    <link rel="stylesheet" href="/lib/gitalk/gitalk.css">
     <div id="gitalk-container" data-gitalk-id="<%= gitalkId %>" data-gitalk-title="<%= page.title %>"></div>
-    <script src="/blog/lib/gitalk/gitalk.min.js"></script>
+    <script src="/lib/gitalk/gitalk.min.js"></script>
     <script>
       var gitalk = new Gitalk({
         clientID: '<%= theme.gitalk.clientID %>',

@@ -57,10 +57,12 @@ $(function () {
         fixStyles();
     });
 
-    /*初始化瀑布流布局*/
-    $('#articles').masonry({
-        itemSelector: '.article'
-    });
+    /*初始化瀑布流布局(仅在 masonry 可用时)*/
+    if (typeof $.fn.masonry === 'function') {
+        $('#articles').masonry({
+            itemSelector: '.article'
+        });
+    }
 
     AOS.init({
         easing: 'ease-in-out-sine',

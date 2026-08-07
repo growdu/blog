@@ -169,13 +169,13 @@
     <% } %>
 
 <% if (is_post()) { %>
-<script src="/blog/lib/prism/prism-core.min.js"></script>
-<script src="/blog/lib/prism/prism-autoloader.min.js"></script>
-<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/blog/lib/prism/components/';}</script>
-<script src="/blog/lib/mermaid/mermaid.min.js"></script>
+<script src="/lib/prism/prism-core.min.js"></script>
+<script src="/lib/prism/prism-autoloader.min.js"></script>
+<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/lib/prism/components/';}</script>
+<script src="/lib/mermaid/mermaid.min.js"></script>
 <script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>
 <% } %>
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/blog/sw.js').catch(function(){})}</script>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){})}</script>
 <script id="custom-blog-script">
 (function(){
   var bar=document.createElement('div');bar.className='reading-progress';document.body.appendChild(bar);
