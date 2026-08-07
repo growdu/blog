@@ -8,28 +8,56 @@
     return 'p' + Math.abs(h);
   };
   var gitalkId = hashCode(page.path);
+  // 两套配置: gitalk (growdu.cn) + gitalk_pages (growdu.github.io/blog)
+  // 客户端 JS 根据当前 hostname 自动选择
+  var cnEnabled = theme.gitalk.clientID && theme.gitalk.clientID.length > 0
+                       && theme.gitalk.clientID !== '__GITALK_CLIENT_SECRET__';
+  var pagesCfg = theme.gitalk_pages || {};
+  var pagesEnabled = pagesCfg.enable && pagesCfg.clientID && pagesCfg.clientID.length > 0
+                          && pagesCfg.clientID !== '__GITALK_PAGES_CLIENT_ID__';
 %>
 <div class="card" data-aos="fade-up">
   <div class="card-content">
-    <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
-    <link rel="stylesheet" href="<%- theme.jsDelivr.url %><%- url_for(theme.libs.css.gitalk) %>">
+    <% if (cnEnabled || pagesEnabled) { %>
     <div id="gitalk-container" data-gitalk-id="<%= gitalkId %>" data-gitalk-title="<%= page.title %>"></div>
     <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.gitalk) %>"></script>
     <script>
-      var gitalk = new Gitalk({
-        clientID: '<%= theme.gitalk.clientID %>',
-        clientSecret: '<%= theme.gitalk.clientSecret %>',
-        repo: '<%= theme.gitalk.repo %>',
-        owner: '<%= theme.gitalk.owner %>',
-        admin: ['<%= theme.gitalk.owner %>'],
-        id: '<%= gitalkId %>',
-        language: 'zh-CN',
-        distractionFreeMode: false,
-        createIssueManually: false,
-        labels: ['Gitalk', 'Comment'],
-        perPage: 10
-      });
-      gitalk.render('gitalk-container');
+      (function() {
+        var isCn = window.location.hostname === 'growdu.cn';
+        var cfg = isCn ? {
+          clientID:        '<%= theme.gitalk.clientID %>',
+          clientSecret:    '<%= theme.gitalk.clientSecret %>',
+          repo:            '<%= theme.gitalk.repo %>',
+          owner:           '<%= theme.gitalk.owner %>'
+        } : {
+          clientID:        '<%= (pagesCfg.clientID || "") %>',
+          clientSecret:    '<%= (pagesCfg.clientSecret || "") %>',
+          repo:            '<%= (pagesCfg.repo || theme.gitalk.repo) %>',
+          owner:           '<%= (pagesCfg.owner || theme.gitalk.owner) %>'
+        };
+        // 只在当前域名有对应配置时才初始化
+        var hasCfg = isCn ? (<%= cnEnabled ? 'true' : 'false' %>)
+                         : (<%= pagesEnabled ? 'true' : 'false' %>);
+        if (!hasCfg) {
+          var el = document.getElementById('gitalk-container');
+          if (el) el.innerHTML = '<div style="text-align:center;padding:30px 20px;color:#999;"><i class="fas fa-comments" style="font-size:28px;"></i><p style="margin-top:10px;font-size:14px;">评论系统待配置 OAuth App</p></div>';
+          return;
+        }
+        var gitalk = new Gitalk({
+          clientID: cfg.clientID,
+          clientSecret: cfg.clientSecret,
+          repo: cfg.repo,
+          owner: cfg.owner,
+          admin: [cfg.owner],
+          id: '<%= gitalkId %>',
+          language: 'zh-CN',
+          distractionFreeMode: false,
+          createIssueManually: false,
+          labels: ['Gitalk', 'Comment'],
+          perPage: 10
+        });
+        gitalk.render('gitalk-container');
+      })();
     </script>
     <% } else { %>
     <div style="text-align: center; padding: 30px 20px; color: #999;">

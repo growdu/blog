@@ -92,6 +92,17 @@ gitalk:
   repo: blog
   owner: growdu
 
+# Gitalk for GitHub Pages fallback (growdu.github.io/blog)
+# Setup a SECOND OAuth App at https://github.com/settings/developers
+# with Homepage URL: https://growdu.github.io/blog
+# and Callback URL: https://growdu.github.io/blog
+gitalk_pages:
+  enable: false
+  clientID: "__GITALK_PAGES_CLIENT_ID__"
+  clientSecret: "__GITALK_PAGES_CLIENT_SECRET__"
+  repo: blog
+  owner: growdu
+
 # Social links (displayed on homepage cover and footer)
 # Format: key: url  (icon is auto-derived from key name by the theme)
 socialLink:
