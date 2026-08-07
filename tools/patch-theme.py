@@ -1366,6 +1366,24 @@ if os.path.exists(rec_path):
 body.dark .rec-page-back { background: rgba(255,255,255,0.1); color: #ccc !important; }
 body.dark .rec-page-back:hover { background: rgba(255,255,255,0.2); color: #fff !important; }
 body.dark .rec-section-title { color: #bbb; }
+
+/* /recommended/ 页面背景: 首页风格的渐变(顶部青绿, 渐隐到白) */
+main.rec-page {
+    background: linear-gradient(180deg,
+        rgba(0, 150, 136, 0.10) 0%,
+        rgba(0, 188, 212, 0.05) 25%,
+        transparent 100%);
+    min-height: 100vh;
+    padding-top: 4px;
+}
+.rec-page-header {
+    background: linear-gradient(135deg, rgba(0, 150, 136, 0.15), rgba(0, 188, 212, 0.10));
+    border-radius: 0 0 28px 28px;
+    padding: 28px 20px 20px;
+    margin-bottom: 10px;
+    margin-top: 0;
+}
+
 """
         with open(rec_path, 'w', encoding='utf-8') as f:
             f.write(rc)
