@@ -12,9 +12,9 @@
 <div class="card" data-aos="fade-up">
   <div class="card-content">
     <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
-    <link rel="stylesheet" href="/blog/lib/gitalk/gitalk.css">
+    <link rel="stylesheet" href="<%- theme.jsDelivr.url %><%- url_for(theme.libs.css.gitalk) %>">
     <div id="gitalk-container" data-gitalk-id="<%= gitalkId %>" data-gitalk-title="<%= page.title %>"></div>
-    <script src="/blog/lib/gitalk/gitalk.min.js"></script>
+    <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.gitalk) %>"></script>
     <script>
       var gitalk = new Gitalk({
         clientID: '<%= theme.gitalk.clientID %>',
