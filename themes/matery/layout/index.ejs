@@ -92,9 +92,16 @@
     </div>
     <% } %>
 
+    <!-- 查看全部文章按钮 -->
+    <div class="view-all-btn-wrap">
+        <a href="#all-posts-carousel" class="view-all-btn">
+            <i class="fas fa-th-list"></i>&nbsp;查看全部文章&nbsp;<i class="fas fa-arrow-down"></i>
+        </a>
+    </div>
+
     <!-- 全部文章 3D 旋转卡片轮播 -->
     <div class="title" style="text-align:center;margin:10px 0 5px"><i class="fas fa-list"></i>&nbsp;&nbsp;全部文章</div>
-    <div class="carousel-3d-wrapper">
+    <div class="carousel-3d-wrapper" id="all-posts-carousel">
         <div class="carousel-3d-stage">
             <div class="carousel-3d-container">
                 <% page.posts.forEach((post, index) => { %>

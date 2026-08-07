@@ -1192,3 +1192,46 @@ if os.path.exists(collapse_css_path):
         print('Collapsible sidebars CSS already present')
 else:
     print('my.css not found')
+
+# --- 16. View-all button between recent and all-articles carousel ---
+view_all_marker = '/* VIEW-ALL-BTN */'
+view_all_path = os.path.join(theme_dir, 'source', 'css', 'my.css')
+if os.path.exists(view_all_path):
+    with open(view_all_path, encoding='utf-8') as f:
+        va = f.read()
+    if view_all_marker not in va:
+        va += """
+
+/* VIEW-ALL-BTN */
+.view-all-btn-wrap {
+    text-align: center;
+    margin: 8px 0 16px;
+}
+.view-all-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 22px;
+    background: linear-gradient(135deg, #009688, #00bcd4);
+    color: #fff !important;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none !important;
+    box-shadow: 0 2px 8px rgba(0, 150, 136, 0.25);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+.view-all-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(0, 150, 136, 0.4);
+    color: #fff !important;
+}
+body.dark .view-all-btn {
+    background: linear-gradient(135deg, #00bcd4, #009688);
+}
+"""
+        with open(view_all_path, 'w', encoding='utf-8') as f:
+            f.write(va)
+        print('Added view-all-btn CSS')
+else:
+    print('my.css not found')
