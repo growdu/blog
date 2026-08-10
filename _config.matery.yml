@@ -32,9 +32,7 @@ subDesc:
 motto:
   enable: true
   texts:
-    - '山是山，水是水'
-    - '山不是山，水不是水'
-    - '山还是山，水还是水'
+    - '山是山，水是水；山不是山，水不是水；山还是山，水还是水'
 
 
 # Navigation menu - matery expects objects with url + icon, not plain strings
