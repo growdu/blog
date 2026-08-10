@@ -192,9 +192,9 @@ code[class*="language-"]{background:transparent!important;padding:0;font-family:
 </style>"""
 
 inject_js = """<% if (is_post()) { %>
-<script src="/libs/prism/prism-core.min.js"></script>
-<script src="/libs/prism/prism-autoloader.min.js"></script>
-<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/libs/prism/components/';}</script>
+<script src="<%= url_for('/libs/prism/prism-core.min.js') %>"></script>
+<script src="<%= url_for('/libs/prism/prism-autoloader.min.js') %>"></script>
+<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='<%= url_for("/libs/prism/components/") %>';}</script>
 <script src="/lib/mermaid/mermaid.min.js"></script>
 <script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>
 <% } %>
