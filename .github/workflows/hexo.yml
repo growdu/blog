@@ -71,6 +71,48 @@ jobs:
         run: python3 tools/copy-vendor.py
       - name: Build with Hexo
         run: npx hexo generate
+      - name: Verify rendered HTML body tags
+        # Catches regressions like the 2026-08-10 broken <body> tag
+        # caused by injecting partials inside the body tag itself.
+        run: |
+          python3 - <<'PYCHECK'
+          import re, sys
+          bad = []
+          targets = ['public/index.html']
+          for p in targets:
+              try:
+                  with open(p, encoding='utf-8') as f:
+                      html = f.read()
+              except FileNotFoundError:
+                  print(f'{p}: not found, skipping')
+                  continue
+              m = re.search(r'<body[^>]{0,500}>', html, re.DOTALL)
+              if not m:
+                  print(f'!! {p}: no <body> tag found')
+                  bad.append(p)
+                  continue
+              tag = m.group(0)
+              if '<div' in tag or '<script' in tag:
+                  print(f'!! BROKEN <body> in {p}: {len(tag)} chars, contains <div/<script')
+                  bad.append(p)
+              else:
+                  print(f'OK {p}: <body> tag clean ({len(tag)} chars)')
+          if bad:
+              print('HTML body-tag check failed; aborting deploy')
+              sys.exit(1)
+          PYCHECK
+      - name: Inject SW build version
+        # Stamps a fresh cache name into public/sw.js so existing
+        # browsers will install the new SW and evict old caches on
+        # activate (fixes stale-cache regressions on big releases).
+        run: |
+          # Combine git short SHA + UTC timestamp + $RANDOM so even back-to-back
+          # deploys (same second) get distinct cache names, and we can correlate
+          # the cache version back to a commit when debugging in the field.
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BUILD_ID="${SHORT_SHA}-$(date -u +%Y%m%d%H%M%S)-${RANDOM}"
+          sed -i "s|__SW_CACHE_NAME__|blog-v${BUILD_ID}|" public/sw.js
+          grep -o "const CACHE='[^']*'" public/sw.js
       - name: Publish Vercount verification file
         run: |
           mkdir -p public/.well-known
@@ -189,6 +231,43 @@ jobs:
         run: python3 tools/copy-vendor.py
       - name: Build GitHub Pages site
         run: npx hexo generate
+      - name: Verify rendered HTML body tags
+        run: |
+          python3 - <<'PYCHECK'
+          import re, sys
+          bad = []
+          targets = ['public/index.html']
+          for p in targets:
+              try:
+                  with open(p, encoding='utf-8') as f:
+                      html = f.read()
+              except FileNotFoundError:
+                  print(f'{p}: not found, skipping')
+                  continue
+              m = re.search(r'<body[^>]{0,500}>', html, re.DOTALL)
+              if not m:
+                  print(f'!! {p}: no <body> tag found')
+                  bad.append(p)
+                  continue
+              tag = m.group(0)
+              if '<div' in tag or '<script' in tag:
+                  print(f'!! BROKEN <body> in {p}: {len(tag)} chars, contains <div/<script')
+                  bad.append(p)
+              else:
+                  print(f'OK {p}: <body> tag clean ({len(tag)} chars)')
+          if bad:
+              print('HTML body-tag check failed; aborting deploy')
+              sys.exit(1)
+          PYCHECK
+      - name: Inject SW build version
+        run: |
+          # Combine git short SHA + UTC timestamp + $RANDOM so even back-to-back
+          # deploys (same second) get distinct cache names, and we can correlate
+          # the cache version back to a commit when debugging in the field.
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          BUILD_ID="${SHORT_SHA}-$(date -u +%Y%m%d%H%M%S)-${RANDOM}"
+          sed -i "s|__SW_CACHE_NAME__|blog-v${BUILD_ID}|" public/sw.js
+          grep -o "const CACHE='[^']*'" public/sw.js
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
