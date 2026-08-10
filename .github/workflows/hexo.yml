@@ -109,6 +109,10 @@ jobs:
           # Combine git short SHA + UTC timestamp + $RANDOM so even back-to-back
           # deploys (same second) get distinct cache names, and we can correlate
           # the cache version back to a commit when debugging in the field.
+          # source/sw.js is listed under skip_render in _config.yml, so hexo
+          # generate does NOT copy it into public/. Force-copy here so the
+          # __SW_CACHE_NAME__ placeholder is actually present.
+          cp source/sw.js public/sw.js
           SHORT_SHA=$(git rev-parse --short HEAD)
           BUILD_ID="${SHORT_SHA}-$(date -u +%Y%m%d%H%M%S)-${RANDOM}"
           sed -i "s|__SW_CACHE_NAME__|blog-v${BUILD_ID}|" public/sw.js
@@ -264,6 +268,10 @@ jobs:
           # Combine git short SHA + UTC timestamp + $RANDOM so even back-to-back
           # deploys (same second) get distinct cache names, and we can correlate
           # the cache version back to a commit when debugging in the field.
+          # source/sw.js is listed under skip_render in _config.yml, so hexo
+          # generate does NOT copy it into public/. Force-copy here so the
+          # __SW_CACHE_NAME__ placeholder is actually present.
+          cp source/sw.js public/sw.js
           SHORT_SHA=$(git rev-parse --short HEAD)
           BUILD_ID="${SHORT_SHA}-$(date -u +%Y%m%d%H%M%S)-${RANDOM}"
           sed -i "s|__SW_CACHE_NAME__|blog-v${BUILD_ID}|" public/sw.js
