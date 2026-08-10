@@ -324,6 +324,109 @@ if os.path.isfile(layout_path):
             f.write(layout_content)
         print("Injected cn-region-banner partial into layout.ejs")
 
+
+# --- 8. Enrich homepage hero with motto + sub description + comprehensive typing text ---
+hero_typing_texts = [
+    "PostgreSQL / openGauss 内核",
+    "Raft / DCF 分布式一致性",
+    "逻辑解码与 DDL Replay",
+    "数据库性能调优",
+    "eBPF / DPDK 数据面",
+    "工具 / 视频 / 培训",
+    "股票与金融观察",
+    "哲学思辨 · 人生感悟",
+    "社会观察 · 城市记录",
+]
+bg_path = os.path.join(theme_dir, "layout", "_partial", "bg-cover-content.ejs")
+if os.path.isfile(bg_path):
+    with open(bg_path, encoding="utf-8") as f:
+        content = f.read()
+    # 8.1 替换 hero typing texts (随主题已有内联脚本)
+    import re as _re
+    new_block = (
+        "var texts=" + repr(hero_typing_texts).replace("\\'", "'") + ";\n"
+    )
+    pattern = _re.compile(r"var\s+texts=\[.*?\];", _re.S)
+    if pattern.search(content):
+        content = pattern.sub(new_block.rstrip(), content, count=1)
+    # 8.2 替换 hero-tech 徽章列表为综合内容
+    tech_old = (
+        "<div class=\"hero-tech\">\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-database\"></i> PostgreSQL</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-database\"></i> openGauss</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-sitemap\"></i> 分布式系统</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-bolt\"></i> DPDK</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-bolt\"></i> VPP</span>\n"
+        "</div>"
+    )
+    tech_new = (
+        "<div class=\"hero-tech\">\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-database\"></i> PostgreSQL</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-database\"></i> openGauss</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-sitemap\"></i> 分布式系统</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-bolt\"></i> DPDK / VPP</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-chart-line\"></i> 股票 · 金融</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-tools\"></i> 工具 · 视频 · 培训</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-yin-yang\"></i> 哲学 · 人生</span>\n"
+        "    <span class=\"hero-badge\"><i class=\"fas fa-city\"></i> 社会观察</span>\n"
+        "</div>"
+    )
+    if tech_old in content:
+        content = content.replace(tech_old, tech_new, 1)
+    # 8.3 在 brand-description 之后插入 motto (从 theme.motto.texts 读取)
+    motto_old = """<span id="subtitle"></span>"""
+    if motto_old in content and "motto-row" not in content:
+        motto_block = (
+            "<% if (theme.motto && theme.motto.enable && theme.motto.texts && theme.motto.texts.length) { %>\n"
+            "<div class=\"hero-motto\" id=\"hero-motto\">\n"
+            "  <% theme.motto.texts.forEach(function(line, i) { %>\n"
+            "    <span class=\"hero-motto-line<% if (i===0) { %> is-active<% } %>\" data-idx=\"<%= i %>\"><%= line %></span>\n"
+            "  <% }); %>\n"
+            "</div>\n"
+            "<script>\n"
+            "(function(){\n"
+            "  var lines=document.querySelectorAll('#hero-motto .hero-motto-line');\n"
+            "  if(!lines.length)return;\n"
+            "  var i=0;\n"
+            "  setInterval(function(){\n"
+            "    lines[i].classList.remove('is-active');\n"
+            "    i=(i+1)%lines.length;\n"
+            "    lines[i].classList.add('is-active');\n"
+            "  },3000);\n"
+            "})();\n"
+            "</script>\n"
+            "<% } %>\n"
+        )
+        content = content.replace(motto_old, motto_block + motto_old, 1)
+    # 8.4 副标题描述
+    if "hero-subdesc" not in content:
+        desc_block = (
+            "<% if (theme.subDesc && theme.subDesc.enable && theme.subDesc.text) { %>\n"
+            "<div class=\"hero-subdesc\"><%= theme.subDesc.text %></div>\n"
+            "<% } %>\n"
+        )
+        content = content.replace("<div class=\"description center-align\">", desc_block + "<div class=\"description center-align\">", 1)
+    with open(bg_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("Updated hero (motto + sub description + comprehensive typing texts)")
+
+# --- 8.5 注入 hero-motto / hero-subdesc 样式 ---
+css_append = (
+    "/* hero motto */\n"
+    ".hero-motto{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:14px auto 0;max-width:760px;font-size:18px;letter-spacing:.05em;font-weight:600;color:#fff;}\n"
+    ".hero-motto-line{opacity:.55;transition:opacity .8s ease,transform .8s ease;transform:translateY(2px);text-shadow:0 2px 8px rgba(0,0,0,.4);}\n"
+    ".hero-motto-line.is-active{opacity:1;transform:translateY(0);}\n"
+    ".hero-motto-line + .hero-motto-line::before{content:\"\u00B7 \";opacity:.5;margin-right:14px;color:#fff;}\n"
+    "/* hero sub description */\n"
+    ".hero-subdesc{margin:10px auto 0;max-width:760px;font-size:13px;letter-spacing:.04em;opacity:.92;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.35);}\n"
+    "@media (max-width:600px){.hero-motto{font-size:14px;gap:8px;}.hero-motto-line + .hero-motto-line::before{margin-right:8px;}}\n"
+)
+css_path = os.path.join(theme_dir, "source", "css", "my.css")
+if os.path.isfile(css_path):
+    with open(css_path, "a", encoding="utf-8") as f:
+        f.write(css_append)
+    print("Appended hero-motto / hero-subdesc CSS to my.css")
+
 print('Created gitalk-card.ejs')
 
 post_detail = os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs')

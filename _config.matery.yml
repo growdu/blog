@@ -10,17 +10,32 @@ jsDelivr:
 logo: /medias/logo.jpg
 
 
-# Hero typing animation strings (overrides theme defaults like
-# "从来没有真正的绝境, 只有心灵的迷途" with database-kernel content).
+# Hero typing animation strings — comprehensive site covering code, finance, philosophy, life.
 subtitle:
   enable: true
-  sub1: '读一行内核源码，写一段生产代码'
-  sub2: 'Read kernel source, ship production code'
+  sub1: '代码、行情、人心，一处可观'
+  sub2: '见自己，见天地，见众生'
+  sub3: '人生、哲学、金融与社会'
+  sub4: 'From kernels to markets, from tools to life'
   startDelay: 300
   typeSpeed: 80
   backSpeed: 30
   loop: true
   showCursor: true
+
+# Hero sub-description displayed below the typing animation.
+subDesc:
+  enable: true
+  text: '数据库内核 · 分布式系统 · 高性能网络 · 工具 / 视频 / 培训 · 股票 · 哲学 · 人生 · 社会'
+
+# Three-stage life motto (replaces the default "从来没有真正的绝境..." on the homepage).
+motto:
+  enable: true
+  texts:
+    - '山是山，水是水'
+    - '山不是山，水不是水'
+    - '山还是山，水还是水'
+
 
 # Navigation menu - matery expects objects with url + icon, not plain strings
 menu:

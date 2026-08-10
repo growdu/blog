@@ -9,9 +9,31 @@
                 <% } %>
             </div>
 
-            <div class="description center-align">
+            <% if (theme.subDesc && theme.subDesc.enable && theme.subDesc.text) { %>
+<div class="hero-subdesc"><%= theme.subDesc.text %></div>
+<% } %>
+<div class="description center-align">
                 <% if (theme.subtitle.enable) { %>
-                <span id="subtitle"></span>
+                <% if (theme.motto && theme.motto.enable && theme.motto.texts && theme.motto.texts.length) { %>
+<div class="hero-motto" id="hero-motto">
+  <% theme.motto.texts.forEach(function(line, i) { %>
+    <span class="hero-motto-line<% if (i===0) { %> is-active<% } %>" data-idx="<%= i %>"><%= line %></span>
+  <% }); %>
+</div>
+<script>
+(function(){
+  var lines=document.querySelectorAll('#hero-motto .hero-motto-line');
+  if(!lines.length)return;
+  var i=0;
+  setInterval(function(){
+    lines[i].classList.remove('is-active');
+    i=(i+1)%lines.length;
+    lines[i].classList.add('is-active');
+  },3000);
+})();
+</script>
+<% } %>
+<span id="subtitle"></span>
                 <script src="<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.typed) %>"></script>
                 <script>
                     var typed = new Typed("#subtitle", {
@@ -66,15 +88,18 @@
     <span class="hero-badge"><i class="fas fa-database"></i> PostgreSQL</span>
     <span class="hero-badge"><i class="fas fa-database"></i> openGauss</span>
     <span class="hero-badge"><i class="fas fa-sitemap"></i> 分布式系统</span>
-    <span class="hero-badge"><i class="fas fa-bolt"></i> DPDK</span>
-    <span class="hero-badge"><i class="fas fa-bolt"></i> VPP</span>
+    <span class="hero-badge"><i class="fas fa-bolt"></i> DPDK / VPP</span>
+    <span class="hero-badge"><i class="fas fa-chart-line"></i> 股票 · 金融</span>
+    <span class="hero-badge"><i class="fas fa-tools"></i> 工具 · 视频 · 培训</span>
+    <span class="hero-badge"><i class="fas fa-yin-yang"></i> 哲学 · 人生</span>
+    <span class="hero-badge"><i class="fas fa-city"></i> 社会观察</span>
 </div>
 <div class="hero-typing" id="typing-text"></div>
 <% } %>
 <% if (is_home() && page.current === 1) { %>
 <script>
 (function(){
-  var texts=['PostgreSQL / openGauss 内核','Raft / DCF 分布式一致性','逻辑解码与 DDL-Replay','数据库性能调优','eBPF / DPDK 数据面'];
+  var texts=['PostgreSQL / openGauss 内核', 'Raft / DCF 分布式一致性', '逻辑解码与 DDL Replay', '数据库性能调优', 'eBPF / DPDK 数据面', '工具 / 视频 / 培训', '股票与金融观察', '哲学思辨 · 人生感悟', '社会观察 · 城市记录'];
   var idx=0,ci=0,del=false;
   function type(){
     var el=document.getElementById('typing-text');
