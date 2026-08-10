@@ -1,10 +1,10 @@
 # Site
-title: 格物致知 | growdu
-subtitle: 格物致知 · 综合内容站 — 代码、行情、人心，一处可观
+title: 技术·学习·实践 | growdu
+subtitle: 技术·学习·实践·人生·哲学·社会·金融
 author: growdu
 language: zh-CN
 timezone:
-description: 格物致知：综合内容站。涵盖数据库内核（PostgreSQL/openGauss）、分布式系统、高性能网络（DPDK/VPP）等工程实践，同时记录工具评测、视频创作、培训分享、股票与金融、哲学思辨、人生感悟与社会观察。
+description: 技术学习实践，涵盖数据库内核（PostgreSQL/openGauss）、分布式系统、高性能网络（DPDK/VPP）等工程实践，同时记录工具评测、视频创作、培训分享、股票与金融、哲学思辨、人生感悟与社会观察。
 keywords: PostgreSQL,openGauss,数据库,分布式系统,Raft,DCF,DPDK,VPP,C语言,后端开发,编程,存储,高可用,股票,金融,投资,哲学,人生,社会,工具,视频,培训
 
 # URL
