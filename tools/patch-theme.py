@@ -236,17 +236,24 @@ gitalk_card_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
 %>
 <div class="card" data-aos="fade-up">
   <div class="card-content">
-    <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
+    <%
+      var cnCfg = theme.gitalk || {};
+      var pagesCfg = theme.gitalk_pages || {};
+      var isCn = (typeof config !== 'undefined' && config.url && /growdu\.cn/.test(config.url));
+      var active = isCn ? cnCfg : pagesCfg;
+      var hasCfg = active && active.clientID && active.clientID.length > 0;
+    %>
+    <% if (hasCfg) { %>
     <link rel="stylesheet" href="<%= url_for('/lib/gitalk/gitalk.css') %>">
     <div id="gitalk-container" data-gitalk-id="<%= gitalkId %>" data-gitalk-title="<%= page.title %>"></div>
     <script src="<%= url_for('/lib/gitalk/gitalk.min.js') %>"></script>
     <script>
       var gitalk = new Gitalk({
-        clientID: '<%= theme.gitalk.clientID %>',
-        clientSecret: '<%= theme.gitalk.clientSecret %>',
-        repo: '<%= theme.gitalk.repo %>',
-        owner: '<%= theme.gitalk.owner %>',
-        admin: ['<%= theme.gitalk.owner %>'],
+        clientID: '<%= active.clientID %>',
+        clientSecret: '<%= active.clientSecret %>',
+        repo: '<%= active.repo %>',
+        owner: '<%= active.owner %>',
+        admin: ['<%= active.owner %>'],
         id: '<%= gitalkId %>',
         language: 'zh-CN',
         distractionFreeMode: false,

@@ -25,21 +25,26 @@ jobs:
           fetch-depth: 0
       - name: Inject Gitalk secrets
         env:
-          # OAuth App 实际对应关系：growdu.cn 使用 PAGES Secret，GitHub Pages 使用普通 Secret
-          GITALK_SECRET: ${{ secrets.GITALK_PAGES_CLIENT_SECRET }}
-          GITALK_PAGES_SECRET: ${{ secrets.GITALK_CLIENT_SECRET }}
+          # growdu.cn 域名使用 GITALK_CN_* 凭据
+          GITALK_CN_CLIENT_ID: ${{ secrets.GITALK_CN_CLIENT_ID }}
+          GITALK_CN_CLIENT_SECRET: ${{ secrets.GITALK_CN_CLIENT_SECRET }}
+          # growdu.github.io/blog 使用 GITALK_PAGES_* 凭据
           GITALK_PAGES_CLIENT_ID: ${{ secrets.GITALK_PAGES_CLIENT_ID }}
+          GITALK_PAGES_CLIENT_SECRET: ${{ secrets.GITALK_PAGES_CLIENT_SECRET }}
         run: |
           python3 -c "
           import os
+          mapping = {
+              '__GITALK_CN_CLIENT_ID__':       os.environ.get('GITALK_CN_CLIENT_ID',''),
+              '__GITALK_CN_CLIENT_SECRET__':   os.environ.get('GITALK_CN_CLIENT_SECRET',''),
+              '__GITALK_PAGES_CLIENT_ID__':    os.environ.get('GITALK_PAGES_CLIENT_ID',''),
+              '__GITALK_PAGES_CLIENT_SECRET__':os.environ.get('GITALK_PAGES_CLIENT_SECRET',''),
+          }
           with open('_config.matery.yml','r') as f: c=f.read()
-          c=c.replace('__GITALK_CLIENT_SECRET__',os.environ.get('GITALK_SECRET',''))
-          c=c.replace('__GITALK_PAGES_CLIENT_SECRET__',os.environ.get('GITALK_PAGES_SECRET',''))
-          c=c.replace('__GITALK_PAGES_CLIENT_ID__',os.environ.get('GITALK_PAGES_CLIENT_ID',''))
+          for k,v in mapping.items(): c=c.replace(k,v)
           with open('_config.matery.yml','w') as f: f.write(c)
-          print('Gitalk cn secret injected' if os.environ.get('GITALK_SECRET') else 'WARNING: GITALK_PAGES_CLIENT_SECRET not set')
-          print('Gitalk pages secret injected' if os.environ.get('GITALK_PAGES_SECRET') else 'WARNING: GITALK_CLIENT_SECRET not set')
-          print('Gitalk pages id injected' if os.environ.get('GITALK_PAGES_CLIENT_ID') else 'WARNING: GITALK_PAGES_CLIENT_ID not set')
+          for k in ('GITALK_CN_CLIENT_ID','GITALK_CN_CLIENT_SECRET','GITALK_PAGES_CLIENT_ID','GITALK_PAGES_CLIENT_SECRET'):
+              print(f'{k} {"injected" if os.environ.get(k) else "MISSING"}')
           "
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -144,9 +149,8 @@ jobs:
         run: npm install
       - name: Configure GitHub Pages build
         env:
-          # growdu.github.io/blog 实际使用普通 GITALK_CLIENT_SECRET
           PAGES_CLIENT_ID: ${{ secrets.GITALK_PAGES_CLIENT_ID }}
-          PAGES_CLIENT_SECRET: ${{ secrets.GITALK_CLIENT_SECRET }}
+          PAGES_CLIENT_SECRET: ${{ secrets.GITALK_PAGES_CLIENT_SECRET }}
         run: |
           python3 - <<'PY'
           import json, os, re
@@ -165,25 +169,8 @@ jobs:
 
           theme = Path('_config.matery.yml')
           content = theme.read_text(encoding='utf-8')
-          pages_gitalk = (
-              'gitalk:\n'
-              '  enable: true\n'
-              f'  clientID: {json.dumps(client_id)}\n'
-              f'  clientSecret: {json.dumps(client_secret)}\n'
-              '  repo: blog\n'
-              '  owner: growdu\n\n'
-          )
-          content, count = re.subn(
-              r'^gitalk:\n.*?(?=^gitalk_pages:)',
-              pages_gitalk,
-              content,
-              count=1,
-              flags=re.M | re.S,
-          )
-          if count != 1:
-              raise SystemExit('Unable to configure Gitalk for GitHub Pages')
-          theme.write_text(content, encoding='utf-8')
-          print('Configured url/root and Gitalk for growdu.github.io/blog')
+          # GitHub Pages build: keep the dedicated gitalk_pages block, leave gitalk untouched
+          print('Configured url/root for growdu.github.io/blog; gitalk_pages will be used at runtime')
           PY
       - name: Sync content to Hexo
         run: python3 tools/sync-hexo.py

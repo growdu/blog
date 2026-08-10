@@ -85,17 +85,18 @@ video:
 #        2) Homepage URL: https://growdu.cn/
 #        3) Callback URL: https://growdu.cn/
 #        4) Copy Client ID and generate Client Secret
+# Gitalk client IDs / secrets are injected at build time by .github/workflows/hexo.yml
+# __GITALK_CN_CLIENT_ID__       => https://growdu.cn
+# __GITALK_CN_CLIENT_SECRET__   => https://growdu.cn
+# __GITALK_PAGES_CLIENT_ID__    => https://growdu.github.io/blog
+# __GITALK_PAGES_CLIENT_SECRET__=> https://growdu.github.io/blog
 gitalk:
   enable: true
-  clientID: "Ov23liyvdyO0U0lfqI2u"
-  clientSecret: "__GITALK_CLIENT_SECRET__"
+  clientID: "__GITALK_CN_CLIENT_ID__"
+  clientSecret: "__GITALK_CN_CLIENT_SECRET__"
   repo: blog
   owner: growdu
 
-# Gitalk for GitHub Pages fallback (growdu.github.io/blog)
-# Setup a SECOND OAuth App at https://github.com/settings/developers
-# with Homepage URL: https://growdu.github.io/blog
-# and Callback URL: https://growdu.github.io/blog
 gitalk_pages:
   enable: true
   clientID: "__GITALK_PAGES_CLIENT_ID__"
