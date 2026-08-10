@@ -208,7 +208,7 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
         with open(fpath, encoding='utf-8') as f:
             c = f.read()
         changed = False
-        if '</head>' in c and 'prism-tomorrow' not in c:
+        if '</head>' in c and '<meta property="og:title"' not in c:
             c = c.replace('</head>', inject_css + '\n</head>', 1)
             changed = True
         if '</body>' in c and '/libs/prism/prism-core.min.js' not in c:
@@ -293,9 +293,14 @@ banner_css = (
 )
 css_path = os.path.join(theme_dir, "source", "css", "my.css")
 if os.path.isfile(css_path):
-    with open(css_path, "a", encoding="utf-8") as f:
-        f.write(banner_css)
-    print("Appended cn-region-banner CSS to my.css")
+    with open(css_path, encoding="utf-8") as f:
+        _css_existing = f.read()
+    if '/* cn-region-banner */' in _css_existing:
+        print('cn-region-banner CSS already present, skipping append')
+    else:
+        with open(css_path, "a", encoding="utf-8") as f:
+            f.write(banner_css)
+        print('Appended cn-region-banner CSS to my.css')
 
 # cn-banner.ejs: HTML-only partial (no inline <script>).
 # We DO NOT touch layout.ejs here — the layout already contains the
@@ -479,9 +484,14 @@ css_append = (
 )
 css_path = os.path.join(theme_dir, "source", "css", "my.css")
 if os.path.isfile(css_path):
-    with open(css_path, "a", encoding="utf-8") as f:
-        f.write(css_append)
-    print("Appended hero-motto / hero-subdesc CSS to my.css")
+    with open(css_path, encoding="utf-8") as f:
+        _css_existing = f.read()
+    if '/* hero motto */' in _css_existing:
+        print('hero-motto CSS already present, skipping append')
+    else:
+        with open(css_path, "a", encoding="utf-8") as f:
+            f.write(css_append)
+        print('Appended hero-motto / hero-subdesc CSS to my.css')
 
 print('Created gitalk-card.ejs')
 
