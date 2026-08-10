@@ -9,38 +9,3 @@
     <button class="cn-region-banner__close" type="button" aria-label="关闭">×</button>
   </div>
 </div>
-<script>
-(function() {
-  if (typeof window === 'undefined') return;
-  var banner = document.getElementById('cn-region-banner');
-  if (!banner) return;
-  var host = window.location.hostname;
-  if (host === 'growdu.cn' || host === 'www.growdu.cn') {
-    banner.hidden = true;
-    return;
-  }
-  var dismissed = false;
-  try { dismissed = localStorage.getItem('cn-banner-dismissed') === '1'; } catch (e) {}
-  if (dismissed) return;
-  // Heuristic: cn timezone OR Chinese navigator language
-  var lang = (navigator.language || navigator.userLanguage || '').toLowerCase();
-  var isCN = (lang === 'zh-cn' || lang.indexOf('zh-hans') === 0 || lang === 'zh');
-  if (!isCN && Intl && Intl.DateTimeFormat) {
-    try {
-      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-      if (tz === 'Asia/Shanghai' || tz === 'Asia/Chongqing' || tz === 'Asia/Harbin' || tz === 'Asia/Urumqi' || tz === 'Asia/Hong_Kong') {
-        isCN = true;
-      }
-    } catch (e) {}
-  }
-  if (!isCN) return;
-  banner.hidden = false;
-  var close = banner.querySelector('.cn-region-banner__close');
-  if (close) {
-    close.addEventListener('click', function() {
-      banner.hidden = true;
-      try { localStorage.setItem('cn-banner-dismissed', '1'); } catch (e) {}
-    });
-  }
-})();
-</script>

@@ -297,37 +297,85 @@ if os.path.isfile(css_path):
         f.write(banner_css)
     print("Appended cn-region-banner CSS to my.css")
 
+# cn-banner.ejs: HTML-only partial (no inline <script>).
+# We DO NOT touch layout.ejs here — the layout already contains the
+# static <script src=".../js/cn-banner.js"></script> reference. Mixing
+# marker-based injection caused a broken HTML regression on 2026-08-10.
 banner_partial = os.path.join(theme_dir, "layout", "_partial", "cn-banner.ejs")
+banner_partial_content = (
+    "<div id=\"cn-region-banner\" class=\"cn-region-banner\" hidden>\n"
+    "  <div class=\"cn-region-banner__inner\">\n"
+    "    <span class=\"cn-region-banner__icon\" aria-hidden=\"true\">🇨🇳</span>\n"
+    "    <div class=\"cn-region-banner__text\">\n"
+    "      <strong>检测到你可能在内地</strong>\n"
+    "      <span>建议切换到国内站 <code>growdu.cn</code> 获得更快的访问速度</span>\n"
+    "    </div>\n"
+    "    <a class=\"cn-region-banner__btn\" href=\"<%= cnTarget %>\" rel=\"noopener\">立即前往</a>\n"
+    "    <button class=\"cn-region-banner__close\" type=\"button\" aria-label=\"关闭\">×</button>\n"
+    "  </div>\n"
+    "</div>\n"
+)
 if not os.path.isfile(banner_partial):
-    src = "/tmp/cn-banner.ejs"
-    if os.path.isfile(src):
-        shutil.copy2(src, banner_partial)
-        print("Copied cn-banner.ejs into theme partials")
+    os.makedirs(os.path.dirname(banner_partial), exist_ok=True)
+    with open(banner_partial, "w", encoding="utf-8") as f:
+        f.write(banner_partial_content)
+    print("Created cn-banner.ejs partial")
+else:
+    print("cn-banner.ejs already present")
 
-layout_path = os.path.join(theme_dir, "layout", "layout.ejs")
-if os.path.isfile(layout_path):
-    with open(layout_path, encoding="utf-8") as f:
-        layout_content = f.read()
-    marker = "<!--CN_REGION_BANNER_INCLUDED-->"
-    if marker not in layout_content:
-        inject = (
-            "<% if (is_home() && page.current === 1) { %>\n"
-            "<%- partial('_partial/cn-banner', { cnTarget: 'https://growdu.cn/' }) %>\n"
-            + marker + "\n"
-            "<% } %>\n"
-        )
-        if re.search(r"<body\b[^>]*>", layout_content):
-            layout_content = re.sub(
-                r"(<body\b[^>]*>)",
-                lambda m: m.group(1) + "\n" + inject,
-                layout_content,
-                count=1,
-            )
-        else:
-            layout_content = layout_content.replace("</head>", inject + "\n</head>", 1)
-        with open(layout_path, "w", encoding="utf-8") as f:
-            f.write(layout_content)
-        print("Injected cn-region-banner partial into layout.ejs")
+# cn-banner.js: standalone detection script, loaded via <script src>
+# so it can be served with the 30-day immutable cache header.
+banner_js = os.path.join(theme_dir, "source", "js", "cn-banner.js")
+banner_js_content = (
+    "/**\n"
+    " * cn-region-banner detection logic.\n"
+    " * Shows the regional banner only when the visitor is detected as being\n"
+    " * in mainland China (via navigator.language or timezone heuristic) AND\n"
+    " * is not already on growdu.cn. Persists dismissal state in localStorage.\n"
+    " */\n"
+    "(function () {\n"
+    "  'use strict';\n"
+    "  if (typeof window === 'undefined') return;\n"
+    "  var banner = document.getElementById('cn-region-banner');\n"
+    "  if (!banner) return;\n"
+    "  var host = window.location.hostname;\n"
+    "  if (host === 'growdu.cn' || host === 'www.growdu.cn') {\n"
+    "    banner.hidden = true;\n"
+    "    return;\n"
+    "  }\n"
+    "  var dismissed = false;\n"
+    "  try { dismissed = localStorage.getItem('cn-banner-dismissed') === '1'; } catch (e) {}\n"
+    "  if (dismissed) return;\n"
+    "  var lang = (navigator.language || navigator.userLanguage || '').toLowerCase();\n"
+    "  var isCN = (lang === 'zh-cn' || lang.indexOf('zh-hans') === 0 || lang === 'zh');\n"
+    "  if (!isCN && typeof Intl !== 'undefined' && Intl.DateTimeFormat) {\n"
+    "    try {\n"
+    "      var tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';\n"
+    "      if (tz === 'Asia/Shanghai' || tz === 'Asia/Chongqing' ||\n"
+    "          tz === 'Asia/Harbin'   || tz === 'Asia/Urumqi'  ||\n"
+    "          tz === 'Asia/Hong_Kong') {\n"
+    "        isCN = true;\n"
+    "      }\n"
+    "    } catch (e) {}\n"
+    "  }\n"
+    "  if (!isCN) return;\n"
+    "  banner.hidden = false;\n"
+    "  var close = banner.querySelector('.cn-region-banner__close');\n"
+    "  if (close) {\n"
+    "    close.addEventListener('click', function () {\n"
+    "      banner.hidden = true;\n"
+    "      try { localStorage.setItem('cn-banner-dismissed', '1'); } catch (e) {}\n"
+    "    });\n"
+    "  }\n"
+    "})();\n"
+)
+if not os.path.isfile(banner_js):
+    os.makedirs(os.path.dirname(banner_js), exist_ok=True)
+    with open(banner_js, "w", encoding="utf-8") as f:
+        f.write(banner_js_content)
+    print("Created cn-banner.js")
+else:
+    print("cn-banner.js already present")
 
 
 # --- 8. Enrich homepage hero with motto + sub description + comprehensive typing text ---
