@@ -32,20 +32,29 @@ jobs:
           GITALK_PAGES_CLIENT_ID: ${{ secrets.GITALK_PAGES_CLIENT_ID }}
           GITALK_PAGES_CLIENT_SECRET: ${{ secrets.GITALK_PAGES_CLIENT_SECRET }}
         run: |
-          python3 -c "
-          import os
-          mapping = {
-              '__GITALK_CN_CLIENT_ID__':       os.environ.get('GITALK_CN_CLIENT_ID',''),
-              '__GITALK_CN_CLIENT_SECRET__':   os.environ.get('GITALK_CN_CLIENT_SECRET',''),
-              '__GITALK_PAGES_CLIENT_ID__':    os.environ.get('GITALK_PAGES_CLIENT_ID',''),
-              '__GITALK_PAGES_CLIENT_SECRET__':os.environ.get('GITALK_PAGES_CLIENT_SECRET',''),
-          }
-          with open('_config.matery.yml','r') as f: c=f.read()
-          for k,v in mapping.items(): c=c.replace(k,v)
-          with open('_config.matery.yml','w') as f: f.write(c)
-          for k in ('GITALK_CN_CLIENT_ID','GITALK_CN_CLIENT_SECRET','GITALK_PAGES_CLIENT_ID','GITALK_PAGES_CLIENT_SECRET'):
-              print(f'{k} {"injected" if os.environ.get(k) else "MISSING"}')
-          "
+          python3 - <<'PYINJECT'
+          import os, sys
+          keys = [
+              ("__GITALK_CN_CLIENT_ID__",        "GITALK_CN_CLIENT_ID"),
+              ("__GITALK_CN_CLIENT_SECRET__",    "GITALK_CN_CLIENT_SECRET"),
+              ("__GITALK_PAGES_CLIENT_ID__",     "GITALK_PAGES_CLIENT_ID"),
+              ("__GITALK_PAGES_CLIENT_SECRET__", "GITALK_PAGES_CLIENT_SECRET"),
+          ]
+          path = "_config.matery.yml"
+          with open(path, "r", encoding="utf-8") as f:
+              content = f.read()
+          missing = False
+          for placeholder, env in keys:
+              value = os.environ.get(env, "")
+              if not value:
+                  missing = True
+              content = content.replace(placeholder, value)
+              print(env, "injected" if value else "MISSING")
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(content)
+          sys.exit(1 if missing else 0)
+          PYINJECT
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
