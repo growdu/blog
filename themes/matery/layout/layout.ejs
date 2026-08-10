@@ -2,7 +2,12 @@
 <html lang="<%= config.language %>">
 <%- partial('_partial/head') %>
 
-<body>
+<body
+<% if (is_home() && page.current === 1) { %>
+<%- partial('_partial/cn-banner', { cnTarget: 'https://growdu.cn/' }) %>
+<!--CN_REGION_BANNER_INCLUDED-->
+<% } %>
+>
     <%- partial('_partial/header') %>
     <%- body %>
 
@@ -296,6 +301,20 @@
 <% } %>
 <%# Per-page view counter is handled by Vercount embed below. %>
 
+<% if (is_post()) { %>
+<script src="/libs/prism/prism-core.min.js"></script>
+<script src="/libs/prism/prism-autoloader.min.js"></script>
+<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='/libs/prism/components/';}</script>
+<script src="/lib/mermaid/mermaid.min.js"></script>
+<script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>
+<% } %>
+<script>if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(function(){})}</script>
+<script>
+(function(){
+  var main = document.querySelector('main[data-page="rec-all"]');
+  if (main) document.body.classList.add('on-rec-all-page');
+})();
+</script>
 </body>
 
 </html>

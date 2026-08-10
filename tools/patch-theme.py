@@ -275,6 +275,55 @@ gitalk_card_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
 
 with open(os.path.join(partial_dir, 'gitalk-card.ejs'), 'w', encoding='utf-8') as f:
     f.write(gitalk_card_ejs)
+
+# --- 7. Inject region banner (home page only) ---
+banner_css = (
+    "/* cn-region-banner */\n"
+    ".cn-region-banner{position:sticky;top:0;left:0;right:0;z-index:1001;background:linear-gradient(90deg,#ff7e5f 0%,#feb47b 100%);color:#fff;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.15);}\n"
+    ".cn-region-banner[hidden]{display:none;}\n"
+    ".cn-region-banner__inner{display:flex;align-items:center;gap:12px;max-width:1080px;margin:0 auto;padding:10px 16px;}\n"
+    ".cn-region-banner__icon{font-size:20px;}\n"
+    ".cn-region-banner__text{display:flex;flex-direction:column;line-height:1.3;flex:1;}\n"
+    ".cn-region-banner__text code{background:rgba(255,255,255,.18);padding:1px 6px;border-radius:4px;}\n"
+    ".cn-region-banner__btn{background:#fff;color:#c84a2c!important;padding:6px 14px;border-radius:999px;font-weight:600;white-space:nowrap;text-decoration:none;}\n"
+    ".cn-region-banner__btn:hover{background:#fff7f3;}\n"
+    ".cn-region-banner__close{background:transparent;border:0;color:#fff;font-size:22px;line-height:1;cursor:pointer;opacity:.85;}\n"
+    ".cn-region-banner__close:hover{opacity:1;}\n"
+    "@media (max-width:600px){.cn-region-banner__text{font-size:12px;}.cn-region-banner__btn{padding:5px 10px;font-size:12px;}}\n"
+)
+css_path = os.path.join(theme_dir, "source", "css", "my.css")
+if os.path.isfile(css_path):
+    with open(css_path, "a", encoding="utf-8") as f:
+        f.write(banner_css)
+    print("Appended cn-region-banner CSS to my.css")
+
+banner_partial = os.path.join(theme_dir, "layout", "_partial", "cn-banner.ejs")
+if not os.path.isfile(banner_partial):
+    src = "/tmp/cn-banner.ejs"
+    if os.path.isfile(src):
+        shutil.copy2(src, banner_partial)
+        print("Copied cn-banner.ejs into theme partials")
+
+layout_path = os.path.join(theme_dir, "layout", "layout.ejs")
+if os.path.isfile(layout_path):
+    with open(layout_path, encoding="utf-8") as f:
+        layout_content = f.read()
+    marker = "<!--CN_REGION_BANNER_INCLUDED-->"
+    if marker not in layout_content:
+        inject = (
+            "<% if (is_home() && page.current === 1) { %>\n"
+            "<%- partial('_partial/cn-banner', { cnTarget: 'https://growdu.cn/' }) %>\n"
+            + marker + "\n"
+            "<% } %>\n"
+        )
+        if "<body" in layout_content:
+            layout_content = layout_content.replace("<body", "<body\n" + inject, 1)
+        else:
+            layout_content = layout_content.replace("</head>", inject + "\n</head>", 1)
+        with open(layout_path, "w", encoding="utf-8") as f:
+            f.write(layout_content)
+        print("Injected cn-region-banner partial into layout.ejs")
+
 print('Created gitalk-card.ejs')
 
 post_detail = os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs')
