@@ -237,9 +237,9 @@ gitalk_card_ejs = """<% if (theme.gitalk && theme.gitalk.enable) { %>
 <div class="card" data-aos="fade-up">
   <div class="card-content">
     <% if (theme.gitalk.clientID && theme.gitalk.clientID.length > 0) { %>
-    <link rel="stylesheet" href="/lib/gitalk/gitalk.css">
+    <link rel="stylesheet" href="<%= url_for('/lib/gitalk/gitalk.css') %>">
     <div id="gitalk-container" data-gitalk-id="<%= gitalkId %>" data-gitalk-title="<%= page.title %>"></div>
-    <script src="/lib/gitalk/gitalk.min.js"></script>
+    <script src="<%= url_for('/lib/gitalk/gitalk.min.js') %>"></script>
     <script>
       var gitalk = new Gitalk({
         clientID: '<%= theme.gitalk.clientID %>',
