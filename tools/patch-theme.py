@@ -316,8 +316,13 @@ if os.path.isfile(layout_path):
             + marker + "\n"
             "<% } %>\n"
         )
-        if "<body" in layout_content:
-            layout_content = layout_content.replace("<body", "<body\n" + inject, 1)
+        if re.search(r"<body\b[^>]*>", layout_content):
+            layout_content = re.sub(
+                r"(<body\b[^>]*>)",
+                lambda m: m.group(1) + "\n" + inject,
+                layout_content,
+                count=1,
+            )
         else:
             layout_content = layout_content.replace("</head>", inject + "\n</head>", 1)
         with open(layout_path, "w", encoding="utf-8") as f:
@@ -375,7 +380,7 @@ if os.path.isfile(bg_path):
         content = content.replace(tech_old, tech_new, 1)
     # 8.3 在 brand-description 之后插入 motto (从 theme.motto.texts 读取)
     motto_old = """<span id="subtitle"></span>"""
-    if motto_old in content and "motto-row" not in content:
+    if motto_old in content and "motto-row" not in content and "hero-motto-line" not in content:
         motto_block = (
             "<% if (theme.motto && theme.motto.enable && theme.motto.texts && theme.motto.texts.length) { %>\n"
             "<div class=\"hero-motto\" id=\"hero-motto\">\n"
@@ -400,6 +405,9 @@ if os.path.isfile(bg_path):
         content = content.replace(motto_old, motto_block + motto_old, 1)
     # 8.4 副标题描述
     if "hero-subdesc" not in content:
+        # ensure the description wrapper exists before injecting
+        pass
+    if "hero-subdesc" not in content and '<div class="description center-align">' in content:
         desc_block = (
             "<% if (theme.subDesc && theme.subDesc.enable && theme.subDesc.text) { %>\n"
             "<div class=\"hero-subdesc\"><%= theme.subDesc.text %></div>\n"
