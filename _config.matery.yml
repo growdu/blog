@@ -30,7 +30,7 @@ subDesc:
 
 # Three-stage life motto (replaces the default "从来没有真正的绝境..." on the homepage).
 motto:
-  enable: true
+  enable: false
   texts:
     - '山是山，水是水；山不是山，水不是水；山还是山，水还是水'
 
