@@ -415,15 +415,16 @@ footer.footer a:hover {
 .cn-region-banner__close:hover{opacity:1;}
 @media (max-width:600px){.cn-region-banner__text{font-size:12px;}.cn-region-banner__btn{padding:5px 10px;font-size:12px;}}
 /* hero motto */
-.hero-motto{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:32px auto 0;max-width:760px;font-size:18px;letter-spacing:.05em;font-weight:600;color:#fff;}
-.hero-stats{margin:32px auto 0;display:flex;justify-content:center;gap:36px;flex-wrap:wrap;}
+.hero-motto{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:48px auto 0;max-width:760px;font-size:18px;letter-spacing:.05em;font-weight:600;color:#fff;}
+.hero-stats{margin:96px auto 0;display:flex;justify-content:center;gap:36px;flex-wrap:wrap;position:relative;padding-top:36px;}
+.hero-stats::before{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:96px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);}
 .hero-stat{display:flex;flex-direction:column;align-items:center;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4);}
 .hero-stat-num{font-size:28px;font-weight:700;letter-spacing:.02em;}
 .hero-stat-label{font-size:12px;opacity:.85;margin-top:4px;letter-spacing:.08em;}
-.hero-tech{margin:32px auto 0;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;max-width:920px;padding:0 16px;}
+.hero-tech{margin:56px auto 0;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;max-width:920px;padding:0 16px;}
 .hero-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.12);backdrop-filter:blur(6px);color:#fff;font-size:13px;letter-spacing:.04em;transition:background .25s ease,transform .25s ease;}
 .hero-badge:hover{background:rgba(255,255,255,.22);transform:translateY(-1px);}
-.hero-typing{margin:32px auto 0;min-height:28px;color:#fff;font-size:16px;letter-spacing:.05em;opacity:.95;text-shadow:0 1px 4px rgba(0,0,0,.4);}
+.hero-typing{margin:48px auto 0;min-height:28px;color:#fff;font-size:16px;letter-spacing:.05em;opacity:.95;text-shadow:0 1px 4px rgba(0,0,0,.4);}
 .hero-motto-line{opacity:.55;transition:opacity .8s ease,transform .8s ease;transform:translateY(2px);text-shadow:0 2px 8px rgba(0,0,0,.4);}
 .hero-motto-line.is-active{opacity:1;transform:translateY(0);}
 .hero-motto-line + .hero-motto-line::before{content:"· ";opacity:.5;margin-right:14px;color:#fff;}
