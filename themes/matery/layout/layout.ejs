@@ -5,10 +5,8 @@
 <body class="<%- is_home() && page.current === 1 ? 'home-cn-banner' : '' %>">
     <%- partial('_partial/header') %>
 
-<% if (is_home() && page.current === 1) { %>
     <%- partial('_partial/cn-banner', { cnTarget: 'https://growdu.cn/' }) %>
     <script src="<%- url_for('/js/cn-banner.js') %>"></script>
-<% } %>
     <%- body %>
 
     <%- partial('_partial/footer') %>
