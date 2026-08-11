@@ -280,9 +280,19 @@ nav {
 }
 
 header .nav-transparent {
-    background-color: transparent !important;
+    background-color: #263238 !important;
     background-image: none;
-    box-shadow: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+header .nav-transparent .brand-logo,
+header .nav-transparent .brand-logo a,
+header .nav-transparent .m-nav-item a,
+header .nav-transparent a {
+    color: rgba(255,255,255,0.92) !important;
+}
+header .nav-transparent .brand-logo a:hover,
+header .nav-transparent .m-nav-item a:hover {
+    color: #fff !important;
 }
 
 header nav .brand-span {
