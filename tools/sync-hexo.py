@@ -476,6 +476,26 @@ def main():
                     if process(fp, cats):
                         n_md += 1
                 elif ext in ('.html', '.htm'):
+                    # Naming convention: if an .html shares a basename
+                    # with an .md in the same directory, the .html MUST
+                    # carry a -html suffix (e.g. 'foo.html' ->
+                    # 'foo-html.html') so the pair is visually distinct
+                    # in the docs/ tree and the generated permalinks
+                    # don't collide.  Detect violations here and fail
+                    # loud — better to break the build than silently
+                    # produce two posts with the same URL.
+                    base_no_ext = os.path.splitext(f)[0]
+                    if not base_no_ext.endswith('-html'):
+                        twin_md = os.path.join(root, base_no_ext + '.md')
+                        if os.path.isfile(twin_md):
+                            print(
+                                f'ERROR {fp}: shares basename with {twin_md} '
+                                f'but is not suffixed with -html. Rename the .html '
+                                f'file to {os.path.join(root, base_no_ext + "-html.html")} '
+                                f'(see docs/blog/同名文章-html-与-md-版本管理.md).',
+                                file=sys.stderr,
+                            )
+                            sys.exit(2)
                     if process_html(fp, cats):
                         n_html += 1
             except Exception as e:
