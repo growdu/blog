@@ -24,13 +24,14 @@ subtitle:
   showCursor: true
 
 # Hero sub-description displayed below the typing animation.
+# Disabled on 2026-08-11 — hero now shows only title + motto.
 subDesc:
-  enable: true
+  enable: false
   text: '数据库内核 · 分布式系统 · 用户态协议 · 高性能网络 · 工具 / 视频 / 培训 · 股票 · 哲学 · 人生 · 社会'
 
 # Three-stage life motto (replaces the default "从来没有真正的绝境..." on the homepage).
 motto:
-  enable: false
+  enable: true
   texts:
     - '山是山，水是水；山不是山，水不是水；山还是山，水还是水'
 
