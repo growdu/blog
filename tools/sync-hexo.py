@@ -491,10 +491,12 @@ def main():
     print('Created robots.txt')
 
 
-    # PWA manifest
+    # PWA manifest (re-include icons[] on every regen so a fresh CI
+    # checkout doesn't silently drop the 48x48 favicon + 192x192 logo
+    # entries; aa9cfb6 originally restored them after a similar bug).
     manifest_path = os.path.join(SRC, 'manifest.json')
     with open(manifest_path, 'w', encoding='utf-8') as f:
-        f.write('{"name":"编程之路","short_name":"编程之路","description":"资深后端研发工程师的技术博客","start_url":"/blog/","display":"standalone","background_color":"#ffffff","theme_color":"#009688","lang":"zh-CN"}')
+        f.write('{\n  "name": "编程之路",\n  "short_name": "编程之路",\n  "description": "资深后端研发工程师的技术博客",\n  "start_url": "/blog/",\n  "display": "standalone",\n  "background_color": "#ffffff",\n  "theme_color": "#009688",\n  "lang": "zh-CN",\n  "icons": [\n    {\n      "src": "/blog/favicon.png",\n      "sizes": "48x48",\n      "type": "image/png"\n    },\n    {\n      "src": "/blog/medias/logo.jpg",\n      "sizes": "192x192",\n      "type": "image/jpeg"\n    }\n  ]\n}\n')
     print('Created manifest.json')
 
     # Custom SVG favicon (database icon)
