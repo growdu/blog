@@ -245,20 +245,17 @@ body.dark .view-all-btn {
 }
 .all-page-header {
     text-align: center;
-    padding: 40px 20px 32px;
+    padding: 30px 20px 20px;
     margin-bottom: 10px;
-    background: #263238;
-    color: rgba(255,255,255,0.85);
 }
 .all-page-header h1 {
     font-size: 2.2rem;
     font-weight: 700;
     margin: 0 0 8px;
-    color: #fff;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    color: #333;
 }
 .all-page-subtitle {
-    color: rgba(255,255,255,0.72);
+    color: #888;
     font-size: 14px;
     margin: 0 0 16px;
 }
@@ -267,19 +264,21 @@ body.dark .view-all-btn {
     align-items: center;
     gap: 6px;
     padding: 10px 22px;
-    background: rgba(255,255,255,0.12);
-    color: rgba(255,255,255,0.92) !important;
+    background: rgba(0,0,0,0.08);
+    color: #444 !important;
     border-radius: 22px;
     font-size: 15px;
     font-weight: 500;
     text-decoration: none !important;
-    transition: background 0.2s, transform 0.2s, color 0.2s;
+    transition: background 0.2s, transform 0.2s;
 }
 .all-page-back:hover {
-    background: rgba(255,255,255,0.22);
-    color: #fff !important;
+    background: rgba(0,0,0,0.16);
+    color: #222 !important;
     transform: translateX(-2px);
 }
+body.dark .all-page-header h1 { color: #ddd; }
+body.dark .all-page-subtitle { color: #aaa; }
 
 
 /* REC-PAGE-LAYOUT */
