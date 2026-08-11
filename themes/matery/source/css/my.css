@@ -390,13 +390,22 @@ main.rec-page {
 
 /* FIXED-HEADER-FOOTER */
 /* Navbar 固定深色背景(跨所有页面统一) */
-.Navbar {
-    background: #263238 !important;
+/* FIXED-HEADER-FOOTER */
+/* Navbar: 跨所有页面统一深色背景 (覆盖 matery 默认的 .nav-transparent 透明效果) */
+header nav.nav-transparent {
+    background-color: #263238 !important;
+    background-image: none !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
 }
-.Navbar .brand-logo,
-.Navbar .m-nav-item a {
-    color: rgba(255,255,255,0.9) !important;
+header nav.nav-transparent .brand-logo,
+header nav.nav-transparent .brand-logo a,
+header nav.nav-transparent .m-nav-item a,
+header nav.nav-transparent a {
+    color: rgba(255,255,255,0.92) !important;
+}
+header nav.nav-transparent .brand-logo a:hover,
+header nav.nav-transparent .m-nav-item a:hover {
+    color: #fff !important;
 }
 /* Footer 固定深色背景 */
 footer.footer {
