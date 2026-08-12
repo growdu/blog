@@ -493,6 +493,859 @@ if os.path.isfile(css_path):
             f.write(css_append)
         print('Appended hero-motto / hero-subdesc CSS to my.css')
 
+# --- 8.6 注入首页 hero 响应式 + 自适应修复样式 ---
+# 解决问题：
+#   1) 首页 carousel 硬限 height:100vh + overflow:hidden，导致 hero 内容超出视口时被裁掉
+#      (典型表现：标题可见、stats/tech/typing 被遮挡)
+#   2) hero 各元素 (title/motto/stats/tech/typing) 缺少响应式
+#   3) 1400-1600px 区间侧栏挤压 hero 文本
+#   4) navbar-fixed 与 carousel 重叠
+# 所有规则收敛到 themes/matery/source/css/my.css 末尾，幂等检测 marker = 'RESPONSIVE-HERO-FIX'。
+responsive_hero_marker = "RESPONSIVE-HERO-FIX"
+responsive_hero_css = r"""
+/* RESPONSIVE-HERO-FIX */
+/* 重写首页 hero 区域，让内容能适应不同高度/宽度的视口。 */
+
+/* === A. 首页 carousel 容器自适应高度 === */
+.carousel.carousel-slider.center.index-cover {
+    height: auto !important;
+    min-height: calc(100vh - 64px) !important;
+    overflow: visible !important;
+    margin-top: 0 !important;
+}
+
+/* === B. carousel-item：当前展示的 item 撑开容器 === */
+.index-cover > .carousel-item {
+    position: absolute !important;
+    height: 100% !important;
+    min-height: calc(100vh - 64px);
+}
+.index-cover > .carousel-item.active {
+    position: relative !important;
+    height: auto !important;
+    min-height: calc(100vh - 64px);
+    overflow: visible !important;
+}
+.index-cover > .carousel-item:not(.active) {
+    display: none !important;
+}
+
+/* === C. hero 内容容器：给 navbar 留 padding-top，给溢出留 padding-bottom === */
+.index-cover > .carousel-item.active.bg-cover {
+    display: flex !important;
+    align-items: stretch !important;
+    justify-content: center !important;
+    padding: 88px 0 48px !important;
+    box-sizing: border-box;
+}
+.index-cover .bg-cover .container {
+    position: relative !important;
+    z-index: 2;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* === D. hero title 响应式字号 === */
+.bg-cover .title {
+    font-size: clamp(1.9rem, 4.5vw, 3.8rem) !important;
+    line-height: 1.2 !important;
+    margin: 0 0 20px !important;
+    word-break: break-word;
+}
+
+/* === E. hero motto 紧凑 + 响应式 === */
+.hero-motto {
+    margin-top: 18px !important;
+    font-size: clamp(13px, 1.5vw, 18px) !important;
+    gap: 10px !important;
+    padding: 0 12px;
+    line-height: 1.5;
+}
+
+/* === F. hero description (subtitle/typed) 响应式 === */
+.bg-cover .description {
+    font-size: clamp(14px, 1.4vw, 18px) !important;
+    line-height: 1.5 !important;
+    margin-top: 8px !important;
+}
+#subtitle {
+    font-size: inherit !important;
+}
+
+/* === G. hero-stats 紧凑 + 响应式 === */
+.hero-stats {
+    margin: 28px auto 0 !important;
+    padding-top: 22px !important;
+    gap: clamp(18px, 4vw, 48px) !important;
+}
+.hero-stats::before {
+    width: 80px;
+}
+.hero-stat-num {
+    font-size: clamp(20px, 2.8vw, 30px) !important;
+}
+.hero-stat-label {
+    font-size: clamp(11px, 1.1vw, 14px) !important;
+}
+
+/* === H. hero-tech 紧凑 + 响应式 === */
+.hero-tech {
+    margin: 22px auto 0 !important;
+    gap: 8px !important;
+    padding: 0 12px;
+}
+.hero-badge {
+    font-size: clamp(11px, 1.15vw, 13px) !important;
+    padding: 5px 12px !important;
+    gap: 5px;
+    white-space: nowrap;
+}
+
+/* === I. hero-typing 紧凑 === */
+.hero-typing {
+    margin: 22px auto 0 !important;
+    font-size: clamp(12px, 1.3vw, 16px) !important;
+    min-height: 22px;
+    padding: 0 12px;
+}
+
+/* === J. cover-btns 改为相对定位，避免 absolute top:10vh 在不同高度下错位 === */
+.cover-btns {
+    position: relative !important;
+    top: 0 !important;
+    margin: 36px 0 0 !important;
+    text-align: center;
+}
+.cover-btns a {
+    margin: 8px 10px !important;
+    padding: 0 28px !important;
+    height: 42px !important;
+    line-height: 42px !important;
+    font-size: 14px !important;
+}
+.cover-btns a i {
+    font-size: 1rem !important;
+}
+
+/* === K. hero-subdesc 响应式 === */
+.hero-subdesc {
+    font-size: clamp(12px, 1.2vw, 14px) !important;
+    margin-top: 8px !important;
+    padding: 0 12px;
+}
+
+/* === L. 侧边栏断点 1400 -> 1600 === */
+@media (max-width: 1599px) {
+    .cat-sidebar,
+    .hot-sidebar {
+        display: none !important;
+    }
+}
+
+/* === M. main.content 边距同步到新断点 === */
+@media (min-width: 1600px) {
+    main.content {
+        margin-left: 294px !important;
+        margin-right: 294px !important;
+        max-width: calc(100vw - 588px) !important;
+    }
+    body.cat-collapsed main.content {
+        margin-left: 60px !important;
+    }
+    body.hot-collapsed main.content {
+        margin-right: 60px !important;
+    }
+    body.cat-collapsed.hot-collapsed main.content {
+        margin-left: 60px !important;
+        margin-right: 60px !important;
+        max-width: calc(100vw - 120px) !important;
+    }
+}
+@media (min-width: 1401px) and (max-width: 1599px) {
+    main.content {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        max-width: none !important;
+    }
+}
+
+/* === N. 宽屏下让 hero 内容容器避开 sidebar 区域 === */
+@media (min-width: 1600px) {
+    .index-cover .bg-cover .container {
+        max-width: calc(100vw - 624px) !important;
+    }
+}
+
+/* === O. 移动端 (<=600px) === */
+@media (max-width: 600px) {
+    .carousel.carousel-slider.center.index-cover {
+        min-height: calc(100vh - 56px) !important;
+    }
+    .index-cover > .carousel-item.active.bg-cover {
+        min-height: calc(100vh - 56px) !important;
+        padding: 70px 0 36px !important;
+    }
+    .bg-cover .title {
+        font-size: 1.6rem !important;
+        margin-bottom: 14px !important;
+    }
+    .hero-motto {
+        margin-top: 14px !important;
+        font-size: 12px !important;
+        gap: 4px !important;
+        padding: 0 8px;
+    }
+    .hero-motto-line + .hero-motto-line::before {
+        margin-right: 4px !important;
+    }
+    .bg-cover .description {
+        font-size: 13px;
+        margin-top: 6px !important;
+    }
+    .hero-stats {
+        margin-top: 20px !important;
+        padding-top: 14px !important;
+        gap: 14px !important;
+    }
+    .hero-stats::before {
+        width: 56px;
+    }
+    .hero-stat-num {
+        font-size: 18px !important;
+    }
+    .hero-stat-label {
+        font-size: 10px !important;
+    }
+    .hero-tech {
+        margin-top: 16px !important;
+        gap: 5px !important;
+        padding: 0 6px;
+    }
+    .hero-badge {
+        font-size: 10.5px !important;
+        padding: 3px 8px !important;
+        gap: 3px;
+    }
+    .hero-typing {
+        margin-top: 14px !important;
+        font-size: 11.5px !important;
+        min-height: 18px;
+    }
+    .cover-btns {
+        margin-top: 22px !important;
+    }
+    .cover-btns a {
+        margin: 5px 6px !important;
+        padding: 0 18px !important;
+        height: 34px !important;
+        line-height: 34px !important;
+        font-size: 12px !important;
+    }
+    .cover-btns a i {
+        font-size: 0.9rem !important;
+    }
+}
+
+/* === P. 平板竖屏 (601-768) === */
+@media (min-width: 601px) and (max-width: 768px) {
+    .bg-cover .title {
+        font-size: clamp(1.7rem, 5vw, 2.4rem) !important;
+    }
+    .hero-motto { font-size: 14px !important; }
+    .hero-stat-num { font-size: 22px !important; }
+    .hero-tech { gap: 7px !important; }
+    .hero-badge { font-size: 12px !important; }
+    .cover-btns a { margin: 6px 8px !important; padding: 0 22px !important; }
+}
+
+/* === Q. 平板横屏 (769-992) === */
+@media (min-width: 769px) and (max-width: 992px) {
+    .bg-cover .title {
+        font-size: clamp(1.9rem, 4vw, 2.8rem) !important;
+    }
+    .hero-stats { gap: 32px !important; }
+}
+
+/* === R. 中等桌面 (993-1400) === */
+@media (min-width: 993px) and (max-width: 1400px) {
+    .hero-stat-num { font-size: 26px !important; }
+}
+
+/* === S. Navbar 移动端 === */
+@media (max-width: 992px) {
+    .navbar-fixed nav .nav-wrapper .brand-logo .logo-span {
+        font-size: 1.2rem !important;
+    }
+    .navbar-fixed nav .nav-wrapper .brand-logo img.logo-img {
+        height: 36px !important;
+    }
+    .nav-transparent .button-collapse i {
+        font-size: 1.4rem !important;
+    }
+}
+
+/* === T. Footer 移动端 === */
+@media (max-width: 600px) {
+    footer.footer {
+        padding: 20px 0 18px !important;
+    }
+    footer.footer .container {
+        padding: 0 14px;
+    }
+    footer.footer p,
+    footer.footer .friend-links,
+    footer.footer .footer-social-link a {
+        font-size: 12px !important;
+        line-height: 1.7 !important;
+    }
+}
+
+/* === U. 推荐文章 grid：补全 601-768 的 2 列规则 === */
+@media only screen and (min-width: 601px) and (max-width: 768px) {
+    .post-grid { gap: 14px; }
+    .post-grid-card .pg-image { height: 150px; }
+}
+
+/* === V. 文章卡片/详情：移动端 padding 收紧 === */
+@media (max-width: 600px) {
+    .card {
+        margin: 8px 6px !important;
+    }
+    .card .card-content {
+        padding: 14px 14px !important;
+    }
+    #artDetail .card .card-content {
+        padding: 14px 14px !important;
+    }
+    #articleContent {
+        font-size: 15px !important;
+        line-height: 1.75 !important;
+    }
+    #articleContent h2 { font-size: 1.3rem !important; }
+    #articleContent h3 { font-size: 1.15rem !important; }
+}
+
+/* === W. 文章卡片：平板 padding === */
+@media (min-width: 601px) and (max-width: 992px) {
+    .card .card-content {
+        padding: 18px 18px !important;
+    }
+}
+
+/* === X. 极小屏 (<=400px) === */
+@media (max-width: 400px) {
+    .hero-stats { gap: 8px !important; }
+    .hero-stat-num { font-size: 16px !important; }
+    .hero-tech { gap: 4px !important; }
+    .hero-badge { font-size: 10px !important; padding: 3px 7px !important; }
+    .cover-btns a {
+        margin: 4px 4px !important;
+        padding: 0 14px !important;
+        font-size: 11.5px !important;
+    }
+}
+
+/* === Y. 桌面超宽 (>=1920px) === */
+@media (min-width: 1920px) {
+    .index-cover .bg-cover .container {
+        max-width: 1280px !important;
+    }
+}
+"""
+css_path = os.path.join(theme_dir, "source", "css", "my.css")
+if os.path.isfile(css_path):
+    with open(css_path, encoding="utf-8") as f:
+        _css_existing = f.read()
+    if responsive_hero_marker in _css_existing:
+        print('responsive-hero CSS already present, skipping append')
+    else:
+        with open(css_path, "a", encoding="utf-8") as f:
+            f.write(responsive_hero_css)
+        print('Appended RESPONSIVE-HERO-FIX CSS to my.css')
+
+# --- 8.7 注入 cover-social-link 修复样式 ---
+# 解决问题：首页 hero 底部社交图标（github、邮件、QQ、RSS 等）
+#           在新版 hero flex 自适应布局下被 navbar 遮挡/溢出 carousel 容器。
+# 原因：
+#   1) matery.css 的 .cover-social-link { top:23vh } 是按 60vh 固定高度设计的，
+#      现在 .container 改为 flex column + justify-content:center 后，
+#      flex 末尾 + 23vh 双重偏移在低分辨率下溢出 carousel。
+#   2) cover-social-link 没有显式 z-index，navbar-fixed (z-index:997) 在某些
+#      stacking context 下会盖住它。
+# 修复：去掉 top:23vh 偏移，改为 flex 自然位置 + 合理 margin + 显式 z-index:3。
+# 幂等检测 marker = 'COVER-SOCIAL-LINK-FIX'。
+social_link_marker = "COVER-SOCIAL-LINK-FIX"
+social_link_css = r"""
+/* COVER-SOCIAL-LINK-FIX */
+.cover-social-link {
+    position: relative !important;
+    top: 0 !important;
+    margin: 28px 0 0 !important;
+    width: 100% !important;
+    text-align: center !important;
+    z-index: 3;
+}
+.cover-social-link a {
+    padding: 0 12px !important;
+    font-size: 1.35rem !important;
+    color: #fff !important;
+    display: inline-block;
+    line-height: 1;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.cover-social-link a:hover {
+    opacity: 0.75;
+    transform: translateY(-1px);
+}
+.cover-btns + .cover-social-link {
+    margin-top: 24px !important;
+}
+@media (max-width: 600px) {
+    .cover-social-link {
+        margin: 18px 0 0 !important;
+    }
+    .cover-social-link a {
+        padding: 0 9px !important;
+        font-size: 1.2rem !important;
+    }
+}
+@media (min-width: 601px) and (max-width: 768px) {
+    .cover-social-link {
+        margin: 22px 0 0 !important;
+    }
+    .cover-social-link a {
+        padding: 0 11px !important;
+    }
+}
+"""
+css_path = os.path.join(theme_dir, "source", "css", "my.css")
+if os.path.isfile(css_path):
+    with open(css_path, encoding="utf-8") as f:
+        _css_existing = f.read()
+    if social_link_marker in _css_existing:
+        print('cover-social-link CSS already present, skipping append')
+    else:
+        with open(css_path, "a", encoding="utf-8") as f:
+            f.write(social_link_css)
+        print('Appended COVER-SOCIAL-LINK-FIX CSS to my.css')
+
+# --- 8.8 注入非首页页面响应式优化 ---
+# 覆盖范围：
+#   A) 文章详情页 post-cover hero + 排版
+#   B) 上下篇导航 prev-next
+#   C) 3D 旋转轮播 (all 页面) 在窄屏的卡片尺寸
+#   D) 归档时间线 archives
+#   E) 移动端汉堡菜单 mobile-nav
+#   F) 文章内代码块、表格、图片
+#   G) 文章详情 iframe / video / 嵌入响应式 + 16:9 wrapper
+#   H) tags 标签云紧凑度
+#   I) 搜索弹窗
+#   J) gitalk 评论
+#   K) 相关文章 related-posts
+#   L) footer 友情链接 + 社交链接
+#   M) article-share 分享按钮
+#   N) carousel indicators 圆点
+#   O) 回到顶部按钮 + 阅读进度条
+#   P) about 页面 typography
+#   R) 移动端 fixed 元素安全区 (safe-area-inset)
+# 幂等检测 marker = 'PAGE-RESPONSIVE-FIX'。
+page_responsive_marker = "PAGE-RESPONSIVE-FIX"
+page_responsive_css = r"""
+/* PAGE-RESPONSIVE-FIX */
+.post-cover {
+    min-height: 280px !important;
+    padding: 80px 0 50px !important;
+    box-sizing: border-box;
+}
+.post-cover .container {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    align-items: center !important;
+    text-align: center !important;
+}
+@media (max-width: 600px) {
+    .post-cover {
+        min-height: 240px !important;
+        padding: 72px 0 36px !important;
+    }
+    .post-cover .title {
+        font-size: 1.6rem !important;
+        line-height: 1.3 !important;
+        margin: 8px 0 4px !important;
+    }
+    .post-cover .post-title {
+        font-size: 1.5rem !important;
+    }
+}
+@media (min-width: 601px) and (max-width: 992px) {
+    .post-cover .title { font-size: 2rem !important; }
+}
+.prev-next {
+    margin: 20px 0 !important;
+}
+.prev-next .row {
+    margin: 0 !important;
+}
+.prev-next .col {
+    padding: 0 4px !important;
+}
+.prev-next .article-badge {
+    font-size: 0.9rem !important;
+    min-width: 2.5rem !important;
+    padding: 3px 8px !important;
+}
+.prev-next a {
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    word-break: break-word;
+}
+@media (max-width: 600px) {
+    .prev-next {
+        margin: 12px 0 !important;
+    }
+    .prev-next a {
+        font-size: 12px !important;
+        line-height: 1.35 !important;
+        padding: 6px 4px !important;
+    }
+    .prev-next .article-badge {
+        font-size: 0.8rem !important;
+        min-width: 2rem !important;
+        padding: 2px 6px !important;
+    }
+    .prev-next .left-badge,
+    .prev-next .right-badge {
+        position: static !important;
+        display: inline-block;
+        margin-right: 4px;
+    }
+}
+@media (max-width: 600px) {
+    .carousel-3d-wrapper {
+        padding: 4px 0 8px !important;
+    }
+    .carousel-3d-stage {
+        height: 240px !important;
+        transform: scale(0.55);
+        transform-origin: center center;
+    }
+    .carousel-3d-card {
+        width: 280px !important;
+        margin-left: -140px !important;
+        margin-top: -120px !important;
+    }
+    .carousel-3d-card.pos-1 {
+        transform: translateX(220px) scale(0.82) rotateY(-25deg) !important;
+    }
+    .carousel-3d-card.pos--1 {
+        transform: translateX(-220px) scale(0.82) rotateY(25deg) !important;
+    }
+}
+@media (min-width: 601px) and (max-width: 992px) {
+    .carousel-3d-stage {
+        height: 300px !important;
+        transform: scale(0.8);
+        transform-origin: center center;
+    }
+    .carousel-3d-card {
+        width: 320px !important;
+        margin-left: -160px !important;
+        margin-top: -140px !important;
+    }
+    .carousel-3d-card.pos-1 {
+        transform: translateX(280px) scale(0.82) rotateY(-25deg) !important;
+    }
+    .carousel-3d-card.pos--1 {
+        transform: translateX(-280px) scale(0.82) rotateY(25deg) !important;
+    }
+}
+@media (min-width: 769px) and (max-width: 1399px) {
+    #cd-timeline .year,
+    #cd-timeline .month {
+        margin-left: 0 !important;
+        padding: 14px 16px !important;
+    }
+    .cd-timeline-content {
+        margin-left: 60px !important;
+        width: auto !important;
+        float: none !important;
+    }
+    .cd-timeline-block:nth-child(even) .cd-timeline-content {
+        float: none !important;
+    }
+    .cd-timeline-content::before {
+        top: 18px !important;
+        left: -14px !important;
+        right: auto !important;
+        border: 1px dashed #ffa726;
+    }
+}
+@media (max-width: 992px) {
+    .side-nav {
+        width: 280px !important;
+    }
+    .side-nav .mobile-head {
+        padding: 0 16px !important;
+    }
+    .side-nav .mobile-head img {
+        margin-top: 24px !important;
+        width: 60px !important;
+        height: 60px !important;
+    }
+    .side-nav .mobile-head .logo-name {
+        margin-top: -22px !important;
+        font-size: 1.3rem !important;
+    }
+    .side-nav .mobile-head .logo-desc {
+        font-size: 0.75rem !important;
+        line-height: 1.25rem !important;
+        padding-bottom: 8px !important;
+    }
+    .side-nav .menu-list a {
+        height: 44px !important;
+        line-height: 44px !important;
+        font-size: 0.95rem !important;
+    }
+    .side-nav .social-link {
+        bottom: 24px !important;
+        padding-left: 16px !important;
+    }
+    .side-nav .social-link a {
+        font-size: 1.1rem !important;
+        padding: 0 10px !important;
+    }
+}
+@media (max-width: 600px) {
+    #articleContent pre[class*="language-"] {
+        font-size: 12px !important;
+        padding: 10px 12px !important;
+        margin: 12px 0 !important;
+        border-radius: 4px !important;
+    }
+    #articleContent :not(pre) > code {
+        font-size: 12px !important;
+        padding: 1px 5px !important;
+    }
+    #articleContent table {
+        font-size: 13px !important;
+    }
+    #articleContent table th,
+    #articleContent table td {
+        padding: 6px 8px !important;
+    }
+    #articleContent img {
+        margin: 8px 0 !important;
+    }
+    #articleContent blockquote {
+        padding: 10px 14px !important;
+        font-size: 14px !important;
+        margin: 12px 0 !important;
+    }
+    #articleContent pre {
+        margin-left: -16px !important;
+        margin-right: -16px !important;
+        border-radius: 0 !important;
+    }
+}
+#articleContent iframe,
+#articleContent video,
+#articleContent embed,
+#articleContent object {
+    max-width: 100% !important;
+    height: auto !important;
+}
+.video-wrapper {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    margin: 16px 0;
+    border-radius: 8px;
+}
+.video-wrapper iframe,
+.video-wrapper video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+.chip-container .tag-chips {
+    padding: 0 12px !important;
+}
+.chip-container .chip {
+    font-size: 0.9rem !important;
+    margin: 4px 4px !important;
+    padding: 4px 10px !important;
+}
+@media (max-width: 600px) {
+    .chip-container .chip {
+        font-size: 0.8rem !important;
+        margin: 3px 3px !important;
+        padding: 3px 8px !important;
+    }
+    .chip-container .tag-chips {
+        padding: 0 6px !important;
+    }
+    .chip-container .tag-title {
+        font-size: 1.4rem !important;
+        margin: 8px 0 6px !important;
+        text-align: center;
+    }
+}
+@media (max-width: 600px) {
+    #searchModal .modal-content {
+        padding: 14px !important;
+    }
+    #searchModal input.search-input {
+        font-size: 14px !important;
+        padding: 8px 12px !important;
+    }
+    #searchModal .search-result-list {
+        max-height: 60vh !important;
+    }
+    #searchModal .search-result-title {
+        font-size: 13px !important;
+        line-height: 1.5 !important;
+    }
+    #searchModal .search-keyword {
+        font-size: 11px !important;
+    }
+}
+@media (max-width: 600px) {
+    .gitalk-card {
+        margin: 16px 6px !important;
+        padding: 14px !important;
+    }
+    .gitalk-card .gt-header-textarea {
+        font-size: 13px !important;
+    }
+}
+.related-posts-grid {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+    gap: 12px !important;
+}
+@media (max-width: 600px) {
+    .related-posts-grid {
+        grid-template-columns: 1fr !important;
+        gap: 8px !important;
+    }
+    .related-post-item {
+        padding: 8px 10px !important;
+        font-size: 13px !important;
+    }
+    .related-post-name {
+        max-width: 60vw !important;
+    }
+}
+@media (max-width: 600px) {
+    footer.footer .friends-box {
+        padding: 0 8px !important;
+    }
+    footer.footer .friends-box a {
+        margin: 3px 4px !important;
+        padding: 4px 10px !important;
+        font-size: 12px !important;
+        display: inline-block;
+    }
+    footer.footer .footer-social-link {
+        text-align: center !important;
+    }
+    footer.footer .footer-social-link a {
+        margin: 0 6px !important;
+    }
+}
+@media (min-width: 601px) and (max-width: 992px) {
+    footer.footer .row .col {
+        padding: 0 8px !important;
+    }
+}
+#article-share {
+    flex-wrap: wrap !important;
+    margin: 16px 0 !important;
+    padding: 0 !important;
+}
+#article-share .social-share {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+}
+#article-share .social-share a {
+    margin: 4px 6px !important;
+    font-size: 1.1rem !important;
+}
+@media (max-width: 600px) {
+    #article-share .social-share a {
+        margin: 4px !important;
+        font-size: 1rem !important;
+    }
+    .share-link {
+        margin: 4px !important;
+    }
+}
+@media (max-width: 600px) {
+    .carousel .indicators .indicator-item {
+        width: 8px !important;
+        height: 8px !important;
+        margin: 0 3px !important;
+    }
+}
+@media (max-width: 600px) {
+    .top-scroll {
+        right: 10px !important;
+        bottom: 10px !important;
+    }
+    .top-scroll .btn-floating {
+        width: 42px !important;
+        height: 30px !important;
+    }
+    .top-scroll .btn-floating i {
+        line-height: 30px !important;
+        font-size: 1.4rem !important;
+    }
+    .reading-progress {
+        height: 2px !important;
+    }
+}
+@media (max-width: 600px) {
+    .about-container .card {
+        margin: 8px 6px !important;
+    }
+    .about-container .card-content {
+        padding: 14px !important;
+    }
+    .post-statis .statis {
+        padding: 0.2rem 0.5rem !important;
+    }
+    .post-statis .statis .count {
+        font-size: 1.1rem !important;
+    }
+}
+html { scroll-behavior: smooth; }
+@media (max-width: 600px) {
+    .top-scroll {
+        bottom: max(10px, env(safe-area-inset-bottom)) !important;
+    }
+}
+"""
+css_path = os.path.join(theme_dir, "source", "css", "my.css")
+if os.path.isfile(css_path):
+    with open(css_path, encoding="utf-8") as f:
+        _css_existing = f.read()
+    if page_responsive_marker in _css_existing:
+        print('page-responsive CSS already present, skipping append')
+    else:
+        with open(css_path, "a", encoding="utf-8") as f:
+            f.write(page_responsive_css)
+        print('Appended PAGE-RESPONSIVE-FIX CSS to my.css')
+
 print('Created gitalk-card.ejs')
 
 post_detail = os.path.join(theme_dir, 'layout', '_partial', 'post-detail.ejs')
