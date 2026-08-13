@@ -1,0 +1,102 @@
+<%/*
+  Homepage content panel — sits beneath the bg-cover carousel.
+  Two stacked sections:
+  1. Stats banner   (4 cards: 文章数 / 字数 / 站龄 / 评论数)
+  2. Tabbed articles (推荐 / 热门 / 最新 + 查看全部)
+
+  Render only on the very first page of the home paginator so the
+  /page/2/ /page/3/ pseudo-pages stay clean.
+*/%>
+<% if (is_home() && page.current === 1) { %>
+<%
+  // Compute site stats from site.posts (no comment count available at build time).
+  var postCount = site.posts.length;
+  var totalDays = '';
+  try {
+    if (theme.time && theme.time.year) {
+      var start = new Date(theme.time.year, (theme.time.month||1)-1, theme.time.date||1);
+      var now = new Date();
+      totalDays = Math.max(1, Math.floor((now - start) / 86400000));
+    }
+  } catch (e) {}
+  var totalWords = totalcount(site);
+
+  // Tab data: 3 distinct sources, 6 cards each.
+  //   featured: hand-curated (top >= 70), sorted by top desc
+  //   hot:      mid-tier (top 40-69), sorted by top desc
+  //   latest:   newest by date
+  var featured = site.posts.filter(function (p) { return p.top && p.top >= 70; }).sort(function (a, b) { return b.top - a.top; }).slice(0, 6);
+  var hot = site.posts.filter(function (p) { return p.top && p.top >= 40 && p.top < 70; }).sort(function (a, b) { return b.top - a.top; }).slice(0, 6);
+  if (hot.length < 6) {
+    // Fallback: fill with top scoring posts not already in featured
+    var featuredIds = new Set(featured.map(function (p) { return p._id; }));
+    var more = site.posts.data
+      .filter(function (p) { return !featuredIds.has(p._id); })
+      .sort(function (a, b) { return (b.top || 0) - (a.top || 0); })
+      .slice(0, 6 - hot.length);
+    hot = hot.concat(more);
+  }
+  var latest = site.posts.data.slice().sort(function (a, b) { return b.date - a.date; }).slice(0, 6);
+%>
+
+<section class="home-content" data-aos="fade-up">
+  <div class="container">
+    <%# ============== Stats banner ============== %>
+    <div class="stats-banner">
+      <a class="stat-card" href="<%- url_for('/archives/') %>">
+        <div class="stat-num"><%= postCount %></div>
+        <div class="stat-label">篇文章</div>
+      </a>
+      <a class="stat-card" href="<%- url_for('/archives/') %>">
+        <div class="stat-num"><%= Math.round(totalWords / 10000) %>w</div>
+        <div class="stat-label">总字数</div>
+      </a>
+      <a class="stat-card" href="<%- url_for('/about/') %>">
+        <div class="stat-num"><%= totalDays %></div>
+        <div class="stat-label">天持续更新</div>
+      </a>
+      <a class="stat-card" href="<%- url_for('/categories/') %>">
+        <div class="stat-num"><%= site.categories.length %></div>
+        <div class="stat-label">个分类</div>
+      </a>
+    </div>
+
+    <%# ============== Tabbed articles ============== %>
+    <div class="home-tabs" data-aos="fade-up">
+      <ul class="tabs">
+        <li class="tab col s4"><a class="active" href="#home-tab-featured"><i class="fas fa-star"></i>&nbsp;编辑推荐</a></li>
+        <li class="tab col s4"><a href="#home-tab-hot"><i class="fas fa-fire"></i>&nbsp;近期热门</a></li>
+        <li class="tab col s4"><a href="#home-tab-latest"><i class="fas fa-clock"></i>&nbsp;最新发布</a></li>
+      </ul>
+
+      <div id="home-tab-featured" class="col s12">
+        <div class="post-grid">
+          <% featured.forEach(function (post) { %>
+            <%- partial('_partial/post-card', { post: post }) %>
+          <% }); %>
+        </div>
+      </div>
+      <div id="home-tab-hot" class="col s12">
+        <div class="post-grid">
+          <% hot.forEach(function (post) { %>
+            <%- partial('_partial/post-card', { post: post }) %>
+          <% }); %>
+        </div>
+      </div>
+      <div id="home-tab-latest" class="col s12">
+        <div class="post-grid">
+          <% latest.forEach(function (post) { %>
+            <%- partial('_partial/post-card', { post: post }) %>
+          <% }); %>
+        </div>
+      </div>
+
+      <div class="home-tabs__more">
+        <a href="<%- url_for('/all/') %>" class="waves-effect waves-light btn-flat">
+          查看全部 <%= postCount %> 篇 <i class="fas fa-arrow-right"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+<% } %>

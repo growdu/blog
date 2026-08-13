@@ -1,0 +1,41 @@
+<%/*
+  Compact post card for the homepage tabs section.
+  - Cover image (or default featureimage)
+  - Title
+  - Categories pills
+  - Date + word count + duration
+  Used by home-content.ejs.
+*/%>
+<%
+  var post = post || {};
+  var cover = (post.cover && post.cover.length) ? post.cover
+            : (post.thumbnail && post.thumbnail.length) ? post.thumbnail
+            : '/medias/featureimages/' + ((post._id ? Math.abs(post._id.split('').reduce(function(a,c){return ((a<<5)-a)+c.charCodeAt(0);},0)) % 24 : 0)) + '.jpg';
+  var title = post.title || '(无标题)';
+  var mins = (function () {
+    try { return min2read(post.content, {cn: 450, en: 250}); } catch (e) { return 1; }
+  })();
+  var wc = (function () {
+    try { return wordcount(post.content); } catch (e) { return 0; }
+  })();
+  var cats = (post.categories && post.categories.data) ? post.categories.data : [];
+%>
+<a class="post-card" href="<%- url_for(post.path) %>">
+  <div class="post-card__cover">
+    <img src="<%= cover %>" alt="<%= title %>" loading="lazy" decoding="async">
+    <% if (cats.length) { %>
+      <span class="post-card__cat"><%= cats[0].name %></span>
+    <% } %>
+  </div>
+  <div class="post-card__body">
+    <h3 class="post-card__title"><%= title %></h3>
+    <div class="post-card__meta">
+      <span class="post-card__date"><i class="far fa-calendar"></i> <%= date(post.date, 'YYYY-MM-DD') %></span>
+      <span class="post-card__words"><i class="far fa-file-alt"></i> <%= wc %></span>
+      <span class="post-card__time"><i class="far fa-clock"></i> <%= mins %> 分钟</span>
+    </div>
+    <div class="post-card__excerpt">
+      <% if (post.summary) { %><%= post.summary %><% } else { %><%= strip_html(post.content || '').substring(0, 80) %>…<% } %>
+    </div>
+  </div>
+</a>
