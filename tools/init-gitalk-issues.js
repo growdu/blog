@@ -10,8 +10,14 @@ const path = require('path');
 
 const REPO = process.env.GITHUB_REPOSITORY || 'growdu/blog';
 const TOKEN = process.env.GITHUB_TOKEN;
-const SITE_URL = 'https://growdu.github.io';
-const ROOT = '/blog/';
+// SITE_URL is the canonical URL where users will read the post.
+// Set by CI according to deploy target (growdu.cn server, or
+// growdu.github.io/blog for GitHub Pages). The two URLs share the
+// same gitalk-id hash, so the GitHub issue is reused regardless of
+// which domain a visitor comes from -- but the issue body should
+// link to the URL the user actually clicked, so we pick the right one.
+const SITE_URL = process.env.GITALK_SITE_URL || 'https://growdu.github.io';
+const ROOT = process.env.GITALK_SITE_ROOT || '/blog/';
 
 if (!TOKEN) {
   console.log('GITHUB_TOKEN not set, skipping issue creation');
@@ -98,7 +104,7 @@ async function main() {
       method: 'POST',
       body: JSON.stringify({
         title: post.title,
-        body: post.url,
+        body: 'Read at: ' + post.url,
         labels: [post.id, 'Gitalk', 'Comment'],
       }),
     });

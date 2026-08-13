@@ -2537,3 +2537,32 @@ footer.footer a:hover {
         print('Added fixed header/footer CSS')
 else:
     print('my.css not found')
+
+
+# --- 8. Drop unused vendored libs from themes/matery/source/libs/ ---
+# The vendored theme ships 30+ libs but the live templates only reference
+# 13 (animate, aos, awesome, codeBlock, instantpage, jqcloud, jquery,
+# lightGallery, materialize, prism, scrollprogress, tocbot, typed, share).
+# Everything else (aplayer, background, cryptojs, dplayer, fancybox,
+# gitalk, gitment, justifiedGallery, masonry, mermaid, minivaline,
+# others, twikoo, valine, waline) is dead weight (~2MB).
+# Whitelist is intentionally explicit so a theme update that re-adds a
+# new lib won't accidentally be published without review.
+THEME_LIBS = os.path.join(theme_dir, 'source', 'libs')
+USED_LIBS = {
+    'animate', 'aos', 'awesome', 'codeBlock', 'instantpage',
+    'jqcloud', 'jquery', 'lightGallery', 'materialize', 'prism',
+    'scrollprogress', 'tocbot', 'typed', 'share',
+}
+if os.path.isdir(THEME_LIBS):
+    removed = 0
+    for entry in os.listdir(THEME_LIBS):
+        if entry not in USED_LIBS:
+            target = os.path.join(THEME_LIBS, entry)
+            if os.path.isdir(target):
+                shutil.rmtree(target)
+                removed += 1
+                print(f'Removed unused lib: {entry}')
+    print(f'Cleanup: {removed} unused lib dirs removed (kept {len(USED_LIBS)})')
+else:
+    print(f'WARNING: {THEME_LIBS} not found, skipping lib cleanup')

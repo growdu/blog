@@ -117,6 +117,14 @@ jobs:
           BUILD_ID="${SHORT_SHA}-$(date -u +%Y%m%d%H%M%S)-${RANDOM}"
           sed -i "s|__SW_CACHE_NAME__|blog-v${BUILD_ID}|" public/sw.js
           grep -o "const CACHE='[^']*'" public/sw.js
+          # Fail loudly if the placeholder was not replaced (e.g. CI
+          # skipped the sed step). Otherwise the SW would use a literal
+          # "__SW_CACHE_NAME__" cache name and evict its own cache on
+          # every load.
+          if grep -q '__SW_CACHE_NAME__' public/sw.js; then
+            echo 'ERROR: SW cache name placeholder not replaced' >&2
+            exit 1
+          fi
       - name: Publish Vercount verification file
         run: |
           mkdir -p public/.well-known
@@ -140,6 +148,10 @@ jobs:
         run: node tools/init-gitalk-issues.js
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # growdu.cn is the primary domain; the growdu.github.io/blog
+          # target uses build-github-pages below with its own override.
+          GITALK_SITE_URL: https://growdu.cn
+          GITALK_SITE_ROOT: /
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -196,6 +208,13 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+      - name: Initialize Gitalk issues (GitHub Pages target)
+        if: ${{ always() }}
+        run: node tools/init-gitalk-issues.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITALK_SITE_URL: https://growdu.github.io
+          GITALK_SITE_ROOT: /blog/
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -276,6 +295,14 @@ jobs:
           BUILD_ID="${SHORT_SHA}-$(date -u +%Y%m%d%H%M%S)-${RANDOM}"
           sed -i "s|__SW_CACHE_NAME__|blog-v${BUILD_ID}|" public/sw.js
           grep -o "const CACHE='[^']*'" public/sw.js
+          # Fail loudly if the placeholder was not replaced (e.g. CI
+          # skipped the sed step). Otherwise the SW would use a literal
+          # "__SW_CACHE_NAME__" cache name and evict its own cache on
+          # every load.
+          if grep -q '__SW_CACHE_NAME__' public/sw.js; then
+            echo 'ERROR: SW cache name placeholder not replaced' >&2
+            exit 1
+          fi
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
