@@ -208,13 +208,6 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - name: Initialize Gitalk issues (GitHub Pages target)
-        if: ${{ always() }}
-        run: node tools/init-gitalk-issues.js
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITALK_SITE_URL: https://growdu.github.io
-          GITALK_SITE_ROOT: /blog/
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -303,6 +296,13 @@ jobs:
             echo 'ERROR: SW cache name placeholder not replaced' >&2
             exit 1
           fi
+      - name: Initialize Gitalk issues (GitHub Pages target)
+        if: ${{ always() }}
+        run: node tools/init-gitalk-issues.js
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITALK_SITE_URL: https://growdu.github.io
+          GITALK_SITE_ROOT: /blog/
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
