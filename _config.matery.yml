@@ -183,3 +183,21 @@ tcaptcha:
 # Disable click love effect
 clicklove:
   enable: false
+
+# ─── Footer subscribe card ────────────────────────────────────────
+# Each field is optional. RSS is shown by default unless rss: false.
+# Fill in your real handles — leave empty to hide that chip.
+subscribe:
+  rss: true
+  # 知乎主页 (or any platform)
+  zhihu: 'https://www.zhihu.com/people/growdu'
+  # 公众号 — link to /medias/reward/wechat.jpg or your public account
+  wechat: '/medias/reward/weixin.jpg'
+  # GitHub 主页
+  github: 'https://github.com/growdu'
+  # 联系邮箱
+  email: 'growdu@gmail.com'
+  # B 站主页 (optional)
+  bilibili: ''
+  # 自定义备注 (e.g. "想第一时间收到更新，可以订阅公众号：XX")
+  note: '微信公众号搜索 "程序员成长之路" 即可订阅'

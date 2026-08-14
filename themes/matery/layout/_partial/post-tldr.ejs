@@ -1,0 +1,34 @@
+<%/*
+  Article TL;DR + difficulty rating.
+
+  Renders only when the post has at least one of:
+    page.tldr         (newly preferred, short punchy summary)
+    page.summary      (hexo built-in)
+    page.description  (front-matter description)
+
+  Difficulty: page.difficulty (1-5), default 3.
+  Renders as 5 stars, filled up to the chosen level.
+*/%>
+
+<% var tldr = page.tldr || page.summary || page.description; %>
+<% if (tldr) { %>
+  <div class="post-tldr">
+    <div class="post-tldr__label">
+      <i class="fas fa-bolt"></i>&nbsp;TL;DR
+    </div>
+    <div class="post-tldr__body"><%= tldr %></div>
+  </div>
+<% } %>
+
+<% var diff = parseInt(page.difficulty || 3, 10); %>
+<% if (diff >= 1 && diff <= 5) { %>
+  <div class="post-difficulty">
+    <span class="post-difficulty__label">难度</span>
+    <span class="post-difficulty__stars">
+      <% for (var i = 1; i <= 5; i++) { %>
+        <i class="<%= i <= diff ? 'fas' : 'far' %> fa-star"></i>
+      <% } %>
+    </span>
+    <span class="post-difficulty__text"><%= ['入门', '基础', '中等', '进阶', '专家'][diff - 1] %></span>
+  </div>
+<% } %>

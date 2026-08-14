@@ -1,0 +1,50 @@
+<%/*
+  Footer "Stay Connected" card.
+  Renders RSS + external subscriptions before the standard copyright row.
+  Placeholders: edit the URLs in _config.matery.yml's `subscribe:` block.
+*/%>
+
+<%
+  var sub = (typeof theme.subscribe !== 'undefined' && theme.subscribe) || {};
+%>
+<div class="subscribe-card">
+  <h3 class="subscribe-card__title">
+    <i class="fas fa-paper-plane"></i>&nbsp; 保持联系
+  </h3>
+  <p class="subscribe-card__lead">有更新第一时间送达 — 选一个你顺手的方式</p>
+  <div class="subscribe-card__row">
+    <% if (sub.rss !== false) { %>
+      <a class="subscribe-chip" href="<%- url_for('/atom.xml') %>">
+        <i class="fas fa-rss"></i>&nbsp; RSS
+      </a>
+    <% } %>
+    <% if (sub.zhihu) { %>
+      <a class="subscribe-chip" href="<%= sub.zhihu %>" target="_blank" rel="noopener noreferrer external nofollow">
+        <i class="fab fa-zhihu"></i>&nbsp; 知乎
+      </a>
+    <% } %>
+    <% if (sub.wechat) { %>
+      <a class="subscribe-chip" href="<%= sub.wechat %>" target="_blank" rel="noopener">
+        <i class="fab fa-weixin"></i>&nbsp; 公众号
+      </a>
+    <% } %>
+    <% if (sub.github) { %>
+      <a class="subscribe-chip" href="<%= sub.github %>" target="_blank" rel="noopener noreferrer external nofollow">
+        <i class="fab fa-github"></i>&nbsp; GitHub
+      </a>
+    <% } %>
+    <% if (sub.email) { %>
+      <a class="subscribe-chip" href="mailto:<%= sub.email %>" rel="noopener">
+        <i class="fas fa-envelope"></i>&nbsp; 邮件
+      </a>
+    <% } %>
+    <% if (sub.bilibili) { %>
+      <a class="subscribe-chip" href="<%= sub.bilibili %>" target="_blank" rel="noopener noreferrer external nofollow">
+        <i class="fab fa-bilibili"></i>&nbsp; B站
+      </a>
+    <% } %>
+  </div>
+  <% if (sub.note) { %>
+    <p class="subscribe-card__note"><%= sub.note %></p>
+  <% } %>
+</div>

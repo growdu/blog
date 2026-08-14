@@ -1627,3 +1627,234 @@ body.DarkMode .lane-card__posts li { color: #cfd8dc; }
     .section-title h2 { font-size: 22px; }
     .learning-path { margin: 24px 0 16px; padding: 20px 0; }
 }
+/* POST-TLDR-AND-ACTIONS */
+.post-tldr {
+    margin: 0 0 20px;
+    padding: 14px 18px;
+    background: linear-gradient(135deg, #f0faf8 0%, #e6f4f1 100%);
+    border-left: 4px solid #009688;
+    border-radius: 0 8px 8px 0;
+    position: relative;
+}
+.post-tldr__label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #009688;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+.post-tldr__label i { margin-right: 2px; }
+.post-tldr__body {
+    font-size: 15px;
+    line-height: 1.7;
+    color: #37474f;
+}
+body.DarkMode .post-tldr {
+    background: linear-gradient(135deg, rgba(0,150,136,0.10) 0%, rgba(0,150,136,0.04) 100%);
+    border-left-color: #4dd0e1;
+}
+body.DarkMode .post-tldr__label { color: #4dd0e1; }
+body.DarkMode .post-tldr__body { color: #cfd8dc; }
+
+.post-difficulty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 18px;
+    font-size: 13px;
+    color: #607d8b;
+}
+.post-difficulty__label {
+    font-weight: 600;
+    color: #455a64;
+    margin-right: 2px;
+}
+.post-difficulty__stars {
+    display: inline-flex;
+    gap: 2px;
+}
+.post-difficulty__stars i {
+    font-size: 13px;
+    color: #ffb300;
+}
+.post-difficulty__stars i:not(.fa-star) { color: #cfd8dc; }
+.post-difficulty__text {
+    margin-left: 4px;
+    color: #009688;
+    font-weight: 600;
+}
+body.DarkMode .post-difficulty__stars i:not(.fa-star) { color: #455a64; }
+body.DarkMode .post-difficulty__label { color: #b0bec5; }
+
+/* Sticky action bar at bottom-right of post pages */
+.post-actions {
+    position: fixed;
+    right: 20px;
+    bottom: 24px;
+    z-index: 90;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 8px 6px;
+    border-radius: 28px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.10);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: opacity .2s ease, transform .2s ease;
+}
+.post-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: transparent;
+    border-radius: 50%;
+    color: #607d8b;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background .15s ease, color .15s ease, transform .15s ease;
+    position: relative;
+    padding: 0;
+}
+.post-action:hover {
+    background: rgba(0,150,136,0.10);
+    color: #009688;
+    transform: scale(1.08);
+}
+.post-action:active { transform: scale(0.95); }
+.post-action i { font-size: 16px; line-height: 1; }
+.post-action--like.is-active { color: #e91e63; }
+.post-action--like.is-active:hover { background: rgba(233,30,99,0.10); }
+.post-action--bookmark.is-active { color: #ffb300; }
+.post-action--bookmark.is-active:hover { background: rgba(255,179,0,0.10); }
+.post-action--share.is-copied { color: #4caf50; }
+
+.post-action__count {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 14px;
+    height: 14px;
+    line-height: 14px;
+    text-align: center;
+    font-size: 10px;
+    font-weight: 700;
+    background: #009688;
+    color: #fff;
+    border-radius: 7px;
+    padding: 0 4px;
+    box-sizing: border-box;
+}
+
+body.DarkMode .post-actions {
+    background: rgba(30,39,44,0.85);
+    border-color: rgba(255,255,255,0.06);
+}
+body.DarkMode .post-action { color: #b0bec5; }
+body.DarkMode .post-action:hover { color: #4dd0e1; background: rgba(77,208,225,0.10); }
+
+@media (max-width: 600px) {
+    .post-actions {
+        right: 12px;
+        bottom: 12px;
+        padding: 6px 4px;
+        gap: 6px;
+    }
+    .post-action { width: 36px; height: 36px; }
+    .post-action i { font-size: 14px; }
+}
+
+/* "我的收藏" page (optional, lives under /bookmarks/ if URL is hit directly) */
+.bookmarks-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #607d8b;
+}
+.bookmarks-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.bookmarks-list li {
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.06);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.bookmarks-list a { flex: 1; color: inherit; }
+.bookmarks-list .bm-remove {
+    border: none;
+    background: transparent;
+    color: #b0bec5;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+.bookmarks-list .bm-remove:hover { color: #e91e63; background: rgba(233,30,99,0.08); }
+body.DarkMode .bookmarks-list li { border-bottom-color: rgba(255,255,255,0.06); }
+/* SUBSCRIBE-CARD-FOOTER */
+.subscribe-card {
+    max-width: 720px;
+    margin: 24px auto 28px;
+    padding: 22px 24px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    text-align: center;
+}
+.subscribe-card__title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 6px;
+    letter-spacing: 0.5px;
+}
+.subscribe-card__title i { color: #4dd0e1; }
+.subscribe-card__lead {
+    color: rgba(255,255,255,0.65);
+    font-size: 13px;
+    margin: 0 0 14px;
+}
+.subscribe-card__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+.subscribe-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    background: rgba(255,255,255,0.10);
+    color: #eceff1;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 18px;
+    font-size: 13px;
+    text-decoration: none;
+    transition: background .15s, transform .15s, color .15s;
+    line-height: 1.4;
+}
+.subscribe-chip i { font-size: 13px; }
+.subscribe-chip:hover {
+    background: rgba(77,208,225,0.25);
+    border-color: rgba(77,208,225,0.4);
+    color: #4dd0e1;
+    transform: translateY(-1px);
+}
+.subscribe-card__note {
+    color: rgba(255,255,255,0.55);
+    font-size: 12px;
+    margin: 10px 0 0;
+    font-style: italic;
+}
+@media (max-width: 600px) {
+    .subscribe-card { margin: 16px 12px 20px; padding: 18px 16px; }
+    .subscribe-chip { font-size: 12px; padding: 5px 12px; }
+}

@@ -2575,6 +2575,42 @@ if os.path.isfile(my_css_path):
 else:
     print('my.css not found, skipping learning-path CSS')
 
+
+# --- 11. Post TL;DR + sticky action bar (likes / bookmark / share / top) ---
+# Idempotent: skip if marker already in my.css.
+post_tldr_marker = "/* POST-TLDR-AND-ACTIONS */"
+my_css_path = os.path.join(theme_dir, "source", "css", "my.css")
+pt_css = '/* POST-TLDR-AND-ACTIONS */\n.post-tldr {\n    margin: 0 0 20px;\n    padding: 14px 18px;\n    background: linear-gradient(135deg, #f0faf8 0%, #e6f4f1 100%);\n    border-left: 4px solid #009688;\n    border-radius: 0 8px 8px 0;\n    position: relative;\n}\n.post-tldr__label {\n    font-size: 12px;\n    font-weight: 700;\n    color: #009688;\n    letter-spacing: 1px;\n    margin-bottom: 6px;\n    text-transform: uppercase;\n}\n.post-tldr__label i { margin-right: 2px; }\n.post-tldr__body {\n    font-size: 15px;\n    line-height: 1.7;\n    color: #37474f;\n}\nbody.DarkMode .post-tldr {\n    background: linear-gradient(135deg, rgba(0,150,136,0.10) 0%, rgba(0,150,136,0.04) 100%);\n    border-left-color: #4dd0e1;\n}\nbody.DarkMode .post-tldr__label { color: #4dd0e1; }\nbody.DarkMode .post-tldr__body { color: #cfd8dc; }\n\n.post-difficulty {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    margin: 0 0 18px;\n    font-size: 13px;\n    color: #607d8b;\n}\n.post-difficulty__label {\n    font-weight: 600;\n    color: #455a64;\n    margin-right: 2px;\n}\n.post-difficulty__stars {\n    display: inline-flex;\n    gap: 2px;\n}\n.post-difficulty__stars i {\n    font-size: 13px;\n    color: #ffb300;\n}\n.post-difficulty__stars i:not(.fa-star) { color: #cfd8dc; }\n.post-difficulty__text {\n    margin-left: 4px;\n    color: #009688;\n    font-weight: 600;\n}\nbody.DarkMode .post-difficulty__stars i:not(.fa-star) { color: #455a64; }\nbody.DarkMode .post-difficulty__label { color: #b0bec5; }\n\n/* Sticky action bar at bottom-right of post pages */\n.post-actions {\n    position: fixed;\n    right: 20px;\n    bottom: 24px;\n    z-index: 90;\n    display: flex;\n    flex-direction: column;\n    gap: 10px;\n    background: rgba(255,255,255,0.85);\n    backdrop-filter: blur(10px);\n    -webkit-backdrop-filter: blur(10px);\n    padding: 8px 6px;\n    border-radius: 28px;\n    box-shadow: 0 4px 18px rgba(0,0,0,0.10);\n    border: 1px solid rgba(0,0,0,0.05);\n    transition: opacity .2s ease, transform .2s ease;\n}\n.post-action {\n    display: flex;\n    align-items: center;\n    justify-content: center;\n    width: 40px;\n    height: 40px;\n    border: none;\n    background: transparent;\n    border-radius: 50%;\n    color: #607d8b;\n    cursor: pointer;\n    text-decoration: none;\n    transition: background .15s ease, color .15s ease, transform .15s ease;\n    position: relative;\n    padding: 0;\n}\n.post-action:hover {\n    background: rgba(0,150,136,0.10);\n    color: #009688;\n    transform: scale(1.08);\n}\n.post-action:active { transform: scale(0.95); }\n.post-action i { font-size: 16px; line-height: 1; }\n.post-action--like.is-active { color: #e91e63; }\n.post-action--like.is-active:hover { background: rgba(233,30,99,0.10); }\n.post-action--bookmark.is-active { color: #ffb300; }\n.post-action--bookmark.is-active:hover { background: rgba(255,179,0,0.10); }\n.post-action--share.is-copied { color: #4caf50; }\n\n.post-action__count {\n    position: absolute;\n    top: 4px;\n    right: 4px;\n    min-width: 14px;\n    height: 14px;\n    line-height: 14px;\n    text-align: center;\n    font-size: 10px;\n    font-weight: 700;\n    background: #009688;\n    color: #fff;\n    border-radius: 7px;\n    padding: 0 4px;\n    box-sizing: border-box;\n}\n\nbody.DarkMode .post-actions {\n    background: rgba(30,39,44,0.85);\n    border-color: rgba(255,255,255,0.06);\n}\nbody.DarkMode .post-action { color: #b0bec5; }\nbody.DarkMode .post-action:hover { color: #4dd0e1; background: rgba(77,208,225,0.10); }\n\n@media (max-width: 600px) {\n    .post-actions {\n        right: 12px;\n        bottom: 12px;\n        padding: 6px 4px;\n        gap: 6px;\n    }\n    .post-action { width: 36px; height: 36px; }\n    .post-action i { font-size: 14px; }\n}\n\n/* "我的收藏" page (optional, lives under /bookmarks/ if URL is hit directly) */\n.bookmarks-empty {\n    text-align: center;\n    padding: 60px 20px;\n    color: #607d8b;\n}\n.bookmarks-list {\n    list-style: none;\n    padding: 0;\n    margin: 0;\n}\n.bookmarks-list li {\n    padding: 12px 0;\n    border-bottom: 1px solid rgba(0,0,0,0.06);\n    display: flex;\n    align-items: center;\n    gap: 12px;\n}\n.bookmarks-list a { flex: 1; color: inherit; }\n.bookmarks-list .bm-remove {\n    border: none;\n    background: transparent;\n    color: #b0bec5;\n    cursor: pointer;\n    padding: 4px 8px;\n    border-radius: 4px;\n}\n.bookmarks-list .bm-remove:hover { color: #e91e63; background: rgba(233,30,99,0.08); }\nbody.DarkMode .bookmarks-list li { border-bottom-color: rgba(255,255,255,0.06); }\n'
+if os.path.isfile(my_css_path):
+    with open(my_css_path, encoding="utf-8") as f:
+        _mycss = f.read()
+    if post_tldr_marker in _mycss:
+        print('post-tldr CSS already present, skipping')
+    else:
+        with open(my_css_path, "a", encoding="utf-8") as f:
+            f.write(pt_css)
+        print('Appended POST-TLDR-AND-ACTIONS CSS to my.css')
+else:
+    print('my.css not found, skipping post-tldr CSS')
+
+
+# --- 12. Footer subscribe card (RSS / Zhihu / WeChat / GitHub / Email) ---
+# Idempotent: skip if marker already in my.css.
+subscribe_marker = "/* SUBSCRIBE-CARD-FOOTER */"
+my_css_path = os.path.join(theme_dir, "source", "css", "my.css")
+sc_css = '/* SUBSCRIBE-CARD-FOOTER */\n.subscribe-card {\n    max-width: 720px;\n    margin: 24px auto 28px;\n    padding: 22px 24px;\n    background: rgba(255,255,255,0.05);\n    border: 1px solid rgba(255,255,255,0.10);\n    border-radius: 14px;\n    text-align: center;\n}\n.subscribe-card__title {\n    font-size: 16px;\n    font-weight: 700;\n    color: #fff;\n    margin: 0 0 6px;\n    letter-spacing: 0.5px;\n}\n.subscribe-card__title i { color: #4dd0e1; }\n.subscribe-card__lead {\n    color: rgba(255,255,255,0.65);\n    font-size: 13px;\n    margin: 0 0 14px;\n}\n.subscribe-card__row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n    justify-content: center;\n    margin-bottom: 4px;\n}\n.subscribe-chip {\n    display: inline-flex;\n    align-items: center;\n    padding: 6px 14px;\n    background: rgba(255,255,255,0.10);\n    color: #eceff1;\n    border: 1px solid rgba(255,255,255,0.18);\n    border-radius: 18px;\n    font-size: 13px;\n    text-decoration: none;\n    transition: background .15s, transform .15s, color .15s;\n    line-height: 1.4;\n}\n.subscribe-chip i { font-size: 13px; }\n.subscribe-chip:hover {\n    background: rgba(77,208,225,0.25);\n    border-color: rgba(77,208,225,0.4);\n    color: #4dd0e1;\n    transform: translateY(-1px);\n}\n.subscribe-card__note {\n    color: rgba(255,255,255,0.55);\n    font-size: 12px;\n    margin: 10px 0 0;\n    font-style: italic;\n}\n@media (max-width: 600px) {\n    .subscribe-card { margin: 16px 12px 20px; padding: 18px 16px; }\n    .subscribe-chip { font-size: 12px; padding: 5px 12px; }\n}\n'
+if os.path.isfile(my_css_path):
+    with open(my_css_path, encoding="utf-8") as f:
+        _mycss = f.read()
+    if subscribe_marker in _mycss:
+        print('subscribe-card CSS already present, skipping')
+    else:
+        with open(my_css_path, "a", encoding="utf-8") as f:
+            f.write(sc_css)
+        print('Appended SUBSCRIBE-CARD-FOOTER CSS to my.css')
+else:
+    print('my.css not found, skipping subscribe-card CSS')
+
 # --- 8. Drop unused vendored libs from themes/matery/source/libs/ ---
 # The vendored theme ships 30+ libs but the live templates only reference
 # 13 (animate, aos, awesome, codeBlock, instantpage, jqcloud, jquery,

@@ -8,7 +8,7 @@ Creates:
 
 Does NOT modify docs/ — runs in CI on a fresh checkout.
 """
-import os, re, shutil, subprocess, sys
+import os, re, shutil, subprocess, sys, json
 
 DOCS = 'docs'
 SRC = 'source'
@@ -533,16 +533,169 @@ def main():
     print('Created sw.js')
 
 
-    # 404 page
+    # 404 page (upgraded with search + recent posts)
     notfound_path = os.path.join(SRC, '404.html')
     with open(notfound_path, 'w', encoding='utf-8') as f:
         f.write("""<!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>404</title>
-<style>*{margin:0;padding:0;box-sizing:border-box}body{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#f5f7fa,#c3cfe2);font-family:sans-serif}.box{text-align:center;padding:48px 40px;background:#fff;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.1)}h1{font-size:80px;color:#009688;font-weight:800}p{color:#666;margin:16px 0 24px}a{display:inline-block;padding:10px 28px;background:#009688;color:#fff;text-decoration:none;border-radius:24px;font-weight:600}</style>
-</head><body><div class="box"><h1>404</h1><p>抱歉，您访问的页面不存在</p><a href="/">返回首页</a></div></body></html>""")
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>404 · 页面走丢了 | growdu</title>
+<meta name="description" content="页面不存在。试试在首页搜索，或浏览热门文章。">
+<style>
+:root{--c1:#009688;--c1l:#4dd0e1;--bg:#f8fafc;--card:#fff;--fg:#263238;--muted:#607d8b;--line:rgba(0,0,0,0.08)}
+@media (prefers-color-scheme: dark){:root{--bg:#0f1417;--card:#1e272c;--fg:#eceff1;--muted:#b0bec5;--line:rgba(255,255,255,0.08)}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{min-height:100vh;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;color:var(--fg);display:flex;align-items:center;justify-content:center;padding:32px 16px}
+.wrap{max-width:680px;width:100%}
+.card{background:var(--card);border-radius:18px;padding:48px 40px;box-shadow:0 8px 32px rgba(0,0,0,0.06);text-align:center}
+.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:24px;color:var(--c1);font-weight:700;font-size:18px}
+.brand img{width:32px;height:32px;border-radius:50%}
+h1{font-size:96px;font-weight:900;color:var(--c1);line-height:1;letter-spacing:-2px;margin:0 0 8px}
+h1 small{font-size:24px;color:var(--muted);font-weight:600;display:block;margin-top:6px;letter-spacing:0}
+.lead{color:var(--muted);font-size:15px;margin:0 0 28px;line-height:1.7}
+.search{display:flex;gap:8px;margin:0 0 28px}
+.search input{flex:1;padding:12px 16px;font-size:14px;border:1px solid var(--line);border-radius:24px;background:var(--bg);color:var(--fg);outline:none;transition:border-color .15s}
+.search input:focus{border-color:var(--c1)}
+.search button{padding:0 22px;background:var(--c1);color:#fff;border:none;border-radius:24px;font-weight:600;cursor:pointer;font-size:14px;transition:background .15s}
+.search button:hover{background:#00796b}
+.divider{display:flex;align-items:center;gap:12px;margin:28px 0 16px;color:var(--muted);font-size:12px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.recent{list-style:none;text-align:left;margin:0 0 24px}
+.recent li{padding:10px 0;border-bottom:1px solid var(--line)}
+.recent li:last-child{border-bottom:none}
+.recent a{color:var(--fg);text-decoration:none;display:flex;align-items:flex-start;gap:8px;font-size:14px;line-height:1.5}
+.recent a:hover{color:var(--c1)}
+.recent .title{flex:1}
+.recent .cat{font-size:11px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:10px;flex-shrink:0}
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 22px;border-radius:22px;font-size:14px;font-weight:600;text-decoration:none;transition:all .15s}
+.btn-primary{background:var(--c1);color:#fff}
+.btn-primary:hover{background:#00796b;transform:translateY(-1px)}
+.btn-ghost{border:1px solid var(--line);color:var(--fg)}
+.btn-ghost:hover{border-color:var(--c1);color:var(--c1)}
+footer{text-align:center;color:var(--muted);font-size:12px;margin-top:20px}
+footer a{color:var(--muted);text-decoration:none}
+footer a:hover{color:var(--c1)}
+@media (max-width:600px){.card{padding:32px 20px}h1{font-size:72px}.lead{font-size:14px}.actions{flex-direction:column;align-items:stretch}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="card">
+  <div class="brand">
+    <img src="/medias/logo.jpg" alt="growdu">
+    <span>growdu · 技术学习实践</span>
+  </div>
+  <h1>404<small>页面走丢了</small></h1>
+  <p class="lead">你访问的页面可能搬走了、链接已过期，或者根本不存在。<br>试试下面的搜索框，或浏览最近文章 —</p>
+  <form class="search" id="search-form" autocomplete="off">
+    <input type="search" id="q" name="q" placeholder="搜索文章标题、标签…" autofocus>
+    <button type="submit">搜索</button>
+  </form>
+  <div class="divider">最近发布</div>
+  <ul class="recent" id="recent-list">
+    <li style="color:var(--muted);font-size:13px;text-align:center;padding:14px 0">加载中…</li>
+  </ul>
+  <div class="actions">
+    <a href="/" class="btn btn-primary"><i>←</i> 返回首页</a>
+    <a href="javascript:history.length>1?history.back():location.href='/'" class="btn btn-ghost">返回上一页</a>
+  </div>
+</div>
+<footer>
+  <a href="/atom.xml">RSS</a> · <a href="/about/">关于</a> · <a href="mailto:growdu@gmail.com">联系</a>
+</footer>
+</div>
+<script>
+// 1) Search submit -> redirect to a Google site: search if no inline index,
+//    otherwise push to history with q for a client-side filter.
+(function(){
+  var form = document.getElementById('search-form');
+  var input = document.getElementById('q');
+  if (!form) return;
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    var q = (input.value || '').trim();
+    if (!q) { input.focus(); return; }
+    // Inline index (preferred): fetch /search.xml, filter, show modal.
+    fetch('/search.xml').then(function(r){return r.text();}).then(function(xml){
+      var doc = new DOMParser().parseFromString(xml, 'text/xml');
+      var entries = [].slice.call(doc.querySelectorAll('entry'));
+      var hits = entries.filter(function(en){
+        return (en.querySelector('title') || {}).textContent.indexOf(q) >= 0;
+      }).slice(0, 10);
+      if (hits.length) {
+        var list = document.getElementById('recent-list');
+        list.innerHTML = hits.map(function(en){
+          var t = en.querySelector('title').textContent;
+          var u = en.querySelector('url').textContent;
+          return '<li><a href="'+u+'"><span class="title">'+t+'</span></a></li>';
+        }).join('');
+        document.querySelector('.divider').textContent = '搜索结果 ('+hits.length+')';
+      } else {
+        document.getElementById('recent-list').innerHTML = '<li style="text-align:center;color:var(--muted);padding:14px 0">没有匹配，换个词试试</li>';
+        document.querySelector('.divider').textContent = '搜索结果';
+      }
+    }).catch(function(){
+      // Fallback: Google site search
+      window.location.href = 'https://www.google.com/search?q='+encodeURIComponent(q+' site:growdu.cn');
+    });
+  });
+})();
+
+// 2) Render recent posts from a pre-built JSON written by sync-hexo.py
+fetch('/recent-posts.json').then(function(r){return r.json();}).then(function(posts){
+  if (!Array.isArray(posts) || !posts.length) return;
+  var html = posts.map(function(p){
+    return '<li><a href="'+p.url+'"><span class="title">'+p.title+'</span><span class="cat">'+p.cat+'</span></a></li>';
+  }).join('');
+  document.getElementById('recent-list').innerHTML = html;
+}).catch(function(){});
+</script>
+</body>
+</html>""")
     print('Created 404.html')
 
+    # Recent posts JSON: consumed by the 404 page.
+    # Source: source/_posts/**/*.md, sorted by `top` desc then `date` desc.
+    # Skips `blog/` meta-docs and any path starting with `_index`.
+    # (json is already imported at module level)
+    import glob as _glob
+    import re as _re
+    posts_root = os.path.join(SRC, '_posts')
+    META_CATS = ('blog', 'tools', 'page')  # skip meta-doc categories
+    if os.path.isdir(posts_root):
+        scored = []
+        for fp in _glob.glob(os.path.join(posts_root, '**', '*.md'), recursive=True):
+            try:
+                with open(fp, encoding='utf-8') as f:
+                    txt = f.read(4000)
+            except OSError:
+                continue
+            rel = os.path.relpath(fp, posts_root).replace('\\', '/')
+            parts = rel.split('/')
+            cat = parts[0] if len(parts) > 1 else ''
+            slug = parts[-1].replace('.md', '').replace('.html', '')
+            if not slug or slug.startswith('_index') or cat in META_CATS:
+                continue
+            tm = _re.search(r'^title:\s*["\']?([^"\'\n]+)["\']?', txt, _re.M)
+            dm = _re.search(r'^date:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})', txt, _re.M)
+            top_m = _re.search(r'^top:\s*([0-9]+)', txt, _re.M)
+            title = tm.group(1).strip() if tm else slug
+            date_str = dm.group(1) if dm else '1970-01-01'
+            top_n = int(top_m.group(1)) if top_m else 0
+            scored.append((top_n, date_str, cat, slug, title))
+        scored.sort(key=lambda x: (-x[0], -int(x[1].replace('-', ''))))
+        recent = []
+        for (_t, _d, c, s, t) in scored[:6]:
+            url = ('/' + s + '/') if not c else ('/' + c + '/' + s + '/')
+            recent.append({'title': t, 'url': url, 'cat': c or s})
+        if recent:
+            recent_path = os.path.join(SRC, 'recent-posts.json')
+            with open(recent_path, 'w', encoding='utf-8') as f:
+                json.dump(recent, f, ensure_ascii=False, indent=2)
+            print('Wrote recent-posts.json (%d items)' % len(recent))
     # Database landing page
     create_database_landing_page()
     print('Created database landing page')

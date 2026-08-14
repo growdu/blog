@@ -85,6 +85,7 @@
         <% } %>
 
         <div class="card-content article-card-content">
+            <%- partial('_partial/post-tldr') %>
             <div id="articleContent">
                 <%- page.content %>
                 <% if (theme.bbtime.enable && page.layout == 'bb') { %>
@@ -167,6 +168,8 @@
         <%- partial('_partial/related-posts') %>
     <%- partial('_partial/gitalk-card') %>
     <% } %>
+
+    <%- partial('_partial/post-actions') %>
 
     <% if (theme.gitment.enable) { %>
         <%- partial('_partial/gitment') %>

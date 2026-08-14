@@ -1,0 +1,126 @@
+<%/*
+  Sticky bottom action bar for post pages.
+    - Like       (localStorage, count = total of all liked posts on this device)
+    - Bookmark   (localStorage; "我的收藏" page lists them)
+    - Share      (Web Share API on mobile; copy link fallback)
+    - Back to top
+*/%>
+
+<%
+  var pagePath = page.path;
+  var pageTitle = page.title;
+  var pageUrl   = (config.url || '') + '/' + pagePath.replace(/^\//, '');
+%>
+
+<div class="post-actions" id="post-actions" data-page-id="<%= pagePath %>">
+  <button class="post-action post-action--like" type="button" aria-label="点赞">
+    <i class="far fa-heart"></i>
+    <span class="post-action__count">0</span>
+  </button>
+  <button class="post-action post-action--bookmark" type="button" aria-label="收藏">
+    <i class="far fa-bookmark"></i>
+  </button>
+  <button class="post-action post-action--share" type="button" aria-label="分享">
+    <i class="fas fa-share-alt"></i>
+  </button>
+  <a class="post-action post-action--top" href="#top" aria-label="返回顶部">
+    <i class="fas fa-arrow-up"></i>
+  </a>
+</div>
+
+<script>
+(function() {
+  var bar = document.getElementById('post-actions');
+  if (!bar) return;
+  var pageId = bar.getAttribute('data-page-id');
+  var likeKey = 'growdu:like:' + pageId;
+  var bmKey   = 'growdu:bm:'   + pageId;
+
+  function countKeys(prefix) {
+    var n = 0;
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k && k.indexOf(prefix) === 0) n++;
+      }
+    } catch (e) {}
+    return n;
+  }
+
+  // Like
+  var likeBtn = bar.querySelector('.post-action--like');
+  if (likeBtn) {
+    var liked = false;
+    try { liked = !!localStorage.getItem(likeKey); } catch (e) {}
+    if (liked) {
+      likeBtn.classList.add('is-active');
+      likeBtn.querySelector('i').className = 'fas fa-heart';
+    }
+    likeBtn.querySelector('.post-action__count').textContent = countKeys('growdu:like:');
+    likeBtn.addEventListener('click', function() {
+      var nowActive = likeBtn.classList.toggle('is-active');
+      likeBtn.querySelector('i').className = nowActive ? 'fas fa-heart' : 'far fa-heart';
+      try {
+        if (nowActive) localStorage.setItem(likeKey, '1');
+        else           localStorage.removeItem(likeKey);
+      } catch (e) {}
+      likeBtn.querySelector('.post-action__count').textContent = countKeys('growdu:like:');
+    });
+  }
+
+  // Bookmark
+  var bmBtn = bar.querySelector('.post-action--bookmark');
+  if (bmBtn) {
+    var bmred = false;
+    try { bmred = !!localStorage.getItem(bmKey); } catch (e) {}
+    if (bmred) {
+      bmBtn.classList.add('is-active');
+      bmBtn.querySelector('i').className = 'fas fa-bookmark';
+    }
+    bmBtn.addEventListener('click', function() {
+      var nowActive = bmBtn.classList.toggle('is-active');
+      bmBtn.querySelector('i').className = nowActive ? 'fas fa-bookmark' : 'far fa-bookmark';
+      try {
+        if (nowActive) {
+          localStorage.setItem(bmKey, JSON.stringify({
+            path: pageId,
+            title: <%- JSON.stringify(pageTitle) %>,
+            url: <%- JSON.stringify(pageUrl) %>,
+            ts: Date.now()
+          }));
+        } else {
+          localStorage.removeItem(bmKey);
+        }
+      } catch (e) {}
+    });
+  }
+
+  // Share (Web Share API or copy-link)
+  var shareBtn = bar.querySelector('.post-action--share');
+  if (shareBtn) {
+    shareBtn.addEventListener('click', async function() {
+      var data = {
+        title: <%- JSON.stringify(pageTitle) %>,
+        text: <%- JSON.stringify(pageTitle) %>,
+        url: location.href
+      };
+      if (navigator.share) {
+        try { await navigator.share(data); return; } catch (e) { /* fallthrough */ }
+      }
+      try {
+        await navigator.clipboard.writeText(location.href);
+        shareBtn.classList.add('is-copied');
+        var orig = shareBtn.innerHTML;
+        shareBtn.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(function() {
+          shareBtn.classList.remove('is-copied');
+          shareBtn.innerHTML = orig;
+        }, 1500);
+      } catch (e) {
+        // Fallback: open a prompt
+        window.prompt('复制链接', location.href);
+      }
+    });
+  }
+})();
+</script>
