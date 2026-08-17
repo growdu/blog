@@ -1518,7 +1518,6 @@ body.DarkMode .section-subtitle { color: #b0bec5; }
     background: #fff;
     border-radius: 12px;
     padding: 22px 20px;
-    text-decoration: none;
     color: inherit;
     box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     transition: transform .18s ease, box-shadow .18s ease;
@@ -1528,7 +1527,6 @@ body.DarkMode .section-subtitle { color: #b0bec5; }
 .lane-card:hover {
     transform: translateY(-4px);
     box-shadow: 0 10px 24px rgba(0,0,0,0.10);
-    color: inherit;
 }
 .lane-card--db    { border-top-color: #009688; }
 .lane-card--hpn   { border-top-color: #1976d2; }
@@ -1594,6 +1592,25 @@ body.DarkMode .section-subtitle { color: #b0bec5; }
     margin-top: 4px;
     flex-shrink: 0;
 }
+.lane-card__post-link {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px dashed transparent;
+    transition: color .15s ease, border-color .15s ease;
+    flex: 1;
+    min-width: 0;
+}
+.lane-card__post-link:hover {
+    color: #009688;
+    border-bottom-color: currentColor;
+}
+.lane-card--hpn .lane-card__post-link:hover   { color: #1976d2; }
+.lane-card--dist .lane-card__post-link:hover  { color: #7b1fa2; }
+.lane-card--ai .lane-card__post-link:hover    { color: #e91e63; }
+.lane-card--os .lane-card__post-link:hover    { color: #f57c00; }
+.lane-card--mind .lane-card__post-link:hover  { color: #388e3c; }
+body.DarkMode .lane-card__post-link { color: #eceff1; }
+body.DarkMode .lane-card__post-link:hover { color: #80cbc4; }
 .lane-card__empty {
     font-size: 12px;
     color: #90a4ae;
@@ -1605,6 +1622,10 @@ body.DarkMode .section-subtitle { color: #b0bec5; }
     color: #009688;
     font-weight: 600;
     margin-top: 8px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
 }
 .lane-card--hpn .lane-card__more    { color: #1976d2; }
 .lane-card--dist .lane-card__more   { color: #7b1fa2; }

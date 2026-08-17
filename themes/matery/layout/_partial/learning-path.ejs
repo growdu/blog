@@ -27,6 +27,23 @@
     return parts.length > 4 ? parts[4].toLowerCase() : '';
   }
 
+  // Pick the most common category among a lane's posts so the “查看更多”
+  // link lands on the right category page (instead of the generic
+  // /categories/ that the card previously pointed to).
+  function primaryCat(posts) {
+    var counts = {};
+    posts.forEach(function (p) {
+      (p.categories && p.categories.data || []).forEach(function (c) {
+        counts[c.name] = (counts[c.name] || 0) + 1;
+      });
+    });
+    var best = null, bestN = 0;
+    Object.keys(counts).forEach(function (k) {
+      if (counts[k] > bestN) { best = k; bestN = counts[k]; }
+    });
+    return best;
+  }
+
   // For each lane, collect top-3 posts (sort by top desc, then by date desc)
   lanes.forEach(function (lane) {
     lane.posts = site.posts.data
@@ -36,6 +53,7 @@
         return td !== 0 ? td : (b.date - a.date);
       })
       .slice(0, 3);
+    lane.primaryCat = primaryCat(lane.posts);
   });
 %>
 
@@ -48,7 +66,7 @@
 
     <div class="lane-grid">
       <% lanes.forEach(function (lane) { %>
-      <a class="lane-card lane-card--<%= lane.id %>" href="<%- url_for('/categories/') %>">
+      <div class="lane-card lane-card--<%= lane.id %>">
         <div class="lane-card__head">
           <i class="<%= lane.icon %> lane-card__icon"></i>
           <h3 class="lane-card__title"><%= lane.title %></h3>
@@ -56,16 +74,25 @@
         <p class="lane-card__desc"><%= lane.desc %></p>
         <ul class="lane-card__posts">
           <% lane.posts.forEach(function (post) { %>
-            <li><i class="fas fa-chevron-right"></i> <%= post.title %></li>
+            <li>
+              <i class="fas fa-chevron-right"></i>
+              <a class="lane-card__post-link" href="<%- url_for(post.path) %>" title="<%= post.title %>"><%= post.title %></a>
+            </li>
           <% }); %>
         </ul>
         <% if (lane.posts.length === 0) { %>
           <p class="lane-card__empty">该方向持续更新中</p>
         <% } %>
+        <% if (lane.primaryCat) { %>
+        <a class="lane-card__more" href="<%- url_for('/categories/' + lane.primaryCat + '/') %>">
+          查看更多 <i class="fas fa-arrow-right"></i>
+        </a>
+        <% } else { %>
         <div class="lane-card__more">
           查看更多 <i class="fas fa-arrow-right"></i>
         </div>
-      </a>
+        <% } %>
+      </div>
       <% }); %>
     </div>
   </div>
