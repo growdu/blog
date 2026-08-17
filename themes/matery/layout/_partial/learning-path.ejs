@@ -18,13 +18,18 @@
   ];
 
   // Map: post -> directory name (lowercased).
-  // Hexo URL is /YYYY/MM/DD/<cat>/<slug>/, so the directory lives at index 4.
+  // Hexo's `post.path` is the URL path *without* the leading slash, so
+  // it splits into ['YYYY', 'MM', 'DD', '<dir>', '<slug>'] — the directory
+  // lives at index 3, not 4. (Earlier this used parts[4], which only
+  // matched the few posts whose slug happened to coincide with one of
+  // the lane categories — that's why the db/hpn/dist lanes used to
+  // show just 1 post or none at all.)
   // We use the directory instead of categories.* so the result is always
   // lowercase ASCII/whatever-the-folder-is, and case-insensitive matching
   // is trivial.
   function laneOf(post) {
     var parts = (post.path || '').split('/');
-    return parts.length > 4 ? parts[4].toLowerCase() : '';
+    return parts.length >= 4 ? parts[3].toLowerCase() : '';
   }
 
   // Pick the most common category among a lane's posts so the “查看更多”
@@ -44,16 +49,19 @@
     return best;
   }
 
-  // For each lane, collect top-3 posts (sort by top desc, then by date desc)
+  // For each lane, collect ALL matching posts (so primaryCat sees the full
+  // picture), then pick the lane's representative category, and slice the
+  // top-3 for display.
   lanes.forEach(function (lane) {
-    lane.posts = site.posts.data
-      .filter(function (p) { return lane.cats.indexOf(laneOf(p)) !== -1; })
-      .sort(function (a, b) {
-        var td = (b.top || 0) - (a.top || 0);
-        return td !== 0 ? td : (b.date - a.date);
-      })
-      .slice(0, 3);
-    lane.primaryCat = primaryCat(lane.posts);
+    var matched = site.posts.data
+      .filter(function (p) { return lane.cats.indexOf(laneOf(p)) !== -1; });
+    lane.matched = matched;
+    lane.primaryCat = primaryCat(matched);
+    matched.sort(function (a, b) {
+      var td = (b.top || 0) - (a.top || 0);
+      return td !== 0 ? td : (b.date - a.date);
+    });
+    lane.posts = matched.slice(0, 3);
   });
 %>
 
