@@ -1114,10 +1114,30 @@ footer.footer a:hover {
 .chip-container .tag-chips {
     padding: 0 12px !important;
 }
+/* Switch the chip to inline-flex so the text + tag-length count sit on a
+   single centered baseline. Materialize's stock .chip uses
+   display:inline-block + height:32px + line-height:32px + padding:0 12px,
+   but our 4px vertical padding here makes the content area only 24px
+   tall while the 32px line-height still pushes the line downward — the
+   text overflows the rounded background. inline-flex + align-items:center
+   centers the row vertically and removes the overflow entirely. */
 .chip-container .chip {
+    display: inline-flex !important;
+    align-items: center !important;
+    height: auto !important;
+    line-height: 1.5 !important;
     font-size: 0.9rem !important;
     margin: 4px 4px !important;
     padding: 4px 10px !important;
+}
+/* matery.css sets margin-right:-2px on .tag-length, which makes the
+   count stick out past the chip's right edge and breaks the rounded
+   background. Keep the small left spacing but stop the negative pull. */
+.chip-container .chip .tag-length {
+    margin-right: 0 !important;
+    margin-left: 5px !important;
+    font-size: 0.85em !important;
+    line-height: 1 !important;
 }
 @media (max-width: 600px) {
     .chip-container .chip {

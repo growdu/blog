@@ -19,7 +19,18 @@
       totalDays = Math.max(1, Math.floor((now - start) / 86400000));
     }
   } catch (e) {}
-  var totalWords = totalcount(site);
+  // hexo-wordcount's `totalcount(site)` returns a formatted string like
+  // "659.8k" once the total crosses 1000, which can't be divided — hence
+  // "NaNw" on the homepage. Sum the per-post `wordcount()` ourselves and
+  // parse its "Xk"/"X.Xk" suffix back into a number.
+  var totalWords = 0;
+  site.posts.forEach(function (post) {
+    var w = wordcount(post.content || '');
+    if (typeof w === 'string' && w.slice(-1) === 'k') {
+      w = parseFloat(w.slice(0, -1)) * 1000;
+    }
+    totalWords += w;
+  });
 
   // Tab data: 3 distinct sources, 6 cards each.
   //   featured: hand-curated (top >= 70), sorted by top desc
