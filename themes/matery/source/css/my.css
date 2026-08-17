@@ -1139,6 +1139,21 @@ footer.footer a:hover {
     font-size: 0.85em !important;
     line-height: 1 !important;
 }
+/* The EJS template applies an inline `background-color: #F5EEF8` to every
+   chip. CSS shorthand `background:` with !important doesn't reliably
+   carry importance to its longhands in some browsers, so the inline
+   `background-color` was beating .chip-active's gradient — the chip
+   then showed a light-purple bg with white text (from .chip-active's
+   `color: #FFF !important`), which reads as "white text invisible against
+   the chip edge". Re-declare the gradient as a longhand here so it
+   sticks, and force background-color transparent so the gradient isn't
+   masked. */
+.chip-container .chip-active {
+    background-image: linear-gradient(to bottom right, #FF5E3A 0%, #FF2A68 100%) !important;
+    background-color: transparent !important;
+    color: #FFF !important;
+    box-shadow: 2px 5px 10px #aaa !important;
+}
 @media (max-width: 600px) {
     .chip-container .chip {
         font-size: 0.8rem !important;
