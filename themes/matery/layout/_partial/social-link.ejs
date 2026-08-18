@@ -10,6 +10,12 @@
     </a>
 <% } %>
 
+<% if (theme.subscribe && theme.subscribe.wechat) { %>
+    <a href="javascript:void(0);" class="tooltipped" data-wechat-qr-toggle aria-haspopup="dialog" aria-controls="wechat-qr-modal" data-tooltip="关注我的公众号" data-position="top" data-delay="50">
+        <i class="fab fa-weixin"></i>
+    </a>
+<% } %>
+
 <% if (theme.socialLink.facebook) { %>
     <a href="<%= theme.socialLink.facebook %>" class="tooltipped" target="_blank" data-tooltip="关注我的Facebook: <%= theme.socialLink.facebook %>" data-position="top" data-delay="50">
         <i class="fab fa-facebook-f"></i>
