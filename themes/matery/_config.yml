@@ -128,7 +128,7 @@ socialLink:
   twitter: # https://twitter.com/xxx
   qq: 1181062873
   weibo: # https://weibo.com/xxx
-  zhihu: # https://www.zhihu.com/xxx
+  zhihu: https://www.zhihu.com/people/duan-ying-tian-82 # https://www.zhihu.com/xxx
   rss: true # true、false
 
 # Whether to activate the Post TOC, and Configure which title types are supported by TOC support.
