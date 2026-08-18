@@ -2,8 +2,10 @@
 title: "PostgreSQL 源码修炼之路"
 cascade:
   categories:
+    - 数据库
     - PostgreSQL 源码修炼之路
   tags:
+    - 数据库
     - PostgreSQL 源码修炼之路
 ---
 
