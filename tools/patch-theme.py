@@ -2597,10 +2597,75 @@ else:
 
 # --- 12. Footer subscribe card (RSS / Zhihu / WeChat / GitHub / Email) ---
 # Idempotent: skip if marker already in my.css.
+# Skip the entire block when subscribe-card.ejs partial is not present
+# (the partial was removed in favor of an inline 公众号 chip in footer.ejs).
+subscribe_partial_path = os.path.join(theme_dir, 'layout', '_partial', 'subscribe-card.ejs')
 subscribe_marker = "/* SUBSCRIBE-CARD-FOOTER */"
 my_css_path = os.path.join(theme_dir, "source", "css", "my.css")
-sc_css = '/* SUBSCRIBE-CARD-FOOTER */\n.subscribe-card {\n    max-width: 720px;\n    margin: 24px auto 28px;\n    padding: 22px 24px;\n    background: rgba(255,255,255,0.05);\n    border: 1px solid rgba(255,255,255,0.10);\n    border-radius: 14px;\n    text-align: center;\n}\n.subscribe-card__title {\n    font-size: 16px;\n    font-weight: 700;\n    color: #fff;\n    margin: 0 0 6px;\n    letter-spacing: 0.5px;\n}\n.subscribe-card__title i { color: #4dd0e1; }\n.subscribe-card__lead {\n    color: rgba(255,255,255,0.65);\n    font-size: 13px;\n    margin: 0 0 14px;\n}\n.subscribe-card__row {\n    display: flex;\n    flex-wrap: wrap;\n    gap: 8px;\n    justify-content: center;\n    margin-bottom: 4px;\n}\n.subscribe-chip {\n    display: inline-flex;\n    align-items: center;\n    padding: 6px 14px;\n    background: rgba(255,255,255,0.10);\n    color: #eceff1;\n    border: 1px solid rgba(255,255,255,0.18);\n    border-radius: 18px;\n    font-size: 13px;\n    text-decoration: none;\n    transition: background .15s, transform .15s, color .15s;\n    line-height: 1.4;\n}\n.subscribe-chip i { font-size: 13px; }\n.subscribe-chip:hover {\n    background: rgba(77,208,225,0.25);\n    border-color: rgba(77,208,225,0.4);\n    color: #4dd0e1;\n    transform: translateY(-1px);\n}\n.subscribe-card__note {\n    color: rgba(255,255,255,0.55);\n    font-size: 12px;\n    margin: 10px 0 0;\n    font-style: italic;\n}\n@media (max-width: 600px) {\n    .subscribe-card { margin: 16px 12px 20px; padding: 18px 16px; }\n    .subscribe-chip { font-size: 12px; padding: 5px 12px; }\n}\n'
-if os.path.isfile(my_css_path):
+sc_css = '''/* SUBSCRIBE-CARD-FOOTER */
+.subscribe-card {
+    max-width: 720px;
+    margin: 24px auto 28px;
+    padding: 22px 24px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.10);
+    border-radius: 14px;
+    text-align: center;
+}
+.subscribe-card__title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 6px;
+    letter-spacing: 0.5px;
+}
+.subscribe-card__title i { color: #4dd0e1; }
+.subscribe-card__lead {
+    color: rgba(255,255,255,0.65);
+    font-size: 13px;
+    margin: 0 0 14px;
+}
+.subscribe-card__row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+.subscribe-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 14px;
+    background: rgba(255,255,255,0.10);
+    color: #eceff1;
+    border: 1px solid rgba(255,255,255,0.18);
+    border-radius: 18px;
+    font-size: 13px;
+    text-decoration: none;
+    transition: background .15s, transform .15s, color .15s;
+    line-height: 1.4;
+}
+.subscribe-chip i { font-size: 13px; }
+.subscribe-chip:hover {
+    background: rgba(77,208,225,0.25);
+    border-color: rgba(77,208,225,0.4);
+    color: #4dd0e1;
+    transform: translateY(-1px);
+}
+.subscribe-card__note {
+    color: rgba(255,255,255,0.55);
+    font-size: 12px;
+    margin: 10px 0 0;
+    font-style: italic;
+}
+@media (max-width: 600px) {
+    .subscribe-card { margin: 16px 12px 20px; padding: 18px 16px; }
+    .subscribe-chip { font-size: 12px; padding: 5px 12px; }
+}
+'''
+if not os.path.isfile(subscribe_partial_path):
+    print('subscribe-card.ejs not present, skipping subscribe-card CSS append')
+elif os.path.isfile(my_css_path):
     with open(my_css_path, encoding="utf-8") as f:
         _mycss = f.read()
     if subscribe_marker in _mycss:

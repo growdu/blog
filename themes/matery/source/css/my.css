@@ -2024,3 +2024,26 @@ body.wechat-qr-modal-open { overflow: hidden; }
     .wechat-qr-modal__panel { padding: 22px 18px 16px; }
     .wechat-qr-modal__img { width: 200px; height: 200px; }
 }
+
+/* FOOTER WECHAT BUTTON (inline with siteTotalWords) */
+.footer-wechat-btn {
+    display: inline;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font: inherit;
+    line-height: inherit;
+    cursor: pointer;
+    transition: color .15s;
+}
+.footer-wechat-btn:hover,
+.footer-wechat-btn:focus-visible {
+    color: #4dd0e1;
+    text-decoration: underline;
+}
+.footer-wechat-btn:focus-visible {
+    outline: none;
+}
+.footer-wechat-btn i { color: inherit; margin-right: 1px; }
