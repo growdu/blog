@@ -24,9 +24,9 @@
       </a>
     <% } %>
     <% if (sub.wechat) { %>
-      <a class="subscribe-chip" href="<%= sub.wechat %>" target="_blank" rel="noopener">
+      <button type="button" class="subscribe-chip subscribe-chip--qr" data-wechat-qr-toggle aria-haspopup="dialog" aria-controls="wechat-qr-modal">
         <i class="fab fa-weixin"></i>&nbsp; 公众号
-      </a>
+      </button>
     <% } %>
     <% if (sub.github) { %>
       <a class="subscribe-chip" href="<%= sub.github %>" target="_blank" rel="noopener noreferrer external nofollow">
@@ -48,3 +48,50 @@
     <p class="subscribe-card__note"><%= sub.note %></p>
   <% } %>
 </div>
+
+<% if (sub.wechat) { %>
+<div class="wechat-qr-modal" id="wechat-qr-modal" hidden role="dialog" aria-modal="true" aria-labelledby="wechat-qr-title">
+  <div class="wechat-qr-modal__backdrop" data-wechat-qr-close></div>
+  <div class="wechat-qr-modal__panel" role="document">
+    <button type="button" class="wechat-qr-modal__close" data-wechat-qr-close aria-label="关闭">&times;</button>
+    <h4 class="wechat-qr-modal__title" id="wechat-qr-title">
+      <i class="fab fa-weixin"></i>&nbsp; 微信公众号
+    </h4>
+    <div class="wechat-qr-modal__img-wrap">
+      <img class="wechat-qr-modal__img" src="<%= sub.wechat %>" alt="公众号二维码">
+    </div>
+    <p class="wechat-qr-modal__tip">微信扫一扫，关注「growdu」</p>
+  </div>
+</div>
+<script>
+(function(){
+  var modal = document.getElementById('wechat-qr-modal');
+  if (!modal) return;
+  var openBtns = document.querySelectorAll('[data-wechat-qr-toggle]');
+  if (!openBtns.length) return;
+  var lastFocus = null;
+
+  function open() {
+    lastFocus = document.activeElement;
+    modal.removeAttribute('hidden');
+    document.body.classList.add('wechat-qr-modal-open');
+    var closeBtn = modal.querySelector('.wechat-qr-modal__close');
+    if (closeBtn) closeBtn.focus();
+  }
+  function close() {
+    if (modal.hasAttribute('hidden')) return;
+    modal.setAttribute('hidden', '');
+    document.body.classList.remove('wechat-qr-modal-open');
+    if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+  }
+
+  openBtns.forEach(function(btn){ btn.addEventListener('click', open); });
+  modal.addEventListener('click', function(e){
+    if (e.target.closest('[data-wechat-qr-close]')) close();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && !modal.hasAttribute('hidden')) close();
+  });
+})();
+</script>
+<% } %>

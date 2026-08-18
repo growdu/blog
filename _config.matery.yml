@@ -191,8 +191,8 @@ subscribe:
   rss: true
   # 知乎主页 (or any platform)
   zhihu: 'https://www.zhihu.com/people/duan-ying-tian-82'
-  # 公众号 — link to /medias/reward/wechat.jpg or your public account
-  wechat: 'https://weixin.sogou.com/weixin?type=1&query=growdu'
+  # 公众号 — 公众号二维码图片路径（默认使用 /medias/reward/gzh.jpg）
+  wechat: '/medias/reward/gzh.jpg'
   # GitHub 主页
   github: 'https://github.com/growdu'
   # 联系邮箱
