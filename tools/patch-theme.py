@@ -75,6 +75,7 @@ else:
 REWARD_DIR = os.path.join(theme_dir, 'source', 'medias', 'reward')
 reward_pairs = [
     ('weixin.jpg',   'weixin.jpg'),
+    ('gzh.jpg',      'gzh.jpg'),
     ('zhifubao.jpg', 'zhifubao.jpg'),
 ]
 reward_copied = []
