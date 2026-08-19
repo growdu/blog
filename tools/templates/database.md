@@ -11,34 +11,12 @@ layout: "page"
 
 作为长期在 PostgreSQL 与 openGauss 内核一线搬砖的工程师，我日常的工作内容大致涵盖：**内核源码阅读与 Bug 定位**、**新特性设计（如 DDL-Replay 双向同步）**、**分布式一致性模块开发（DCF / Raft）**、**性能调优与故障排查**。下面把博客里相关的文章按主题串成一张导览图，方便按需取用。
 
-<%
-const databasePosts = new Map();
-const databaseCategories = ['数据库', 'PostgreSQL 源码修炼之路'];
-databaseCategories.forEach(function(categoryName) {
-    const category = site.categories.find({ name: categoryName });
-    if (!category) return;
-    category.posts.sort('-date').forEach(function(post) {
-        databasePosts.set(post.path, post);
-    });
-});
-const posts = Array.from(databasePosts.values()).sort(function(a, b) {
-    return b.date - a.date;
-});
-%>
-
 ## PostgreSQL 源码修炼之路
 
 本页自动汇总“数据库”与“PostgreSQL 源码修炼之路”分类下的全部文章，并按去重后的日期倒序排列。后续新增章节时，只需在目录的 `cascade.categories` 中加入“数据库”，无需再手工维护本页链接。
 
-<% if (posts.length) { %>
-<ol class="database-post-list">
-<% posts.forEach(function(post) { %>
-    <li><a href="<%- url_for(post.path) %>"><%= post.title %></a></li>
-<% }); %>
-</ol>
-<% } else { %>
-数据库系列文章正在整理中。
-<% } %>
+<!-- DATABASE_POSTS_START -->
+<!-- DATABASE_POSTS_END -->
 
 ## 核心技术栈
 

@@ -9,6 +9,7 @@ Creates:
 Does NOT modify docs/ — runs in CI on a fresh checkout.
 """
 import os, re, shutil, subprocess, sys, json
+from urllib.parse import quote
 
 DOCS = 'docs'
 SRC = 'source'
@@ -111,6 +112,48 @@ def resolve_post_categories(rel, section_titles, cascades):
 def categories_yaml(cats):
     """Render a list of category strings as a YAML list body."""
     return '\n'.join(f'  - {c}' for c in cats)
+
+
+def collect_database_posts(section_titles, cascades):
+    """Collect database posts and their generated permalinks for the landing page."""
+    posts = []
+    for root, _, files in os.walk(DOCS):
+        for filename in sorted(files):
+            ext = os.path.splitext(filename)[1].lower()
+            if ext not in ('.md', '.html', '.htm') or filename == '_index.md':
+                continue
+            filepath = os.path.join(root, filename)
+            rel = os.path.relpath(filepath, DOCS)
+            with open(filepath, encoding='utf-8') as f:
+                content = f.read()
+            fm, body = split_fm(content)
+            src = body if fm is not None else content
+            if ext == '.md':
+                title = extract_title(src) or fallback_title(filepath)
+                if has_fm_title(fm):
+                    title_match = re.search(
+                        r'^title:\s*["\']?(.+?)["\']?\s*$', fm, re.MULTILINE
+                    )
+                    if title_match:
+                        title = title_match.group(1).strip()
+            else:
+                title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.I | re.S)
+                title = re.sub(r'<[^>]+>', '', title_match.group(1)).strip() if title_match else fallback_title(filepath)
+            categories = resolve_post_categories(rel, section_titles, cascades)
+            if '数据库' not in categories and 'PostgreSQL 源码修炼之路' not in categories:
+                continue
+            fdir = os.path.dirname(rel)
+            if filename == 'index.md':
+                slug = os.path.basename(fdir)
+            else:
+                slug = os.path.splitext(filename)[0]
+                if ext in ('.html', '.htm') and not slug.endswith('-html'):
+                    slug += '-html'
+            date = git_date(filepath)
+            url = f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(slug)}/'
+            posts.append({'title': title, 'url': url, 'date': date})
+    unique = {post['url']: post for post in posts}
+    return sorted(unique.values(), key=lambda post: post['date'], reverse=True)
 
 
 def git_date(filepath):
@@ -754,10 +797,11 @@ fetch('/recent-posts.json').then(function(r){return r.json();}).then(function(po
                 json.dump(recent, f, ensure_ascii=False, indent=2)
             print('Wrote recent-posts.json (%d items)' % len(recent))
     # Database landing page
-    create_database_landing_page()
+    database_posts = collect_database_posts(section_titles, cascade_map)
+    create_database_landing_page(database_posts)
     print('Created database landing page')
 
-def create_database_landing_page():
+def create_database_landing_page(database_posts):
     """Copy the curated database landing page from tools/templates/ into
     Hexo's source/ tree. The template is plain markdown + front matter,
     editable in any editor with full syntax highlighting.
@@ -768,6 +812,18 @@ def create_database_landing_page():
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     with open(template, encoding='utf-8') as f:
         content = f.read()
+    start_marker = '<!-- DATABASE_POSTS_START -->'
+    end_marker = '<!-- DATABASE_POSTS_END -->'
+    if start_marker not in content or end_marker not in content:
+        raise ValueError('database template is missing DATABASE_POSTS markers')
+    if database_posts:
+        post_list = '\n'.join(
+            f'- [{post["title"]}]({post["url"]})' for post in database_posts
+        )
+    else:
+        post_list = '数据库系列文章正在整理中。'
+    content = content.replace(start_marker, post_list, 1)
+    content = content.replace(end_marker, '', 1)
     with open(db_path, 'w', encoding='utf-8') as f:
         f.write(content)
     print('Created ' + os.path.relpath(db_path, '.'))
