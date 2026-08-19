@@ -150,7 +150,12 @@ def collect_database_posts(section_titles, cascades):
                 if ext in ('.html', '.htm') and not slug.endswith('-html'):
                     slug += '-html'
             date = git_date(filepath)
-            url = f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(slug)}/'
+            # Hexo derives the permalink slug from the post's full path under
+            # source/_posts. Keep that path hierarchy in the landing-page
+            # links; dropping it makes nested posts resolve to a 404 (or the
+            # site's 404 fallback) instead of the generated article.
+            post_path = os.path.join(fdir, slug) if fdir and fdir != '.' else slug
+            url = f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
             posts.append({'title': title, 'url': url, 'date': date})
     unique = {post['url']: post for post in posts}
     return sorted(unique.values(), key=lambda post: post['date'], reverse=True)
