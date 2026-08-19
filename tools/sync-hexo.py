@@ -41,8 +41,8 @@ FEATURED_POSTS = {
 
 
 def read_section_categories():
-    """Map section dir -> Chinese display name from _index.md."""
-    cats = {}
+    """Map top-level section dir -> Chinese display name from _index.md."""
+    titles = {}
     for section in os.listdir(DOCS):
         idx = os.path.join(DOCS, section, '_index.md')
         if not os.path.isfile(idx):
@@ -51,8 +51,66 @@ def read_section_categories():
             txt = f.read()
         m = re.search(r'^title:\s*["\']?(.+?)["\']?\s*$', txt, re.MULTILINE)
         if m:
-            cats[section] = m.group(1).strip()
+            titles[section] = m.group(1).strip()
+    return titles
+
+
+def read_cascade_categories():
+    """Walk docs/**/_index.md and collect `cascade.categories` per subdir.
+
+    Returns {subdir_path_relative_to_docs: [list of category names]}.
+    """
+    cascades = {}
+    for root, dirs, files in os.walk(DOCS):
+        if '_index.md' not in files:
+            continue
+        idx = os.path.join(root, '_index.md')
+        with open(idx, encoding='utf-8') as f:
+            txt = f.read()
+        m = re.search(
+            r'cascade:\s*\n\s*categories:\s*\n((?:\s*-\s*.+\n)+)',
+            txt, re.MULTILINE
+        )
+        if m:
+            items = []
+            for line in m.group(1).split('\n'):
+                item_m = re.match(r'\s*-\s*(.+)', line)
+                if item_m:
+                    items.append(item_m.group(1).strip())
+            if items:
+                rel = os.path.relpath(root, DOCS)
+                cascades[rel] = items
+    return cascades
+
+
+def resolve_post_categories(rel, section_titles, cascades):
+    """Resolve final category list for a post at relative path `rel`.
+
+    1. Top-level section title (primary, drives URL slugs)
+    2. Cascade categories from nearest ancestor _index.md (going up)
+
+    De-duplicated; primary stays first.
+    """
+    section = rel.split(os.sep)[0] if os.sep in rel else ''
+    primary = section_titles.get(section, section or '随笔')
+    cats = [primary]
+    seen = {primary}
+    fdir = os.path.dirname(rel)
+    if fdir:
+        parts = fdir.split(os.sep)
+        for i in range(1, len(parts) + 1):
+            sub = os.sep.join(parts[:i])
+            if sub in cascades:
+                for c in cascades[sub]:
+                    if c not in seen:
+                        cats.append(c)
+                        seen.add(c)
     return cats
+
+
+def categories_yaml(cats):
+    """Render a list of category strings as a YAML list body."""
+    return '\n'.join(f'  - {c}' for c in cats)
 
 
 def git_date(filepath):
@@ -147,7 +205,7 @@ def copy_images():
                 shutil.copy2(src, dst)
 
 
-def process(filepath, cats):
+def process(filepath, section_titles, cascades):
     rel = os.path.relpath(filepath, DOCS)
     fdir = os.path.dirname(rel)
 
@@ -167,8 +225,7 @@ def process(filepath, cats):
             title = m.group(1).strip()
 
     date = git_date(filepath)
-    section = rel.split(os.sep)[0] if os.sep in rel else ''
-    cat = cats.get(section, section or '随笔')
+    post_cats = resolve_post_categories(rel, section_titles, cascades)
 
     # rewrite images, strip first H1 (title is in front matter)
     body_out = rewrite_images(src, fdir)
@@ -176,7 +233,8 @@ def process(filepath, cats):
 
     top_val = FEATURED_POSTS.get(rel)
     top_line = f'\ntop: {top_val}' if top_val else ''
-    fm_out = f'---\ntitle: "{yaml_escape(title)}"\ndate: {date}\nauthor: growdu{top_line}\ncategories:\n  - {cat}\ntags:\n  - {cat}\n---\n'
+    cats_block = categories_yaml(post_cats)
+    fm_out = f'---\ntitle: "{yaml_escape(title)}"\ndate: {date}\nauthor: growdu{top_line}\ncategories:\n{cats_block}\ntags:\n{cats_block}\n---\n'
 
     if os.path.basename(filepath) == 'index.md':
         name = os.path.basename(os.path.dirname(filepath))
@@ -189,7 +247,7 @@ def process(filepath, cats):
     with open(out, 'w', encoding='utf-8') as f:
         f.write(fm_out + body_out)
     return True
-def process_html(filepath, cats):
+def process_html(filepath, section_titles, cascades):
     """Sync a .html (or .htm) file from docs/ into source/_posts/.
 
     Source files in docs/<section>/<name>.html become Hexo posts at
@@ -243,20 +301,18 @@ def process_html(filepath, cats):
         title = fallback_title(filepath)
 
     date = git_date(filepath)
-    section = rel.split(os.sep)[0] if os.sep in rel else ''
-    cat = cats.get(section, section or '随笔')
+    post_cats = resolve_post_categories(rel, section_titles, cascades)
 
     top_val = FEATURED_POSTS.get(rel)
     top_line = f'\ntop: {top_val}' if top_val else ''
+    cats_block = categories_yaml(post_cats)
     fm_out = (
         f'---\n'
         f'title: "{yaml_escape(title)}"\n'
         f'date: {date}\n'
         f'author: growdu{top_line}\n'
-        f'categories:\n'
-        f'  - {cat}\n'
-        f'tags:\n'
-        f'  - {cat}\n'
+        f'categories:\n{cats_block}\n'
+        f'tags:\n{cats_block}\n'
         f'---\n'
     )
 
@@ -459,8 +515,9 @@ def main():
         f.write('vercount-domain-verify=growdu.github.io,zd5pj09shdfkbm6h83ra5zzk')
     print('Created Vercount verification file')
 
-    cats = read_section_categories()
-    print(f'Categories: {len(cats)}')
+    section_titles = read_section_categories()
+    cascade_map = read_cascade_categories()
+    print(f'Section titles: {len(section_titles)}, cascade dirs: {len(cascade_map)}')
 
     copy_images()
     print('Images copied')
@@ -473,7 +530,7 @@ def main():
             fp = os.path.join(root, f)
             try:
                 if ext == '.md':
-                    if process(fp, cats):
+                    if process(fp, section_titles, cascade_map):
                         n_md += 1
                 elif ext in ('.html', '.htm'):
                     # Naming convention: if an .html shares a basename
@@ -496,7 +553,7 @@ def main():
                                 file=sys.stderr,
                             )
                             sys.exit(2)
-                    if process_html(fp, cats):
+                    if process_html(fp, section_titles, cascade_map):
                         n_html += 1
             except Exception as e:
                 print(f'ERROR {fp}: {e}', file=sys.stderr)
