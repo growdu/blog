@@ -430,7 +430,7 @@ footer.footer a:hover {
 .hero-motto-line + .hero-motto-line::before{content:"· ";opacity:.5;margin-right:14px;color:#fff;}
 /* hero sub description */
 .hero-subdesc{margin:10px auto 0;max-width:760px;font-size:13px;letter-spacing:.04em;opacity:.92;color:#fff;text-shadow:0 1px 4px rgba(0,0,0,.35);}
-@media (max-width:600px){.bg-cover .title{white-space:normal;}.hero-motto{font-size:14px;gap:8px;}.hero-motto-line{white-space:normal;}.hero-motto-line + .hero-motto-line::before{margin-right:8px;}}
+@media (max-width:600px){.bg-cover .title{text-align:center !important;width:100%;white-space:normal;}.hero-motto{font-size:14px;gap:8px;}.hero-motto-line{white-space:normal;}.hero-motto-line + .hero-motto-line::before{margin-right:8px;}}
 
 
 /* RESPONSIVE-HERO-FIX */
@@ -493,6 +493,8 @@ footer.footer a:hover {
     line-height: 1.2 !important;
     margin: 0 0 20px !important;
     word-break: break-word;
+    text-align: center !important;
+    width: 100%;
     white-space: nowrap;
 }
 
