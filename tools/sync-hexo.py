@@ -151,10 +151,11 @@ def collect_database_posts(section_titles, cascades):
                     slug += '-html'
             date = git_date(filepath)
             # Hexo derives the permalink slug from the post's full path under
-            # source/_posts. Keep that path hierarchy in the landing-page
-            # links; dropping it makes nested posts resolve to a 404 (or the
-            # site's 404 fallback) instead of the generated article.
-            post_path = os.path.join(fdir, slug) if fdir and fdir != '.' else slug
+            # source/_posts. A page-bundle index.md is flattened to
+            # <parent>/<bundle-name>.md by process(), so its link must not
+            # include the bundle directory a second time.
+            source_dir = os.path.dirname(fdir) if filename == 'index.md' and fdir else fdir
+            post_path = os.path.join(source_dir, slug) if source_dir and source_dir != '.' else slug
             url = f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
             posts.append({'title': title, 'url': url, 'date': date})
     unique = {post['url']: post for post in posts}
