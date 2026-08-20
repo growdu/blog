@@ -9,7 +9,7 @@
   // Each lane: icon, title, blurb, category filter (matched against
   // post.path first segment, e.g. "dpdk/vpp-intro/..." -> "dpdk").
   var lanes = [
-    { id: 'db',      icon: 'fa-solid fa-database',     title: '数据库内核',   desc: '从 PostgreSQL 存储到 openGauss 逻辑复制',     cats: ['pgsql', 'database', 'db', 'openguass', 'opc', 'es'] },
+    { id: 'db',      icon: 'fa-solid fa-database',     title: '数据库内核',   desc: '从 PostgreSQL 编译调试到存储、MVCC、WAL 与复制源码', pathPrefix: 'db/postgresql/learning-path/' },
     { id: 'hpn',     icon: 'fa-solid fa-network-wired', title: '高性能网络',   desc: 'DPDK / VPP / 用户态协议栈实战',                  cats: ['dpdk', 'protocol', 'network'] },
     { id: 'dist',    icon: 'fa-solid fa-server',        title: '分布式系统',   desc: '集群、共识、分布式一致性',                       cats: ['cluster', 'code', 'go_web'] },
     { id: 'ai',      icon: 'fa-solid fa-brain',         title: 'AI 与大模型', desc: '从感知机到 ChatGPT：原理与工具',                cats: ['ai', 'chatgpt'] },
@@ -30,6 +30,15 @@
   function laneOf(post) {
     var parts = (post.path || '').split('/');
     return parts.length >= 4 ? parts[3].toLowerCase() : '';
+  }
+
+  // A lane with pathPrefix matches the series directory exactly, rather
+  // than accidentally including every post in the same top-level folder.
+  function matchesLane(post, lane) {
+    var path = (post.path || '').toLowerCase();
+    return lane.pathPrefix
+      ? path.indexOf('/' + lane.pathPrefix.toLowerCase()) !== -1
+      : lane.cats.indexOf(laneOf(post)) !== -1;
   }
 
   // Pick the most common category among a lane's posts so the “查看更多”
@@ -54,12 +63,17 @@
   // top-3 for display.
   lanes.forEach(function (lane) {
     var matched = site.posts.data
-      .filter(function (p) { return lane.cats.indexOf(laneOf(p)) !== -1; });
+      .filter(function (p) { return matchesLane(p, lane); });
     lane.matched = matched;
     lane.primaryCat = primaryCat(matched);
     matched.sort(function (a, b) {
       var td = (b.top || 0) - (a.top || 0);
-      return td !== 0 ? td : (b.date - a.date);
+      if (td !== 0) return td;
+      if (lane.pathPrefix) {
+        var an = parseInt(a.title, 10), bn = parseInt(b.title, 10);
+        if (!isNaN(an) && !isNaN(bn) && an !== bn) return an - bn;
+      }
+      return b.date - a.date;
     });
     lane.posts = matched.slice(0, 3);
   });
