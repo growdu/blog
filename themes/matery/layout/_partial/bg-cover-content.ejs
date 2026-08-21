@@ -87,14 +87,14 @@
     <div class="hero-stat"><div class="hero-stat-num"><%= site.tags.length %></div><div class="hero-stat-label">标签</div></div>
 </div>
 <div class="hero-tech">
-    <span class="hero-badge"><i class="fas fa-database"></i> PostgreSQL</span>
-    <span class="hero-badge"><i class="fas fa-database"></i> openGauss</span>
-    <span class="hero-badge"><i class="fas fa-sitemap"></i> 分布式系统</span>
-    <span class="hero-badge"><i class="fas fa-bolt"></i> DPDK / VPP</span>
-    <span class="hero-badge"><i class="fas fa-chart-line"></i> 股票 · 金融</span>
-    <span class="hero-badge"><i class="fas fa-tools"></i> 工具 · 视频 · 培训</span>
-    <span class="hero-badge"><i class="fas fa-yin-yang"></i> 哲学 · 人生</span>
-    <span class="hero-badge"><i class="fas fa-city"></i> 社会观察</span>
+    <a class="hero-badge" href="<%- url_for('/categories/PostgreSQL/') %>" aria-label="查看 PostgreSQL 文章"><i class="fas fa-database"></i> PostgreSQL</a>
+    <a class="hero-badge" href="<%- url_for('/categories/openGauss/') %>" aria-label="查看 openGauss 文章"><i class="fas fa-database"></i> openGauss</a>
+    <a class="hero-badge" href="<%- url_for('/categories/集群/') %>" aria-label="查看分布式系统文章"><i class="fas fa-sitemap"></i> 分布式系统</a>
+    <a class="hero-badge" href="<%- url_for('/categories/DPDK/') %>" aria-label="查看 DPDK 和 VPP 文章"><i class="fas fa-bolt"></i> DPDK / VPP</a>
+    <a class="hero-badge" href="<%- url_for('/categories/stock/') %>" aria-label="查看股票和金融文章"><i class="fas fa-chart-line"></i> 股票 · 金融</a>
+    <a class="hero-badge" href="<%- url_for('/categories/工具/') %>" aria-label="查看工具、视频和培训文章"><i class="fas fa-tools"></i> 工具 · 视频 · 培训</a>
+    <a class="hero-badge" href="<%- url_for('/categories/成长之路/') %>" aria-label="查看哲学和人生文章"><i class="fas fa-yin-yang"></i> 哲学 · 人生</a>
+    <a class="hero-badge" href="<%- url_for('/categories/成长之路/') %>" aria-label="查看社会观察文章"><i class="fas fa-city"></i> 社会观察</a>
 </div>
 <div class="hero-typing" id="typing-text"></div>
 <% } %>

@@ -421,9 +421,9 @@ footer.footer a:hover {
 .hero-stat{display:flex;flex-direction:column;align-items:center;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.4);}
 .hero-stat-num{font-size:28px;font-weight:700;letter-spacing:.02em;}
 .hero-stat-label{font-size:12px;opacity:.85;margin-top:4px;letter-spacing:.08em;}
-.hero-tech{margin:56px auto 0;display:flex;justify-content:center;gap:10px;flex-wrap:wrap;max-width:920px;padding:0 16px;}
-.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.12);backdrop-filter:blur(6px);color:#fff;font-size:13px;letter-spacing:.04em;transition:background .25s ease,transform .25s ease;}
-.hero-badge:hover{background:rgba(255,255,255,.22);transform:translateY(-1px);}
+.hero-tech{margin:56px auto 0;display:flex;justify-content:center;gap:10px;flex-wrap:nowrap;max-width:1100px;padding:0 16px;}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.12);backdrop-filter:blur(6px);color:#fff;font-size:13px;letter-spacing:.04em;text-decoration:none;transition:background .25s ease,transform .25s ease;}
+.hero-badge:hover,.hero-badge:focus-visible{background:rgba(255,255,255,.22);transform:translateY(-1px);}
 .hero-typing{margin:48px auto 0;min-height:28px;color:#fff;font-size:16px;letter-spacing:.05em;opacity:.95;text-shadow:0 1px 4px rgba(0,0,0,.4);}
 .hero-motto-line{opacity:.55;transition:opacity .8s ease,transform .8s ease;transform:translateY(2px);text-shadow:0 2px 8px rgba(0,0,0,.4);white-space:nowrap;}
 .hero-motto-line.is-active{opacity:1;transform:translateY(0);}
@@ -665,6 +665,7 @@ footer.footer a:hover {
     }
     .hero-tech {
         margin-top: 16px !important;
+        flex-wrap: wrap;
         gap: 5px !important;
         padding: 0 6px;
     }
