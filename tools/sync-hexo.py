@@ -252,9 +252,10 @@ def read_matery_about_config():
     my_skills = {'enable': False, 'data': {}}
     my_education = {'enable': False, 'data': []}
     my_honors = {'enable': False, 'data': []}
+    my_timeline = {'enable': False, 'data': []}
 
     # Sections whose `data:` is a list of dicts (vs dict of dicts).
-    LIST_DATA_SECTIONS = {'myEducation', 'myHonors'}
+    LIST_DATA_SECTIONS = {'myEducation', 'myHonors', 'myTimeline'}
 
     # Map top-level section name -> mutable target dict so we can
     # look up enable flag and data container uniformly.
@@ -263,6 +264,7 @@ def read_matery_about_config():
         'mySkills': my_skills,
         'myEducation': my_education,
         'myHonors': my_honors,
+        'myTimeline': my_timeline,
     }
 
     current_top = None
@@ -340,6 +342,13 @@ def read_matery_about_config():
 
         # Top-level key (indent 0)
         if indent == 0 and content.endswith(':'):
+            # Flush any pending list-of-dicts item from the previous
+            # section before transitioning.
+            if current_list_item is not None and current_data_target in LIST_DATA_SECTIONS:
+                section_data_map[current_data_target]['data'].append(current_list_item)
+                current_list_item = None
+                current_dict_item = None
+            current_list_key = None
             current_top = content[:-1].strip()
             current_data_target = None
             current_data_key = None
@@ -429,19 +438,21 @@ def read_matery_about_config():
     if current_list_item is not None and current_data_target in LIST_DATA_SECTIONS:
         section_data_map[current_data_target]['data'].append(current_list_item)
 
-    return profile, my_projects, my_skills, my_education, my_honors
+    return profile, my_projects, my_skills, my_education, my_honors, my_timeline
 
 
 def build_about_markdown(profile, my_projects, my_skills,
-                           my_education=None, my_honors=None):
+                           my_education=None, my_honors=None,
+                           my_timeline=None):
     """Build source/about/index.md content from matery config + static sections.
 
-    `my_education` and `my_honors` are optional list-of-dicts sections.
-    When provided and enabled, they render dedicated sections below the
-    project cards.
+    `my_education`, `my_honors`, `my_timeline` are optional list-of-dicts
+    sections. `my_timeline` renders right under the bio intro as a
+    vertical timeline; the others render after the project cards.
     """
     my_education = my_education or {'enable': False, 'data': []}
     my_honors = my_honors or {'enable': False, 'data': []}
+    my_timeline = my_timeline or {'enable': False, 'data': []}
 
     intro = profile.get('introduction') or (
         '资深后端研发工程师，专注数据库内核与分布式系统。'
@@ -529,6 +540,22 @@ def build_about_markdown(profile, my_projects, my_skills,
             )
     edu_block = '\n'.join(edu_lines) if edu_lines else ''
 
+    # Bio timeline
+    timeline_lines = []
+    if my_timeline.get('enable') and my_timeline.get('data'):
+        for t in my_timeline['data']:
+            period = t.get('period', '')
+            title = t.get('title', '')
+            desc = t.get('desc', '')
+            timeline_lines.append(
+                f'<div class="timeline-item">\n'
+                f'  <div class="timeline-date">{period}</div>\n'
+                f'  <div class="timeline-title">{title}</div>\n'
+                f'  <div class="timeline-desc">{desc}</div>\n'
+                f'</div>'
+            )
+    timeline_block = '\n'.join(timeline_lines) if timeline_lines else ''
+
     # Honors list
     honor_lines = []
     if my_honors.get('enable') and my_honors.get('data'):
@@ -557,6 +584,10 @@ def build_about_markdown(profile, my_projects, my_skills,
         f'\n## 个人荣誉\n\n<div class="honor-list">\n{honor_block}\n</div>\n'
         if honor_block else ''
     )
+    timeline_section = (
+        f'\n<div class="about-timeline">\n{timeline_block}\n</div>\n'
+        if timeline_block else ''
+    )
 
     # Compose the template as a plain string and use str.format_map
     # so we can keep literal CSS braces (single { is fine in format()
@@ -568,8 +599,10 @@ date: 2026-07-29 00:00:00
 
 # 关于我
 
-{intro}
+{intro}{timeline_section}
+## 重点项目
 
+{projects_block}{edu_section}{honor_section}
 ## GitHub 数据
 
 <div id="gh-stats" class="gh-stats">
@@ -593,36 +626,15 @@ fetch('https://api.github.com/users/growdu')
 
 {skills_block}
 
-## 重点项目
-
-{projects_block}{edu_section}{honor_section}
-## 编程之路
-
-<div class="timeline-item">
-  <div class="timeline-date">持续更新</div>
-  <div>数据库内核开发、分布式系统设计、高性能网络编程的持续学习与实践</div>
-</div>
-<div class="timeline-item">
-  <div class="timeline-date">核心技术方向</div>
-  <div>PostgreSQL/openGauss 内核、DCF/Raft 一致性协议、DPDK/VPP 数据面、高可用架构</div>
-</div>
-<div class="timeline-item">
-  <div class="timeline-date">知识沉淀</div>
-  <div>473+ 篇技术笔记，涵盖数据库、分布式系统、算法、网络、编程基础等领域</div>
-</div>
-
 ## 联系方式
 
 - **GitHub**: https://github.com/growdu
 - **Email**: growdu@gmail.com
 - **QQ**: 2689304284
-
-## 关于本博客
-
-本博客记录编程之路的学习笔记和技术实践，涵盖数据库、分布式系统、高性能网络等领域。文章通过 Git 提交自动发布，使用 Hexo + matery 主题构建，部署在 GitHub Pages。
 """
     return template.format(
         intro=intro,
+        timeline_section=timeline_section,
         skills_block=skills_block,
         projects_block=projects_block,
         edu_section=edu_section,
@@ -821,9 +833,10 @@ def create_theme_pages():
     # to the rendered page automatically on the next sync.
     about_path = os.path.join(SRC, 'about', 'index.md')
     os.makedirs(os.path.dirname(about_path), exist_ok=True)
-    _profile, _my_projects, _my_skills, _my_education, _my_honors = read_matery_about_config()
+    _profile, _my_projects, _my_skills, _my_education, _my_honors, _my_timeline = read_matery_about_config()
     about_md = build_about_markdown(
-        _profile, _my_projects, _my_skills, _my_education, _my_honors
+        _profile, _my_projects, _my_skills,
+        _my_education, _my_honors, _my_timeline,
     )
     with open(about_path, 'w', encoding='utf-8') as f:
         f.write(about_md)
