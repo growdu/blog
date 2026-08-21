@@ -209,8 +209,6 @@ profile:
   avatar: /medias/avatar.jpg
   career: 数据库内核开发专家 / 架构师
   introduction: |
-    段应寿（growdu）— 合肥工业大学本科，8 年工作经验，专注数据库内核、高可用架构与高性能网络。
-    ·  GitHub: https://github.com/growdu  ｜  Gitee: https://gitee.com/growdu
 
 # 我的时间线 (在「关于我」标题下渲染时间线式个人履历)
 myTimeline:

@@ -273,6 +273,7 @@ def read_matery_about_config():
     current_list_item = None
     current_dict_item = None  # dict we are currently populating with key/value pairs
     current_list_key = None   # key whose list we are currently appending to
+    multiline_indicator_indent = -1  # indent of the line that opened the block
     in_multiline = False
     multiline_target = None
     multiline_block_indent = None
@@ -293,6 +294,7 @@ def read_matery_about_config():
 
     def flush_multiline():
         nonlocal in_multiline, multiline_value, multiline_target
+        nonlocal multiline_block_indent, multiline_indicator_indent
         if multiline_target == 'profile_intro':
             # Drop leading blank lines, then lstrip the first content line
             # so the introduction starts flush-left even if the YAML
@@ -305,6 +307,8 @@ def read_matery_about_config():
         in_multiline = False
         multiline_value = []
         multiline_target = None
+        multiline_block_indent = None
+        multiline_indicator_indent = -1
 
     def unquote(v):
         """Strip matching outer quotes from a YAML scalar."""
@@ -326,11 +330,16 @@ def read_matery_about_config():
         content = strip_comment(stripped[indent:])
 
         if in_multiline:
-            # YAML literal block scalars use the indent of the FIRST
-            # non-empty content line as the block indent.
-            if multiline_block_indent is None and stripped.strip():
+            # End the block when we hit a line at or above the
+            # indicator's indent, or when we reach a top-level key.
+            if indent <= multiline_indicator_indent:
+                flush_multiline()
+            elif multiline_block_indent is None and stripped.strip():
                 multiline_block_indent = indent
-            if multiline_block_indent is not None and indent >= multiline_block_indent:
+                line_text = stripped[multiline_block_indent:]
+                multiline_value.append(line_text)
+                continue
+            elif multiline_block_indent is not None and indent >= multiline_block_indent:
                 line_text = stripped[multiline_block_indent:]
                 multiline_value.append(line_text)
                 continue
@@ -365,6 +374,7 @@ def read_matery_about_config():
                     in_multiline = True
                     multiline_target = 'profile_intro'
                     multiline_block_indent = None
+                    multiline_indicator_indent = indent
                     multiline_value = []
                 else:
                     profile[key] = unquote(value)
@@ -454,9 +464,13 @@ def build_about_markdown(profile, my_projects, my_skills,
     my_honors = my_honors or {'enable': False, 'data': []}
     my_timeline = my_timeline or {'enable': False, 'data': []}
 
-    intro = profile.get('introduction') or (
-        '资深后端研发工程师，专注数据库内核与分布式系统。'
-    )
+    intro = profile.get('introduction') or ''
+    # Skip the intro paragraph entirely when empty so no <p></p>
+    # appears at the top of the about page.
+    intro = profile.get('introduction') or ''
+    # Skip the intro paragraph entirely when empty so no <p></p>
+    # appears at the top of the about page.
+    intro_block = (intro.strip() + '\n\n') if intro.strip() else ''
 
     # Skill bars
     skill_lines = []
@@ -599,7 +613,7 @@ date: 2026-07-29 00:00:00
 
 # 关于我
 
-{intro}{timeline_section}
+{intro_block}{timeline_section}
 ## 重点项目
 
 {projects_block}{edu_section}{honor_section}
@@ -633,7 +647,7 @@ fetch('https://api.github.com/users/growdu')
 - **QQ**: 2689304284
 """
     return template.format(
-        intro=intro,
+        intro_block=intro_block,
         timeline_section=timeline_section,
         skills_block=skills_block,
         projects_block=projects_block,
