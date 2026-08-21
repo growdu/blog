@@ -2031,3 +2031,13 @@ body.wechat-qr-modal-open { overflow: hidden; }
     .wechat-qr-modal__img { width: 200px; height: 200px; }
 }
 
+
+/* Tag archive: one flat article list, no carousel levels or pagination. */
+.tag-post-list{margin:24px auto 0;max-width:960px;}
+.tag-post-item{padding:22px 0;border-bottom:1px solid rgba(0,0,0,.12);}
+.tag-post-item:first-child{padding-top:0;}
+.tag-post-title{margin:0 0 10px;font-size:1.35rem;line-height:1.4;}
+.tag-post-title a{color:inherit;}
+.tag-post-excerpt{margin:0 0 10px;color:#666;line-height:1.75;}
+.tag-post-item .publish-info{font-size:13px;}
+@media (max-width:600px){.tag-post-list{margin-top:16px;}.tag-post-item{padding:18px 0;}.tag-post-title{font-size:1.15rem;}.tag-post-excerpt{font-size:14px;}}

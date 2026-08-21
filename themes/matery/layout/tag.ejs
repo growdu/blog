@@ -4,81 +4,34 @@
 
     <%- partial('_widget/tag-cloud') %>
 
-    <%
-    var hashCode = function (str) {
-        if (!str && str.length === 0) {
-            return 0;
-        }
-
-        var hash = 0;
-        for (var i = 0, len = str.length; i < len; i++) {
-            hash = ((hash << 5) - hash) + str.charCodeAt(i);
-            hash |= 0;
-        }
-        return hash;
-    };
-    %>
-
-    <!-- 3D 旋转卡片轮播 -->
-    <div class="carousel-3d-wrapper">
-        <div class="carousel-3d-stage">
-            <div class="carousel-3d-container">
-                <% page.posts.sort('date').reverse().forEach((post, index) => { %>
-                <%
-                    var tagArr = [];
-                    if (post.tags && post.tags.length > 0) {
-                        post.tags.forEach(tag => {
-                            tagArr.push(tag.name);
-                        });
-                    }
-                    var tags = tagArr.join(', ');
-                %>
-                <div class="carousel-3d-card<%= index === 0 ? ' active' : '' %>" data-tags="<%- tags %>">
-                    <div class="card">
-                        <a href="<%- url_for(post.path) %>" class="card-link">
-                            <div class="card-image">
-                                <% if (post.img) { %>
-                                <img src="<%- url_for(post.img) %>" class="responsive-img" alt="<%= post.title %>">
-                                <% } else { %>
-                                <%
-                                    var featureimg = theme.featureImages[Math.abs(hashCode(post.title) % theme.featureImages.length)];
-                                %>
-                                <img src="<%- theme.jsDelivr.url %><%- url_for(featureimg) %>" class="responsive-img" alt="<%= post.title %>">
-                                <% } %>
-                                <span class="card-title"><%= post.title %></span>
-                            </div>
-                        </a>
-                        <div class="card-content article-content">
-                            <div class="publish-info">
-                                <span class="publish-date">
-                                    <i class="far fa-clock fa-fw icon-date"></i><%= date(post.date, config.date_format) %>
-                                </span>
-                                <span class="publish-author">
-                                    <% if (post.categories && post.categories.length > 0) { %>
-                                    <i class="fas fa-bookmark fa-fw icon-category"></i>
-                                    <% post.categories.forEach(category => { %>
-                                    <a href="<%- url_for(category.path) %>" class="post-category">
-                                    <%- category.name %>
-                                    </a>
-                                    <% }); %>
-                                    <% } else if (post.author && post.author.length > 0) { %>
-                                    <i class="fas fa-user fa-fw"></i>
-                                    <%- post.author %>
-                                    <% } else { %>
-                                    <i class="fas fa-user fa-fw"></i>
-                                    <%- config.author %>
-                                    <% } %>
-                                </span>
-                            </div>
-                        </div>
-                    </div>
+        <div class="tag-post-list">
+        <% page.posts.sort('date').reverse().forEach(function(post) { %>
+        <article class="tag-post-item">
+            <div class="tag-post-body">
+                <h2 class="tag-post-title">
+                    <a href="<%- url_for(post.path) %>" title="<%= post.title %>"><%= post.title %></a>
+                </h2>
+                <% if (post.excerpt) { %>
+                <p class="tag-post-excerpt"><%- strip_html(post.excerpt) %></p>
+                <% } else { %>
+                <p class="tag-post-excerpt"><%- smart_summary(post) %></p>
+                <% } %>
+                <div class="publish-info">
+                    <span class="publish-date">
+                        <i class="far fa-clock fa-fw icon-date"></i><%= date(post.date, config.date_format) %>
+                    </span>
+                    <% if (post.categories && post.categories.length > 0) { %>
+                    <span class="publish-author">
+                        <i class="fas fa-bookmark fa-fw icon-category"></i>
+                        <% post.categories.forEach(function(category) { %>
+                        <a href="<%- url_for(category.path) %>" class="post-category"><%- category.name %></a>
+                        <% }); %>
+                    </span>
+                    <% } %>
                 </div>
-                <% }); %>
             </div>
-        </div>
-        <button class="carousel-3d-nav prev" aria-label="上一页">&#10094;</button>
-        <button class="carousel-3d-nav next" aria-label="下一页">&#10095;</button>
-        <div class="carousel-3d-dots"></div>
+        </article>
+        <% }); %>
     </div>
 
 </main>

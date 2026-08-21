@@ -56,6 +56,9 @@ index_generator:
 # Category & Tag
 default_category: uncategorized
 category_map:
+tag_generator:
+  per_page: 0
+
 tag_map:
 
 # Pagination
