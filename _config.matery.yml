@@ -344,7 +344,7 @@ myHonors:
   enable: true
   data:
     - name: 全国大学生数学建模大赛
-      level: 国家级 二等奖
+      level: 省级 二等奖
       year: '2017'
     - name: 合肥工业大学数学建模竞赛
       level: 校级 二等奖
