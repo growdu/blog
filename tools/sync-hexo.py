@@ -536,12 +536,15 @@ def build_about_markdown(profile, my_projects, my_skills,
             name = h.get('name', '')
             level = h.get('level', '')
             year = h.get('year', '')
+            year_html = (
+                f'<span class="honor-year">{year}</span>\n  '
+                if year else ''
+            )
             honor_lines.append(
                 f'<div class="honor-item">\n'
                 f'  <span class="honor-name">{name}</span>\n'
                 f'  <span class="honor-level">{level}</span>\n'
-                f'  <span class="honor-year">{year}</span>\n'
-                f'</div>'
+                f'  {year_html}</div>'
             )
     honor_block = '\n'.join(honor_lines) if honor_lines else ''
 
