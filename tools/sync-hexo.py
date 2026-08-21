@@ -250,10 +250,27 @@ def read_matery_about_config():
     profile = {}
     my_projects = {'enable': False, 'data': {}}
     my_skills = {'enable': False, 'data': {}}
+    my_education = {'enable': False, 'data': []}
+    my_honors = {'enable': False, 'data': []}
+
+    # Sections whose `data:` is a list of dicts (vs dict of dicts).
+    LIST_DATA_SECTIONS = {'myEducation', 'myHonors'}
+
+    # Map top-level section name -> mutable target dict so we can
+    # look up enable flag and data container uniformly.
+    section_data_map = {
+        'myProjects': my_projects,
+        'mySkills': my_skills,
+        'myEducation': my_education,
+        'myHonors': my_honors,
+    }
 
     current_top = None
     current_data_target = None
     current_data_key = None
+    current_list_item = None
+    current_dict_item = None  # dict we are currently populating with key/value pairs
+    current_list_key = None   # key whose list we are currently appending to
     in_multiline = False
     multiline_target = None
     multiline_block_indent = None
@@ -342,55 +359,95 @@ def read_matery_about_config():
                     multiline_value = []
                 else:
                     profile[key] = unquote(value)
-            elif current_top == 'myProjects':
+            elif current_top in section_data_map:
+                target = section_data_map[current_top]
                 if key == 'enable':
-                    my_projects['enable'] = (value == 'true')
+                    target['enable'] = (value == 'true')
                 elif key == 'data' and value == '':
-                    current_data_target = 'myProjects'
-            elif current_top == 'mySkills':
-                if key == 'enable':
-                    my_skills['enable'] = (value == 'true')
-                elif key == 'data' and value == '':
-                    current_data_target = 'mySkills'
+                    current_data_target = current_top
             current_data_key = None
+            current_list_item = None
             continue
 
-        # 4-space indent (item in data dict)
-        if indent == 4 and current_data_target and content.endswith(':'):
-            item_name = content[:-1].strip()
-            current_data_key = item_name
-            if current_data_target == 'myProjects':
-                my_projects['data'][item_name] = {}
-            else:
-                my_skills['data'][item_name] = {}
+        # 4-space indent (item in data dict or list)
+        if indent == 4 and current_data_target:
+            current_list_key = None  # exiting any prior list-collecting scope
+            if current_data_target in LIST_DATA_SECTIONS:
+                # List-of-dicts: each `- key: ...` starts a new item.
+                if content.startswith('- '):
+                    if current_list_item is not None:
+                        section_data_map[current_data_target]['data'].append(current_list_item)
+                    current_list_item = {}
+                    current_dict_item = current_list_item
+                    # Inline `- key: value` populates the new item's
+                    # first field; otherwise the key comes from a
+                    # following 6-space indent line.
+                    rest = content[2:].strip()
+                    if ':' in rest:
+                        k, _, v = rest.partition(':')
+                        current_dict_item[k.strip()] = unquote(v.strip())
+                continue
+            if content.endswith(':'):
+                item_name = content[:-1].strip()
+                current_data_key = item_name
+                section_data_map[current_data_target]['data'][item_name] = {}
+                current_dict_item = section_data_map[current_data_target]['data'][item_name]
             continue
 
         # 6-space indent (property of data item)
-        if indent == 6 and current_data_key and ':' in content:
+        if indent == 6 and ':' in content:
             key, _, value = content.partition(':')
             key = key.strip()
             value = unquote(value.strip())
-            if current_data_target == 'myProjects':
-                my_projects['data'][current_data_key][key] = value
-            else:
-                my_skills['data'][current_data_key][key] = value
+            current_list_key = None  # a fresh 6-space key resets nested-list mode
+            if current_dict_item is not None:
+                if value == '' and not content.startswith('- '):
+                    # Empty value: a following 8-space `- xxx` list
+                    # populates this key as a list.
+                    current_dict_item[key] = []
+                    current_list_key = key
+                elif content.startswith('- '):
+                    current_dict_item.setdefault(key, []).append(value)
+                else:
+                    current_dict_item[key] = value
+                continue
+            continue
+
+        # 8-space indent: items in a list under the current key.
+        if indent >= 8 and current_dict_item is not None and current_list_key:
+            target_list = current_dict_item.get(current_list_key)
+            if isinstance(target_list, list):
+                if content.startswith('- '):
+                    target_list.append(unquote(content[2:].strip()))
+                elif ':' in content:
+                    _, _, vv = content.partition(':')
+                    target_list.append(unquote(vv.strip()))
             continue
 
     if in_multiline:
         flush_multiline()
+    if current_list_item is not None and current_data_target in LIST_DATA_SECTIONS:
+        section_data_map[current_data_target]['data'].append(current_list_item)
 
-    return profile, my_projects, my_skills
+    return profile, my_projects, my_skills, my_education, my_honors
 
 
-def build_about_markdown(profile, my_projects, my_skills):
-    """Build source/about/index.md content from matery config + static sections."""
+def build_about_markdown(profile, my_projects, my_skills,
+                           my_education=None, my_honors=None):
+    """Build source/about/index.md content from matery config + static sections.
+
+    `my_education` and `my_honors` are optional list-of-dicts sections.
+    When provided and enabled, they render dedicated sections below the
+    project cards.
+    """
+    my_education = my_education or {'enable': False, 'data': []}
+    my_honors = my_honors or {'enable': False, 'data': []}
+
     intro = profile.get('introduction') or (
-        '资深后端研发工程师，专注数据库内核与分布式系统。深耕 PostgreSQL/openGauss '
-        '内核开发，熟悉 DCF、Raft 等一致性协议，对 DPDK/VPP 高性能数据面有丰富实践经验。'
-        '热爱技术分享，记录编程之路的每一步。'
+        '资深后端研发工程师，专注数据库内核与分布式系统。'
     )
 
-    # Build skill bars from mySkills.data
+    # Skill bars
     skill_lines = []
     if my_skills.get('enable') and my_skills.get('data'):
         for name, props in my_skills['data'].items():
@@ -403,40 +460,105 @@ def build_about_markdown(profile, my_projects, my_skills):
                 f'style="width:{pct};background:{bg}"></div></div>\n'
                 f'</div>'
             )
-    skills_block = '\n'.join(skill_lines) if skill_lines else (
-        '<div class="skill-bar">\n'
-        '  <div class="skill-row"><span>PostgreSQL / openGauss 内核开发</span><span>95%</span></div>\n'
-        '  <div class="skill-track"><div class="skill-fill" style="width:95%"></div></div>\n'
-        '</div>'
-    )
+    skills_block = '\n'.join(skill_lines) if skill_lines else ''
 
-    # Build project cards from myProjects.data
+    # Project cards (richer: time / company / role / achievements / tech)
     project_lines = []
     if my_projects.get('enable') and my_projects.get('data'):
         for name, props in my_projects['data'].items():
             icon = props.get('icon', 'fas fa-code')
-            bg = props.get('iconBackground', 'linear-gradient(to bottom right, #3367D6 0%, #0084FF 100%)')
+            bg = props.get('iconBackground',
+                           'linear-gradient(to bottom right, #3367D6 0%, #0084FF 100%)')
             url = props.get('url', '')
+            time = props.get('time', '')
+            company = props.get('company', '')
+            role = props.get('role', '')
             desc = props.get('desc', '')
+            tech = props.get('tech', '')
+            achievements = props.get('achievements') or []
+
+            meta_bits = [b for b in (company, role, time) if b]
+            meta_sep = ' · '.join(meta_bits)
+            meta_html = (
+                f'<div class="proj-meta">{meta_sep}</div>' if meta_bits else ''
+            )
+            ach_html = ''
+            if achievements:
+                items = ''.join(f'<li>{a}</li>' for a in achievements)
+                ach_html = f'<ul class="proj-achievements">{items}</ul>'
+            tech_html = (
+                f'<div class="proj-tech">技术栈: {tech}</div>' if tech else ''
+            )
+            url_attr = f' data-url="{url}"' if url else ''
+
             project_lines.append(
-                f'<div class="project-card" data-url="{url}">\n'
+                f'<div class="project-card"{url_attr}>\n'
                 f'  <div class="proj-icon" style="background:{bg};"><i class="{icon}"></i></div>\n'
-                f'  <div>\n'
+                f'  <div class="proj-body">\n'
                 f'    <div class="proj-name">{name}</div>\n'
+                f'    {meta_html}\n'
                 f'    <div class="proj-desc">{desc}</div>\n'
+                f'    {ach_html}\n'
+                f'    {tech_html}\n'
                 f'  </div>\n'
                 f'</div>'
             )
-    projects_block = '\n'.join(project_lines) if project_lines else (
-        '<div class="project-card">\n'
-        '  <div>\n'
-        '    <div class="proj-name">openGauss DCF 分布式一致性框架</div>\n'
-        '    <div class="proj-desc">深度参与 openGauss DCF (Distributed Consensus Framework) 模块开发</div>\n'
-        '  </div>\n'
-        '</div>'
+    projects_block = '\n'.join(project_lines) if project_lines else ''
+
+    # Education cards
+    edu_lines = []
+    if my_education.get('enable') and my_education.get('data'):
+        for ed in my_education['data']:
+            school = ed.get('school', '')
+            major = ed.get('major', '')
+            degree = ed.get('degree', '')
+            period = ed.get('period', '')
+            honor = ed.get('honor', '')
+            major_line = ' · '.join(b for b in (major, degree) if b)
+            honor_html = (
+                f'<div class="edu-honor"><i class="fas fa-award"></i> {honor}</div>'
+                if honor else ''
+            )
+            edu_lines.append(
+                f'<div class="edu-item">\n'
+                f'  <div class="edu-school">{school}</div>\n'
+                f'  <div class="edu-major">{major_line}</div>\n'
+                f'  <div class="edu-period">{period}</div>\n'
+                f'  {honor_html}\n'
+                f'</div>'
+            )
+    edu_block = '\n'.join(edu_lines) if edu_lines else ''
+
+    # Honors list
+    honor_lines = []
+    if my_honors.get('enable') and my_honors.get('data'):
+        for h in my_honors['data']:
+            name = h.get('name', '')
+            level = h.get('level', '')
+            year = h.get('year', '')
+            honor_lines.append(
+                f'<div class="honor-item">\n'
+                f'  <span class="honor-name">{name}</span>\n'
+                f'  <span class="honor-level">{level}</span>\n'
+                f'  <span class="honor-year">{year}</span>\n'
+                f'</div>'
+            )
+    honor_block = '\n'.join(honor_lines) if honor_lines else ''
+
+    # Compose optional sections
+    edu_section = (
+        f'\n## 教育背景\n\n<div class="edu-grid">\n{edu_block}\n</div>\n'
+        if edu_block else ''
+    )
+    honor_section = (
+        f'\n## 个人荣誉\n\n<div class="honor-list">\n{honor_block}\n</div>\n'
+        if honor_block else ''
     )
 
-    return f"""---
+    # Compose the template as a plain string and use str.format_map
+    # so we can keep literal CSS braces (single { is fine in format()
+    # when we use a SafeFormatter or escape via {{}}).
+    template = """---
 title: "关于我"
 date: 2026-07-29 00:00:00
 ---
@@ -470,8 +592,7 @@ fetch('https://api.github.com/users/growdu')
 
 ## 重点项目
 
-{projects_block}
-
+{projects_block}{edu_section}{honor_section}
 ## 编程之路
 
 <div class="timeline-item">
@@ -497,6 +618,14 @@ fetch('https://api.github.com/users/growdu')
 
 本博客记录编程之路的学习笔记和技术实践，涵盖数据库、分布式系统、高性能网络等领域。文章通过 Git 提交自动发布，使用 Hexo + matery 主题构建，部署在 GitHub Pages。
 """
+    return template.format(
+        intro=intro,
+        skills_block=skills_block,
+        projects_block=projects_block,
+        edu_section=edu_section,
+        honor_section=honor_section,
+    )
+
 
 
 def rewrite_images(content, file_dir):
@@ -689,8 +818,10 @@ def create_theme_pages():
     # to the rendered page automatically on the next sync.
     about_path = os.path.join(SRC, 'about', 'index.md')
     os.makedirs(os.path.dirname(about_path), exist_ok=True)
-    _profile, _my_projects, _my_skills = read_matery_about_config()
-    about_md = build_about_markdown(_profile, _my_projects, _my_skills)
+    _profile, _my_projects, _my_skills, _my_education, _my_honors = read_matery_about_config()
+    about_md = build_about_markdown(
+        _profile, _my_projects, _my_skills, _my_education, _my_honors
+    )
     with open(about_path, 'w', encoding='utf-8') as f:
         f.write(about_md)
 

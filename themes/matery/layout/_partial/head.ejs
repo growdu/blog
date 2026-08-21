@@ -178,9 +178,31 @@ a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2p
 .gh-stat-num{font-size:24px;font-weight:700;color:#009688}
 .gh-stat-label{font-size:13px;color:#666;margin-top:4px}
 /* About page project cards */
-.project-card{display:flex;gap:12px;padding:14px;margin:8px 0;background:#f9f9f9;border-radius:8px;border-left:3px solid #009688}
-.project-card .proj-name{font-weight:600;font-size:15px}
-.project-card .proj-desc{font-size:13px;color:#666;margin-top:4px}
+.project-card{display:flex;gap:14px;padding:16px;margin:10px 0;background:#f9f9f9;border-radius:10px;border-left:3px solid #009688;align-items:flex-start;transition:transform .2s ease,box-shadow .2s ease}
+.project-card:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,150,136,.12)}
+.project-card .proj-icon{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+.project-card .proj-body{flex:1;min-width:0}
+.project-card .proj-name{font-weight:700;font-size:15px;color:#333}
+.project-card .proj-meta{font-size:12px;color:#888;margin-top:2px;line-height:1.5}
+.project-card .proj-desc{font-size:13px;color:#666;margin-top:8px;line-height:1.7}
+.project-card .proj-achievements{margin:8px 0 0;padding-left:18px;font-size:13px;color:#555;line-height:1.7}
+.project-card .proj-achievements li{margin-bottom:2px}
+.project-card .proj-achievements li::marker{color:#009688}
+.project-card .proj-tech{font-size:12px;color:#777;margin-top:8px;padding-top:6px;border-top:1px dashed #e0e0e0}
+/* About page - education grid */
+.edu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin:18px 0}
+.edu-item{padding:16px 18px;background:#f9f9f9;border-radius:10px;border-left:3px solid #009688;transition:transform .2s ease,box-shadow .2s ease}
+.edu-item:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,150,136,.12)}
+.edu-school{font-size:16px;font-weight:700;color:#333}
+.edu-major{font-size:13px;color:#666;margin-top:4px}
+.edu-period{font-size:12px;color:#009688;margin-top:6px;font-weight:600}
+.edu-honor{font-size:12px;color:#e65100;margin-top:6px;display:flex;align-items:center;gap:4px}
+/* About page - honor list */
+.honor-list{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.honor-item{display:flex;align-items:center;gap:14px;padding:10px 14px;background:#f9f9f9;border-radius:8px;border-left:3px solid #ee5a24;flex-wrap:wrap}
+.honor-name{font-weight:600;color:#333;font-size:14px;flex:1;min-width:140px}
+.honor-level{font-size:12px;color:#e65100;background:#fff3e0;padding:2px 10px;border-radius:10px}
+.honor-year{font-size:12px;color:#888;margin-left:auto}
 /* Projects page - grid of repo cards */
 .proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin:24px 0}
 .proj-grid-card{display:flex;flex-direction:column;padding:18px;background:#fff;border-radius:12px;border:1px solid #eee;box-shadow:0 2px 8px rgba(0,0,0,.04);transition:transform .25s ease,box-shadow .25s ease,border-color .25s ease;text-decoration:none;color:inherit;overflow:hidden}

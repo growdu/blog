@@ -202,19 +202,18 @@ subscribe:
   # 自定义备注 (e.g. "想第一时间收到更新，可以订阅公众号：XX")
   note: '微信公众号搜索 "growdu" 即可订阅'
 
-# ─── Personal profile (overrides theme defaults) ───────────────────────
-# Sourced from ~/personnal/段应寿-架构师数据库.pdf
+# ─── Personal profile (overrides theme defaults) ───────────────
+# Source: ~/Documents/jianli/段应寿的求职简历.pdf + 新增经历（海量数据 / 电科金仓）
 # 头像: /medias/avatar.jpg (1.jpg copied to themes/matery/source/medias/avatar.jpg by patch-theme.py)
 profile:
   avatar: /medias/avatar.jpg
   career: 数据库内核开发专家 / 架构师
   introduction: |
-    段应寿（growdu）— 8 年工作经验，专注于数据库内核、高可用架构与高性能网络。
-    · 现任海量数据数据库内核开发专家（2026.03 - 至今），主导逻辑复制 DDL 同步、DDL replay 框架等核心特性。
-    · 曾任电科金仓高级软件工程师（2022.04 - 2026.03），主导过两地三中心、三地五中心等多中心高可用架构。
-    · 早期在华为、亨通、恒生电子负责 DPDK / 用户态协议栈 / 4 层转发研发。
-    邮箱: growdu@gmail.com  ｜  博客: https://growdu.cn
-    GitHub: https://github.com/growdu  ｜  Gitee: https://gitee.com/growdu
+    段应寿（growdu），合肥工业大学机械设计制造及其自动化本科。
+    现为海量数据数据库内核开发专家，主导 PostgreSQL 逻辑复制 DDL 同步与 DDL replay 框架。
+    前电科金仓高级软件工程师，主导两地三中心 / 三地五中心等金融级高可用集群。
+    早期在华为云、恒生聚源负责 DPDK 用户态协议栈与文件解析。
+    ·  GitHub: https://github.com/growdu  ｜  Gitee: https://gitee.com/growdu
 
 # 我的项目 (在关于页面渲染项目卡片)
 myProjects:
@@ -224,27 +223,78 @@ myProjects:
       icon: fas fa-database
       iconBackground: 'linear-gradient(to bottom right, #3367D6 0%, #0084FF 100%)'
       url: 'https://github.com/growdu/blog'
-      desc: 在海量数据主导的 PostgreSQL 逻辑复制 DDL 同步架构设计与实现，支持 PG 模式与 SQL Server 模式，配合 DDL replay 框架实现端到端一致性。
+      time: '2024.06 - 至今'
+      company: 海量数据
+      role: 数据库内核开发专家 / 主架构师
+      desc: 在海量数据主导 PostgreSQL 逻辑复制 DDL 同步架构的设计与实现，目标是让逻辑复制在 DDL 场景下也能做到端到端一致。
+      achievements:
+        - 设计并实现跨 PG / SQL Server 双模式的逻辑复制 DDL 同步通道
+        - 主导 DDL replay 框架落地，把任意 DDL 翻译为逻辑解码可消费的子操作序列
+        - 配合 logical_decode 子模块完成 13 篇源码修炼系列文章的实战沉淀
+      tech: 'C / PostgreSQL 内核 / 逻辑解码 / libpq / Raft'
     电科金仓两地三中心:
       icon: fas fa-network-wired
       iconBackground: 'linear-gradient(to bottom right, #F06292 0%, #EF5350 100%)'
       url: 'https://github.com/growdu/blog'
-      desc: 基于 Raft + epoll + Protobuf 设计分布式元信息存储系统，实现 RTO≈0、RPO=0 的金融级高可用数据库集群。
+      time: '2022.04 - 2026.03'
+      company: 电科金仓
+      role: 高级软件工程师 / 架构师
+      desc: 主导两地三中心金融级高可用数据库集群的架构设计与核心模块开发，覆盖同城主备、异地灾备与仲裁切换。
+      achievements:
+        - 基于 Raft + epoll + Protobuf 设计分布式元信息存储系统
+        - 实现 RTO≈0、RPO=0 的金融级切换能力，支持三地五中心扩展
+        - 在金融、政务等核心场景完成多次生产级演练与上线
+      tech: 'C/C++ / Raft / Protobuf / epoll / PostgreSQL 衍生内核'
     高性能协议栈测试仪:
       icon: fas fa-bolt
       iconBackground: 'linear-gradient(to bottom right, #FF9966 0%, #FF5E62 100%)'
       url: 'https://github.com/growdu/blog'
-      desc: 基于 DPDK / AF_XDP 实现用户态 TCP/UDP 代理，绕过内核协议栈，完整实现 TCP 状态机（建立 / 保持 / 终止）。
+      time: '2020.03 - 2022.04'
+      company: 华为云应用平台部
+      role: 底层软件工程师
+      desc: 基于 DPDK / AF_XDP 实现用户态 TCP/UDP 代理与高精度测试工具，绕过内核协议栈完整跑通 TCP 状态机。
+      achievements:
+        - 完整实现 TCP 三次握手 / 保活 / 四次挥手，状态机跨平台稳定
+        - 高精度时延与高精度均匀发包能力，用于 5G / 4G / 3G 合法监听协议验证
+        - 在 arm64 / x86_64 双平台落地，配套 wireshark 抓包分析工具链
+      tech: 'C / DPDK / AF_XDP / linux (arm/x86) / cmake / wireshark'
+    恒生聚源文件工厂:
+      icon: fas fa-file-alt
+      iconBackground: 'linear-gradient(to bottom right, #6A5ACD 0%, #9370DB 100%)'
+      url: 'https://github.com/growdu/blog'
+      time: '2018.07 - 2020.03'
+      company: 恒生聚源数据服务有限公司
+      role: 后端工程师
+      desc: 通用文件解析与提取平台，覆盖 PDF / Office / 金融文档等格式的结构化抽取与对外服务化。
+      achievements:
+        - 主导文件工厂架构设计，把多格式解析统一为插件化的流水线
+        - 落地 PDF 表格识别模块，配合 pdfbox / xpdf 完成版面还原
+        - 通过 restful API 对外提供文件解析能力，支撑下游业务系统
+      tech: 'Java / dotnet / pdfbox / xpdf / restful API'
     oh-my-code:
       icon: fab fa-docker
       iconBackground: 'linear-gradient(to bottom right, #2496ED 0%, #41B883 100%)'
       url: 'https://github.com/growdu/oh-my-code'
+      time: '2023 - 至今'
+      company: 个人项目
+      role: 作者
       desc: 用 Docker 把研发编译环境虚拟化，集成 code-server、C 编译环境等常用组件，让编程随时随地开始。
+      achievements:
+        - 一条命令拉起 code-server + C 编译环境的开发容器
+        - 沉淀常用工具脚本与 dotfiles，避免换机就要重新折腾
+      tech: 'Docker / code-server / shell / dotfiles'
     oh-my-search:
       icon: fas fa-search
       iconBackground: 'linear-gradient(to bottom right, #29B6F6 0%, #1E88E5 100%)'
       url: 'https://github.com/growdu/oh-my-search'
+      time: '2024 - 至今'
+      company: 个人项目
+      role: 作者
       desc: 用 Elasticsearch + search-ui 搭建个人搜索引擎，快速查找资源与文件。
+      achievements:
+        - 用 ES 聚合本地 + 网盘 + 笔记三处资源，统一搜索入口
+        - search-ui 提供可定制的前端，开箱即用
+      tech: 'Elasticsearch / search-ui / Docker'
 
 # 专业技能 (在关于页面渲染进度条)
 mySkills:
@@ -274,3 +324,31 @@ mySkills:
     Docker / 容器化:
       background: 'linear-gradient(to right, #2496ED 0%, #41B883 100%)'
       percent: 80%
+
+# 教育背景 (在关于页面渲染学历卡片)
+myEducation:
+  enable: true
+  data:
+    - school: 合肥工业大学
+      major: 机械设计制造及其自动化
+      degree: 本科
+      period: '2014 - 2018'
+      honor: 工大图书王
+    - school: 腾冲市第一中学
+      major: 高中
+      degree: 高中
+      period: '2012 - 2014'
+
+# 个人荣誉 (在关于页面渲染荣誉列表)
+myHonors:
+  enable: true
+  data:
+    - name: 全国大学生数学建模大赛
+      level: 国家级 二等奖
+      year: '2017'
+    - name: 合肥工业大学数学建模竞赛
+      level: 校级 二等奖
+      year: '2017'
+    - name: 合肥工业大学工大图书王
+      level: 校级 称号
+      year: '2017'
