@@ -193,9 +193,9 @@ code[class*="language-"]{background:transparent!important;padding:0;font-family:
 </style>"""
 
 inject_js = """<% if (is_post()) { %>
-<script src="<%= url_for('/libs/prism/prism-core.min.js') %>"></script>
-<script src="<%= url_for('/libs/prism/prism-autoloader.min.js') %>"></script>
-<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='<%= url_for("/libs/prism/components/") %>';}</script>
+<script src="<%= url_for('/lib/prism/prism-core.min.js') %>"></script>
+<script src="<%= url_for('/lib/prism/prism-autoloader.min.js') %>"></script>
+<script>if(window.Prism&&Prism.plugins&&Prism.plugins.autoloader){Prism.plugins.autoloader.languages_path='<%= url_for("/lib/prism/components/") %>';}</script>
 <script src="/lib/mermaid/mermaid.min.js"></script>
 <script>if(window.mermaid){mermaid.initialize({startOnLoad:false,theme:'default'});mermaid.run();}</script>
 <% } %>
@@ -212,7 +212,7 @@ for root, dirs, files in os.walk(os.path.join(theme_dir, 'layout')):
         if '</head>' in c and '<meta property="og:title"' not in c:
             c = c.replace('</head>', inject_css + '\n</head>', 1)
             changed = True
-        if '</body>' in c and '/libs/prism/prism-core.min.js' not in c:
+        if '</body>' in c and '/lib/prism/prism-core.min.js' not in c:
             c = c.replace('</body>', inject_js + '\n</body>', 1)
             changed = True
         if changed:
