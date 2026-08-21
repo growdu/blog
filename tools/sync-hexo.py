@@ -231,6 +231,274 @@ def yaml_escape(s):
     return s.replace('\\','\\\\').replace('"','\\"')
 
 
+def read_matery_about_config():
+    """Read profile/myProjects/mySkills from _config.matery.yml.
+
+    Lightweight YAML parser tailored to the structure used by the about
+    section. Handles comments, quoted strings, multiline `|` blocks, and
+    the 0/2/4/6-space indent structure used in _config.matery.yml.
+
+    Returns (profile, my_projects, my_skills) as dicts.
+    """
+    config_path = '_config.matery.yml'
+    if not os.path.isfile(config_path):
+        return {}, {'enable': False, 'data': {}}, {'enable': False, 'data': {}}
+
+    with open(config_path, encoding='utf-8') as f:
+        lines = f.readlines()
+
+    profile = {}
+    my_projects = {'enable': False, 'data': {}}
+    my_skills = {'enable': False, 'data': {}}
+
+    current_top = None
+    current_data_target = None
+    current_data_key = None
+    in_multiline = False
+    multiline_target = None
+    multiline_block_indent = None
+    multiline_value = []
+
+    def strip_comment(s):
+        in_q = False
+        q_char = ''
+        for i, c in enumerate(s):
+            if c in ('"', "'") and (i == 0 or s[i-1] != '\\'):
+                if not in_q:
+                    in_q = True; q_char = c
+                elif c == q_char:
+                    in_q = False
+            elif c == '#' and not in_q:
+                return s[:i].rstrip()
+        return s.rstrip()
+
+    def flush_multiline():
+        nonlocal in_multiline, multiline_value, multiline_target
+        if multiline_target == 'profile_intro':
+            # Drop leading blank lines, then lstrip the first content line
+            # so the introduction starts flush-left even if the YAML
+            # author indented the first line relative to the indicator.
+            while multiline_value and not multiline_value[0].strip():
+                multiline_value.pop(0)
+            if multiline_value:
+                multiline_value[0] = multiline_value[0].lstrip()
+            profile['introduction'] = '\n'.join(multiline_value).rstrip()
+        in_multiline = False
+        multiline_value = []
+        multiline_target = None
+
+    def unquote(v):
+        """Strip matching outer quotes from a YAML scalar."""
+        v = v.strip()
+        if len(v) >= 2 and v[0] == v[-1] and v[0] in ('"', "'"):
+            return v[1:-1]
+        return v
+
+    for raw in lines:
+        stripped = raw.rstrip('\n').rstrip('\r')
+        if not stripped.strip():
+            if in_multiline:
+                multiline_value.append('')
+            continue
+        if stripped.lstrip().startswith('#'):
+            continue
+
+        indent = len(stripped) - len(stripped.lstrip())
+        content = strip_comment(stripped[indent:])
+
+        if in_multiline:
+            # YAML literal block scalars use the indent of the FIRST
+            # non-empty content line as the block indent.
+            if multiline_block_indent is None and stripped.strip():
+                multiline_block_indent = indent
+            if multiline_block_indent is not None and indent >= multiline_block_indent:
+                line_text = stripped[multiline_block_indent:]
+                multiline_value.append(line_text)
+                continue
+            else:
+                flush_multiline()
+
+        if not content:
+            continue
+
+        # Top-level key (indent 0)
+        if indent == 0 and content.endswith(':'):
+            current_top = content[:-1].strip()
+            current_data_target = None
+            current_data_key = None
+            continue
+
+        # 2-space indent (subkey of top-level section)
+        if indent == 2 and ':' in content:
+            key, _, value = content.partition(':')
+            key = key.strip()
+            value = value.strip()
+
+            if current_top == 'profile':
+                if key == 'introduction' and value == '|':
+                    in_multiline = True
+                    multiline_target = 'profile_intro'
+                    multiline_block_indent = None
+                    multiline_value = []
+                else:
+                    profile[key] = unquote(value)
+            elif current_top == 'myProjects':
+                if key == 'enable':
+                    my_projects['enable'] = (value == 'true')
+                elif key == 'data' and value == '':
+                    current_data_target = 'myProjects'
+            elif current_top == 'mySkills':
+                if key == 'enable':
+                    my_skills['enable'] = (value == 'true')
+                elif key == 'data' and value == '':
+                    current_data_target = 'mySkills'
+            current_data_key = None
+            continue
+
+        # 4-space indent (item in data dict)
+        if indent == 4 and current_data_target and content.endswith(':'):
+            item_name = content[:-1].strip()
+            current_data_key = item_name
+            if current_data_target == 'myProjects':
+                my_projects['data'][item_name] = {}
+            else:
+                my_skills['data'][item_name] = {}
+            continue
+
+        # 6-space indent (property of data item)
+        if indent == 6 and current_data_key and ':' in content:
+            key, _, value = content.partition(':')
+            key = key.strip()
+            value = unquote(value.strip())
+            if current_data_target == 'myProjects':
+                my_projects['data'][current_data_key][key] = value
+            else:
+                my_skills['data'][current_data_key][key] = value
+            continue
+
+    if in_multiline:
+        flush_multiline()
+
+    return profile, my_projects, my_skills
+
+
+def build_about_markdown(profile, my_projects, my_skills):
+    """Build source/about/index.md content from matery config + static sections."""
+    intro = profile.get('introduction') or (
+        '资深后端研发工程师，专注数据库内核与分布式系统。深耕 PostgreSQL/openGauss '
+        '内核开发，熟悉 DCF、Raft 等一致性协议，对 DPDK/VPP 高性能数据面有丰富实践经验。'
+        '热爱技术分享，记录编程之路的每一步。'
+    )
+
+    # Build skill bars from mySkills.data
+    skill_lines = []
+    if my_skills.get('enable') and my_skills.get('data'):
+        for name, props in my_skills['data'].items():
+            bg = props.get('background', 'linear-gradient(to right, #336791 0%, #4B8BBE 100%)')
+            pct = props.get('percent', '80%')
+            skill_lines.append(
+                f'<div class="skill-bar">\n'
+                f'  <div class="skill-row"><span>{name}</span><span>{pct}</span></div>\n'
+                f'  <div class="skill-track"><div class="skill-fill" '
+                f'style="width:{pct};background:{bg}"></div></div>\n'
+                f'</div>'
+            )
+    skills_block = '\n'.join(skill_lines) if skill_lines else (
+        '<div class="skill-bar">\n'
+        '  <div class="skill-row"><span>PostgreSQL / openGauss 内核开发</span><span>95%</span></div>\n'
+        '  <div class="skill-track"><div class="skill-fill" style="width:95%"></div></div>\n'
+        '</div>'
+    )
+
+    # Build project cards from myProjects.data
+    project_lines = []
+    if my_projects.get('enable') and my_projects.get('data'):
+        for name, props in my_projects['data'].items():
+            icon = props.get('icon', 'fas fa-code')
+            bg = props.get('iconBackground', 'linear-gradient(to bottom right, #3367D6 0%, #0084FF 100%)')
+            url = props.get('url', '')
+            desc = props.get('desc', '')
+            project_lines.append(
+                f'<div class="project-card" data-url="{url}">\n'
+                f'  <div class="proj-icon" style="background:{bg};"><i class="{icon}"></i></div>\n'
+                f'  <div>\n'
+                f'    <div class="proj-name">{name}</div>\n'
+                f'    <div class="proj-desc">{desc}</div>\n'
+                f'  </div>\n'
+                f'</div>'
+            )
+    projects_block = '\n'.join(project_lines) if project_lines else (
+        '<div class="project-card">\n'
+        '  <div>\n'
+        '    <div class="proj-name">openGauss DCF 分布式一致性框架</div>\n'
+        '    <div class="proj-desc">深度参与 openGauss DCF (Distributed Consensus Framework) 模块开发</div>\n'
+        '  </div>\n'
+        '</div>'
+    )
+
+    return f"""---
+title: "关于我"
+date: 2026-07-29 00:00:00
+---
+
+# 关于我
+
+{intro}
+
+## GitHub 数据
+
+<div id="gh-stats" class="gh-stats">
+  <div class="gh-stat"><div class="gh-stat-num">--</div><div class="gh-stat-label">加载中</div></div>
+</div>
+<script>
+fetch('https://api.github.com/users/growdu')
+  .then(function(r){{return r.json()}})
+  .then(function(d){{
+    var el=document.getElementById('gh-stats');
+    if(el&&d) el.innerHTML=
+      '<div class="gh-stat"><div class="gh-stat-num">'+d.public_repos+'</div><div class="gh-stat-label">公开仓库</div></div>'+
+      '<div class="gh-stat"><div class="gh-stat-num">'+d.followers+'</div><div class="gh-stat-label">关注者</div></div>'+
+      '<div class="gh-stat"><div class="gh-stat-num">'+d.following+'</div><div class="gh-stat-label">关注中</div></div>'+
+      '<div class="gh-stat"><div class="gh-stat-num">'+(d.created_at?d.created_at.substring(0,4):'--')+'</div><div class="gh-stat-label">加入GitHub</div></div>';
+  }})
+  .catch(function(){{}});
+</script>
+
+## 技术栈
+
+{skills_block}
+
+## 重点项目
+
+{projects_block}
+
+## 编程之路
+
+<div class="timeline-item">
+  <div class="timeline-date">持续更新</div>
+  <div>数据库内核开发、分布式系统设计、高性能网络编程的持续学习与实践</div>
+</div>
+<div class="timeline-item">
+  <div class="timeline-date">核心技术方向</div>
+  <div>PostgreSQL/openGauss 内核、DCF/Raft 一致性协议、DPDK/VPP 数据面、高可用架构</div>
+</div>
+<div class="timeline-item">
+  <div class="timeline-date">知识沉淀</div>
+  <div>473+ 篇技术笔记，涵盖数据库、分布式系统、算法、网络、编程基础等领域</div>
+</div>
+
+## 联系方式
+
+- **GitHub**: https://github.com/growdu
+- **Email**: growdu@gmail.com
+- **QQ**: 2689304284
+
+## 关于本博客
+
+本博客记录编程之路的学习笔记和技术实践，涵盖数据库、分布式系统、高性能网络等领域。文章通过 Git 提交自动发布，使用 Hexo + matery 主题构建，部署在 GitHub Pages。
+"""
+
+
 def rewrite_images(content, file_dir):
     """Rewrite ![alt](rel_path) -> ![alt](images/<resolved>)."""
     def repl(m):
@@ -416,120 +684,13 @@ def create_theme_pages():
         with open(path, 'w', encoding='utf-8') as f:
             f.write(fm)
 
-    # About page
+    # About page - generated from _config.matery.yml profile/myProjects/mySkills
+    # so updates to the config (e.g. career dates, project list) flow through
+    # to the rendered page automatically on the next sync.
     about_path = os.path.join(SRC, 'about', 'index.md')
     os.makedirs(os.path.dirname(about_path), exist_ok=True)
-    about_md = """---
-title: "关于我"
-date: 2026-07-29 00:00:00
----
-
-# 关于我
-
-资深后端研发工程师，专注数据库内核与分布式系统。深耕 PostgreSQL/openGauss 内核开发，熟悉 DCF、Raft 等一致性协议，对 DPDK/VPP 高性能数据面有丰富实践经验。热爱技术分享，记录编程之路的每一步。
-
-## GitHub 数据
-
-<div id="gh-stats" class="gh-stats">
-  <div class="gh-stat"><div class="gh-stat-num">--</div><div class="gh-stat-label">加载中</div></div>
-</div>
-<script>
-fetch('https://api.github.com/users/growdu')
-  .then(function(r){return r.json()})
-  .then(function(d){
-    var el=document.getElementById('gh-stats');
-    if(el&&d) el.innerHTML=
-      '<div class="gh-stat"><div class="gh-stat-num">'+d.public_repos+'</div><div class="gh-stat-label">公开仓库</div></div>'+
-      '<div class="gh-stat"><div class="gh-stat-num">'+d.followers+'</div><div class="gh-stat-label">关注者</div></div>'+
-      '<div class="gh-stat"><div class="gh-stat-num">'+d.following+'</div><div class="gh-stat-label">关注中</div></div>'+
-      '<div class="gh-stat"><div class="gh-stat-num">'+(d.created_at?d.created_at.substring(0,4):'--')+'</div><div class="gh-stat-label">加入GitHub</div></div>';
-  })
-  .catch(function(){});
-</script>
-
-## 技术栈
-
-<div class="skill-bar">
-  <div class="skill-row"><span>PostgreSQL / openGauss 内核开发</span><span>95%</span></div>
-  <div class="skill-track"><div class="skill-fill" style="width:95%"></div></div>
-</div>
-<div class="skill-bar">
-  <div class="skill-row"><span>分布式一致性协议 (Raft / DCF)</span><span>90%</span></div>
-  <div class="skill-track"><div class="skill-fill" style="width:90%"></div></div>
-</div>
-<div class="skill-bar">
-  <div class="skill-row"><span>C / C++ 系统编程</span><span>90%</span></div>
-  <div class="skill-track"><div class="skill-fill" style="width:90%"></div></div>
-</div>
-<div class="skill-bar">
-  <div class="skill-row"><span>DPDK / VPP 高性能数据面</span><span>85%</span></div>
-  <div class="skill-track"><div class="skill-fill" style="width:85%"></div></div>
-</div>
-<div class="skill-bar">
-  <div class="skill-row"><span>Linux 系统与网络编程</span><span>88%</span></div>
-  <div class="skill-track"><div class="skill-fill" style="width:88%"></div></div>
-</div>
-<div class="skill-bar">
-  <div class="skill-row"><span>高可用集群架构设计</span><span>85%</span></div>
-  <div class="skill-track"><div class="skill-fill" style="width:85%"></div></div>
-</div>
-<div class="skill-bar">
-  <div class="skill-row"><span>Python / Shell 自动化</span><span>80%</span></div>
-  <div class="skill-track"><div class="skill-fill" style="width:80%"></div></div>
-</div>
-
-## 重点项目
-
-<div class="project-card">
-  <div>
-    <div class="proj-name">openGauss DCF 分布式一致性框架</div>
-    <div class="proj-desc">深度参与 openGauss DCF (Distributed Consensus Framework) 模块开发，涉及投票系统、写入机制、运行机制等核心组件</div>
-  </div>
-</div>
-<div class="project-card">
-  <div>
-    <div class="proj-name">逻辑解码 DDL Replay 框架</div>
-    <div class="proj-desc">设计并实现逻辑解码 DDL 重放框架，支持 DDL 操作的逻辑复制</div>
-  </div>
-</div>
-<div class="project-card">
-  <div>
-    <div class="proj-name">oh-my-search 搜索引擎</div>
-    <div class="proj-desc">基于 Elasticsearch 构建的搜索解决方案</div>
-  </div>
-</div>
-<div class="project-card">
-  <div>
-    <div class="proj-name">Corosync / Pacemaker 高可用集群</div>
-    <div class="proj-desc">深入研究并实践 Corosync 仲裁系统、Pacemaker 集群资源管理，涉及 QDevice、Totem 协议等</div>
-  </div>
-</div>
-
-## 编程之路
-
-<div class="timeline-item">
-  <div class="timeline-date">持续更新</div>
-  <div>数据库内核开发、分布式系统设计、高性能网络编程的持续学习与实践</div>
-</div>
-<div class="timeline-item">
-  <div class="timeline-date">核心技术方向</div>
-  <div>PostgreSQL/openGauss 内核、DCF/Raft 一致性协议、DPDK/VPP 数据面、高可用架构</div>
-</div>
-<div class="timeline-item">
-  <div class="timeline-date">知识沉淀</div>
-  <div>473+ 篇技术笔记，涵盖数据库、分布式系统、算法、网络、编程基础等领域</div>
-</div>
-
-## 联系方式
-
-- **GitHub**: https://github.com/growdu
-- **Email**: growdu@gmail.com
-- **QQ**: 2689304284
-
-## 关于本博客
-
-本博客记录编程之路的学习笔记和技术实践，涵盖数据库、分布式系统、高性能网络等领域。文章通过 Git 提交自动发布，使用 Hexo + matery 主题构建，部署在 GitHub Pages。
-"""
+    _profile, _my_projects, _my_skills = read_matery_about_config()
+    about_md = build_about_markdown(_profile, _my_projects, _my_skills)
     with open(about_path, 'w', encoding='utf-8') as f:
         f.write(about_md)
 
@@ -835,7 +996,6 @@ def create_database_landing_page(database_posts):
     print('Created ' + os.path.relpath(db_path, '.'))
 
 
-
     # Projects page (custom page with card grid for growdu's GitHub projects)
     create_projects_page()
     print('Created projects landing page')
@@ -886,7 +1046,6 @@ def create_projects_page():
         ('go-work',      'Go 语言学习与练习代码。',                                                               'Go',        0, 'https://github.com/growdu/go-work'),
         ('CSharpTest',   'C# 语言的测试与示例代码。',                                                             'C#',        1, 'https://github.com/growdu/CSharpTest'),
     ]
-
 
 
     def card(name, desc, lang, stars, url):
