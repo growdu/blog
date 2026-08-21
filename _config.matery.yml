@@ -201,3 +201,76 @@ subscribe:
   bilibili: ''
   # 自定义备注 (e.g. "想第一时间收到更新，可以订阅公众号：XX")
   note: '微信公众号搜索 "growdu" 即可订阅'
+
+# ─── Personal profile (overrides theme defaults) ───────────────────────
+# Sourced from ~/personnal/段应寿-架构师数据库.pdf
+# 头像: /medias/avatar.jpg (1.jpg copied to themes/matery/source/medias/avatar.jpg by patch-theme.py)
+profile:
+  avatar: /medias/avatar.jpg
+  career: 数据库内核开发专家 / 架构师
+  introduction: |
+    段应寿（growdu）— 8 年工作经验，专注于数据库内核、高可用架构与高性能网络。
+    现任海量数据数据库内核开发专家，主导逻辑复制 DDL 同步、DDL replay 框架等核心特性。
+    曾任电科金仓高级软件工程师，主导过两地三中心、三地五中心等多中心高可用架构。
+    早期在华为、亨通、恒生电子负责 DPDK / 用户态协议栈 / 4 层转发研发。
+    邮箱: growdu@gmail.com  ｜  博客: https://growdu.cn
+    GitHub: https://github.com/growdu  ｜  Gitee: https://gitee.com/growdu
+
+# 我的项目 (在关于页面渲染项目卡片)
+myProjects:
+  enable: true
+  data:
+    PostgreSQL 逻辑复制 DDL 同步:
+      icon: fas fa-database
+      iconBackground: 'linear-gradient(to bottom right, #3367D6 0%, #0084FF 100%)'
+      url: 'https://github.com/growdu/blog'
+      desc: 在海量数据主导的 PostgreSQL 逻辑复制 DDL 同步架构设计与实现，支持 PG 模式与 SQL Server 模式，配合 DDL replay 框架实现端到端一致性。
+    电科金仓两地三中心:
+      icon: fas fa-network-wired
+      iconBackground: 'linear-gradient(to bottom right, #F06292 0%, #EF5350 100%)'
+      url: 'https://github.com/growdu/blog'
+      desc: 基于 Raft + epoll + Protobuf 设计分布式元信息存储系统，实现 RTO≈0、RPO=0 的金融级高可用数据库集群。
+    高性能协议栈测试仪:
+      icon: fas fa-bolt
+      iconBackground: 'linear-gradient(to bottom right, #FF9966 0%, #FF5E62 100%)'
+      url: 'https://github.com/growdu/blog'
+      desc: 基于 DPDK / AF_XDP 实现用户态 TCP/UDP 代理，绕过内核协议栈，完整实现 TCP 状态机（建立 / 保持 / 终止）。
+    oh-my-code:
+      icon: fab fa-docker
+      iconBackground: 'linear-gradient(to bottom right, #2496ED 0%, #41B883 100%)'
+      url: 'https://github.com/growdu/oh-my-code'
+      desc: 用 Docker 把研发编译环境虚拟化，集成 code-server、C 编译环境等常用组件，让编程随时随地开始。
+    oh-my-search:
+      icon: fas fa-search
+      iconBackground: 'linear-gradient(to bottom right, #29B6F6 0%, #1E88E5 100%)'
+      url: 'https://github.com/growdu/oh-my-search'
+      desc: 用 Elasticsearch + search-ui 搭建个人搜索引擎，快速查找资源与文件。
+
+# 专业技能 (在关于页面渲染进度条)
+mySkills:
+  enable: true
+  data:
+    PostgreSQL 内核:
+      background: 'linear-gradient(to right, #336791 0%, #4B8BBE 100%)'
+      percent: 90%
+    分布式 / 高可用架构:
+      background: 'linear-gradient(to right, #FF0066 0%, #FF00CC 100%)'
+      percent: 90%
+    DPDK / 用户态协议栈:
+      background: 'linear-gradient(to right, #FF9900 0%, #FFCC00 100%)'
+      percent: 88%
+    TCP/IP 内核协议栈:
+      background: 'linear-gradient(to right, #2196F3 0%, #42A5F5 100%)'
+      percent: 88%
+    C / C++ 系统编程:
+      background: 'linear-gradient(to right, #00599C 0%, #004482 100%)'
+      percent: 85%
+    Linux 内核:
+      background: 'linear-gradient(to right, #FCC624 0%, #FFB900 100%)'
+      percent: 80%
+    Go / Python:
+      background: 'linear-gradient(to right, #00ADD8 0%, #5DC9E2 100%)'
+      percent: 75%
+    Docker / 容器化:
+      background: 'linear-gradient(to right, #2496ED 0%, #41B883 100%)'
+      percent: 80%
