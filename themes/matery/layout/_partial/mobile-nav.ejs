@@ -5,10 +5,12 @@ configRoot = (configRoot === null || configRoot === undefined || configRoot === 
 <div id="mobile-nav" class="side-nav sidenav">
 
     <div class="mobile-head bg-color">
+        <a href="<%- url_for('/about/') %>" class="mobile-head-link" aria-label="访问关于我页面">
         <% if (theme.logo !== undefined && theme.logo.length > 0) { %>
-        <img src="<%- theme.jsDelivr.url %><%- url_for(theme.logo) %>" class="logo-img circle responsive-img">
+        <img src="<%- theme.jsDelivr.url %><%- url_for(theme.logo) %>" class="logo-img circle responsive-img" alt="<%= config.title %>">
         <% } %>
         <div class="logo-name"><%= config.title %></div>
+        </a>
         <div class="logo-desc">
             <% if (config.description && config.description.length > 0) { %>
             <%= config.description %>

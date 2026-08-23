@@ -609,9 +609,9 @@ def build_about_markdown(profile, my_projects, my_skills,
     template = """---
 title: "关于我"
 date: 2026-07-29 00:00:00
+layout: about
+type: about
 ---
-
-# 关于我
 
 {intro_block}{timeline_section}
 ## 重点项目

@@ -209,6 +209,7 @@ profile:
   avatar: /medias/avatar.jpg
   career: 数据库内核开发专家 / 架构师
   introduction: |
+    专注数据库内核、分布式一致性协议和高性能网络系统，热爱通过源码阅读、工程实践与持续写作，把复杂系统讲清楚。
 
 # 我的时间线 (在「关于我」标题下渲染时间线式个人履历)
 myTimeline:

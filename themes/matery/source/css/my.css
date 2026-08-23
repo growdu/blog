@@ -2041,3 +2041,20 @@ body.wechat-qr-modal-open { overflow: hidden; }
 .tag-post-excerpt{margin:0 0 10px;color:#666;line-height:1.75;}
 .tag-post-item .publish-info{font-size:13px;}
 @media (max-width:600px){.tag-post-list{margin-top:16px;}.tag-post-item{padding:18px 0;}.tag-post-title{font-size:1.15rem;}.tag-post-excerpt{font-size:14px;}}
+
+/* About profile and mobile navigation links. */
+.about-avatar-link,.about-author-link,.mobile-head-link{display:inline-block;color:inherit;text-decoration:none;}
+.about-avatar-link:hover .avatar-img,.about-author-link:hover{color:#009688;}
+.mobile-head-link{text-align:left;}
+@media (max-width:600px){
+  .about-container{margin-top:-30px;}
+  .profile .avatar-img{max-width:120px;}
+  .about-author-link{font-size:1.55rem;}
+  .about-container .card-content{padding:18px 14px;}
+  .timeline-item{padding:14px 0 14px 22px;}
+  .project-card{padding:12px;gap:10px;}
+  .edu-item,.honor-item{padding:10px 0;}
+}
+
+.about-content{max-width:960px;margin:0 auto;}
+@media (max-width:600px){.about-content{width:100%;}}
