@@ -44,6 +44,19 @@ if os.path.isfile(src_logo):
 else:
     print(f'WARNING: {src_logo} not found, logo not replaced', file=sys.stderr)
 
+# --- 1.5b. Sync profile avatar from 1.jpg ---
+# about.ejs renders `theme.profile.avatar` (default `/medias/avatar.jpg`).
+# Reusing the same 1.jpg source keeps the top-nav logo and the about-page
+# avatar visually consistent and means the user only edits one file.
+src_avatar = '1.jpg'
+dst_avatar = os.path.join(theme_dir, 'source', 'medias', 'avatar.jpg')
+if os.path.isfile(src_avatar):
+    os.makedirs(os.path.dirname(dst_avatar), exist_ok=True)
+    shutil.copy2(src_avatar, dst_avatar)
+    print(f'Copied {src_avatar} -> {os.path.relpath(dst_avatar, theme_dir)}')
+else:
+    print(f'WARNING: {src_avatar} not found, avatar not replaced', file=sys.stderr)
+
 # --- 1.6. Publish computer-themed cover/banner/feature images ---
 # The default matery theme ships nature photos (pegasi, snow mountains,
 # deserts, ...).  We replace them with computer-industry images generated
