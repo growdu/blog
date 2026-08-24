@@ -1,11 +1,19 @@
 <style type="text/css">
     /* don't remove. */
     .about-cover {
-        height: 75vh;
+        height: 35vh;
     }
 </style>
 
-<%- partial('_partial/bg-cover') %>
+<div class="bg-cover pd-header about-cover">
+    <div class="container"></div>
+</div>
+<% if (theme.banner.enable) { %>
+<script>
+    var bannerUrl = "<%- theme.jsDelivr.url %><%- url_for('/medias/banner/') %>" + new Date().getDay() + '.jpg';
+    $('.bg-cover.about-cover').css('background-image', 'url(' + bannerUrl + ')');
+</script>
+<% } %>
 
 <main class="content">
 
