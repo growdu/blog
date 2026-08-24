@@ -208,6 +208,7 @@ subscribe:
 profile:
   avatar: /medias/avatar.jpg
   career: 数据库内核开发专家 / 架构师
+  introduction: ''
 
 # 我的时间线 (在「关于我」标题下渲染时间线式个人履历)
 myTimeline:
