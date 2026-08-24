@@ -373,3 +373,11 @@ myHonors:
     - name: 太极集团年度杰出青年
       level: 集团级 称号
       year: ''
+
+# mermaid 图（主题默认 enable: false，仅在文章详情页 is_post() 时加载）。
+# database 专题页用 mermaid 画主题关系图，需要在所有页面启用。
+mermaid:
+  enable: true
+  version: 'latest'
+  options:
+    theme: 'default'
