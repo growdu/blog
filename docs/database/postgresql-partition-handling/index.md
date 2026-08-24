@@ -1140,7 +1140,433 @@ Datum my_partition_locator(PG_FUNCTION_ARGS) {
 
 ---
 
-## 十、结语：一张图回忆全文
+## 十一、完整生命周期：从 DDL 到 catalog 查询（PG 端口 vs TDS 端口）
+
+前面章节讲的是内核代码。这一节我们反过来——站在用户的角度，把"创建分区 → 查询分区元数据 → 用 `$PARTITION` 找分区号"这一条 SQL 操作链完整跑一遍，并**同时给出 PG 端口和 TDS 端口（Babelfish）的对应 SQL**。
+
+### 11.1 PG 原生路径：原生分区 DDL + `pg_partition_*` 视图
+
+#### 创建
+
+```sql
+-- PG 端口（默认 5432）
+CREATE TABLE orders (
+    id           bigserial PRIMARY KEY,
+    region       text NOT NULL,
+    created_at   timestamptz NOT NULL
+) PARTITION BY LIST (region);
+
+CREATE TABLE orders_cn PARTITION OF orders
+    FOR VALUES IN ('CN', 'HK', 'TW');
+
+CREATE TABLE orders_us PARTITION OF orders
+    FOR VALUES IN ('US', 'CA');
+
+CREATE TABLE orders_default PARTITION OF orders DEFAULT;
+```
+
+#### 查询分区元数据（PG 端口）
+
+```sql
+-- 看一棵分区树
+SELECT relid, parentid, isleaf, level
+  FROM pg_partition_tree('orders');
+-- relid   | parentid | isleaf | level
+-- ---------+----------+--------+-------
+-- orders  |          | f      |     0
+-- orders_cn| orders   | t      |     1
+-- orders_us| orders   | t      |     1
+-- orders_default|orders| t      |     1
+
+-- 看分区键
+SELECT partrelid::regclass AS tbl,
+       partstrat, partnatts, partattrs, partclass, partdefid
+  FROM pg_partitioned_table
+ WHERE partrelid = 'orders'::regclass;
+
+-- 看每个分区的边界（节点树原文）
+SELECT inhrelid::regclass AS partition,
+       pg_get_expr(c.relpartbound, c.oid) AS bound
+  FROM pg_inherits i
+  JOIN pg_class c ON c.oid = i.inhrelid
+ WHERE inhparent = 'orders'::regclass;
+-- partition    | bound
+-- -------------+------------------------------------------
+-- orders_cn    | FOR VALUES IN ('CN', 'HK', 'TW')
+-- orders_us    | FOR VALUES IN ('US', 'CA')
+-- orders_default| FOR VALUES IN (DEFAULT)
+
+-- 看 ancestors 链
+SELECT relid::regclass AS tbl,
+       pg_partition_root(relid) AS root,
+       pg_partition_ancestors(relid) AS ancestors
+  FROM pg_class
+ WHERE relname IN ('orders', 'orders_cn', 'orders_us');
+```
+
+Babelfish 用户**也可以在 PG 端口用这套 SQL**，因为底层 catalog 表是同一份（`pg_partitioned_table` / `pg_class` / `pg_inherits`），只不过从 TDS 端口看这些表的 schema 不同。
+
+### 11.2 TDS 路径：T-SQL 分区函数 + 分区方案 + 分区表
+
+T-SQL 的语义是"**先声明一个 partition function（决定怎么切）**，**再声明一个 partition scheme（决定切完放哪儿），**最后在 `CREATE TABLE` 里把列绑到 scheme**"。这套机制**底层都是 Babelfish 在 `sys` schema 里建的两张 metadata 表**：
+
+| Babelfish 内部表 | 对应 T-SQL 视图 |
+| --- | --- |
+| `sys.babelfish_partition_function` | `sys.partition_functions` |
+| `sys.babelfish_partition_function`（`range_values` 字段 unnest） | `sys.partition_range_values` |
+| `sys.babelfish_partition_function`（join `sys.types`） | `sys.partition_parameters` |
+| `sys.babelfish_partition_scheme` | `sys.partition_schemes` |
+| `sys.babelfish_partition_scheme`（CROSS JOIN） | `sys.destination_data_spaces` |
+
+源码在 `~/cwork/babelfish_extensions/contrib/babelfishpg_tsql/src/catalog.h`：
+
+```c
+#define Anum_bbf_partition_function_dbid 1
+#define Anum_bbf_partition_function_id 2
+#define Anum_bbf_partition_function_name 3
+#define Anum_bbf_partition_function_input_parameter_type 4
+#define Anum_bbf_partition_function_partition_option 5   /* RANGE LEFT/RIGHT */
+#define Anum_bbf_partition_function_range_values 6       /* sql_variant[] */
+#define Anum_bbf_partition_function_input_parameter_collation 9
+```
+
+```c
+#define Anum_bbf_partition_scheme_dbid 1
+#define Anum_bbf_partition_scheme_id 2
+#define Anum_bbf_partition_scheme_name 3
+#define Anum_bbf_partition_scheme_func_name 4
+#define Anum_bbf_partition_scheme_next_used 5
+```
+
+#### 创建（TDS 端口，比如 1433）
+
+```sql
+-- 1) 分区函数：声明"按 date 列切 3 段，右开区间"
+CREATE PARTITION FUNCTION pf_orders_date (date)
+AS RANGE RIGHT FOR VALUES ('2024-01-01', '2024-07-01');
+
+-- 2) 分区方案：声明"3 段对应 3 个 filegroup，ALL 表示都放 PRIMARY"
+--    （Babelfish 下 filegroup 总是落到 PRIMARY，但语义照 T-SQL 写）
+CREATE PARTITION SCHEME ps_orders_date
+AS PARTITION pf_orders_date
+ALL TO ([PRIMARY]);
+
+-- 3) 分区表：用 ON <scheme>(<column>) 把方案绑到列上
+CREATE TABLE orders (
+    id        bigint IDENTITY PRIMARY KEY,
+    region    nvarchar(20) NOT NULL,
+    orderdate date NOT NULL
+) ON ps_orders_date(orderdate);
+```
+
+执行流（在 `~/cwork/babelfish_extensions/contrib/babelfishpg_tsql/src/pl_exec-2.c`）：
+
+- `exec_stmt_partition_function`（约 4350 行）：校验名字长度、翻译 T-SQL 类型 → 落 `sys.babelfish_partition_function` 一行，`range_values` 数组按值排序去重。
+- `exec_stmt_partition_scheme`（约 4645 行）：校验 `partition_function_exists`、算 `next_used`、落 `sys.babelfish_partition_scheme` 一行。
+- `bbf_create_partition_tables`（`pltsql_partition.c`）：解析 `CREATE TABLE ... ON ps_xxx(col)`，按 `range_values` 拆成对应 PG `PARTITION OF ... FOR VALUES FROM (...) TO (...)`，落 PG catalog。
+
+#### 查询分区元数据（TDS 端口）
+
+TDS 端口优先用 T-SQL `sys.*` 视图（这是兼容 SQL Server 的接口）。下面是几个常用查询：
+
+```sql
+-- 1. 所有分区函数
+SELECT name, type_desc, fanout, boundary_value_on_right, create_date
+  FROM sys.partition_functions;
+-- name            | type_desc | fanout | boundary_value_on_right | create_date
+-- ----------------+-----------+--------+-------------------------+-------------
+-- pf_orders_date  | RANGE     |      3 | t                       | ...
+
+-- 2. 分区函数的具体边界值
+SELECT function_id, parameter_id, boundary_id, value
+  FROM sys.partition_range_values
+ ORDER BY function_id, boundary_id;
+-- function_id | parameter_id | boundary_id | value
+-- ------------+--------------+--------------+-------------
+--           1 |            1 |            1 | 2024-01-01
+--           1 |            1 |            2 | 2024-07-01
+
+-- 3. 分区函数的输入参数类型
+SELECT function_id, parameter_id, system_type_id, max_length, precision, scale, collation_name
+  FROM sys.partition_parameters;
+
+-- 4. 所有分区方案
+SELECT name, data_space_id, type_desc, is_default
+  FROM sys.partition_schemes;
+-- name           | data_space_id | type_desc     | is_default
+-- ---------------+---------------+---------------+-----------
+-- ps_orders_date |             2 | PARTITION_SCHEME | f
+
+-- 5. 方案的"目的地"——fanout + 1 个 next_used 哨兵
+SELECT partition_scheme_id, destination_id, data_space_id
+  FROM sys.destination_data_spaces
+ ORDER BY partition_scheme_id, destination_id;
+
+-- 6. 表上挂的是哪个方案 + 列
+SELECT o.name AS table_name, ps.name AS partition_scheme, c.name AS partition_column
+  FROM sys.tables t
+  JOIN sys.objects    o  ON o.object_id = t.object_id
+  JOIN sys.indexes    i  ON i.object_id = t.object_id AND i.index_id <= 1
+  JOIN sys.data_spaces ps ON ps.data_space_id = i.data_space_id
+  JOIN sys.columns    c  ON c.object_id = t.object_id
+                         AND c.column_id = i.column_id;
+```
+
+#### 查询同一份元数据的 PG 端口视图
+
+PG 端口走的是 PG 原生 catalog。如果你想在 5432 端口看 Babelfish 用户的 T-SQL 分区是怎么落库的，下面的 SQL 都能用：
+
+```sql
+-- 1. 看 T-SQL 分区函数 / 方案（Babelfish 把它们存在 sys schema）
+SELECT relname, nspname
+  FROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid
+ WHERE relname IN ('babelfish_partition_function',
+                   'babelfish_partition_scheme');
+
+-- 2. 读分区函数的边界值（pg 端口读 sql_variant 数组）
+SELECT dbid, name, input_parameter_type,
+       partition_option /* 't' = RIGHT, 'f' = LEFT */,
+       array_length(range_values, 1) AS boundary_count,
+       range_values
+  FROM sys.babelfish_partition_function
+ WHERE dbid = sys.db_id();
+
+-- 3. 读分区方案
+SELECT dbid, name, partition_function_name, next_used
+  FROM sys.babelfish_partition_scheme
+ WHERE dbid = sys.db_id();
+
+-- 4. 看 T-SQL 分区表最终变成的 PG 分区表
+SELECT relid::regclass AS tbl, partstrat, partnatts, partattrs, partdefid
+  FROM pg_partitioned_table
+ WHERE relid::regclass::text LIKE '%orders%';
+
+-- 5. 看每段分区的边界
+SELECT inhrelid::regclass AS partition,
+       pg_get_expr(c.relpartbound, c.oid) AS bound
+  FROM pg_inherits i
+  JOIN pg_class c ON c.oid = i.inhrelid
+ WHERE inhparent::regclass::text LIKE '%orders%';
+```
+
+### 11.3 用 `$PARTITION` 找一行属于第几号分区（TDS 端口）
+
+```sql
+-- TDS 端口
+SELECT $PARTITION.pf_orders_date('2024-03-15') AS part_no;  -- 1
+SELECT $PARTITION.pf_orders_date('2024-08-01') AS part_no;  -- 2
+SELECT $PARTITION.pf_orders_date('2025-12-31') AS part_no;  -- 3
+```
+
+这条函数在 PG 内核侧就走到 `partition_range_datum_bsearch`（详见七章）。它返回 1-based 编号，与 T-SQL 习惯一致。
+
+### 11.4 端口差异速查表
+
+| 操作 | PG 端口（5432） | TDS 端口（1433，Babelfish） |
+| --- | --- | --- |
+| 建分区表 | `CREATE TABLE ... PARTITION BY ...` | `CREATE TABLE ... ON <scheme>(col)` |
+| 建分区 | `CREATE TABLE ... PARTITION OF ... FOR VALUES ...` | 自动按 scheme 生成（不可手写 `PARTITION OF`） |
+| 分区函数定义 | （PG 没有这个概念） | `CREATE PARTITION FUNCTION` |
+| 分区方案定义 | （PG 没有这个概念） | `CREATE PARTITION SCHEME ... AS PARTITION ...` |
+| 看分区树 | `SELECT * FROM pg_partition_tree(...)` | `sys.partition_functions` + `sys.partition_schemes` + `sys.destination_data_spaces` |
+| 看分区键 | `SELECT * FROM pg_partitioned_table WHERE partrelid = ...` | 看底层 `pg_partitioned_table`（同一张表） |
+| 看每个分区边界 | `pg_get_expr(c.relpartbound, c.oid)` | `sys.partition_range_values` 或 `pg_get_expr(...)` |
+| 找一行属于第几号分区 | 无原生函数（要写 SQL `CASE`） | `$PARTITION.<func>(col)` |
+| 是否自动建 partition descriptor 缓存 | 是（`rd_partdesc`） | 同左 |
+
+### 11.5 完整流程图
+
+```mermaid
+flowchart TB
+  subgraph tds["TDS 端口 (T-SQL)"]
+    A1["CREATE PARTITION FUNCTION pf_orders_date (date)<br/>AS RANGE RIGHT FOR VALUES ('2024-01-01', '2024-07-01')"]
+    A2["CREATE PARTITION SCHEME ps_orders_date<br/>AS PARTITION pf_orders_date ALL TO ([PRIMARY])"]
+    A3["CREATE TABLE orders (...)<br/>ON ps_orders_date(orderdate)"]
+  end
+
+  subgraph bf["Babelfish 内部 metadata"]
+    M1["sys.babelfish_partition_function<br/>(dbid, name, type, range_values[])"]
+    M2["sys.babelfish_partition_scheme<br/>(dbid, name, func_name, next_used)"]
+  end
+
+  subgraph pg["PG 原生 catalog"]
+    P1["pg_partitioned_table<br/>partstrat='r', partnatts=1, partattrs=[3]"]
+    P2["pg_class.relpartbound<br/>3 行 PartitionBoundSpec 节点树"]
+    P3["pg_inherits<br/>orders → orders_p1, orders_p2, orders_p3"]
+  end
+
+  subgraph views["用户查询"]
+    V1["TDS: sys.partition_functions<br/>sys.partition_range_values<br/>sys.partition_schemes<br/>sys.destination_data_spaces"]
+    V2["PG: pg_partition_tree()<br/>pg_partitioned_table<br/>pg_get_expr(relpartbound)"]
+    V3["TDS: $PARTITION.pf_orders_date(@d)"]
+  end
+
+  A1 --> M1
+  A2 --> M2
+  A3 -->|bbf_create_partition_tables 拆解| P1
+  A3 --> P2
+  A3 --> P3
+  M1 --> V1
+  M1 --> V3
+  M1 -->|落 PG catalog| P1
+  P1 --> V2
+  P2 --> V2
+  P3 --> V2
+```
+
+### 11.6 实战：完整示例
+
+下面是一段可以直接跑（在已经装好 Babelfish 的环境里）的完整例子，演示同一张分区表在两个端口看到的样子。
+
+#### 11.6.1 在 TDS 端口创建
+
+```sql
+-- 假设连接 TDS 端口 1433，database=foo
+USE foo;
+
+CREATE PARTITION FUNCTION pf_orders_date (date)
+AS RANGE RIGHT FOR VALUES ('2024-01-01', '2024-07-01');
+
+CREATE PARTITION SCHEME ps_orders_date
+AS PARTITION pf_orders_date ALL TO ([PRIMARY]);
+
+CREATE TABLE dbo.orders (
+    id        bigint IDENTITY PRIMARY KEY,
+    region    nvarchar(20) NOT NULL,
+    orderdate date NOT NULL
+) ON ps_orders_date(orderdate);
+
+-- 插入一行试试
+INSERT INTO dbo.orders (region, orderdate)
+VALUES (N'CN', '2024-03-15');
+
+-- 看落到了第几号分区
+SELECT $PARTITION.pf_orders_date('2024-03-15') AS part_no;  -- 1
+SELECT $PARTITION.pf_orders_date('2024-08-01') AS part_no;  -- 2
+SELECT $PARTITION.pf_orders_date('2025-12-31') AS part_no;  -- 3
+```
+
+#### 11.6.2 在 TDS 端口查元数据
+
+```sql
+-- 看分区函数
+SELECT name, type_desc, fanout, boundary_value_on_right
+  FROM sys.partition_functions;
+
+-- 看方案与目的地
+SELECT ps.name AS scheme, ds.destination_id, ds.data_space_id
+  FROM sys.partition_schemes ps
+  JOIN sys.destination_data_spaces ds
+    ON ds.partition_scheme_id = ps.data_space_id
+ ORDER BY ps.name, ds.destination_id;
+
+-- 看真实边界值
+SELECT function_id, boundary_id, value
+  FROM sys.partition_range_values
+ ORDER BY function_id, boundary_id;
+```
+
+#### 11.6.3 切到 PG 端口看同一张表
+
+```sql
+-- psql 5432 端口，同一个 database
+\dt+ dbo.orders
+-- 看到是 partitioned table
+
+-- 看 PG 侧 catalog
+SELECT partrelid::regclass, partstrat, partnatts, partattrs, partdefid
+  FROM pg_partitioned_table
+ WHERE partrelid = 'dbo.orders'::regclass;
+-- partrelid | partstrat | partnatts | partattrs | partdefid
+-- -----------+-----------+-----------+-----------+-----------
+-- dbo.orders | r         |         1 | 3         | 0
+
+-- 看每个分区的 PG 边界
+SELECT inhrelid::regclass AS partition,
+       pg_get_expr(c.relpartbound, c.oid) AS bound
+  FROM pg_inherits i
+  JOIN pg_class c ON c.oid = i.inhrelid
+ WHERE inhparent = 'dbo.orders'::regclass;
+-- partition     | bound
+-- --------------+-------------------------------------
+-- orders_p1     | FOR VALUES FROM (MINVALUE) TO ('2024-01-01')
+-- orders_p2     | FOR VALUES FROM ('2024-01-01') TO ('2024-07-01')
+-- orders_p3     | FOR VALUES FROM ('2024-07-01') TO (MAXVALUE)
+
+-- 看 Babelfish 内部表
+SELECT name, input_parameter_type, partition_option, range_values
+  FROM sys.babelfish_partition_function
+ WHERE dbid = (SELECT dbid FROM sys.babelfish_sysdatabases WHERE name = current_database());
+```
+
+你可以观察到一件有意思的事：Babelfish 把 T-SQL 的 `RANGE RIGHT FOR VALUES ('2024-01-01', '2024-07-01')` **翻译成了 3 个 PG 分区**（注意 PG 总是显式 MINVALUE/MAXVALUE 包头包尾），多出来的"两端"分区把语义闭合。
+
+### 11.7 一些坑
+
+#### 11.7.1 Babelfish 的 filegroup 是装饰
+
+T-SQL 的 `PARTITION SCHEME ... TO [filegroup1, filegroup2, ...]` 在真 SQL Server 上用来指明每段分区落哪个物理文件组。Babelfish **没有真多文件组**，所有分区最终都落到 primary filegroup。所以 `TO ([PRIMARY])` / `ALL TO (...)` 这部分语法 Babelfish 只做名字解析，不做物理路由。
+
+#### 11.7.2 `RANGE LEFT` vs `RANGE RIGHT` 的语义差异
+
+| 写法 | 含义（T-SQL 原生） | 在 PG 上对应 |
+| --- | --- | --- |
+| `RANGE RIGHT FOR VALUES (a, b)` | 上界是 `< a` / `[a, b)` / `[b, ∞)` | `(... a) [a b) [b ...)` |
+| `RANGE LEFT  FOR VALUES (a, b)` | `(-∞, a]` / `(a, b]` / `(b, ∞)` | `(... a] (a b] (b ...)` |
+
+Babelfish 通过 `partition_option`（'t' = RIGHT, 'f' = LEFT）记录这个选择，在 `bbf_create_partition_tables` 里**翻译成 PG 的 `FROM ... TO ...`** 节点树。
+
+#### 11.7.3 partition 列必须 NOT NULL
+
+T-SQL 要求分区列 `NOT NULL`。如果忘了写：
+
+```sql
+CREATE TABLE orders (
+    region nvarchar(20),         -- ⚠️ 没 NOT NULL
+    orderdate date
+) ON ps_orders_date(orderdate);
+```
+
+Babelfish 会报错。PG 这边更宽松（PARTITION BY RANGE 默认允许 NULL，但 NULL 只能落 DEFAULT 分区）。
+
+#### 11.7.4 改分区方案是单语句级操作
+
+```sql
+-- 切一段到 next used
+ALTER PARTITION SCHEME ps_orders_date NEXT USED [PRIMARY];
+
+-- 切一个分区函数到新边界
+ALTER PARTITION FUNCTION pf_orders_date() SPLIT RANGE ('2024-10-01');
+```
+
+这两条 T-SQL DDL 在 Babelfish 里**都是 DDL 单语句**——它会展开成 PG 的"加一个 `pg_inherits` 行 + 改 `relpartbound`"。执行完后建议在 PG 端口跑一次 `ANALYZE dbo.orders`，让 `pg_statistic` 跟新分区一起刷新。
+
+### 11.8 总结一句
+
+无论你是 PG 用户还是 T-SQL 用户，看分区元数据的"最稳路径"都是：
+
+- **PG 端口**：`pg_partitioned_table` + `pg_class.relpartbound` + `pg_get_expr(...)`。
+- **TDS 端口**：`sys.partition_functions` / `sys.partition_range_values` / `sys.partition_schemes`（视图层），底层仍然是同一份 `sys.babelfish_partition_*` 表 + 同一份 PG catalog。
+
+Babelfish 没发明新分区机制——它只是把 T-SQL 的"函数+方案+表"这套**声明式语法**，**翻译**成了 PG 原生的"分区表+分区+边界"三件套。这一点从 `bbf_create_partition_tables` 的代码里看得最清楚：
+
+```c
+void bbf_create_partition_tables(CreateStmt *stmt) {
+    ...
+    /* 1. 从 sys.babelfish_partition_function 读 range_values */
+    /* 2. 对每一段区间构造一个 CreateStmt */
+    for (i = 0; i < nelems; i++) {
+        set_partition_range_bounds(partbound, range_values, i, total_partitions, ...);
+        partition_stmt = create_partition_stmt(physical_schema_name, relname);
+        ...
+    }
+    /* 3. 走 PG 原生 ProcessUtility → DefinePartition → partition_bounds_create */
+}
+```
+
+DDL 走到这里就"完全 PG 化了"，后面所有路径都跟 native 分区表一样。
+
+## 十二、结语：一张图回忆全文
 
 ```mermaid
 flowchart TB
