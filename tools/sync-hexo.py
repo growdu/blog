@@ -41,6 +41,74 @@ FEATURED_POSTS = {
 }
 
 
+TOPIC_DEFS = [
+    # (name, icon, color, blurb)
+    ('内核基础',     'fa-microchip',     '#4283D4', '进程模型 · 存储 · WAL · 执行器 · 学习路径'),
+    ('MVCC 与事务',  'fa-code-branch',   '#10B981', '多版本并发控制 · 事务生命周期 · 隔离级别'),
+    ('逻辑复制',     'fa-network-wired', '#F59E0B', '逻辑解码 · DDL 同步 · publisher / subscriber'),
+    ('分区',         'fa-table-cells',   '#8B5CF6', '分区表设计 · 跨分区 DML 路由 · 跨数据库对比'),
+    ('高可用与复制', 'fa-shield-halved', '#EF4444', '流复制 · 同步复制 · HAProxy · repmgr'),
+    ('分布式一致性', 'fa-share-nodes',   '#EC4899', 'Raft · DCF · 多数派 · Leader 选举'),
+    ('性能调优',     'fa-gauge-high',    '#06B6D4', 'Checkpoint · WAL Writer · 统计信息 · IO 调优'),
+    ('实战经验',     'fa-bookmark',      '#84CC16', '避坑清单 · 翻译整理 · PostgreSQL 万能论'),
+]
+
+# Inference rules: a post belongs to a topic if any path_contains substring
+# matches its docs/-relative path OR any title_contains keyword matches
+# its title (case-insensitive). A post can belong to multiple topics.
+TOPIC_RULES = {
+    'MVCC 与事务': {
+        'path_contains': ['postgresql-mvcc', 'postgresql-transaction-lifecycle'],
+        'title_contains': ['MVCC', '事务生命周期', 'Transaction Lifecycle'],
+    },
+    '逻辑复制': {
+        'path_contains': ['postgresql-logical-replication', 'db/logical_decode'],
+        'title_contains': ['逻辑复制', '逻辑解码', 'Logical Replication', 'DDL-Replay', 'DDL Replay', 'pglogical', 'pgoutput', 'Babelfish'],
+    },
+    '分区': {
+        'path_contains': ['postgresql-partition', 'postgresql-vs-sqlserver-partitioning', 'postgresql-logical-replication-partitioned'],
+        'title_contains': ['分区', 'Partition', 'partitioned'],
+    },
+    '高可用与复制': {
+        'path_contains': ['cluster/postgresql'],
+        'title_contains': ['HAProxy', 'PGBouncer', 'repmgr', '流复制', '高可用', '双写', 'failover'],
+    },
+    '分布式一致性': {
+        'path_contains': ['cluster/raft', 'cluster/DCF', 'cluster/分布式一致性'],
+        'title_contains': ['Raft', 'DCF', 'openGauss DCF', '分布式一致性'],
+    },
+    '性能调优': {
+        'title_contains': ['调优', '性能', 'Checkpoint', 'WalWriter', 'WAL Writer', '统计信息', 'keepalive', 'pg_io', 'bgwriter', 'BgWriter'],
+    },
+    '内核基础': {
+        'path_contains': ['postgresql-memory-management', 'db/postgresql/learning-path'],
+        'title_contains': ['源码', '源码修炼', '学习路径', 'PostgreSQL 主结构', '启动流程', '插入', '进程架构'],
+    },
+    '实战经验': {
+        'path_contains': ['pg-challahscript-tips', 'pg-dont-do-this', 'postgresql-for-everything'],
+        'title_contains': ["Don't Do This", '万能论', '翻译整理'],
+    },
+}
+
+TOPIC_NAME_TO_DEF = {name: (icon, color, blurb) for name, icon, color, blurb in TOPIC_DEFS}
+
+
+def infer_topics(rel, title):
+    """Return the list of topic names a post belongs to.
+
+    rel: docs/-relative path, e.g. 'database/postgresql-mvcc/index.md'.
+    title: post title (already extracted).
+    """
+    matched = []
+    title_lower = (title or '').lower()
+    for topic_name, rules in TOPIC_RULES.items():
+        path_hit = any(p in rel for p in rules.get('path_contains', []))
+        title_hit = any(kw.lower() in title_lower for kw in rules.get('title_contains', []))
+        if path_hit or title_hit:
+            matched.append(topic_name)
+    return matched
+
+
 def read_section_categories():
     """Map top-level section dir -> Chinese display name from _index.md."""
     titles = {}
@@ -140,7 +208,16 @@ def collect_database_posts(section_titles, cascades):
                 title_match = re.search(r'<title[^>]*>(.*?)</title>', content, re.I | re.S)
                 title = re.sub(r'<[^>]+>', '', title_match.group(1)).strip() if title_match else fallback_title(filepath)
             categories = resolve_post_categories(rel, section_titles, cascades)
-            if '数据库' not in categories and 'PostgreSQL 源码修炼之路' not in categories:
+            # Database landing page surfaces two flavours:
+            #   1. Posts whose cascade tag is "数据库" or "PostgreSQL 源码修炼之路".
+            #   2. Posts under docs/cluster/DCF/ and docs/cluster/raft/ — these
+            #      are distributed-DB kernel material (openGauss DCF, Raft),
+            #      even though their cascade is "集群". Whitelist them by path
+            #      rather than whole-sale pulling in "集群" (which would also
+            #      pull Patroni / snowflake / unrelated cluster tools).
+            if ('数据库' not in categories and
+                'PostgreSQL 源码修炼之路' not in categories and
+                not (rel.startswith('cluster/DCF/') or rel.startswith('cluster/raft/'))):
                 continue
             fdir = os.path.dirname(rel)
             if filename == 'index.md':
@@ -157,9 +234,23 @@ def collect_database_posts(section_titles, cascades):
             source_dir = os.path.dirname(fdir) if filename == 'index.md' and fdir else fdir
             post_path = os.path.join(source_dir, slug) if source_dir and source_dir != '.' else slug
             url = f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
-            posts.append({'title': title, 'url': url, 'date': date})
+            posts.append({
+                'title': title,
+                'url': url,
+                'date': date,
+                'topics': infer_topics(rel, title),
+            })
     unique = {post['url']: post for post in posts}
-    return sorted(unique.values(), key=lambda post: post['date'], reverse=True)
+    posts_sorted = sorted(unique.values(), key=lambda post: post['date'], reverse=True)
+    # Group posts by inferred topic, preserving the canonical TOPIC_DEFS order.
+    topic_groups = {}
+    for name, _icon, _color, _blurb in TOPIC_DEFS:
+        topic_groups[name] = []
+    for post in posts_sorted:
+        for t in post.get('topics', []):
+            if t in topic_groups:
+                topic_groups[t].append(post)
+    return {'posts': posts_sorted, 'topics': topic_groups}
 
 
 def git_date(filepath):
@@ -701,6 +792,7 @@ def process(filepath, section_titles, cascades):
 
     date = git_date(filepath)
     post_cats = resolve_post_categories(rel, section_titles, cascades)
+    topics = infer_topics(rel, title)
 
     # rewrite images, strip first H1 (title is in front matter)
     body_out = rewrite_images(src, fdir)
@@ -709,7 +801,11 @@ def process(filepath, section_titles, cascades):
     top_val = FEATURED_POSTS.get(rel)
     top_line = f'\ntop: {top_val}' if top_val else ''
     cats_block = categories_yaml(post_cats)
-    fm_out = f'---\ntitle: "{yaml_escape(title)}"\ndate: {date}\nauthor: growdu{top_line}\ncategories:\n{cats_block}\ntags:\n{cats_block}\n---\n'
+    # Merge categories + topics into the tags list. Order-preserving dedupe
+    # keeps the primary category first and appends each topic exactly once.
+    all_tags = list(dict.fromkeys(post_cats + topics))
+    tags_block = categories_yaml(all_tags)
+    fm_out = f'---\ntitle: "{yaml_escape(title)}"\ndate: {date}\nauthor: growdu{top_line}\ncategories:\n{cats_block}\ntags:\n{tags_block}\n---\n'
 
     if os.path.basename(filepath) == 'index.md':
         name = os.path.basename(os.path.dirname(filepath))
@@ -1125,14 +1221,17 @@ fetch('/recent-posts.json').then(function(r){return r.json();}).then(function(po
                 json.dump(recent, f, ensure_ascii=False, indent=2)
             print('Wrote recent-posts.json (%d items)' % len(recent))
     # Database landing page
-    database_posts = collect_database_posts(section_titles, cascade_map)
+    database_data = collect_database_posts(section_titles, cascade_map)
     create_database_landing_page(database_posts)
     print('Created database landing page')
 
-def create_database_landing_page(database_posts):
+def create_database_landing_page(database_data):
     """Copy the curated database landing page from tools/templates/ into
     Hexo's source/ tree. The template is plain markdown + front matter,
     editable in any editor with full syntax highlighting.
+
+    database_data: dict with 'posts' (flat list of all db posts) and
+    'topics' ({topic_name: [posts]}) keys.
     """
     here = os.path.dirname(os.path.abspath(__file__))
     template = os.path.join(here, 'templates', 'database.md')
@@ -1140,21 +1239,70 @@ def create_database_landing_page(database_posts):
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     with open(template, encoding='utf-8') as f:
         content = f.read()
-    start_marker = '<!-- DATABASE_POSTS_START -->'
-    end_marker = '<!-- DATABASE_POSTS_END -->'
-    if start_marker not in content or end_marker not in content:
+
+    posts_marker = '<!-- DATABASE_POSTS_START -->'
+    posts_end = '<!-- DATABASE_POSTS_END -->'
+    topics_marker = '<!-- DATABASE_TOPICS_START -->'
+    topics_end = '<!-- DATABASE_TOPICS_END -->'
+
+    if posts_marker not in content or posts_end not in content:
         raise ValueError('database template is missing DATABASE_POSTS markers')
-    if database_posts:
-        post_list = '\n'.join(
-            f'- [{post["title"]}]({post["url"]})' for post in database_posts
-        )
+    if topics_marker not in content or topics_end not in content:
+        raise ValueError('database template is missing DATABASE_TOPICS markers')
+
+    db_posts = database_data['posts']
+    topic_groups = database_data['topics']
+
+    # Flat chronological list (legacy marker, still used by other tooling)
+    if db_posts:
+        flat_list = '\n'.join(f'- [{p["title"]}]({p["url"]})' for p in db_posts)
     else:
-        post_list = '数据库系列文章正在整理中。'
-    content = content.replace(start_marker, post_list, 1)
-    content = content.replace(end_marker, '', 1)
+        flat_list = '数据库系列文章正在整理中。'
+    content = content.replace(posts_marker, flat_list, 1)
+    content = content.replace(posts_end, '', 1)
+
+    # Topic card grid: each topic renders as a card with icon, blurb,
+    # article count and up to 5 most-recent post titles linking to /tags/<topic>/
+    def _esc(s):
+        return (s or '').replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;')
+
+    topic_lines = ['<div class="db-topic-grid">']
+    for name, icon, color, blurb in TOPIC_DEFS:
+        group = topic_groups.get(name, [])
+        count = len(group)
+        if count == 0:
+            # Skip empty topics so the grid stays dense.
+            continue
+        preview = group[:5]
+        tag_slug = quote(name)
+        tag_url = f'/tags/{tag_slug}/'
+        cards = ''.join(
+            f'<li><a href="{_esc(p["url"])}">{_esc(p["title"])}</a></li>'
+            for p in preview
+        )
+        more = ''
+        if count > len(preview):
+            more = f'<li class="db-topic-more"><a href="{tag_url}">还有 {count - len(preview)} 篇 →</a></li>'
+        topic_lines.append(f'''<div class="db-topic-card" style="--topic-color:{color}">
+  <a class="db-topic-link" href="{tag_url}" aria-label="查看{name}主题全部文章">
+    <div class="db-topic-head">
+      <i class="fa-solid {icon}"></i>
+      <span class="db-topic-name">{_esc(name)}</span>
+      <span class="db-topic-count">{count}</span>
+    </div>
+    <div class="db-topic-blurb">{_esc(blurb)}</div>
+    <ul class="db-topic-posts">{cards}{more}</ul>
+  </a>
+</div>''')
+    topic_lines.append('</div>')
+    topic_grid = '\n'.join(topic_lines)
+    content = content.replace(topics_marker, topic_grid, 1)
+    content = content.replace(topics_end, '', 1)
+
     with open(db_path, 'w', encoding='utf-8') as f:
         f.write(content)
-    print('Created ' + os.path.relpath(db_path, '.'))
+    n_topics = sum(1 for n, _, _, _ in TOPIC_DEFS if topic_groups.get(n))
+    print(f'Created {os.path.relpath(db_path, ".")} ({len(db_posts)} posts, {n_topics} topics)')
 
 
     # Projects page (custom page with card grid for growdu's GitHub projects)
