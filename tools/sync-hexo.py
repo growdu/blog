@@ -1222,7 +1222,7 @@ fetch('/recent-posts.json').then(function(r){return r.json();}).then(function(po
             print('Wrote recent-posts.json (%d items)' % len(recent))
     # Database landing page
     database_data = collect_database_posts(section_titles, cascade_map)
-    create_database_landing_page(database_posts)
+    create_database_landing_page(database_data)
     print('Created database landing page')
 
 def create_database_landing_page(database_data):
