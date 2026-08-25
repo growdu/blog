@@ -381,3 +381,10 @@ mermaid:
   version: 'latest'
   options:
     theme: 'default'
+
+# 主题默认 libs.js.mermaid 指向 /libs/mermaid/mermaid.min.js (复数)，
+# 但 copy-vendor.py 把 mermaid 复制到 source/lib/mermaid/ (单数)，
+# Hexo 又按 source/ 路径生成 /lib/... 部署。统一覆盖为单数 /lib/ 路径。
+libs:
+  js:
+    mermaid: /lib/mermaid/mermaid.min.js
