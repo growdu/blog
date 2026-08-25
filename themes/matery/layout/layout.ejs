@@ -26,9 +26,13 @@
         <!-- <script src='https://unpkg.com/mermaid@<%= theme.mermaid.version %>/dist/mermaid.min.js'></script> -->
         <script defer src='<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.mermaid) %>'></script>
         <script>
-          if (window.mermaid) {
-            mermaid.initialize({theme: 'forest'});
-          }
+          // Synchronous load (no `defer`): mermaid.initialize / .run() below
+          // need window.mermaid available immediately. The original template
+          // used `defer` + `if (window.mermaid)` but the inline script ran
+          // before the deferred library finished loading, so initialize was
+          // never called and <div class="mermaid"> blocks stayed unrendered.
+          mermaid.initialize({theme: 'forest', startOnLoad: true});
+          mermaid.run();
         </script>
     <% } %>
 
