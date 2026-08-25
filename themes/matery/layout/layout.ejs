@@ -24,7 +24,7 @@
 
     <% if (theme.mermaid.enable) { %>
         <!-- <script src='https://unpkg.com/mermaid@<%= theme.mermaid.version %>/dist/mermaid.min.js'></script> -->
-        <script defer src='<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.mermaid) %>'></script>
+        <script src='<%- theme.jsDelivr.url %><%- url_for(theme.libs.js.mermaid) %>'></script>
         <script>
           // Synchronous load (no `defer`): mermaid.initialize / .run() below
           // need window.mermaid available immediately. The original template
