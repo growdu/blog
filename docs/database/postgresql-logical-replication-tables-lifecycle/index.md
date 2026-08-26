@@ -704,27 +704,38 @@ erDiagram
 
 ```sql
 -- 一站式查一张表从出版到订阅到应用的全链条
+--
+-- 注意: 经 review 发现原版三处 bug,这里已修复:
+--   1. pg_subscription 上的 publication 数组列叫 subpublications,不是 publications
+--   2. self-join pg_class cs 没有用途 (跟 subsub 同一行);合并为 subsub.relnamespace
+--   3. apply worker 行的 pgs.relid 是 NULL (pg_stat_get_subscription 里走 nulls 分支)
+--      而不是 0。IN (…, 0::oid) 永远抓不到 apply worker 行,要用 OR relid IS NULL
 SELECT
-    pub.pubname                       AS publication,
-    cs.relnamespace::regnamespace||'.'||cs.relname AS pub_table,
-    sub.subname                       AS subscription,
-    subsub.relname                    AS sub_table,
+    pub.pubname                                AS publication,
+    subsub.relnamespace::regnamespace || '.'
+        || subsub.relname                      AS sub_table,
+    sub.subname                                AS subscription,
     pgs.subid,
     pgs.relid,
     pgs.worker_type,
     pgs.received_lsn,
     r.srsubstate,
-    r.srsublsn
+    r.srsublsn,
+    pr.prpubid IS NOT NULL                     AS in_pub_pr_rel
 FROM pg_subscription_rel r
-JOIN pg_class subsub ON subsub.oid = r.srrelid
-JOIN pg_class cs     ON cs.oid = r.srrelid      -- 同 oid, 仅展示本地
-JOIN pg_subscription sub ON sub.oid = r.srsubid
-LEFT JOIN pg_publication pub  ON pub.pubname = ANY (sub.publications::text[])
+JOIN pg_class subsub     ON subsub.oid = r.srrelid
+JOIN pg_subscription sub ON sub.oid    = r.srsubid
+LEFT JOIN pg_publication pub
+       ON pub.pubname = ANY (sub.subpublications)
 LEFT JOIN pg_publication_rel pr
-    ON pr.prpubid = pub.oid AND pr.prrelid = cs.oid
+       ON pr.prpubid = pub.oid
+      AND pr.prrelid = r.srrelid
 LEFT JOIN pg_stat_subscription pgs
-    ON pgs.subid = sub.oid AND pgs.relid IN (r.srrelid, 0::oid::oid)
-WHERE sub.subname = 'my_sub';
+       ON pgs.subid  = sub.oid
+      AND (pgs.relid = r.srrelid
+           OR pgs.relid IS NULL)
+WHERE sub.subname = 'my_sub'
+ORDER BY r.srsubstate, subsub.relname;
 ```
 
 > 注：`pg_subscription` 没有专门的外键强制约束"必须在 pub 里"——`subpublications` 列里列出的 publication 是文本数组。**所以一个订阅能引用一个不存在的 publication**：表现是 worker 启动时报错。这种问题**只能靠 SQL cross-check**，没有 catalog 级 FK 帮你。
