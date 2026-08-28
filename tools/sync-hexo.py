@@ -760,6 +760,137 @@ def rewrite_images(content, file_dir):
     return re.sub(r'!\[([^\]]*)\]\(([^)]+)\)', repl, content)
 
 
+def _resolve_link_target(rel_target, current_post_dir):
+    """Map a docs/-relative target path to an absolute Hexo permalink.
+
+    `rel_target` is the path of the link target as it would appear under
+    docs/ (already resolved through os.path.normpath against the current
+    post's docs/-relative directory).  Returns the final permalink string
+    like "/2026/08/24/database/foo/" or None if no matching docs/ file
+    exists (in which case the caller should leave the link untouched).
+    """
+    abs_target = os.path.join(DOCS, rel_target)
+    basename = os.path.basename(rel_target)
+    # If the link ends in index.{md,html,htm}, treat the parent as a
+    # page-bundle directory first; many docs/ posts live under
+    # docs/<section>/<slug>/index.md and the link from a sibling bundle
+    # points at ./<slug>/index.html.
+    if basename in ('index.md', 'index.html', 'index.htm'):
+        bundle_dir_rel = os.path.dirname(rel_target)
+        bundle_dir_abs = os.path.join(DOCS, bundle_dir_rel)
+        if os.path.isdir(bundle_dir_abs):
+            for ext in ('index.md', 'index.html', 'index.htm', '_index.md'):
+                bundle_index = os.path.join(bundle_dir_abs, ext)
+                if os.path.isfile(bundle_index):
+                    slug = os.path.basename(bundle_dir_rel)
+                    parent = os.path.dirname(bundle_dir_rel)
+                    post_path = os.path.join(parent, slug) if parent else slug
+                    date = git_date(bundle_index)
+                    return f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
+            return None
+    if os.path.isdir(abs_target):
+        # Page bundle — look for an index file inside it.
+        for ext in ('index.md', 'index.html', 'index.htm', '_index.md'):
+            bundle_index = os.path.join(abs_target, ext)
+            if os.path.isfile(bundle_index):
+                slug = os.path.basename(rel_target.rstrip('/'))
+                parent = os.path.dirname(rel_target.rstrip('/'))
+                post_path = os.path.join(parent, slug) if parent else slug
+                date = git_date(bundle_index)
+                return f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
+        return None
+    if os.path.isfile(abs_target):
+        ext = os.path.splitext(rel_target)[1].lower()
+        slug = os.path.splitext(os.path.basename(rel_target))[0]
+        if ext in ('.html', '.htm') and not slug.endswith('-html'):
+            slug += '-html'
+        parent = os.path.dirname(rel_target)
+        post_path = os.path.join(parent, slug) if parent else slug
+        date = git_date(abs_target)
+        return f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
+    # Extension-less link such as `./foo` — try common suffixes.
+    for ext in ('.md', '.html', '.htm'):
+        candidate = abs_target + ext
+        if os.path.isfile(candidate):
+            slug = os.path.splitext(os.path.basename(candidate))[0]
+            if ext in ('.html', '.htm') and not slug.endswith('-html'):
+                slug += '-html'
+            parent = os.path.dirname(candidate)
+            post_path = os.path.join(parent, slug) if parent else slug
+            date = git_date(candidate)
+            return f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
+    return None
+
+
+def rewrite_links(content, rel):
+    """Rewrite relative markdown links to absolute Hexo permalinks.
+
+    `rel` is the docs/-relative path of the post being processed, e.g.
+    'database/postgresql-mvcc/index.md'.  Relative links of the form
+    [text](./other/index.html) are resolved against the post's own
+    docs/ directory and replaced with the target's full permalink so
+    that the browser navigation from the rendered page lands on a real
+    URL.  Links that already point at an absolute URL, an external
+    scheme, an anchor, a /-rooted path, or a target we can't resolve
+    are left as-is.
+    """
+    # The post lives at docs/<dirname>/index.md (page bundle).  All
+    # relative links inside the markdown resolve against this directory.
+    if os.path.basename(rel) == 'index.md':
+        post_dir = os.path.dirname(rel)
+    else:
+        post_dir = os.path.dirname(rel)
+
+    def repl(m):
+        text, raw = m.group(1), m.group(2)
+        # Split anchor / query off so we can preserve them on the rewrite.
+        suffix = ''
+        if '#' in raw or '?' in raw:
+            # Preserve both anchor and query string verbatim by holding
+            # them aside while we resolve only the path component.
+            hash_idx = raw.find('#')
+            q_idx = raw.find('?')
+            cut = min(i for i in (hash_idx, q_idx) if i >= 0)
+            raw, suffix = raw[:cut], raw[cut:]
+        if not raw or raw.startswith(('http://', 'https://', 'data:',
+                                       'mailto:', 'tel:', '#')):
+            return m.group(0)
+        if raw.startswith('/'):
+            return m.group(0)
+        # Normalise away any leading ./ or ../ segments.
+        cleaned = raw.lstrip('./')
+        candidate = os.path.normpath(os.path.join(post_dir, cleaned))
+        # normpath can produce a leading '../' if the link escaped the
+        # current subtree — bail out in that case to avoid rewriting
+        # something we don't actually understand.
+        if candidate.startswith('..'):
+            return m.group(0)
+        # First try the path as written.  If the post is a page bundle
+        # (docs/<section>/<slug>/index.md) the author is often thinking
+        # in terms of the permalink folder `<slug>/` rather than the
+        # docs/ subtree, so a link like `./other-article/index.html`
+        # may be written with `./` even though the real target is a
+        # sibling bundle (`../other-article/index.html`).  Fall back to
+        # the parent directory so this common typo self-heals.
+        url = _resolve_link_target(candidate, post_dir)
+        if url is not None:
+            return f'[{text}]({url}{suffix})'
+        if post_dir:
+            parent_dir = os.path.dirname(post_dir)
+            if parent_dir and not parent_dir.startswith('..'):
+                sibling = os.path.normpath(os.path.join(parent_dir, cleaned))
+                if not sibling.startswith('..'):
+                    url = _resolve_link_target(sibling, parent_dir)
+                    if url is not None:
+                        return f'[{text}]({url}{suffix})'
+        return m.group(0)
+
+    # Match ordinary markdown links but skip image links (which are
+    # handled by rewrite_images and start with '!').  The (?<!!) look-
+    # behind avoids matching inside an image description.
+    return re.sub(r'(?<!!)\[([^\]]*)\]\(([^)]+)\)', repl, content)
+
+
 def copy_images():
     for root, _, files in os.walk(DOCS):
         for f in files:
@@ -796,6 +927,12 @@ def process(filepath, section_titles, cascades):
 
     # rewrite images, strip first H1 (title is in front matter)
     body_out = rewrite_images(src, fdir)
+    # Rewrite markdown intra-doc links to absolute Hexo permalinks so
+    # that `[text](./other-article/index.html)` survives the move from
+    # docs/<bundle>/ into source/_posts/<parent>/<bundle>.md without
+    # breaking navigation.  Must run after rewrite_images (which already
+    # turned `![]()` into `images/...`) so it only sees link references.
+    body_out = rewrite_links(body_out, rel)
     body_out = re.sub(r'^#\s+.+\n?', '', body_out, count=1, flags=re.MULTILINE)
 
     top_val = FEATURED_POSTS.get(rel)
