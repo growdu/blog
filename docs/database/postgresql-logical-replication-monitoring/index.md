@@ -322,10 +322,10 @@ typedef struct PgStat_StatSubEntry
 
 ```mermaid
 sequenceDiagram
-  participant RB as ReorderBuffer<br/>(publisher 内存)
-  participant RBAPI as reorderbuffer.c<br/>ReorderBufferSerialize /<br/>ReorderBufferStreamTXN
-  participant Upd as UpdateDecodingStats<br/>logical.c:1954
-  participant PgStat as pgstat 子系统<br/>(500ms 周期)
+  participant RB as ReorderBuffer / (publisher 内存)
+  participant RBAPI as reorderbuffer.c / ReorderBufferSerialize / / ReorderBufferStreamTXN
+  participant Upd as UpdateDecodingStats / logical.c:1954
+  participant PgStat as pgstat 子系统 / (500ms 周期)
   participant View as pg_stat_replication_slots
 
   Note over RB: rb->spillBytes / streamBytes / totalBytes<br/>是内存里的「delta 计数器」
@@ -707,15 +707,15 @@ ORDER BY s.subname;
 
 ```mermaid
 stateDiagram-v2
-  [*] --> INIT : AddSubscriptionRelState<br/>→ srsubstate='i'
-  INIT --> DATASYNC : tablesync worker 启动<br/>(max_logical_replication_workers 池)
-  DATASYNC --> CATCHUP : COPY 完成<br/>UpdateSubscriptionRelState → 'c'
-  CATCHUP --> SYNCDONE : apply worker 追上<br/>tablesync finish lsn → 's'
+  [*] --> INIT : AddSubscriptionRelState / → srsubstate='i'
+  INIT --> DATASYNC : tablesync worker 启动 / (max_logical_replication_workers 池)
+  DATASYNC --> CATCHUP : COPY 完成 / UpdateSubscriptionRelState → 'c'
+  CATCHUP --> SYNCDONE : apply worker 追上 / tablesync finish lsn → 's'
   SYNCDONE --> READY : UpdateSubscriptionRelState → 'r'
   READY --> [*]
 
-  INIT --> INIT : worker pool 满<br/>等待 (queue)
-  DATASYNC --> INIT : tablesync 失败<br/>→ 回到 i 等下一轮
+  INIT --> INIT : worker pool 满 / 等待 (queue)
+  DATASYNC --> INIT : tablesync 失败 / → 回到 i 等下一轮
 
   note right of DATASYNC : 大表可能持续数十分钟<br/>耗 logical_decoding_work_mem
   note right of READY : 健康态 — 99%+ 表应停留在此
@@ -757,13 +757,13 @@ apply worker 的统计上报链路：
 
 ```mermaid
 sequenceDiagram
-  participant Apply as apply worker 后端<br/>(leader / parallel / tablesync)
-  participant StorePos as store_flush_position()<br/>worker.c:3532
-  participant Upd as UpdateWorkerStats()<br/>worker.c:3597
-  participant Send as send_feedback()<br/>worker.c:3838
-  participant Pub as publisher<br/>walsender
-  participant Mem as LogicalRepWorker<br/>(共享内存)
-  participant SRF as pg_stat_get_subscription()<br/>launcher.c:1301
+  participant Apply as apply worker 后端 / (leader / parallel / tablesync)
+  participant StorePos as store_flush_position() / worker.c:3532
+  participant Upd as UpdateWorkerStats() / worker.c:3597
+  participant Send as send_feedback() / worker.c:3838
+  participant Pub as publisher / walsender
+  participant Mem as LogicalRepWorker / (共享内存)
+  participant SRF as pg_stat_get_subscription() / launcher.c:1301
   participant View as pg_stat_subscription view
 
   Apply->>StorePos: 收到 COMMIT / PREPARE / ABORT

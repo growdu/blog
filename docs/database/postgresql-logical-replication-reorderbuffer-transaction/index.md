@@ -35,7 +35,7 @@ flowchart TB
   subgraph WAL["WAL 流 (XLOG_BLCKSZ 序列)"]
     W1[xl_heap_insert / update / delete]
     W2[xl_xact_parsed_commit / abort / prepare]
-    W3[xl_running_xacts (每 ~15s)]
+    W3["xl_running_xacts (每 ~15s)"]
     W4[xl_heap2_inplace / xl_invalidations]
   end
 
@@ -182,8 +182,8 @@ flowchart LR
 sequenceDiagram
   participant Wal as walwriter / backend
   participant Dec as decode.c: DecodeXLogOp
-  participant Snap as snapbuild.c<br/>(catalog 变更时)
-  participant RB as ReorderBuffer<br/>(reorderbuffer.c)
+  participant Snap as snapbuild.c / (catalog 变更时)
+  participant RB as ReorderBuffer / (reorderbuffer.c)
   participant Heap as rb->by_txn
   participant Txn as ReorderBufferTXN
   participant Lst as txn->changes dlist
@@ -380,21 +380,21 @@ SpinLockRelease(&slot->mutex);
 
 ```mermaid
 stateDiagram-v2
-  [*] --> BORN : 第一次见到 xid<br/>ReorderBufferTXNByXid(create=true)<br/>reorderbuffer.c:652
-  BORN --> BUILDING : 写入第一条 change<br/>ReorderBufferQueueChange<br/>reorderbuffer.c:715
-  BUILDING --> BUILDING : 后续 change 持续追加<br/>(内存)
-  BUILDING --> SPILLED : rb->size >= logical_decoding_work_mem<br/>ReorderBufferSerializeTXN<br/>reorderbuffer.c:3924
-  SPILLED --> BUILDING : restore 出 spill 文件的 change<br/>(commit 时)
-  BUILDING --> STREAMED : ReorderBufferCanStartStreaming()<br/>reorderbuffer.c:4283
+  [*] --> BORN : 第一次见到 xid / ReorderBufferTXNByXid(create=true) / reorderbuffer.c:652
+  BORN --> BUILDING : 写入第一条 change / ReorderBufferQueueChange / reorderbuffer.c:715
+  BUILDING --> BUILDING : 后续 change 持续追加 / (内存)
+  BUILDING --> SPILLED : rb->size >= logical_decoding_work_mem / ReorderBufferSerializeTXN / reorderbuffer.c:3924
+  SPILLED --> BUILDING : restore 出 spill 文件的 change / (commit 时)
+  BUILDING --> STREAMED : ReorderBufferCanStartStreaming() / reorderbuffer.c:4283
   STREAMED --> BUILDING : stream 过程中还能继续 append
-  BUILDING --> COMMITTED : DecodeCommit() → ReorderBufferCommit()<br/>reorderbuffer.c:2874
-  SPILLED --> COMMITTED : DecodeCommit() → ReorderBufferReplay()<br/>reorderbuffer.c:2813
-  STREAMED --> COMMITTED : 流式 commit<br/>ReorderBufferStreamCommit()<br/>reorderbuffer.c:??
-  BUILDING --> ABORTED : DecodeAbort() → ReorderBufferAbort()<br/>reorderbuffer.c:3077
-  COMMITTED --> [*] : ReorderBufferCleanupTXN<br/>reorderbuffer.c:1530
-  ABORTED --> [*] : ReorderBufferCleanupTXN<br/>reorderbuffer.c:1530
-  BUILDING --> FORGOTTEN : DecodeTXNNeedSkip() → ReorderBufferForget()<br/>reorderbuffer.c:3170
-  BUILDING --> ABORTED_OLD : ReorderBufferAbortOld()<br/>reorderbuffer.c:3123
+  BUILDING --> COMMITTED : DecodeCommit() → ReorderBufferCommit() / reorderbuffer.c:2874
+  SPILLED --> COMMITTED : DecodeCommit() → ReorderBufferReplay() / reorderbuffer.c:2813
+  STREAMED --> COMMITTED : 流式 commit / ReorderBufferStreamCommit() / reorderbuffer.c:??
+  BUILDING --> ABORTED : DecodeAbort() → ReorderBufferAbort() / reorderbuffer.c:3077
+  COMMITTED --> [*] : ReorderBufferCleanupTXN / reorderbuffer.c:1530
+  ABORTED --> [*] : ReorderBufferCleanupTXN / reorderbuffer.c:1530
+  BUILDING --> FORGOTTEN : DecodeTXNNeedSkip() → ReorderBufferForget() / reorderbuffer.c:3170
+  BUILDING --> ABORTED_OLD : ReorderBufferAbortOld() / reorderbuffer.c:3123
 ```
 
 源码标记：
@@ -924,7 +924,7 @@ SELECT pg_reload_conf();
 ```mermaid
 flowchart TB
   subgraph 输入
-    WAL[XAL 流: heap / xact / running_xacts]
+    WAL["XLOG 流: heap / xact / running_xacts"]
   end
 
   subgraph 三个 worker
