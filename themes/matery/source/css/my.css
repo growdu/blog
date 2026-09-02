@@ -2058,3 +2058,63 @@ body.wechat-qr-modal-open { overflow: hidden; }
 
 .about-content{max-width:960px;margin:0 auto;}
 @media (max-width:600px){.about-content{width:100%;}}
+
+/* ============================================================
+   Mobile optimization for homepage content panels
+   统计横幅 / 学习路径 / Tab 列表 / 文章卡片
+   桌面端样式保留，<=600px 手机端做紧凑适配
+   ============================================================ */
+@media (max-width: 600px) {
+    /* 通用：section 标题区 */
+    .section-title { margin-bottom: 24px; }
+    .section-title h2 { font-size: 20px; }
+    .section-subtitle { font-size: 12px; padding: 0 8px; line-height: 1.5; }
+
+    /* 统计横幅：保留 2 列布局（<=992px 时已切换），只压缩 padding 与字号 */
+    .stats-banner { gap: 10px; margin: 16px 0 24px; }
+    .stat-card { padding: 16px 8px; }
+    .stat-num { font-size: 22px; margin-bottom: 2px; }
+    .stat-label { font-size: 12px; }
+
+    /* 学习路径整体：缩小外边距与内边距 */
+    .learning-path { margin: 24px 0 12px; padding: 18px 0; border-radius: 12px; }
+    .learning-path .container { padding: 0 6px; }
+    .lane-grid { gap: 12px; padding: 0 8px; }
+
+    /* 学习路径卡片：压缩 padding / 字号 / 边框 */
+    .lane-card { padding: 16px 14px; border-top-width: 3px; border-radius: 10px; }
+    .lane-card__head { gap: 10px; margin-bottom: 8px; }
+    .lane-card__icon { font-size: 20px; width: 32px; height: 32px; border-radius: 6px; }
+    .lane-card__title { font-size: 16px; }
+    .lane-card__desc { font-size: 12px; min-height: 0; margin: 0 0 10px; line-height: 1.5; }
+    .lane-card__posts { margin: 0 0 10px; }
+    .lane-card__posts li { font-size: 12px; line-height: 1.5; padding: 3px 0; gap: 5px; }
+    .lane-card__posts li i { margin-top: 3px; font-size: 9px; }
+    .lane-card__more { font-size: 12px; margin-top: 6px; }
+    .lane-card__empty { font-size: 11px; margin: 10px 0; }
+
+    /* 首页 Tab 标签：在窄屏缩小字号与内边距，避免换行 */
+    .home-tabs { margin-top: 8px; }
+    .home-tabs .tabs { margin-bottom: 14px; }
+    .home-tabs .tabs .tab a {
+        font-size: 13px;
+        padding: 0 10px;
+        line-height: 44px;
+        letter-spacing: 0;
+    }
+    .home-tabs__more .btn-flat { font-size: 13px; padding: 0 12px; }
+
+    /* 文章卡片（推荐/热门/最新）：压缩 padding 与字号 */
+    .post-card__body { padding: 12px 14px 14px; }
+    .post-card__title { font-size: 15px; margin-bottom: 6px; }
+    .post-card__meta { font-size: 11px; gap: 8px; margin-bottom: 6px; }
+    .post-card__excerpt { font-size: 12px; line-height: 1.5; -webkit-line-clamp: 2; }
+}
+
+/* 极小屏（<=400px，老 iPhone/SE 1 代等）：stats-banner 改为单列 */
+@media (max-width: 400px) {
+    .stats-banner { grid-template-columns: 1fr; gap: 8px; }
+    .stat-card { padding: 14px 10px; }
+    .stat-num { font-size: 22px; }
+    .home-tabs .tabs .tab a { font-size: 12px; padding: 0 6px; }
+}
