@@ -388,3 +388,10 @@ mermaid:
 libs:
   js:
     mermaid: /lib/mermaid/mermaid.min.js
+
+# 公网备案 (页脚显示，需 theme.icp.enable 为 true 才会渲染)
+# 图标: themes/matery/source/medias/icp.png (主题自带)
+icp:
+  enable: true
+  url: https://beian.miit.gov.cn/
+  text: 滇ICP备2026016996号-1
