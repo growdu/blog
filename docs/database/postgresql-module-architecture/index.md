@@ -112,7 +112,7 @@ flowchart TB
 
 ---
 
-## 二、一个 `postgres` 二进制，三个完全不同的身份
+## 二、一个 `postgres` 二进制，五种身份 + 两种"立刻退出"
 
 很多人不知道： **`/usr/lib/postgresql/18/bin/postgres` 这个可执行文件同时扮演至少 5 个角色**。
 
@@ -123,21 +123,23 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    PB[/"postgres &lt;args&gt;"/]
-    PB -->|默认 / 无 --xxx| P["DISPATCH_POSTMASTER<br/>PostmasterMain()"]
-    PB -->|"--boot"| B1["DISPATCH_BOOT<br/>BootstrapModeMain()"]
-    PB -->|"--check"| B2["DISPATCH_CHECK<br/>BootstrapModeMain(check=true)"]
-    PB -->|"--single"| S["DISPATCH_SINGLE<br/>PostgresSingleUserMain()"]
-    PB -->|"--describe-config"| G["DISPATCH_DESCRIBE_CONFIG<br/>GucInfoMain()"]
-    PB -->|"--forkchild=<i>" --> F["DISPATCH_FORKCHILD<br/>SubPostmasterMain()<br/>(仅 EXEC_BACKEND)"]
-    PB -->|-V / --version| V["打印版本退出"]
-    PB -->|--help| H["打印帮助退出"]
+    IN[/"postgres &lt;args&gt;"/]:::in
 
-    classDef pg fill:#dcfce7,stroke:#15803d,color:#000
-    classDef alt fill:#dbeafe,stroke:#1d4ed8,color:#000
+    IN -->|"默认 · 无 --xxx"| MAIN["PostmasterMain&lt;br&gt;主路径 · 生产服务器"]:::main
+    IN -->|"--boot"| BOOT["BootstrapModeMain(false)&lt;br&gt;initdb 内部调用"]:::aux
+    IN -->|"--check"| CHK["BootstrapModeMain(check=true)&lt;br&gt;pg_controldata / pg_resetwal"]:::aux
+    IN -->|"--single"| SING["PostgresSingleUserMain()&lt;br&gt;单机调试 / 恢复"]:::aux
+    IN -->|"--describe-config"| DC["GucInfoMain()&lt;br&gt;postgres -C guc"]:::aux
+    IN -->|"--forkchild=&lt;i&gt;"| FK["SubPostmasterMain()&lt;br&gt;EXEC_BACKEND 专用"]:::execk
 
-    class P,PB pg
-    class B1,B2,S,G,F,V,H alt
+    IN -.->|"-V" / "--version"| V[/"打印 PG_VERSION&lt;br&gt;exit(0)"/]:::exit
+    IN -.->|"--help"| H[/"打印 help 文本&lt;br&gt;exit(0)"/]:::exit
+
+    classDef in fill:#dcfce7,stroke:#15803d,color:#000
+    classDef main fill:#fce7f3,stroke:#be185d,color:#000
+    classDef aux fill:#dbeafe,stroke:#1d4ed8,color:#000
+    classDef execk fill:#fef9c3,stroke:#a16207,color:#000
+    classDef exit fill:#f3f4f6,stroke:#6b7280,color:#000
 ```
 
 **常用身份的对应关系（开发者背下来即拿即用）：**
