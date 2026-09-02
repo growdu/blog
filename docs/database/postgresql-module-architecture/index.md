@@ -123,17 +123,17 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    IN[/"postgres &lt;args&gt;"/]:::in
+    IN[/"postgres [args]"/]:::in
 
-    IN -->|"默认 · 无 --xxx"| MAIN["PostmasterMain&lt;br&gt;主路径 · 生产服务器"]:::main
-    IN -->|"--boot"| BOOT["BootstrapModeMain(false)&lt;br&gt;initdb 内部调用"]:::aux
-    IN -->|"--check"| CHK["BootstrapModeMain(check=true)&lt;br&gt;pg_controldata / pg_resetwal"]:::aux
-    IN -->|"--single"| SING["PostgresSingleUserMain()&lt;br&gt;单机调试 / 恢复"]:::aux
-    IN -->|"--describe-config"| DC["GucInfoMain()&lt;br&gt;postgres -C guc"]:::aux
-    IN -->|"--forkchild=&lt;i&gt;"| FK["SubPostmasterMain()&lt;br&gt;EXEC_BACKEND 专用"]:::execk
+    IN -->|"默认 / 无 --xxx"| MAIN["PostmasterMain&#40;&#41;<br/>主路径 · 生产服务器"]:::main
+    IN -->|"--boot"| BOOT["BootstrapModeMain&#40;false&#41;<br/>initdb 内部调用"]:::aux
+    IN -->|"--check"| CHK["BootstrapModeMain&#40;check=true&#41;<br/>pg_controldata 或 pg_resetwal"]:::aux
+    IN -->|"--single"| SING["PostgresSingleUserMain&#40;&#41;<br/>单机调试 / 恢复"]:::aux
+    IN -->|"--describe-config"| DC["GucInfoMain&#40;&#41;<br/>postgres -C guc"]:::aux
+    IN -->|"--forkchild=N"| FK["SubPostmasterMain&#40;&#41;<br/>EXEC_BACKEND 专用"]:::execk
 
-    IN -.->|"-V" / "--version"| V[/"打印 PG_VERSION&lt;br&gt;exit(0)"/]:::exit
-    IN -.->|"--help"| H[/"打印 help 文本&lt;br&gt;exit(0)"/]:::exit
+    IN -.->|"--version / -V"| V[/"打印 PG_VERSION<br/>exit&#40;0&#41;"/]:::exit
+    IN -.->|"--help"| H[/"打印 help 文本<br/>exit&#40;0&#41;"/]:::exit
 
     classDef in fill:#dcfce7,stroke:#15803d,color:#000
     classDef main fill:#fce7f3,stroke:#be185d,color:#000
@@ -298,7 +298,7 @@ sequenceDiagram
 
     Note over PM: ConfigurePostmasterWaitSet(true)<br/>注册 MyLatch + listen FDs
 
-    loop 永久 for(;;)
+    loop 永久 forever
         PM->>K: WaitEventSetWait(timeout)
         alt 客户端 connect()
             K-->>PM: WL_SOCKET_ACCEPT on listen_fd
@@ -378,11 +378,11 @@ flowchart TB
 
     classDef pm fill:#dcfce7,stroke:#15803d,color:#000
     classDef ify fill:#fef9c3,stroke:#a16207,color:#000
-    classDef end fill:#dbeafe,stroke:#1d4ed8,color:#000
+    classDef leaf fill:#dbeafe,stroke:#1d4ed8,color:#000
 
     class PM pm
     class F,C1,C2,C6 ify
-    class C3,C4,C5,R end
+    class C3,C4,C5,R leaf
 ```
 
 **`postmaster_child_launch()` 的 Unix 分支**（`launch_backend.c:244-291`）做了这么几件事：
@@ -498,7 +498,7 @@ sequenceDiagram
     IP->>IP: 读 pg_database → 选 tablespace → 加载配置
     PM->>FE: BackendKeyData (pid + cancel key)
     PM->>PM: MessageContext / RowDescriptionContext 建好
-    PM->>PM: 进入 for(;;) 主循环<br/>PQ 中读取消息，分发到 exec_simple_query<br/>或执行 prepared statement / COPY / 大消息
+    PM->>PM: 进入 forever-loop<br/>PQ 中读取消息,分发到 exec_simple_query<br/>或执行 prepared statement 与 COPY
 
     loop 每个客户端消息
         FE->>PM: Q / Parse / Bind / Execute / Sync / Close / Describe...
@@ -630,8 +630,8 @@ flowchart LR
     SIG -->|kill| PMMAIN
     SIG -->|kill| CHMAIN
 
-    PMMAIN -->|kill(SIGUSR1)| CHMAIN
-    CHMAIN -->|kill(SIGUSR1)| PMMAIN
+    PMMAIN -->|kill via SIGUSR1| CHMAIN
+    CHMAIN -->|kill via SIGUSR1| PMMAIN
 
     PMMAIN <-->|set MyLatch| PML
     CHMAIN <-->|set MyLatch| CHL
@@ -924,7 +924,7 @@ fork+exec 模式下，子进程不再继承 postmaster 的内存布局，必须�
 flowchart LR
     A["第 1 步<br/>src/include/.../pgproc.h + postmaster.h<br/>enum BackendType 加 B_LOOPER"]
 
-    B["第 2 步<br/>src/backend/postmaster/launch_backend.c<br/>child_process_kinds[] 加条目<br/>{ \"looper\", LooperMain, true }"]
+    B["第 2 步<br/>src/backend/postmaster/launch_backend.c<br/>child_process_kinds[] 加条目<br/>{ 'looper', LooperMain, true }"]
 
     C["第 3 步<br/>src/backend/postmaster/looper.c<br/># LooperMain()<br/>AuxiliaryProcessMainCommon + for(;;)"]
 
