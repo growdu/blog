@@ -15,7 +15,9 @@ tags:
 
 > 不会写代码？看不懂命令行？这篇教程只讲"下载、安装、点几下"，跟着做就行。
 >
-> 你的订阅链接是：`http://onetear.fun:8080/clash-meta.yaml`
+> 你的订阅链接是:`http://onetear.fun:8080/clash-meta.yaml`
+>
+> 📦 客户端安装包镜像(Windows / macOS / Android):`http://onetear.fun:18089/clash_client/`(Linux / iOS 不在镜像里,按对应章节走官方渠道)
 
 ---
 
@@ -38,11 +40,13 @@ tags:
 
 | 你的系统 | 推荐客户端 | 收费？ |
 | --- | --- | --- |
-| 🪟 Windows 10/11 | **Clash Verge Rev** | 免费 |
-| 🍎 macOS（Intel / M1 / M2 / M3） | **Clash Verge Rev** | 免费 |
+| 🪟 Windows 10/11 | **Clash Verge** | 免费 |
+| 🍎 macOS（Intel / M1 / M2 / M3） | **Clash Verge** | 免费 |
 | 🐧 Linux（Ubuntu / Debian / 国产） | **Clash Verge Rev** | 免费 |
 | 📱 Android 安卓 | **Clash Meta for Android** | 免费 |
-| 🍎 iOS 苹果 | **Stash** | 一次性 ¥25 左右 |
+| 🍎 iOS 苹果 | **V2Box** | 完全免费 ✨ |
+
+> 📦 安装包国内镜像(`http://onetear.fun:18089/clash_client/`):**Windows / macOS / Android 直接下载**;Linux / iOS 不在镜像里(按下面的章节走官方渠道)。
 
 下面分平台教你怎么用。
 
@@ -52,25 +56,19 @@ tags:
 
 ### 第 1 步：下载客户端
 
-打开浏览器，访问这个网址：
+直接点这个链接下载:
 
 ```
-https://github.com/clash-verge-rev/clash-verge-rev/releases
+http://onetear.fun:18089/clash_client/Clash.Verge_2.5.2_x64-setup.exe
 ```
 
-页面会很长，找一个**看起来像这样的文件名**（数字可能不同）：
+(约 45 MB,浏览器会自动开始下载)
 
-```
-clash-verge-rev_1.7.2_x64-setup.exe
-```
-
-> 💡 不知道怎么找？看页面里**带 `_x64-setup.exe` 字样的下载链接**就对了。
-
-点击下载（约 30 MB）。
+> 💡 国内 CDN 镜像,速度快、不易断流。
 
 ### 第 2 步：安装
 
-下载完成后，双击 `clash-verge-rev_1.7.2_x64-setup.exe`，一路点 **下一步** → **安装** → **完成**。
+下载完成后,双击 `Clash.Verge_2.5.2_x64-setup.exe`,一路点 **下一步** → **安装** → **完成**。
 
 ### 第 3 步：配置订阅
 
@@ -132,23 +130,14 @@ flowchart LR
 
 ### 第 1 步：下载客户端
 
-打开浏览器访问：
+**先确认你的 Mac 是哪种芯片**:左上角  →  关于本机  →  看"芯片"或"处理器"一行。
 
-```
-https://github.com/clash-verge-rev/clash-verge-rev/releases
-```
+| 芯片类型 | 下载链接 |
+| --- | --- |
+| **Apple 芯片**(M1 / M2 / M3 / M4) | <http://onetear.fun:18089/clash_client/Clash.Verge_2.5.2_aarch64.dmg>(约 58 MB) |
+| **Intel 芯片**(2019 年前 Mac) | <http://onetear.fun:18089/clash_client/Clash.Verge_2.5.2_x64.dmg>(约 63 MB) |
 
-找**像这样**的文件名（带 `_universal.dmg` 或 `_x64.dmg`）：
-
-```
-clash-verge-rev_1.7.2_universal.dmg
-```
-
-> 💡 不知道选 universal 还是 x64？
-> - **M1 / M2 / M3 芯片**（2020 年后的 Mac）→ 选 `_universal.dmg` 或 `_arm64.dmg`
-> - **Intel 芯片**（2019 年前的 Mac）→ 选 `_x64.dmg`
-
-点下载（约 35 MB）。
+点对应链接下载即可(国内 CDN 镜像)。
 
 ### 第 2 步：安装
 
@@ -191,23 +180,14 @@ clash-verge-rev_1.7.2_universal.dmg
 
 ### 第 1 步：下载客户端
 
-打开手机浏览器，访问：
+直接点链接下载(国内 CDN 镜像):
 
-```
-https://github.com/MetaCubeX/ClashMetaForAndroid/releases
-```
+| 你的手机 | 下载链接 |
+| --- | --- |
+| **绝大多数 Android 手机**(真机) | <http://onetear.fun:18089/clash_client/cmfa-2.11.33-meta-universal-release.apk>(约 104 MB,通用包) |
+| **电脑上的安卓模拟器**(夜神/雷电/MuMu 等) | <http://onetear.fun:18089/clash_client/cmfa-2.11.33-meta-x86-release.apk>(约 45 MB) |
 
-找**像这样**的文件名（带 `.apk`）：
-
-```
-CMFA-v2.11.0-meta-arm64-v8a.apk
-```
-
-> 💡 不知道选哪个？
-> - 大多数现代手机 → 选 **`arm64-v8a`** 或 **`universal`**
-> - 极老手机 → 选 `armeabi-v7a`
-
-点击下载（约 20 MB）。
+> 💡 不确定选哪个?选 **universal** 那个就行,什么手机都能装。
 
 ### 第 2 步：安装
 
@@ -256,38 +236,50 @@ flowchart LR
 
 ## 六、iOS 苹果用户看这里
 
-iOS 上没有免费的 Clash 客户端，需要**付费下载**。推荐 Stash（约 ¥25 一次性买断）。
+iOS 上有个完全免费且好用的客户端 —— **V2Box**,直接 App Store 搜就行,不用花钱,也不用换 Apple ID。下面按这个走。
 
-### 第 1 步：准备海外 App Store 账号
+### 第 1 步:下载 V2Box
 
-中国大陆 App Store 搜不到 Stash。你需要：
-- 一个**美区 / 港区 / 日区**的 Apple ID
-- 或者从淘宝/闲鱼租一个共享账号（临时登录用）
+打开 iPhone 自带 **App Store**,搜索 **"V2Box"** → 点 **获取**(免费,无需付费)→ 安装。
 
-### 第 2 步：下载 Stash
+> ⚠️ 国内镜像 `http://onetear.fun:18089/clash_client/` 不提供 iOS 安装包(Apple 政策限制),iOS 必须从 App Store 下载。
 
-切换到海外区账号后，在 App Store 搜索 **Stash**，点击购买下载（约 ¥25）。
+### 第 2 步:添加订阅
 
-### 第 3 步：添加订阅
+打开 V2Box,左上角菜单 → **Subscription(订阅)** → 右上角 **+** → 选 **Type: Clash**。
 
-打开 Stash，底部菜单点 **设置（Settings）** → **订阅（Profiles）** → 点 **+** → **URL**。
-
-输入：
+输入:
 ```
 http://onetear.fun:8080/clash-meta.yaml
 ```
 
-点击 **Download**。
+点 **保存**,等待 3-5 秒,订阅会自动下载并出现在列表里。
 
-### 第 4 步：启动
+### 第 3 步:启动
 
-回到主界面：
-1. 顶部选择刚下载的订阅
-2. 顶部开关打开（变连接状态）
+1. 顶部下拉框**选**刚下载的订阅
+2. 顶部**大开关**打开(变绿色 / 连接状态)
+3. 首次启动会弹"是否允许创建 VPN 配置" → 点 **允许**,输密码 / Face ID 确认
 
-### 第 5 步：测试
+### 第 4 步:测试
 
 Safari 打开 https://www.google.com 验证。
+
+---
+
+### 💡 不喜欢 V2Box?还有两个免费替代
+
+| 方案 | 操作 |
+| --- | --- |
+| **sing-box**(开源免费,App Store 直接搜) | 需要把 `clash-meta.yaml` 转成 sing-box JSON 格式(用 [subconverter](https://github.com/tindy2013/subconverter) 在线转换) |
+| **共享代理**(0 成本 0 配置) | 用 Android(开热点) / Mac(开互联网共享) / Windows(开代理 + Allow LAN)的代理透给 iPhone |
+
+### 💡 想要付费的 Stash 怎么办?
+
+如果就想用 Stash(功能比 V2Box 更专业,约 ¥25 一次性买断):
+- 自备**美区 / 港区 Apple ID**(免费注册)
+- 或淘宝/闲鱼租一个**共享账号**(几块钱一次)
+- 切换账号后在 App Store 搜 **Stash** → 购买 → 走和 V2Box 一样的添加订阅流程
 
 ---
 
@@ -383,10 +375,14 @@ Safari 打开 https://www.google.com 验证。
 
 ## 十、参考
 
+- **客户端安装包镜像(Wind / macOS / Android)**：<http://onetear.fun:18089/clash_client/>
 - 客户端官方仓库（GitHub）：
   - Clash Verge Rev:<https://github.com/clash-verge-rev/clash-verge-rev>
   - Clash Meta for Android:<https://github.com/MetaCubeX/ClashMetaForAndroid>
-  - Stash(iOS):<https://apps.apple.com/app/stash/id1596063349>
+- iOS 客户端：
+  - V2Box（免费）:<https://apps.apple.com/app/v2box/id6446812418>
+  - sing-box（免费开源）:<https://apps.apple.com/app/sing-box/id1642689768>
+  - Stash（付费）:<https://apps.apple.com/app/stash/id1596063349>
 
 - 文档：<https://wiki.metacubex.one/>
 

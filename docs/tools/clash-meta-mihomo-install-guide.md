@@ -16,6 +16,8 @@ tags:
 > 本教程涵盖 Windows、macOS、Linux、Android、iOS 五个平台的 Clash Meta(mihomo)客户端安装、配置、以及订阅端连接。
 >
 > 订阅端(本教程示例):`http://onetear.fun:8080/clash-meta.yaml`
+>
+> 客户端安装包镜像(Wind / macOS / Android):`http://onetear.fun:18089/clash_client/`
 
 ---
 
@@ -38,18 +40,19 @@ Clash 是一个基于 Go 实现的代理客户端，凭借规则分流、YAML �
 
 ### 2.1 Windows
 
-#### 推荐:Clash Verge Rev(最主流)
+#### 推荐:Clash Verge(国内镜像)
 
 **安装步骤**:
 
-1. 打开 GitHub Release 页:<https://github.com/clash-verge-rev/clash-verge-rev/releases>
-2. 下载最新版本的 `clash-verge-rev_*_x64-setup.exe`(Windows 11 / 10 64-bit)
-3. 双击安装包，按向导完成
-4. 启动后右下角托盘出现图标
+1. 直接下载安装包:<http://onetear.fun:18089/clash_client/Clash.Verge_2.5.2_x64-setup.exe>(约 45 MB,Windows 10 / 11 64-bit)
+2. 双击安装包,按向导完成
+3. 启动后右下角托盘出现图标
+
+> 💡 镜像说明:安装包来自国内 CDN 镜像 `http://onetear.fun:18089/clash_client/`,下载速度快、不易断流。如需最新 dev 版本也可去 GitHub:<https://github.com/clash-verge-rev/clash-verge-rev/releases>
 
 **验证安装**:
 ```powershell
-# PowerShell
+# PowerShell(可选,适合习惯包管理的同学)
 winget install ClashVergeRev.ClashVergeRev
 # 或 scoop
 scoop install clash-verge-rev
@@ -81,14 +84,20 @@ mihomo -v
 
 ### 2.2 macOS
 
-#### 推荐:Clash Verge Rev
+#### 推荐:Clash Verge(国内镜像)
 
-1. 打开 <https://github.com/clash-verge-rev/clash-verge-rev/releases>
-2. 下载 `clash-verge-rev_*_universal.dmg` 或 `_x64.dmg`
-3. 双击 .dmg，把 Clash Verge Rev 拖到 Applications
-4. **首次启动需要授权**:系统设置 → 隐私与安全性 → 仍要打开
+| 芯片 | 下载链接 |
+| --- | --- |
+| **Apple Silicon**(M1 / M2 / M3 / M4) | <http://onetear.fun:18089/clash_client/Clash.Verge_2.5.2_aarch64.dmg>(约 58 MB) |
+| **Intel**(2019 年前 Mac) | <http://onetear.fun:18089/clash_client/Clash.Verge_2.5.2_x64.dmg>(约 63 MB) |
 
-或者用 Homebrew:
+**安装步骤**:
+
+1. 根据芯片选上面对应的链接下载 `.dmg`
+2. 双击 .dmg,把 Clash Verge 拖到 Applications
+3. **首次启动需要授权**:系统设置 → 隐私与安全性 → 仍要打开
+
+或者用 Homebrew(从 GitHub 拉):
 
 ```bash
 brew install --cask clash-verge-rev
@@ -116,6 +125,8 @@ mihomo -v
 ---
 
 ### 2.3 Linux
+
+> ℹ️ 国内镜像 `http://onetear.fun:18089/clash_client/` **暂未收录 Linux 包**(只有 Windows / macOS / Android 安装包)。Linux 桌面用户请继续走 GitHub Release 或系统包管理器。
 
 #### Debian / Ubuntu
 
@@ -157,17 +168,19 @@ ls ~/.local/share/applications/ | grep clash
 
 ### 2.4 Android
 
-#### 推荐:Clash Meta for Android
+#### 推荐:Clash Meta for Android(国内镜像)
 
-- GitHub:<https://github.com/MetaCubeX/ClashMetaForAndroid/releases>
-- 下载 `CMFA-*.apk`(arm64-v8a / armeabi-v7a / x86_64)
+| 设备 | 下载链接 |
+| --- | --- |
+| **真机**(绝大多数 Android 手机) | <http://onetear.fun:18089/clash_client/cmfa-2.11.33-meta-universal-release.apk>(约 104 MB,通用包) |
+| **x86 模拟器**(夜神/雷电/MuMu 等) | <http://onetear.fun:18089/clash_client/cmfa-2.11.33-meta-x86-release.apk>(约 45 MB) |
 
 **安装步骤**:
 
-1. 下载对应架构的 APK
+1. 点击上面链接下载 APK
 2. 手机打开"未知来源应用"权限
 3. 点击 APK 安装
-4. 首次启动会请求 VPN 权限，授权
+4. 首次启动会请求 VPN 权限,授权
 
 或者通过 F-Droid:
 
@@ -187,18 +200,49 @@ go install github.com/metacubex/mihomo/cmd/mihomo@latest
 
 ### 2.5 iOS
 
-iOS 上没有官方的 Clash Meta 客户端。推荐付费工具:
+iOS 因 Apple 政策,**国内镜像 `http://onetear.fun:18089/clash_client/` 无法分发 iOS 安装包**(`.ipa` 必须走 App Store)。下面按 **是否愿意花钱** 分两类方案。
 
-| 工具 | 收费 | mihomo 兼容 |
-| --- | --- | --- |
-| **Stash** | $3.99 | ✅ 完全兼容 |
-| Shadowrocket | $2.99 | 部分兼容 |
-| Quantumult X | $7.99 | 部分兼容 |
-| Loon | $5.99 | 部分兼容 |
+#### 方案 A:免费方案(0 元)
 
-**Stash 安装**:App Store 搜索 "Stash" → 购买 → 打开。
+##### A1. **V2Box** — 最推荐,App Store 直接搜
 
-> 提醒:中国大陆地区 App Store 需要海外区账号才能搜索到这些应用。
+- **价格**:完全免费(有广告,但不影响代理功能)
+- **mihomo 兼容**:**支持直接粘贴 `clash-meta.yaml` 订阅链接**
+- **下载**:App Store 搜索 **"V2Box"** → 直接安装,无需付费
+- **添加订阅**:打开 App → 顶部 `+` → `Subscribe` → 粘贴 `http://onetear.fun:8080/clash-meta.yaml` → 保存 → 选节点 → 启动开关
+
+##### A2. **sing-box** — 开源免费,适合折腾
+
+- **价格**:App Store 完全免费,无广告
+- **mihomo 兼容**:**需要把 YAML 手动转成 JSON**(配置稍微复杂)
+- **下载**:App Store 搜索 **"sing-box"** → 安装
+- **配置转换**:可使用在线工具 [subconverter](https://github.com/tindy2013/subconverter) 把 `clash-meta.yaml` 转成 sing-box 出站格式
+
+##### A3. **共享代理**(适合已有 Android / Mac / Windows 的同学)
+
+不装任何 iOS 客户端,让其它设备的代理透给 iPhone:
+
+| 共享端 | iPhone 怎么连 |
+| --- | --- |
+| Android(已开代理) | 设置 → 移动网络 → 个人热点 → 打开,**iPhone 连这个 Wi-Fi 即可走代理** |
+| Mac(已开代理) | 系统设置 → 通用 → 共享 → 互联网共享(勾选 Wi-Fi)→ iPhone 连 Mac 的 Wi-Fi |
+| Windows(已开代理) | Windows 设置 → 移动热点 → 打开,或装 [Clash Verge 的 Allow LAN](http://127.0.0.1:9090) → iPhone Wi-Fi 代理手动填 PC 的 IP + 7890 端口 |
+
+#### 方案 B:付费方案(¥18-¥55 一次性买断)
+
+| 工具 | 价格 | mihomo 兼容 | 备注 |
+| --- | --- | --- | --- |
+| **Stash** | $3.99(约 ¥25) | ✅ 完全兼容 | iOS 最主流,功能最强 |
+| Shadowrocket | $2.99 | 部分兼容 | 俗称"小火箭" |
+| Loon | $5.99 | 部分兼容 | |
+| Quantumult X | $7.99 | 部分兼容 | |
+
+**Stash 安装**(推荐):App Store 搜索 "Stash" → 购买 → 打开。
+
+> ⚠️ **大陆 App Store 搜不到这些付费 App**。需要:
+>
+> - 自备一个**美区 / 港区 / 日区**的 Apple ID(免费注册教程:[appleid.apple.com](https://appleid.apple.com))
+> - 或者淘宝/闲鱼租一个**共享账号**(临时登录用,几块钱一次)
 
 ---
 
@@ -574,11 +618,14 @@ mihomo -d $dest
 
 ## 七、参考
 
+- **国内客户端镜像(Wind / macOS / Android)**:<http://onetear.fun:18089/clash_client/>
 - mihomo 官方仓库:<https://github.com/MetaCubeX/mihomo>
 - Clash Verge Rev:<https://github.com/clash-verge-rev/clash-verge-rev>
 - mihomo Party:<https://github.com/mihomo-party-org/mihomo-party>
 - Clash Meta for Android:<https://github.com/MetaCubeX/ClashMetaForAndroid>
-- Stash(iOS):<https://apps.apple.com/app/stash/id1596063349>
+- V2Box(iOS 免费):<https://apps.apple.com/app/v2box/id6446812418>
+- sing-box(iOS 免费开源):<https://apps.apple.com/app/sing-box/id1642689768>
+- Stash(iOS 付费):<https://apps.apple.com/app/stash/id1596063349>
 - 文档:<https://wiki.metacubex.one/>
 
 ---
