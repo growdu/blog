@@ -13,6 +13,8 @@ tags:
 
 # Clash Meta(mihomo)客户端全平台安装与订阅配置教程
 
+> ⚠️ **免责声明**:该篇文章内容仅用于技术交流和学习,切勿用作其他用途。
+
 > 本教程涵盖 Windows、macOS、Linux、Android、iOS 五个平台的 Clash Meta(mihomo)客户端安装、配置、以及订阅端连接。
 >
 > 订阅端(本教程示例):`http://onetear.fun:8080/clash-meta.yaml`
