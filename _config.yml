@@ -86,9 +86,9 @@ theme: matery
 
 # Search
 search:
-  path: search.xml
+  path: search.json
   field: post
-  content: false
+  content: true
   format: strip
 
 # Markdown
