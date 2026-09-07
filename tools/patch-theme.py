@@ -2702,8 +2702,8 @@ else:
 THEME_LIBS = os.path.join(theme_dir, 'source', 'libs')
 USED_LIBS = {
     'animate', 'aos', 'awesome', 'codeBlock', 'instantpage',
-    'jqcloud', 'jquery', 'lightGallery', 'materialize', 'prism',
-    'scrollprogress', 'tocbot', 'typed', 'share',
+    'jqcloud', 'jquery', 'lightGallery', 'materialize', 'minisearch',
+    'prism', 'scrollprogress', 'tocbot', 'typed', 'share',
 }
 if os.path.isdir(THEME_LIBS):
     removed = 0
