@@ -63,8 +63,8 @@ flowchart TB
     end
 
     subgraph Sub[Subscriber]
-        STREAM --> LA[Apply Launcher<br/>bgworker]::: sub
-        LA --> AW[Apply Worker<br/>leader]::: sub
+        STREAM --> LA["Apply Launcher<br/>bgworker"]::: sub
+        LA --> AW["Apply Worker<br/>leader"]::: sub
 
         subgraph TWPA[TWPA Engine]
             TB[Transaction Buffer]::: twpa
@@ -80,12 +80,12 @@ flowchart TB
         CH --> DA
         DA --> DAG
         DAG --> SCH
-        SCH --> WP[Worker Pool<br/>TWPA Workers]::: sub
+        SCH --> WP["Worker Pool<br/>TWPA Workers"]::: sub
         WP --> AW2[TWPA Worker 1]::: sub
         WP --> AW3[TWPA Worker 2]::: sub
         WP --> AWN[TWPA Worker N]::: sub
 
-        AW2 --> DB[(Subscriber DB)]::: db
+        AW2 --> DB["(Subscriber DB)"]::: db
         AW3 --> DB
         AWN --> DB
         AW2 --> CC
@@ -117,9 +117,9 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    A[streaming=parallel<br/>单事务内]::: root --> B[Parallel Apply Worker]::: root
-    C[TWPA<br/>多事务间]::: root --> D[Transaction Window Scheduler]::: root
-    B --> E[复用<br/>pa_launch_parallel_worker]
+    A["streaming=parallel<br/>单事务内"]::: root --> B[Parallel Apply Worker]::: root
+    C["TWPA<br/>多事务间"]::: root --> D[Transaction Window Scheduler]::: root
+    B --> E["复用<br/>pa_launch_parallel_worker"]
     D --> E
     E --> F[共享 DSM + shm_mq]
     classDef root fill:#fef9c3,stroke:#a16207
@@ -291,10 +291,10 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    A[Window 内事务] --> B{Dependency<br/>分析}
+    A[Window 内事务] --> B{"Dependency<br/>分析"}
     B --> C[DAG]
-    C --> D{是否有入边<br/>来自 window 外?}
-    D -->|是| E[保留为 frontier<br/>在下一个 window 之前不能 apply]
+    C --> D{"是否有入边<br/>来自 window 外?"}
+    D -->|是| E["保留为 frontier<br/>在下一个 window 之前不能 apply"]
     D -->|否| F[正常 apply]
 ```
 
@@ -427,7 +427,7 @@ sequenceDiagram
 ```mermaid
 flowchart TB
     A[一条事务]::: root --> B{事务大小}
-    B -->|大 / 长| C[streaming=parallel<br/>单事务内并行]::: root
+    B -->|大 / 长| C["streaming=parallel<br/>单事务内并行"]::: root
     B -->|小 / 中| D[commit 后进入 TWPA 窗口]::: root
     C --> E[事务完成后 commit]
     D --> F[窗口调度后 commit]

@@ -95,12 +95,12 @@ classDiagram
 
 ```mermaid
 flowchart TB
-    A[ConflictKey 类型] --> B[CONFLICT_PK<br/>主键]
-    A --> C[CONFLICT_UK<br/>Unique Index]
-    A --> D[CONFLICT_FK<br/>外键]
-    A --> E[CONFLICT_FULL<br/>Replica Identity FULL]
-    A --> F[BARRIER<br/>DDL]
-    A --> G[UNKNOWN<br/>无法判定]
+    A[ConflictKey 类型] --> B["CONFLICT_PK<br/>主键"]
+    A --> C["CONFLICT_UK<br/>Unique Index"]
+    A --> D["CONFLICT_FK<br/>外键"]
+    A --> E["CONFLICT_FULL<br/>Replica Identity FULL"]
+    A --> F["BARRIER<br/>DDL"]
+    A --> G["UNKNOWN<br/>无法判定"]
 ```
 
 | 优先级 | 类型 | 说明 |
@@ -151,9 +151,9 @@ sequenceDiagram
 
 ```mermaid
 flowchart TB
-    A[Tx1: INSERT (rel=R, pk=K)] --> B{Conflict Hash<br/>中 K 是否存在?}
-    B -->|否| C[建立 Entry<br/>last_writer=Tx1]
-    B -->|是| D[Tx1 → last_writer<br/>建立依赖]
+    A["Tx1: INSERT (rel=R, pk=K)"] --> B{"Conflict Hash<br/>中 K 是否存在?"}
+    B -->|否| C["建立 Entry<br/>last_writer=Tx1"]
+    B -->|是| D["Tx1 → last_writer<br/>建立依赖"]
     D --> E[更新 last_writer=Tx1]
 ```
 
@@ -161,9 +161,9 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    A[Tx1: DELETE (rel=R, pk=K)] --> B{Conflict Hash<br/>中 K 是否存在?}
-    B -->|否| C[Entry 已存在<br/>但未写入]
-    B -->|是| D[Tx1 → last_writer<br/>建立依赖]
+    A["Tx1: DELETE (rel=R, pk=K)"] --> B{"Conflict Hash<br/>中 K 是否存在?"}
+    B -->|否| C["Entry 已存在<br/>但未写入"]
+    B -->|是| D["Tx1 → last_writer<br/>建立依赖"]
     D --> E[更新 last_writer=Tx1]
 ```
 
@@ -171,11 +171,11 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    A[Tx1: UPDATE row R from old=(K_old) to new=(K_new)] --> B[生成两个 Key:<br/>OLD = R + K_old<br/>NEW = R + K_new]
+    A["Tx1: UPDATE row R from old=(K_old) to new=(K_new)"] --> B["生成两个 Key:<br/>OLD = R + K_old<br/>NEW = R + K_new"]
     B --> C[OLD 写入 Conflict Hash]
     B --> D[NEW 写入 Conflict Hash]
-    C --> E[OLD: Tx1 → last_writer(OLD)]
-    D --> F[NEW: Tx1 → last_writer(NEW)]
+    C --> E["OLD: Tx1 → last_writer(OLD)"]
+    D --> F["NEW: Tx1 → last_writer(NEW)"]
 ```
 
 **关键**:UPDATE 必须同时记录 OLD key 与 NEW key,否则漏掉 read-modify-write 冲突。
@@ -184,8 +184,8 @@ flowchart TB
 
 ```mermaid
 flowchart TB
-    A[Tx1: UPDATE R K=5 → K=6 → K=7] --> B[OLD keys: {5}]
-    A --> C[NEW keys: {6, 7}]
+    A[Tx1: UPDATE R K=5 → K=6 → K=7] --> B["OLD keys: {5}"]
+    A --> C["NEW keys: {6, 7}"]
     B --> D[OLD: 标记为 Tx1 自身]
     C --> E[NEW: 标记为 Tx1 自身]
     D --> F[不建立 Tx1 → Tx1 自依赖]
@@ -252,7 +252,7 @@ flowchart TB
 ```mermaid
 flowchart TB
     A[Tx1: TRUNCATE R] --> B[Table-level BARRIER]
-    B --> C[所有其他 Tx<br/>只要涉及 R<br/>都依赖 Tx1]
+    B --> C["所有其他 Tx<br/>只要涉及 R<br/>都依赖 Tx1"]
     C --> D[窗口强制串行]
 ```
 
@@ -345,9 +345,9 @@ typedef struct DependencyEdge {
 
 ```mermaid
 flowchart LR
-    A[T0 outside window<br/>write R.K=5]::: out
-    B[T1 in window<br/>write R.K=5]::: in
-    C[T2 in window<br/>write R.K=5]::: in
+    A["T0 outside window<br/>write R.K=5"]::: out
+    B["T1 in window<br/>write R.K=5"]::: in
+    C["T2 in window<br/>write R.K=5"]::: in
     A -->|依赖| B
     B -->|依赖| C
     classDef out fill:#e5e7eb,stroke:#6b7280
@@ -380,7 +380,7 @@ flowchart TB
     A[Window 内所有 Tx] --> B[提取每 Tx 的 ConflictKey 集合]
     B --> C[写入/更新 Conflict Hash]
     C --> D[扫描所有 pair]
-    D --> E{Tx1 和 Tx2 共享 key?}
+    D --> E{"Tx1 和 Tx2 共享 key?"}
     E -->|是| F[按 commit_lsn 排序加边]
     E -->|否| G[无依赖]
     F --> H[DAG 完成]
@@ -423,7 +423,7 @@ def build_dag(txns: List[ApplyTxn]) -> DAG:
 ```mermaid
 flowchart TB
     A[DAG] --> B[初始化 in_degree]
-    B --> C{有 in_degree=0 的节点?}
+    B --> C{"有 in_degree=0 的节点?"}
     C -->|是| D[取出节点]
     D --> E[分发给 worker]
     E --> F[节点完成]
@@ -506,12 +506,12 @@ typedef struct AnalyzerResult {
 
 ```mermaid
 flowchart TB
-    A[Tx1, Tx2 共享 key] --> B{commit_lsn 顺序?}
+    A[Tx1, Tx2 共享 key] --> B{"commit_lsn 顺序?"}
     B -->|Tx1 < Tx2| C[Tx2 → Tx1]
     B -->|Tx1 > Tx2| D[Tx1 → Tx2]
     C --> E[Tx1 和 Tx2 可调度为 ready_queue 不同时间点]
     D --> E
-    E --> F[仍可并行 apply<br/>只要在 commit 阶段按序]
+    E --> F["仍可并行 apply<br/>只要在 commit 阶段按序"]
 ```
 
 **核心思想**:**DEPENDENCY ≠ SERIALIZATION**。只有两个事务**真正并发 apply 同一资源**时才需要序列化;否则可错开调度。
@@ -520,7 +520,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    A[Conflict Hash<br/>O(1) 查询 last_writer] --> B[Dependency Edge]
+    A["Conflict Hash<br/>O(1) 查询 last_writer"] --> B[Dependency Edge]
     B --> C[DAG]
     C --> D[拓扑序]
     D --> E[Scheduler]
@@ -560,13 +560,13 @@ sequenceDiagram
 
 ```mermaid
 flowchart TB
-    A[Tx 进入 Window] --> B{有 DDL?}
-    B -->|是| C[BUILD BARRIER<br/>Tx 串行]
-    B -->|否| D{表无 PK 且非 FULL?}
-    D -->|是| E[TX UNKNOWN<br/>Tx 串行]
+    A[Tx 进入 Window] --> B{"有 DDL?"}
+    B -->|是| C["BUILD BARRIER<br/>Tx 串行"]
+    B -->|否| D{"表无 PK 且非 FULL?"}
+    D -->|是| E["TX UNKNOWN<br/>Tx 串行"]
     D -->|否| F[构建 ConflictKey 集合]
     F --> G[更新 Conflict Hash]
-    G --> H{有新依赖?}
+    G --> H{"有新依赖?"}
     H -->|是| I[加入 DAG]
     H -->|否| J[直接 READY]
     I --> K[Topo sort]

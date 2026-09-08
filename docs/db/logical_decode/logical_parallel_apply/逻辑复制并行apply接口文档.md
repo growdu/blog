@@ -51,9 +51,9 @@ tags:
 
 ```mermaid
 flowchart LR
-    A[Logical Replication]::: root --> B[Serial Apply<br/>单事务]
-    A --> C[streaming=parallel<br/>大事务流式]
-    A --> D[TWPA<br/>事务窗口并行]
+    A[Logical Replication]::: root --> B["Serial Apply<br/>单事务"]
+    A --> C["streaming=parallel<br/>大事务流式"]
+    A --> D["TWPA<br/>事务窗口并行"]
     B --> E[现有 apply_dispatch]
     C --> F[Parallel Apply Worker]
     D --> G[TWPA Scheduler + Workers]
@@ -217,10 +217,10 @@ ALTER SUBSCRIPTION sub SET (transaction_parallel_window_size = 2000);
 ```mermaid
 flowchart LR
     A[已提交事务 1..N]::: in --> B[Transaction Window]
-    B --> C{事务数 ≥ window_size?}
+    B --> C{"事务数 ≥ window_size?"}
     C -->|是| D[触发依赖分析]
     C -->|否| E[继续等待]
-    E --> F{到达时间窗口?}
+    E --> F{"到达时间窗口?"}
     F -->|是| D
     F -->|否| E
     D --> G[Scheduler 分发到 Workers]
@@ -344,10 +344,10 @@ FROM pg_stat_subscription_worker_internal w;
 
 ```mermaid
 flowchart TB
-    P[pg_stat_subscription_worker] --> A[APPLY<br/>apply worker leader]
-    P --> S[STREAMING_PARALLEL_APPLY<br/>streaming=parallel 派生]
-    P --> T[TWPA_WORKER<br/>事务窗口并行 worker]
-    P --> O[OTHER<br/>tablesync / launcher]
+    P[pg_stat_subscription_worker] --> A["APPLY<br/>apply worker leader"]
+    P --> S["STREAMING_PARALLEL_APPLY<br/>streaming=parallel 派生"]
+    P --> T["TWPA_WORKER<br/>事务窗口并行 worker"]
+    P --> O["OTHER<br/>tablesync / launcher"]
 ```
 
 ### 6.3 监控 SQL 模板
@@ -455,8 +455,8 @@ HINT:    Consider reducing transaction_parallel_window_size or adding primary ke
 
 ```mermaid
 flowchart TB
-    A[DDL replication<br/>DDL 同步] --> B{TWPA 窗口内含 DDL?}
-    B -->|是| C[立即关闭窗口<br/>commit DDL 后再开窗]
+    A["DDL replication<br/>DDL 同步"] --> B{"TWPA 窗口内含 DDL?"}
+    B -->|是| C["立即关闭窗口<br/>commit DDL 后再开窗"]
     B -->|否| D[继续并行]
     C --> E[已 apply 的事务 commit]
     E --> F[DDL apply]
