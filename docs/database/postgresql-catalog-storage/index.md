@@ -37,7 +37,7 @@ PostgreSQL 选择了最朴素也最"自指（self-describing）"的方案：**�
 
 | 后果 | 收益 | 代价 |
 | --- | --- | --- |
-| SQL 直接查 catalog | `SELECT * FROM pg_class WHERE relname='t'` 就能查表 | `pg_class` / `pg_attribute` 上的 DDL 自身也受 catalog 约束 |
+| SQL 直接查 catalog | `SELECT * FROM pg_class WHERE relname='users'` 查表 / `SELECT * FROM pg_type WHERE typname='users'` 查同名复合类型 | `pg_class` / `pg_attribute` 上的 DDL 自身也受 catalog 约束 |
 | MVCC 适用于 catalog | catalog 也走 4 个 HeapTuple 的多版本（详见 [MVCC](./postgresql-mvcc/index.html)） | catalog 改一行要触发 `invalidation` 风暴 |
 | 物理上与用户表一致 | buffer pool / WAL / FSM / VM 一视同仁 | 必须有"nailed"机制防止 `VACUUM FULL pg_class` |
 | 代码生成 catalog | `genbki.pl` 读 `.dat / .h` 烧出 BKI 脚本，编译时自动同步 | `.h` 改一个字段要重新 `initdb`，版本升级贵 |
