@@ -2,7 +2,7 @@
 
 | 编写人 | 编写内容 | 编写时间 |
 | --- | --- | --- |
-| growdu | 初稿，从 `LogStandbySnapshot` → `GetRunningTransactionData` → `xl_running_xacts` 写 WAL 的全链路，到 `SnapBuildProcessRunningXacts` / `SnapBuildCommitTxn` / `SnapBuildSerialize` 怎么消费它，再到 `SnapBuild` 状态机（START / BUILDING_SNAPSHOT / FULL_SNAPSHOT / CONSISTENT）里 `xmin / xmax / xip` 字段的演化规则，最后 apply 端怎么用 snapshot 解码 catalog 变更，源码级别 + 25+ 张架构图。配套源码版本：PostgreSQL 18 dev（`~/cwork/postgresql`）。 | 2026-09-29 |
+| growdu | 初稿 + 第十二节增补：补充 ReorderBuffer 视角——从 `SnapBuild → ReorderBufferSetBaseSnapshot` 把 `builder->snapshot` 挂到 `txn->base_snapshot`，到 `txns_by_base_snapshot_lsn` dlist 与 `ReorderBufferGetOldestXmin` 反控 slot.xmin，再到 `ReorderBufferReplay` 用 `txn->base_snapshot == NULL` 判定"是否要发送"，`ReorderBufferCopySnap` 把 `base_snapshot` + subxact 拼成 `snapshot_now` 喂给 output plugin，streaming 模式如何复用 `txn->snapshot_now`。源码级别 + 30+ 张架构图。配套源码版本：PostgreSQL 18 dev（`~/cwork/postgresql`）。 | 2026-09-29 |
 
 > 本文是「PostgreSQL 逻辑复制源码系列」。同系列前文：
 >
@@ -10,6 +10,8 @@
 > - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](./postgresql-transaction-lifecycle/index.html)
 > - [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](./postgresql-logical-replication-tables-lifecycle/index.html)
 > - [PostgreSQL 逻辑复制 spill 深度拆解：ReorderBuffer 如何把 100GB 事务拆成小块](./postgresql-logical-replication-spill-deep-dive/index.html)
+> - [PostgreSQL 逻辑复制的 ReorderBuffer 与事务机制](./postgresql-logical-replication-reorderbuffer-transaction/index.html)
+> - [PostgreSQL 逻辑复制全链路：以一个真实事务为例，从 `INSERT` 到 `apply` 的源码级旅程](./postgresql-logical-replication-end-to-end-flow/index.html)
 > - [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](./postgresql-catalog-storage/index.html)
 
 逻辑复制里最容易出 bug 的事不是 decode（`pgoutput` 已经写得相当稳定），也不是 apply（无脑 INSERT/UPDATE/DELETE），而是 **snapshot 怎么从 WAL 里"长"出来**——也就是 `RUNNING_XACTS` + `SnapBuild` 状态机 + `xmin / xmax / xip` 三个字段的更新规则。
@@ -23,8 +25,9 @@
 3. **`xmin` / `xmax` 在 `SnapBuild` 里和 `SnapshotData` 里语义完全不一样**——到底怎么演化？
 4. **`xip` 数组在 `SnapBuild` 里被"重新定义"为"catalog-modifying xid 列表"**，这是怎么做到的？
 5. **apply 端（worker）怎么消费这个 snapshot 决定"一条 tuple 对我可见吗"**？
+6. **ReorderBuffer 怎么用 snapshot 决定一条事务"能不能发出去"——`txn->base_snapshot == NULL` 的判定、`txns_by_base_snapshot_lsn` dlist、`ReorderBufferGetOldestXmin` 反控 slot.xmin 的完整链路**？
 
-全文 11 节，**25+ 张架构图 / 状态机 / 时序图**，**80+ 个源码引用**。
+全文 12 节，**30+ 张架构图 / 状态机 / 时序图**，**90+ 个源码引用**。
 
 ---
 
@@ -965,9 +968,479 @@ while (HeapTupleIsValid(tup = systable_getnext(scan)))
 
 ---
 
-## 十二、5 个最常见坑 + 排查
+## 十二、ReorderBuffer 视角：快照如何决定事务"能不能发送出去"
 
-### 12.1 坑 1: `restart_lsn` 长时间不动
+第十一节讲了 apply worker 怎么用 snapshot 解码 catalog tuple——但**在 apply worker 拿到变更之前，ReorderBuffer 这一层已经把"哪些事务可以发、哪些不能发、发的 snapshot 长啥样"全部决定了**。本节把这一段补全。
+
+核心三问：
+
+1. **事务的 `base_snapshot` 是怎么被挂上去的**？答：`SnapBuild → ReorderBufferSetBaseSnapshot` 在事务的"第一条变更到达"时把 `builder->snapshot` 挂到 `txn->base_snapshot`。
+2. **"能不能发"的最关键判定是什么**？答：`txn->base_snapshot == NULL` 决定"这个事务从未产生过任何变更"——没变更就没东西可发，commit 时直接 `ReorderBufferCleanupTXN` 走人；有变更就以 `base_snapshot` 为模板拼出 `snapshot_now` 喂给 output plugin。
+3. **所有 base_snapshot 中最老的那个**（`dlist_head`）的 `xmin` 怎么反向控制 slot 的 catalog_xmin？答：`ReorderBufferGetOldestXmin` → `LogicalIncreaseXminForSlot`，让 publisher 不去 vacuum 这部分 catalog tuple。
+
+### 12.1 桥接点：`ReorderBufferSetBaseSnapshot` 挂载 base_snapshot
+
+源码 `reorderbuffer.c:3310`：
+
+```c
+void
+ReorderBufferSetBaseSnapshot(ReorderBuffer *rb, TransactionId xid,
+                             XLogRecPtr lsn, Snapshot snap)
+{
+    ReorderBufferTXN *txn;
+    bool        is_new;
+
+    Assert(snap != NULL);
+
+    /*
+     * Fetch the transaction to operate on.  If we know it's a subtransaction,
+     * operate on its top-level transaction instead.
+     */
+    txn = ReorderBufferTXNByXid(rb, xid, true, &is_new, lsn, true);
+    if (rbtxn_is_known_subxact(txn))
+        txn = ReorderBufferTXNByXid(rb, txn->toplevel_xid, false,
+                                    NULL, InvalidXLogRecPtr, false);
+    Assert(txn->base_snapshot == NULL);
+
+    txn->base_snapshot = snap;
+    txn->base_snapshot_lsn = lsn;
+    dlist_push_tail(&rb->txns_by_base_snapshot_lsn, &txn->base_snapshot_node);
+
+    AssertTXNLsnOrder(rb);
+}
+```
+
+**三个关键事实**：
+
+- `base_snapshot` 是**强引用**到 `snap`，refcount 由 `SnapBuildSnapIncRefcount` 在调用前手动加 1，事务释放时 `SnapBuildSnapDecRefcount` 减回去。
+- **只在事务"第一条变更"那一次挂**——后续变更**不会**重新挂载。
+- 挂载时**把这个事务插入 `txns_by_base_snapshot_lsn` dlist 尾部**——`AssertTXNLsnOrder` 强制保证 dlist 严格按 `base_snapshot_lsn` 升序，所以"最早的"事务永远在头部。
+
+调用方有两处，源码 `snapbuild.c:676` / `snapbuild.c:1086`：
+
+```c
+/* snapbuild.c:676 — 事务的第一条变更 (HEAP_INSERT/UPDATE/DELETE/COMMIT 等) */
+if (!ReorderBufferXidHasBaseSnapshot(builder->reorder, xid))
+{
+    if (builder->snapshot == NULL)
+    {
+        builder->snapshot = SnapBuildBuildSnapshot(builder);
+        SnapBuildSnapIncRefcount(builder->snapshot);    /* 给 SnapBuild 自己留一份 */
+    }
+    SnapBuildSnapIncRefcount(builder->snapshot);        /* 给 ReorderBuffer 留一份 */
+    ReorderBufferSetBaseSnapshot(builder->reorder, xid, lsn, builder->snapshot);
+}
+```
+
+```mermaid
+sequenceDiagram
+    participant W as WAL
+    participant SB as SnapBuild
+    participant RB as ReorderBuffer
+    participant D as dlist
+
+    Note over SB: state = CONSISTENT<br/>builder->snapshot 已构建
+    W->>SB: xid 500 的 HEAP_INSERT @ LSN 0/16ABCDE
+    SB->>SB: ReorderBufferXidHasBaseSnapshot?<br/>false (没挂过)
+    SB->>SB: SnapBuildSnapIncRefcount
+    SB->>RB: ReorderBufferSetBaseSnapshot(500, 0/16ABCDE, snap)
+    RB->>RB: txn = ReorderBufferTXNByXid(500, create=true)
+    RB->>RB: txn->base_snapshot = snap
+    RB->>RB: txn->base_snapshot_lsn = 0/16ABCDE
+    RB->>D: dlist_push_tail(txn->base_snapshot_node)
+    Note over D: 500 节点挂到 dlist 尾部
+    SB-->>W: 处理完,等下一条变更
+    W->>SB: xid 500 的 HEAP_UPDATE @ LSN 0/16ABCF0
+    SB->>SB: ReorderBufferXidHasBaseSnapshot?<br/>true (已挂过,跳过)
+    Note over RB: base_snapshot 不变
+    W->>RB: xid 600 的 HEAP_INSERT @ LSN 0/16BD000
+    SB->>RB: ReorderBufferSetBaseSnapshot(600, 0x16BD000, snap')
+    RB->>D: 600 节点挂到 500 之后
+```
+
+### 12.2 base_snapshot 是"事务第一条变更到达那一刻"的 catalog 视图
+
+为什么是"第一条变更"那个 LSN？**因为 output plugin 在解码 tuple 时要做 catalog lookup，而 catalog 在 `xmin`/`xmax` 之间是稳定的**。事务的 N 条变更 LSN 全部落在 `xmin ≤ LSN_i < xmax` 这个区间里，**任何一个 LSN 看到的 catalog 都一样**——所以挂哪个 LSN 都行，但选最早最自然。
+
+源码 `SnapBuildBuildSnapshot`（snapbuild.c:360-432）在 `ReorderBufferSetBaseSnapshot` 之前被调过一次，把 `builder->xmin / xmax / xip` 打包成 `SnapshotData`：
+
+```c
+snapshot->xmin = builder->xmin;
+snapshot->xmax = builder->xmax;
+snapshot->xip  = ... (从 builder->xip 拷贝);
+```
+
+随后这个 `SnapshotData` 跟着事务走完一生——**直到事务 commit/abort 才被 free**。
+
+```mermaid
+flowchart LR
+    A["WAL 流入"] --> B["xid 500 HEAP_INSERT @ 0/16A"]
+    B --> C["base_snapshot 挂载<br/>lsn=0/16A"]
+    C --> D["xid 500 累积变更:<br/>HEAP_UPDATE @ 0/17A<br/>HEAP_UPDATE @ 0/18A"]
+    D --> E["xid 500 COMMIT @ 0/19A"]
+    E --> F["ReorderBufferReplay<br/>snapshot_now = base_snapshot 拷贝<br/>(+subxact → subxip[])"]
+    F --> G["output plugin<br/>用 snapshot_now 解码所有变更"]
+    G --> H["pgoutput BEGIN/INSERT/UPDATE/COMMIT"]
+    H --> I["SnapBuildSnapDecRefcount<br/>dlist 移除 500 节点"]
+    style C fill:#fef3c7,stroke:#d97706
+    style F fill:#dcfce7,stroke:#15803d
+    style I fill:#dbeafe,stroke:#1d4ed8
+```
+
+### 12.3 `txn->base_snapshot == NULL`：决定"能不能发"的最关键判定
+
+**发送路径** `reorderbuffer.c:2848`：
+
+```c
+if (txn->base_snapshot == NULL)
+{
+    Assert(txn->ninvalidations == 0);
+    /* 事务从未产生变更,nothing to decode */
+    if (!rbtxn_is_prepared(txn))
+        ReorderBufferCleanupTXN(rb, txn);
+    return;
+}
+
+snapshot_now = ReorderBufferCopySnap(rb, txn->base_snapshot, txn, command_id);
+ReorderBufferProcessTXN(rb, txn, commit_lsn, snapshot_now, command_id, false);
+```
+
+**这个 `if` 就是"事务能不能发送"的全部判定**：
+
+- `base_snapshot == NULL` → **不发送**，直接清理掉。
+- `base_snapshot != NULL` → **发送**，以 `base_snapshot` 为模板构造 `snapshot_now`。
+
+什么时候 `base_snapshot` 是 NULL？**只有"事务只做了 BEGIN + COMMIT / ROLLBACK，没动任何表"的情况**——比如一个只 `SELECT` 的事务，或者一个只设 GUC 的事务。`SnapBuildChange` 这条 hook 只在变更类 WAL（`HEAP_INSERT/UPDATE/DELETE`、`XLOG_HEAP2_NEW_CID` 等）到来时触发，所以纯只读事务不会走到 `ReorderBufferSetBaseSnapshot`。
+
+> **为什么"纯只读事务不需要发送"**？因为 output plugin 拿到它也没东西可发——`pgoutput` 的 `commit` 回调收到一个空事务，连 `BEGIN` 都省了（`stream_start` 的 `nmsgs == 0`）。让空事务走完全链路只浪费 CPU/内存。
+
+### 12.4 `txns_by_base_snapshot_lsn` dlist：所有 base_snapshot 的"xmin horizon"
+
+源码 `reorderbuffer.h`：
+
+```c
+struct ReorderBuffer
+{
+    ...
+    dlist_head    txns_by_base_snapshot_lsn;  /* 按 base_snapshot_lsn 升序 */
+    ...
+};
+```
+
+**关键性质**：
+
+- 严格按 `base_snapshot_lsn` 升序——`ReorderBufferSetBaseSnapshot` 用 `dlist_push_tail`，加上 `AssertTXNLsnOrder` 强约束。
+- dlist **只在事务 commit / abort / spill-out 时移除节点**——**事务活着期间，base_snapshot 一直被它持有**。
+- dlist 头节点 = `base_snapshot_lsn` 最小的事务 = "最早开始做变更"的事务。
+
+```mermaid
+flowchart LR
+    subgraph LIST["txns_by_base_snapshot_lsn (升序)"]
+        N1["txn 500<br/>lsn=0x16A<br/>xmin=400<br/>(仍 in-progress)"] --> N2["txn 600<br/>lsn=0x16B<br/>xmin=410<br/>(已 commit)"] --> N3["txn 700<br/>lsn=0x16C<br/>xmin=420<br/>(仍 in-progress)"]
+    end
+    N1 -.->|"oldest"| HEAD["dlist_head"]
+    HEAD --> XMIN["slot.catalog_xmin = 400"]
+    style HEAD fill:#fef3c7,stroke:#d97706
+    style XMIN fill:#dcfce7,stroke:#15803d
+```
+
+**为什么用 dlist 而不是最小堆**？因为 dlist 节点的进入/退出是 `O(1)`，且事务活跃期通常很短（ms 级），dlist 的 `O(n)` 遍历只在 `ReorderBufferGetOldestXmin` 时发生（每次 `SnapBuildProcessRunningXacts` 调一次），完全可以接受。
+
+### 12.5 `ReorderBufferGetOldestXmin`：从 dlist 头取 xmin，反控 slot.catalog_xmin
+
+源码 `reorderbuffer.c:1077`：
+
+```c
+TransactionId
+ReorderBufferGetOldestXmin(ReorderBuffer *rb)
+{
+    ReorderBufferTXN *txn;
+
+    AssertTXNLsnOrder(rb);
+
+    if (dlist_is_empty(&rb->txns_by_base_snapshot_lsn))
+        return InvalidTransactionId;
+
+    txn = dlist_head_element(ReorderBufferTXN, base_snapshot_node,
+                             &rb->txns_by_base_snapshot_lsn);
+    return txn->base_snapshot->xmin;
+}
+```
+
+调用方 `SnapBuildProcessRunningXacts`（snapbuild.c:1136，第七节）：
+
+```c
+xmin = ReorderBufferGetOldestXmin(builder->reorder);
+if (xmin == InvalidTransactionId)
+    xmin = running->oldestRunningXid;
+
+LogicalIncreaseXminForSlot(lsn, xmin);
+```
+
+**完整链路**：
+
+```mermaid
+flowchart TB
+    A["WAL: xlog_running_xacts"] --> B["SnapBuildProcessRunningXacts"]
+    B --> C["xmin = ReorderBufferGetOldestXmin"]
+    C --> D{"dlist 为空?"}
+    D -->|"yes"| E["xmin = running->oldestRunningXid"]
+    D -->|"no"| F["xmin = dlist_head->base_snapshot->xmin"]
+    E --> G["LogicalIncreaseXminForSlot(lsn, xmin)"]
+    F --> G
+    G --> H["slot.data.catalog_xmin = xmin"]
+    H --> I["ReplicationSlotsComputeRequiredXmin"]
+    I --> J["ProcArray.replication_slot_xmin = max(all slots)"]
+    J --> K["autovacuum 跳过 catalog tuple<br/>(xmin 之前的旧版本)"]
+    style F fill:#dcfce7,stroke:#15803d
+    style K fill:#fae8ff,stroke:#a21caf
+```
+
+> **为什么用 dlist 头的 xmin 而不是 `running->oldestRunningXid`**？因为 dlist 头可能是 "lsn 0x16A 的 txn 500"，但 `running` 记录里 `oldestRunningXid` 可能是 "lsn 0x300 的 txn 50"——**`running` 反映 publisher 当前活跃的 xid，而 dlist 反映 ReorderBuffer 实际"挂着 base_snapshot 还没发完"的事务**。两者谁更老用谁，dlist 通常更老（因为 dlist 上的事务可能已经 commit 但还在 PG_OUTPUT 阶段）。这就是为什么 long-running 事务会卡 slot。
+
+### 12.6 `ReorderBufferCopySnap`：把 base_snapshot + subxact 拼成 snapshot_now
+
+事务 commit 时，**output plugin 拿到的不是 `base_snapshot`，而是一个 "私有拷贝 + 事务自己的 subxact 拼到 subxip[]" 的版本**。源码 `reorderbuffer.c:1908`：
+
+```c
+static Snapshot
+ReorderBufferCopySnap(ReorderBuffer *rb, Snapshot orig_snap,
+                      ReorderBufferTXN *txn, CommandId cid)
+{
+    Snapshot snap;
+    dlist_iter iter;
+    int i = 0;
+    Size size;
+
+    /* 1. 申请 SnapshotData + xip[] + subxip[] 一整块 */
+    size = sizeof(SnapshotData) +
+           sizeof(TransactionId) * orig_snap->xcnt +
+           sizeof(TransactionId) * (txn->nsubtxns + 1);
+
+    snap = MemoryContextAllocZero(rb->context, size);
+    memcpy(snap, orig_snap, sizeof(SnapshotData));
+
+    snap->copied = true;
+    snap->active_count = 1;       /* 标记 active,禁止别人 free */
+    snap->regd_count = 0;
+    snap->xip = (TransactionId *) (snap + 1);  /* 紧跟在 SnapshotData 后面 */
+
+    /* 2. 把 base_snapshot.xip[] 拷过来 */
+    memcpy(snap->xip, orig_snap->xip, sizeof(TransactionId) * snap->xcnt);
+
+    /* 3. 关键：把本事务的 toplevel xid + 所有 subxact 塞到 subxip[] */
+    snap->subxip = snap->xip + snap->xcnt;
+    snap->subxip[i++] = txn->xid;            /* toplevel */
+    snap->subxcnt = 1;
+
+    /* 4. 遍历 subxact 链表,塞进 subxip[] */
+    dlist_foreach(iter, &txn->subtxns)
+    {
+        ReorderBufferTXN *sub_txn = dlist_container(ReorderBufferTXN, node, iter.cur);
+        snap->subxip[i++] = sub_txn->xid;
+        snap->subxcnt++;
+    }
+    qsort(snap->subxip, snap->subxcnt, sizeof(TransactionId), xidComparator);
+
+    snap->curcid = cid;
+    return snap;
+}
+```
+
+**两个语义变化**：
+
+- `xip[]`：从 `base_snapshot` 原样拷贝（"哪些 catalog-modifying xid 已 commit"），**不变**。
+- `subxip[]`：**新增**——"**本事务自己的所有 xid（toplevel + subxact）**"。这样 `HeapTupleSatisfiesMVCC` 在 `subxip` 命中（=本事务自己写的）时按 `curcid` 决定可见/不可见，避开 cmin/cmax 跨事务比较的坑。
+
+```mermaid
+flowchart TB
+    A["base_snapshot<br/>xmin=400, xmax=500, xip=[420, 450, 480]"]
+    A --> B["ReorderBufferCopySnap"]
+    B --> C["snapshot_now<br/>xmin=400, xmax=500<br/>xip=[420, 450, 480]<br/>subxip=[500, 501]<br/>(本事务 toplevel=500, subxact=501)<br/>curcid=FirstCommandId"]
+    C --> D["output plugin<br/>(pgoutput)"]
+    D --> E["解码 tuple 时:<br/>HeapTupleSatisfiesMVCC(snap, tuple)<br/>tuple.xid == 500 → subxip 命中 → 看 curcid"]
+    style A fill:#fef3c7,stroke:#d97706
+    style C fill:#dcfce7,stroke:#15803d
+    style E fill:#fae8ff,stroke:#a21caf
+```
+
+> **为什么必须 subxip[]**？因为本事务自己写的 tuple 用 cmin/cmax 来标识可见性，而 base_snapshot 来自另一个 LSN 那一刻，**base_snapshot 里没有本事务的 cmin/cmax 信息**。所以把本事务 xid 单独塞到 subxip，让 `HeapTupleSatisfiesMVCC` 走"自己事务 → 看 curcid"路径。
+
+### 12.7 `ReorderBufferProcessTXN` 的 4 个入口分支
+
+`ReorderBufferProcessTXN(rb, txn, ...)`（reorderbuffer.c:2210）是事务变更的"实际发送"函数。它有 3 个调用方：
+
+```mermaid
+flowchart TB
+    A1["ReorderBufferReplay<br/>(非 stream)"] --> P1["ReorderBufferProcessTXN<br/>commit_lsn=commit, stream=false"]
+    A2["ReorderBufferStreamTXN<br/>(streaming)"] --> P2["ReorderBufferProcessTXN<br/>commit_lsn=Invalid, stream=true"]
+    A3["ReorderBufferStreamCommit<br/>(stream + commit)"] --> P3["ReorderBufferProcessTXN<br/>commit_lsn=Invalid, stream=true"]
+    P1 --> P4["stream_finalize? = false<br/>is_commit=true"]
+    P2 --> P4
+    P3 --> P4
+    style A1 fill:#dcfce7,stroke:#15803d
+    style A2 fill:#fef3c7,stroke:#d97706
+    style A3 fill:#fae8ff,stroke:#a21caf
+```
+
+**3 个入口的本质差异**：
+
+| 入口 | 何时调 | snapshot 来源 | 是否 stream |
+| --- | --- | --- | --- |
+| `ReorderBufferReplay` | 非 stream 模式事务 commit | `txn->base_snapshot` 拷贝 | false |
+| `ReorderBufferStreamTXN` | streaming 模式，每批变更后 | 首次 `base_snapshot` 拷贝 / 后续 `txn->snapshot_now` 复用 | true |
+| `ReorderBufferStreamCommit` | streaming 模式 commit 时 | `txn->snapshot_now` 复用 | true |
+
+### 12.8 streaming 模式：txn->snapshot_now 的复用与刷新
+
+streaming 模式（`reorderbuffer.c:4350+`）下，事务不会等 commit 才发，而是**按 `reorderbuffer.c:stream_changes` 阈值分批发**。**关键**：每批发的 snapshot 不能重新构造，而是**复用上一批的 `txn->snapshot_now`**，仅在"出现了新 subxact"时调 `ReorderBufferCopySnap` 增量更新。
+
+源码 `reorderbuffer.c:4350`：
+
+```c
+if (!rbtxn_is_streamed(txn))
+{
+    /* 1. 第一批 / 非 stream 模式:从 base_snapshot 开始 */
+    if (txn->base_snapshot == NULL)
+    {
+        Assert(txn->ninvalidations == 0);
+        return;
+    }
+    command_id = FirstCommandId;
+    snapshot_now = ReorderBufferCopySnap(rb, txn->base_snapshot,
+                                         txn, command_id);
+}
+else
+{
+    /* 2. 后续批:复用上一批的 snapshot_now */
+    Assert(rbtxn_is_streamed(txn));
+
+    /* 必须重新 copy,因为可能新增了 subxact */
+    command_id = txn->command_id;
+    snapshot_now = ReorderBufferCopySnap(rb, txn->snapshot_now,
+                                         txn, command_id);
+
+    /* 释放上一批的 snapshot */
+    Assert(txn->snapshot_now->copied);
+    ReorderBufferFreeSnap(rb, txn->snapshot_now);
+    txn->snapshot_now = NULL;
+}
+```
+
+**为什么必须 `ReorderBufferCopySnap` 而不能直接复用 `txn->snapshot_now`**？因为 `txn->subxns` 可能在两批之间新增了 subxact——`subxip[]` 必须包含最新的 subxact 集合。所以**复用 base_snapshot 的内容 + 重新遍历 `txn->subxns` 拼出新的 subxip**。
+
+```mermaid
+sequenceDiagram
+    participant W as WAL
+    participant RB as ReorderBuffer
+    participant OP as output plugin
+
+    W->>RB: xid 500 HEAP_INSERT (subxact 501 begin)
+    RB->>RB: base_snapshot 挂载
+    Note over RB: 第 1 批触发 (达到 stream_changes 阈值)
+    RB->>RB: snapshot_now = CopySnap(base_snapshot, subxip=[500, 501])
+    RB->>OP: stream_change
+    RB->>RB: txn->snapshot_now = snapshot_now (保留)
+    W->>RB: xid 500 HEAP_UPDATE
+    W->>RB: xid 502 HEAP_INSERT (subxact 502 begin)
+    Note over RB: 第 2 批触发
+    RB->>RB: snapshot_now = CopySnap(txn->snapshot_now, subxip=[500, 501, 502])
+    RB->>RB: ReorderBufferFreeSnap(txn->snapshot_now) (释放旧的)
+    RB->>RB: txn->snapshot_now = snapshot_now (新的)
+    RB->>OP: stream_change
+    W->>RB: xid 500 COMMIT
+    RB->>RB: snapshot_now = CopySnap(txn->snapshot_now, ...) (commit 阶段)
+    RB->>OP: stream_commit
+    RB->>RB: 释放 snapshot_now, dlist 移除
+```
+
+> **坑**：streaming 模式下 `txn->snapshot_now` 的生命周期横跨"事务 commit 之前"——如果此时 `reorderbuffer.c:ReorderBufferResetTXN` 触发 streaming 中止重置，`txn->snapshot_now` 也会被释放（`ReorderBufferFreeSnap`），下一批必须重新从 `base_snapshot` 拷贝。
+
+### 12.9 abort 路径：只清变更，不动 snapshot 太久
+
+`ReorderBufferAbort`（reorderbuffer.c:1825 起）不会走 `ReorderBufferReplay`——它只做两件事：
+
+```c
+txn->txn_flags |= RBTXN_IS_ABORTED;
+...
+ReorderBufferCleanupTXN(rb, txn);
+```
+
+`ReorderBufferCleanupTXN`（reorderbuffer.c:1594+）会：
+
+- 把 txn 从 `txns_by_base_snapshot_lsn` dlist 移除。
+- `SnapBuildSnapDecRefcount(txn->base_snapshot)` 减 refcount。
+- `pfree(txn->base_snapshot)` / `pfree(txn->snapshot_now)`（如果 streaming 模式）。
+- `dlist_delete(&txn->node)` 移出 `toplevel_by_lsn`。
+
+**abort 不发**——这是为什么 `base_snapshot` 的判定只在 commit 路径做：abort 路径上无论 `base_snapshot` 是不是 NULL，都会 `CleanupTXN`，没有 "发" 的可能。
+
+### 12.10 完整时序：commit 路径下的 snapshot 全生命周期
+
+把第十二节所有内容串成一张图：
+
+```mermaid
+sequenceDiagram
+    participant W as WAL
+    participant SB as SnapBuild
+    participant RB as ReorderBuffer
+    participant D as txns_by_base_snapshot_lsn
+    participant OP as output plugin
+
+    Note over SB: 状态 CONSISTENT, builder->snapshot 已就绪
+    W->>SB: xid 500 HEAP_INSERT @ LSN 0x16A
+    SB->>SB: SnapBuildSnapIncRefcount
+    SB->>RB: ReorderBufferSetBaseSnapshot(500, 0x16A, snap)
+    RB->>RB: txn->base_snapshot = snap
+    RB->>D: dlist_push_tail
+    W->>RB: xid 500 HEAP_UPDATE
+    Note over RB: base_snapshot 不变, 继续累积变更
+
+    W->>SB: xlog_running_xacts @ LSN 0x16B
+    SB->>RB: SnapBuildProcessRunningXacts
+    RB->>D: 取 dlist_head (xid 500)
+    RB->>RB: xmin = dlist_head->base_snapshot->xmin
+    RB->>SB: LogicalIncreaseXminForSlot(0x16B, xmin)
+
+    W->>RB: xid 500 COMMIT
+    RB->>RB: ReorderBufferCommit
+    RB->>RB: ReorderBufferReplay
+    alt base_snapshot == NULL
+        RB->>RB: ReorderBufferCleanupTXN (不发)
+    else base_snapshot != NULL
+        RB->>RB: snapshot_now = CopySnap(base_snapshot, subxip)
+        RB->>OP: ReorderBufferProcessTXN (BEGIN + INSERT + UPDATE + COMMIT)
+        OP-->>RB: callback 返回
+        RB->>RB: ReorderBufferFreeSnap(snapshot_now)
+        RB->>D: dlist_delete (移除 500 节点)
+        RB->>SB: SnapBuildSnapDecRefcount
+    end
+```
+
+### 12.11 总结：`base_snapshot` 的三个作用
+
+```mermaid
+mindmap
+  root((txn->base_snapshot))
+    作用1
+      "判定能不能发"
+        base_snapshot == NULL
+        → 不发
+    作用2
+      "发送时的 catalog 视图"
+        snapshot_now = CopySnap + subxip
+        output plugin 用它解码
+    作用3
+      "反控 slot.catalog_xmin"
+        dlist_head->base_snapshot->xmin
+        → publisher 不 vacuum
+```
+
+---
+
+## 十三、5 个最常见坑 + 排查
+
+### 13.1 坑 1: `restart_lsn` 长时间不动
 
 ```sql
 -- 现象
@@ -995,7 +1468,7 @@ WHERE state = 'active'
 ORDER BY xact_start LIMIT 5;
 ```
 
-### 12.2 坑 2: xmax < xmin 导致 decode 失败
+### 13.2 坑 2: xmax < xmin 导致 decode 失败
 
 **现象**：
 
@@ -1007,7 +1480,7 @@ ERROR: snapshot xmin 100 > xmax 99
 
 **修复**：等 commit 推进 `xmax`。
 
-### 12.3 坑 3: 磁盘上 `snapbuild` 文件被锁
+### 13.3 坑 3: 磁盘上 `snapbuild` 文件被锁
 
 ```sql
 ERROR: could not open file "pg_replslot/s1/snapbuild": Resource busy
@@ -1015,7 +1488,7 @@ ERROR: could not open file "pg_replslot/s1/snapbuild": Resource busy
 
 **原因**：另一个 worker 在用 slot。
 
-### 12.4 坑 4: `committed.includes_all_transactions = false`
+### 13.4 坑 4: `committed.includes_all_transactions = false`
 
 源码里 `builder->committed.includes_all_transactions` 在 `!needs_timetravel` 时设为 `false`：
 
@@ -1026,7 +1499,7 @@ if (!needs_timetravel)
 
 **含义**：如果某个 xact 不是 catalog-modifying，**不会被记录在 xip**，所以导出的 snapshot 不能用于 export（pg_export_snapshot）。
 
-### 12.5 坑 5: `subxid_overflow`
+### 13.5 坑 5: `subxid_overflow`
 
 源码里 `subxid_overflow=true` 时，subxid 数组可能丢失：
 
@@ -1042,7 +1515,7 @@ typedef struct xl_running_xacts {
 
 ---
 
-## 十三、源码引用索引
+## 十四、源码引用索引
 
 **xl_running_xacts 定义**：
 - `src/include/storage/standbydefs.h:47` — `xl_running_xacts` struct
@@ -1072,6 +1545,17 @@ typedef struct xl_running_xacts {
 - `src/backend/utils/time/snapmgr.c` — snapshot manager
 - `src/backend/access/heap/heapam_visibility.c` — `HeapTupleSatisfiesMVCC`
 
+**ReorderBuffer 视角**（第十二节新增）：
+- `src/backend/replication/logical/reorderbuffer.c:1077` — `ReorderBufferGetOldestXmin`（dlist 头取 xmin）
+- `src/backend/replication/logical/reorderbuffer.c:1082` — `txn->base_snapshot->xmin` 取值
+- `src/backend/replication/logical/reorderbuffer.c:1908` — `ReorderBufferCopySnap`（base_snapshot + subxact 拼 snapshot_now）
+- `src/backend/replication/logical/reorderbuffer.c:2813` — `ReorderBufferReplay`（commit 路径入口）
+- `src/backend/replication/logical/reorderbuffer.c:2848` — `txn->base_snapshot == NULL` 判定
+- `src/backend/replication/logical/reorderbuffer.c:3310` — `ReorderBufferSetBaseSnapshot`（挂 base_snapshot 到 txn）
+- `src/backend/replication/logical/reorderbuffer.c:4350` — streaming 模式 snapshot_now 复用与刷新
+- `src/backend/replication/logical/snapbuild.c:676` — `SnapBuildChange` 内首次挂 base_snapshot
+- `src/backend/replication/logical/snapbuild.c:1086` — `SnapBuildProcessNewCid` 内挂 base_snapshot
+
 **apply 端**：
 - `src/backend/replication/logical/worker.c` — apply worker
 - `src/backend/replication/logical/decode.c` — `GetTupleVisibility`
@@ -1080,7 +1564,7 @@ typedef struct xl_running_xacts {
 
 ---
 
-## 十四、总结：6 个核心心智模型
+## 十五、总结：7 个核心心智模型
 
 ```mermaid
 flowchart TB
@@ -1090,17 +1574,19 @@ flowchart TB
     D["4. xmax 可以小于 xmin (合法)"]
     E["5. 状态机 4 步: START → BUILDING → FULL → CONSISTENT"]
     F["6. CONSISTENT 之后每次 RUNNING_XACTS 都序列化"]
+    G["7. txn->base_snapshot 是 ReorderBuffer 视角的"事务能否发送"开关<br/>(NULL → 不发;非 NULL → 以 base_snapshot 为模板拼 snapshot_now)"]
 
-    A --> B --> C --> D --> E --> F
+    A --> B --> C --> D --> E --> F --> G
     style A fill:#dbeafe,stroke:#1d4ed8
     style B fill:#dcfce7,stroke:#15803d
     style C fill:#fce7f3,stroke:#be185d
     style D fill:#fef3c7,stroke:#d97706
     style E fill:#fae8ff,stroke:#a21caf
     style F fill:#fee2e2,stroke:#b91c1c
+    style G fill:#dbeafe,stroke:#1d4ed8
 ```
 
-### 14.1 6 个心智模型详解
+### 15.1 7 个心智模型详解
 
 | # | 原则 | 实际体现 |
 |---|---|---|
@@ -1110,8 +1596,9 @@ flowchart TB
 | 4 | **`xmax < xmin` 是合法的** | 状态机初始化期间可出现 |
 | 5 | **状态机 4 步** | `START → BUILDING_SNAPSHOT → FULL_SNAPSHOT → CONSISTENT` |
 | 6 | **CONSISTENT 后持续序列化** | `restart_lsn` 才能快速回放 |
+| 7 | **`txn->base_snapshot == NULL` 决定 ReorderBuffer 是否发送事务** | 没变更 → 不发;有变更 → `ReorderBufferCopySnap` 拼 `snapshot_now`;dlist 头 `base_snapshot->xmin` 反控 `slot.catalog_xmin` |
 
-### 14.2 一图总览：`xl_running_xacts` → `SnapBuild` → snapshot
+### 15.2 一图总览：`xl_running_xacts` → `SnapBuild` → snapshot
 
 ```mermaid
 flowchart TB
@@ -1136,7 +1623,7 @@ flowchart TB
     style K fill:#fae8ff,stroke:#a21caf
 ```
 
-### 14.3 apply worker 端时序图
+### 15.3 apply worker 端时序图
 
 ```mermaid
 sequenceDiagram
@@ -1173,4 +1660,6 @@ sequenceDiagram
 - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](./postgresql-transaction-lifecycle/index.html)
 - [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](./postgresql-logical-replication-tables-lifecycle/index.html)
 - [PostgreSQL 逻辑复制 spill 深度拆解：ReorderBuffer 如何把 100GB 事务拆成小块](./postgresql-logical-replication-spill-deep-dive/index.html)
+- [PostgreSQL 逻辑复制的 ReorderBuffer 与事务机制](./postgresql-logical-replication-reorderbuffer-transaction/index.html)
+> - [PostgreSQL 逻辑复制全链路：以一个真实事务为例，从 `INSERT` 到 `apply` 的源码级旅程](./postgresql-logical-replication-end-to-end-flow/index.html)
 - [PostgreSQL 元数据存储机制](./postgresql-catalog-storage/index.html)
