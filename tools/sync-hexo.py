@@ -58,12 +58,30 @@ TOPIC_DEFS = [
 # its title (case-insensitive). A post can belong to multiple topics.
 TOPIC_RULES = {
     'MVCC 与事务': {
-        'path_contains': ['postgresql-mvcc', 'postgresql-transaction-lifecycle'],
-        'title_contains': ['MVCC', '事务生命周期', 'Transaction Lifecycle'],
+        'path_contains': [
+            'postgresql-mvcc', 'postgresql-transaction-lifecycle',
+            'db/postgresql/postgresql-row-lock',
+        ],
+        'title_contains': ['MVCC', '事务生命周期', 'Transaction Lifecycle', '行锁', 'MultiXact'],
     },
     '逻辑复制': {
-        'path_contains': ['postgresql-logical-replication', 'db/logical_decode'],
-        'title_contains': ['逻辑复制', '逻辑解码', 'Logical Replication', 'DDL-Replay', 'DDL Replay', 'pglogical', 'pgoutput', 'Babelfish'],
+        'path_contains': [
+            'postgresql-logical-replication', 'db/logical_decode',
+            'db/postgresql/postgresql-snapbuild', 'db/postgresql/postgresql-reorder',
+            'db/postgresql/postgresql-apply', 'db/postgresql/postgresql-create-replication-slot',
+            'db/postgresql/postgresql-logical-replication-catalog-visibility',
+            'db/postgresql/postgresql-logical-replication-stream-publisher',
+            'db/postgresql/postgresql-logical-replication-add-guc',
+            'db/postgresql/pgsql-hackers-parallel-apply',
+            'db/opengauss-parallel-decoding-design', 'db/opengauss-csn-total-ordering',
+        ],
+        'title_contains': [
+            '逻辑复制', '逻辑解码', 'Logical Replication', 'DDL-Replay', 'DDL Replay',
+            'pglogical', 'pgoutput', 'Babelfish',
+            'SnapBuild', 'reorderbuffer', 'ReorderBuffer', 'applyparallelworker',
+            'apply worker', 'apply parallel', '并行解码', '并行 apply', '并行 Apply',
+            'CSN', 'apply', 'subxact', 'walsender',
+        ],
     },
     '分区': {
         'path_contains': ['postgresql-partition', 'postgresql-vs-sqlserver-partitioning', 'postgresql-logical-replication-partitioned'],
@@ -78,15 +96,45 @@ TOPIC_RULES = {
         'title_contains': ['Raft', 'DCF', 'openGauss DCF', '分布式一致性'],
     },
     '性能调优': {
-        'title_contains': ['调优', '性能', 'Checkpoint', 'WalWriter', 'WAL Writer', '统计信息', 'keepalive', 'pg_io', 'bgwriter', 'BgWriter'],
+        'path_contains': [
+            'db/postgresql/postgresql-flame-graph',
+            'db/postgresql/postgresql-logical-replication-apply-parallel-tuning',
+        ],
+        'title_contains': ['调优', '性能', 'Checkpoint', 'WalWriter', 'WAL Writer', '统计信息', 'keepalive', 'pg_io', 'bgwriter', 'BgWriter', '火焰图', 'flame graph', 'TPC-C'],
     },
     '内核基础': {
-        'path_contains': ['postgresql-memory-management', 'db/postgresql/learning-path'],
-        'title_contains': ['源码', '源码修炼', '学习路径', 'PostgreSQL 主结构', '启动流程', '插入', '进程架构'],
+        'path_contains': [
+            'postgresql-memory-management',
+            'db/postgresql/learning-path', 'db/postgresql/part1',
+            'db/postgresql/postgresql-syscache-deep-dive',
+            'db/postgresql/postgresql-shared-memory',
+            'db/postgresql/postgresql-injection-points',
+            'db/postgresql/postgresql-row-lock',
+            'db/postgresql/postgresql-wal-record-types',
+            'db/postgresql/postgresql-rangevar-and-data-structures',
+            'db/postgresql/postgresql-catalog-storage',
+            'db/postgresql/postgresql-read-catalog-table',
+            'db/postgresql/postgresql-background-worker',
+            'db/postgresql/postgresql-parallel-worker',
+            'db/postgresql/postgresql-latch-mechanism',
+            'db/postgresql/postgresql-libpq-mechanism',
+            'db/postgresql/postgresql-module-architecture',
+            'db/postgresql/postgresql-process',
+            'db/postgresql/postgresql-toast',
+            'db/postgresql/postgresql-transaction-lifecycle',
+            'db/postgresql/postgresql-mvcc',
+            'db/linux-shared-memory',
+        ],
+        'title_contains': ['源码', '源码修炼', '学习路径', 'PostgreSQL 主结构', '启动流程', '插入', '进程架构', 'syscache', 'catcache', 'relcache', '共享内存', 'shared memory', 'injection point', 'InOutPoint', 'WAL 记录', 'RangeVar', '数据  结构', 'TOAST', 'latch'],
     },
     '实战经验': {
-        'path_contains': ['pg-challahscript-tips', 'pg-dont-do-this', 'postgresql-for-everything'],
-        'title_contains': ["Don't Do This", '万能论', '翻译整理'],
+        'path_contains': [
+            'pg-challahscript-tips', 'pg-dont-do-this', 'postgresql-for-everything',
+            'db/postgresql/postgresql-injection-points',
+            'db/postgresql/postgresql-community-gems',
+            'db/postgresql/pgsql-hackers-parallel-apply',
+        ],
+        'title_contains': ["Don't Do This", '万能论', '翻译整理', '内核开发者', '新增 GUC', '社区精髓', 'pgsql-hackers'],
     },
 }
 
