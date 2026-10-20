@@ -1,7 +1,6 @@
 ---
-title: PostgreSQL syscache 模块源码深度拆解:CatCache 数据结构、LRU 哈希表、cache invalidation 全链路
+title: "PostgreSQL syscache 模块源码深度拆解:CatCache 数据结构、LRU 哈希表、cache invalidation 全链路"
 date: 2026-10-19
-author: growdu
 categories:
   - 数据库
   - PostgreSQL
@@ -14,9 +13,11 @@ tags:
   - catcache
   - CacheMemoryContext
   - invalidation
-  - lsyscache
-  - SearchSysCache
-  - Source Code Analysis
+  - 系统表
+  - 缓存
+  - 源码分析
+  - relcache
+  - hash 表
 ---
 
 # PostgreSQL syscache 模块源码深度拆解:CatCache 数据结构、LRU 哈希表、cache invalidation 全链路

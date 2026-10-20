@@ -1,6 +1,11 @@
 ---
 title: "PostgreSQL 逻辑复制:catalog 改动、可见性判定与 xmin/xmax 推进全景"
 date: 2026-10-21 09:00:00
+categories:
+  - 数据库
+  - PostgreSQL
+  - 逻辑复制
+  - 源码分析
 tags:
   - PostgreSQL
   - 逻辑复制
@@ -8,10 +13,11 @@ tags:
   - catalog 改动
   - 可见性
   - 系统更
-  - 源码分析
+  - 快照
+  - HVMCC
+  - SnapBuild
+  - reorderbuffer
 ---
-
-# PostgreSQL 逻辑复制:catalog 改动、可见性判定与 xmin/xmax 推进全景
 
 > 之前几篇([end-to-end 全流程](../postgresql-logical-replication-end-to-end/index.md)、[LSN 推进全景](../postgresql-logical-replication-lsn-flow/index.md)、[snapbuild.c 全函数拆解](../postgresql-snapbuild-deep-dive/index.md)、[SnapBuildFindSnapshot 状态机](../postgresql-snapbuild-find-snapshot-deep-dive/index.md))虽然覆盖了入口、状态机和 LSN 推进,但对**catalog 改动如何从 WAL 一路透传到订阅端的可见性判定**这一条核心链路解释得不够细致。本文专门补这一段:
 >

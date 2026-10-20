@@ -1,13 +1,21 @@
 ---
 title: "PostgreSQL reorderbuffer.c 函数级源码全集:5615 行 / 95 个函数的逐函数解析"
 date: 2026-10-22 09:00:00
+categories:
+  - 数据库
+  - PostgreSQL
+  - 逻辑复制
+  - 源码分析
+  - reorderbuffer
 tags:
   - PostgreSQL
   - 逻辑复制
   - reorderbuffer
   - 源码分析
   - 函数级参考
+  - 函数速查表
 ---
+
 
 # PostgreSQL reorderbuffer.c 函数级源码全集:5615 行 / 95 个函数的逐函数解析
 
