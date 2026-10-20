@@ -47,12 +47,26 @@ graph TD
 <!-- DATABASE_TOPICS_START -->
 <!-- DATABASE_TOPICS_END -->
 
-## 全部文章（按时间倒序）
+## 近期更新（最新 10 篇）
 
-下面这个列表是数据库分类下所有文章的平铺时间线，与上面卡片矩阵的数据源相同，但作为兜底展示。新增章节时，只需在目录的 `cascade.categories` 中加入"数据库"，无需再手工维护本页链接。
+数据库专题下最近发布或更新的 10 篇文章，按时间倒序排列，作为"新内容速递"使用。完整文章可通过上方主题卡片、[`/tags/`](/tags/)、[`/categories/数据库`](/categories/数据库/) 等自动聚合页浏览。
 
-<!-- DATABASE_POSTS_START -->
-<!-- DATABASE_POSTS_END -->
+<!-- DATABASE_RECENT_START -->
+<!-- DATABASE_RECENT_END -->
+
+## 精选文章（高优置顶）
+
+带有 `top:` 标记的置顶文章，通常是相对完整、体系化的系列入口或读者最常问的主题。
+
+<!-- DATABASE_FEATURED_START -->
+<!-- DATABASE_FEATURED_END -->
+
+## 按主题浏览
+
+数据库专题文章分布在以下 8 个主题中，点击进入自动聚合页：
+
+<!-- DATABASE_TOPIC_INDEX_START -->
+<!-- DATABASE_TOPIC_INDEX_END -->
 
 ## 核心技术栈
 

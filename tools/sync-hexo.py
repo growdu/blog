@@ -9,7 +9,7 @@ Creates:
 Does NOT modify docs/ — runs in CI on a fresh checkout.
 """
 import os, re, shutil, subprocess, sys, json
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 DOCS = 'docs'
 SRC = 'source'
@@ -1425,26 +1425,78 @@ def create_database_landing_page(database_data):
     with open(template, encoding='utf-8') as f:
         content = f.read()
 
-    posts_marker = '<!-- DATABASE_POSTS_START -->'
-    posts_end = '<!-- DATABASE_POSTS_END -->'
     topics_marker = '<!-- DATABASE_TOPICS_START -->'
     topics_end = '<!-- DATABASE_TOPICS_END -->'
+    recent_marker = '<!-- DATABASE_RECENT_START -->'
+    recent_end = '<!-- DATABASE_RECENT_END -->'
+    featured_marker = '<!-- DATABASE_FEATURED_START -->'
+    featured_end = '<!-- DATABASE_FEATURED_END -->'
+    topic_index_marker = '<!-- DATABASE_TOPIC_INDEX_START -->'
+    topic_index_end = '<!-- DATABASE_TOPIC_INDEX_END -->'
 
-    if posts_marker not in content or posts_end not in content:
-        raise ValueError('database template is missing DATABASE_POSTS markers')
     if topics_marker not in content or topics_end not in content:
         raise ValueError('database template is missing DATABASE_TOPICS markers')
+    if recent_marker not in content or recent_end not in content:
+        raise ValueError('database template is missing DATABASE_RECENT markers')
+    if featured_marker not in content or featured_end not in content:
+        raise ValueError('database template is missing DATABASE_FEATURED markers')
+    if topic_index_marker not in content or topic_index_end not in content:
+        raise ValueError('database template is missing DATABASE_TOPIC_INDEX markers')
 
     db_posts = database_data['posts']
     topic_groups = database_data['topics']
 
-    # Flat chronological list (legacy marker, still used by other tooling)
-    if db_posts:
-        flat_list = '\n'.join(f'- [{p["title"]}]({p["url"]})' for p in db_posts)
+    # Recent N articles (chronological, top N)
+    RECENT_N = 10
+    recent = db_posts[:RECENT_N]
+    if recent:
+        recent_items = '\n'.join(
+            f'- [{p["title"]}]({p["url"]}) · {p["date"][:10]}'
+            for p in recent
+        )
     else:
-        flat_list = '数据库系列文章正在整理中。'
-    content = content.replace(posts_marker, flat_list, 1)
-    content = content.replace(posts_end, '', 1)
+        recent_items = '数据库专题文章正在整理中。'
+    content = content.replace(recent_marker, recent_items, 1)
+    content = content.replace(recent_end, '', 1)
+
+    # Featured: posts with top > 0 (parsed from FEATURED_POSTS via process())
+    # collect_database_posts doesn't carry the top value through, so we look it up here.
+    featured_paths = set(FEATURED_POSTS.keys())
+    featured_posts = []
+    for p in db_posts:
+        # p['url'] like '/2026/10/22/db%2Fpostgresql/postgresql-reorderbuffer-c-function-reference/'
+        # Re-derive the docs/-relative path from the URL body.
+        path_part = unquote(p['url'].rstrip('/').split('/', 4)[-1]) if '/' in p['url'] else ''
+        # Compare against FEATURED_POSTS keys (e.g. 'db/logical_decode/逻辑解码DDL-Replay框架设计/index.md')
+        for fp in featured_paths:
+            slug = fp.replace('/', os.sep).replace('.md', '')
+            if path_part.endswith(slug) or slug.endswith(path_part):
+                featured_posts.append(p)
+                break
+    if featured_posts:
+        featured_items = '\n'.join(
+            f'- [{p["title"]}]({p["url"]})'
+            for p in featured_posts
+        )
+    else:
+        featured_items = '_（暂无置顶文章。在 `tools/sync-hexo.py` 的 `FEATURED_POSTS` 中配置即可展示在此处。）_'
+    content = content.replace(featured_marker, featured_items, 1)
+    content = content.replace(featured_end, '', 1)
+
+    # Topic index: compact one-line-per-topic with article count.
+    topic_index_lines = []
+    for name, icon, color, blurb in TOPIC_DEFS:
+        group = topic_groups.get(name, [])
+        count = len(group)
+        if count == 0:
+            continue
+        tag_url = f'/tags/{quote(name)}/'
+        topic_index_lines.append(
+            f'- <i class="fa-solid {icon}" style="color:{color}"></i> [{name}]({tag_url}) · **{count}** 篇 · {blurb}'
+        )
+    topic_index_items = '\n'.join(topic_index_lines) if topic_index_lines else '_（暂无主题索引）_'
+    content = content.replace(topic_index_marker, topic_index_items, 1)
+    content = content.replace(topic_index_end, '', 1)
 
     # Topic card grid: each topic renders as a card with icon, blurb,
     # article count and up to 5 most-recent post titles linking to /tags/<topic>/
