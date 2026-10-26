@@ -96,6 +96,7 @@ mindmap
 - [PostgreSQL 模块架构](./postgresql-module-architecture/index.html) — 从 `postgres` 二进制到生产级守护
 
 ### 3.2 锁 / 并发
+- [PostgreSQL 读一行数据源码级深度拆解](./postgresql-read-a-row-deep-dive/index.html) — MVCC 在 9 个环节的落点 + 目录快照 vs 事务快照
 - [PostgreSQL 行锁机制源码级深度拆解](./postgresql-row-lock-deep-dive/index.html) — 4 种锁模式 + xmax + MultiXact
 - [PostgreSQL Latch 机制详解](./postgresql-latch-mechanism/index.html) — `SetLatch` → epoll
 
