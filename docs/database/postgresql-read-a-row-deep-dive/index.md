@@ -17,7 +17,7 @@ categories:
 
 | 编写人 | 编写内容 | 编写时间 |
 | --- | --- | --- |
-| growdu | 初稿。从 PostgreSQL 18 dev（`~/cwork/postgresql`）源码出发，把 **PostgreSQL 读一行数据** **彻底拆解**：一条 `SELECT` 从进程入口到返回客户端要穿过 9 个阶段 / **每个阶段的 MVCC 落点** / 事务快照的诞生（`GetTransactionSnapshot` → `GetSnapshotData` 的 xmin/xmax/xip 三件套）/ **系统表读取为什么也走 MVCC** / 目录快照（`GetCatalogSnapshot`）与事务快照的分工 / catcache 三层缓存的未命中路径 / 顺序扫描的可见性闸门（`heapgettup`）/ **可见性判定的七路分派**（`HeapTupleSatisfiesVisibility`）/ `HeapTupleSatisfiesMVCC` 逐行拆解 / `XidInMVCCSnapshot` 的三级短路 / 索引扫描的 HOT 链追踪（`heap_hot_search_buffer`）/ Index Only Scan 如何用可见性图「跳过」MVCC / TOAST 大字段的独立快照语义 / 七种快照类型全景对照 / 三条读取路径的 MVCC 对照 / 性能视角 / 9 个坑点速查。每个主题都给源码 + 关键字段 + mermaid 流程图。配套源码版本：PostgreSQL 18 dev。 | 2026-10-26 |
+| growdu | 初稿。从 PostgreSQL 18 dev（`~/cwork/postgresql`）源码出发，把 **PostgreSQL 读一行数据** **彻底拆解**：一条 `SELECT` 从进程入口到返回客户端要穿过 10 个阶段 / **每个阶段的 MVCC 落点** / 事务快照的诞生（`GetTransactionSnapshot` → `GetSnapshotData` 的 xmin/xmax/xip 三件套）/ **系统表读取为什么也走 MVCC** / 目录快照（`GetCatalogSnapshot`）与事务快照的分工 / catcache 三层缓存的未命中路径 / 顺序扫描的可见性闸门（`heapgettup`）/ **可见性判定的七路分派**（`HeapTupleSatisfiesVisibility`）/ `HeapTupleSatisfiesMVCC` 逐行拆解 / `XidInMVCCSnapshot` 的三级短路 / 索引扫描的 HOT 链追踪（`heap_hot_search_buffer`）/ Index Only Scan 如何用可见性图「跳过」MVCC / TOAST 大字段的独立快照语义 / 七种快照类型全景对照 / 五条读取路径的 MVCC 对照 / 性能视角 / 12 个坑点速查。每个主题都给源码 + 关键字段 + mermaid 流程图。配套源码版本：PostgreSQL 18 dev。 | 2026-10-26 |
 
 > 本文是「PostgreSQL 内核机制源码系列」。同系列前文：
 >
@@ -29,11 +29,11 @@ categories:
 
 ## 阅读指南
 
-- **第一节 ~ 第三节**（**必读**）：全景图 + 9 个阶段的路线图 + 事务边界
+- **第一节 ~ 第三节**（**必读**）：全景图 + 10 个阶段的路线图 + 事务边界
 - **第四节 ~ 第六节**（**核心**）：快照如何诞生（xmin/xmax/xip）/ **系统表读取如何走 MVCC** / 目录快照与事务快照的分工
-- **第七节 ~ 第十一节**（**源码精读**）：扫描建立 / 顺序扫描取一行 / 可见性判定七路分派 / `HeapTupleSatisfiesMVCC` 逐行拆解 / 索引扫描与 HOT 链
-- **第十二节 ~ 第十四节**（**进阶**）：Index Only Scan 的可见性图 / TOAST 快照 / 七种快照类型全景
-- **第十五节 ~ 第十八节**（**收尾**）：三条路径对照 / 性能视角 / 坑点速查 / 源码索引
+- **第七节 ~ 第十节**（**源码精读**）：扫描建立 / 顺序扫描取一行 / 可见性判定七路分派 / `HeapTupleSatisfiesMVCC` 逐行拆解 / 索引扫描与 HOT 链
+- **第十一节 ~ 第十三节**（**进阶**）：Index Only Scan 的可见性图 / TOAST 快照 / 七种快照类型全景
+- **第十四节 ~ 第十八节**（**收尾**）：五条路径对照 / 性能视角 / 坑点速查 / 源码索引 / 核心心智模型
 
 ---
 
@@ -56,23 +56,25 @@ categories:
 - Index Only Scan 什么时候可以**完全绕过**可见性判定？
 - 行里存着一个大文本，实际数据在 TOAST 表里，TOAST 表的读取归谁管？
 
-本文的答案是一张路线图：**9 个阶段，每个阶段都标注了 MVCC 在哪里出场、用的是哪种快照**。
+本文的答案是一张路线图：**10 个阶段，每个阶段都标注了 MVCC 在哪里出场、用的是哪种快照**。
 
 ```text
 阶段 0  事务边界      StartTransactionCommand          → 还没有快照
 阶段 1  快照诞生      GetTransactionSnapshot            → ★ 事务快照（MVCC 主快照）
 阶段 2  解析规划      analyze/rewrite/plan             → ★ 读系统表，用目录快照
-阶段 3  打开表        table_open → relcache             → ★ relcache 读 pg_class
-阶段 4  建立扫描      table_beginscan                   → 快照被钉进 ScanDesc
-阶段 5  取一行        heapgettup / heap_hot_search_buffer → ★ 可见性判定
-阶段 6  判定          HeapTupleSatisfiesVisibility      → ★ MVCC 的心脏
-阶段 7  返回          slot 投影 → 序列化               → 无关
-阶段 8  结束          CommitTransactionCommand          → 快照被释放
+阶段 3  目录快照      GetCatalogSnapshot                → ★ 目录快照与事务快照的分工
+阶段 4  打开表/建扫描  table_open → table_beginscan      → 快照被钉进 ScanDesc
+阶段 5  取一行(顺序)  heapgettup                        → ★ 可见性判定
+阶段 6  可见性判定    HeapTupleSatisfiesVisibility      → ★ MVCC 的心脏
+阶段 7  取一行(索引)  heap_hot_search_buffer            → ★ 追 HOT 链时判定
+阶段 8  Index Only    VM_ALL_VISIBLE                    → ★ 可完全跳过 MVCC
+阶段 9  detoast       get_toast_snapshot                → ★ TOAST 专用快照
+（之后）返回/结束      slot 投影 → 序列化 → 提交          → 无关 / 释放快照
 ```
 
 ---
 
-## 二、全景图：读一行的 9 个阶段
+## 二、全景图：读一行的 10 个阶段
 
 ```mermaid
 flowchart TB
@@ -90,7 +92,7 @@ flowchart TB
         B2 --> B3
     end
 
-    subgraph L2["阶段 2 · 解析规划（MVCC 第一次登场）"]
+    subgraph L2["阶段 2-3 · 解析规划 + 目录快照（MVCC 第一次登场）"]
         C1["pg_analyze_and_rewrite<br/>读 pg_class/pg_attribute"]
         C2["SearchSysCache<br/>syscache.c:208"]
         C3["SearchCatCacheMiss<br/>catcache.c:1499"]
@@ -99,20 +101,25 @@ flowchart TB
         C1 --> C2 --> C3 --> C4 --> C5
     end
 
-    subgraph L3["阶段 3-4 · 打开表 / 建立扫描"]
+    subgraph L3["阶段 4 · 打开表 / 建立扫描"]
         D1["table_open<br/>→ RelationIdGetRelation"]
         D2["table_beginscan<br/>tableam.h:875"]
         D3["estate->es_snapshot<br/>execMain.c:245"]
         D1 --> D2 --> D3
     end
 
-    subgraph L4["阶段 5-6 · 取一行 + 可见性判定"]
+    subgraph L4["阶段 5-9 · 取一行 + 可见性判定 + detoast"]
         E1["ExecScan<br/>execScan.c:47"]
-        E2["heapgettup<br/>heapam.c:899"]
+        E2["heapgettup<br/>heapam.c:899<br/>（顺序扫描）"]
+        E2b["heap_hot_search_buffer<br/>heapam.c:1717<br/>（索引扫描追 HOT 链）"]
         E3["HeapTupleSatisfiesVisibility<br/>heapam_visibility.c:1776"]
         E4["HeapTupleSatisfiesMVCC<br/>heapam_visibility.c:960"]
         E5["XidInMVCCSnapshot<br/>snapmgr.c:1870"]
-        E1 --> E2 --> E3 --> E4 --> E5
+        E6["get_toast_snapshot<br/>toast_internals.c:638"]
+        E1 --> E2 --> E3
+        E1 --> E2b --> E3
+        E3 --> E4 --> E5
+        E3 -. "字段超长时 detoast" .-> E6
     end
 
     L0 --> L1 --> L2 --> L3 --> L4
@@ -120,7 +127,7 @@ flowchart TB
     classDef mvcc fill:#10B981,stroke:#047857,color:#fff
     classDef cache fill:#F59E0B,stroke:#B45309,color:#fff
     classDef plain fill:#4283D4,stroke:#1E40AF,color:#fff
-    class B2,B3,C5,E3,E4,E5 mvcc
+    class B2,B3,C5,E3,E4,E5,E6 mvcc
     class C2,C3,C4 cache
     class A1,A2,D1,D2,D3,E1 plain
 ```
@@ -130,14 +137,17 @@ flowchart TB
 | # | 阶段 | 关键入口 | MVCC 是否参与 | 使用的快照 |
 | --- | --- | --- | :---: | --- |
 | 0 | 事务边界 | `StartTransactionCommand` | 否 | 无 |
-| 1 | 快照诞生 | `GetTransactionSnapshot` | **是** | `SNAPSHOT_MVCC` |
+| 1 | 快照诞生 | `GetTransactionSnapshot` | **是** | `SNAPSHOT_MVCC`（事务快照） |
 | 2 | 解析 / 规划读系统表 | `SearchSysCache` → `systable_beginscan` | **是** | `SNAPSHOT_MVCC`（目录快照） |
-| 3 | 打开表 / relcache | `RelationIdGetRelation` | **是** | 目录快照 |
-| 4 | 建立扫描 | `table_beginscan` | 间接 | 事务快照被钉入 `rs_snapshot` |
-| 5 | 取一行 | `heapgettup` / `heap_hot_search_buffer` | **是** | 事务快照 |
+| 3 | 目录快照的分工 | `GetCatalogSnapshot` / `InvalidateCatalogSnapshot` | **是** | 目录快照 |
+| 4 | 打开表 / 建立扫描 | `RelationIdGetRelation` → `table_beginscan` | 间接 | 事务快照被钉入 `rs_snapshot` |
+| 5 | 取一行（顺序扫描） | `heapgettup` | **是** | 事务快照 |
 | 6 | 可见性判定 | `HeapTupleSatisfiesVisibility` | **是** | 按 `snapshot_type` 七路分派 |
-| 7 | 返回 / 投影 | `ExecProject` → `DestReceiver` | 否 | 无 |
-| 8 | 事务结束 | `CommitTransactionCommand` | 间接 | 释放快照 |
+| 7 | 取一行（索引扫描） | `heap_hot_search_buffer` | **是** | 事务快照 |
+| 8 | Index Only Scan | `VM_ALL_VISIBLE` | **可跳过** | 事务快照（仅 VM 位失效时用） |
+| 9 | detoast | `get_toast_snapshot` | **是** | `SNAPSHOT_TOAST` |
+| — | 返回 / 投影 | `ExecProject` → `DestReceiver` | 否 | 无 |
+| — | 事务结束 | `CommitTransactionCommand` | 间接 | 释放快照 |
 
 > **一句话结论**：MVCC 不只在"读数据行"时出现。**读系统表、读 TOAST 表、规划器读 `pg_statistic`、 甚至 relcache 初始化读 `pg_class`，全都是 MVCC 读**。区别只在于用的是哪种快照。
 
@@ -649,7 +659,7 @@ systable_getnext(SysScanDesc sysscan)
 
 ---
 
-## 六、阶段 2.5：目录快照 vs 事务快照 —— 两种 MVCC 视角
+## 六、阶段 3：目录快照 vs 事务快照 —— 两种 MVCC 视角
 
 ### 6.1 为什么要分两种快照
 
@@ -827,7 +837,7 @@ relcache 初始化读 `pg_opclass` 也是同一套路：
 
 ---
 
-## 七、阶段 3-4：打开表与建立扫描 —— 快照被钉进 ScanDesc
+## 七、阶段 4：打开表与建立扫描 —— 快照被钉进 ScanDesc
 
 ### 7.1 打开表
 
@@ -2048,7 +2058,7 @@ HeapTupleSatisfiesAny(HeapTuple htup, Snapshot snapshot, Buffer buffer)
 
 ---
 
-## 十四、三条读取路径的 MVCC 对照
+## 十四、五条读取路径的 MVCC 对照
 
 ### 14.1 五条路径全表
 
