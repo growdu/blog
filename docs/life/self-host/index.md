@@ -6,9 +6,9 @@
 
 > **TL;DR**：原文作者的方案是「**17 个原生 systemd 服务 + 11 个 Podman 容器**，跑在一台 180~359 欧元的 N100 迷你主机上，只通过 IPv6 + VPN 暴露到公网」。
 >
-> 本文档在原文基础上做了三件事：**(1) 逐条拆解他的设计决策**；**(2) 把每个服务写成可复制的实操步骤**；**(3) 补上原文没覆盖但你会踩的坑——尤其是中国大陆网络环境（CGNAT / 备案 / 443 端口）的适配**。
+> 本文档在原文基础上做了五件事：**(1) 逐条拆解他的设计决策**；**(2) 把每个服务写成可复制的实操步骤**；**(3) 补上原文没覆盖但你会踩的坑——尤其是中国大陆网络环境（CGNAT / 备案 / 443 端口）的适配**；**(4) 第 10 章讲「装完到底得到什么」——把 28 个服务重组为 9 大能力域 + 5 个端到端场景**；**(5) 第 11 章讲「怎么长期养」——观测/控制/恢复三层运维体系、巡检脚本、升级纪律、恢复演练、灾难恢复手册**。
 >
-> ⚠️ **动手前必读**：这套方案默认你在**有公网 IPv6 的欧洲/北美宽带**下。中国大陆家庭宽带基本没有公网 IPv4（CGNAT），直接照抄会卡在第一步。本文第 5 章专门讲中国大陆怎么改。
+> ⚠️ **动手前必读**：这套方案默认你在**有公网 IPv6 的欧洲/北美宽带**下。中国大陆家庭宽带基本没有公网 IPv4（CGNAT），直接照抄会卡在第一步。本文**第 7 章**专门讲中国大陆怎么改，**第 10~11 章**讲这套东西装完之后能提供什么能力、以及如何长期运维。
 
 ---
 
@@ -23,6 +23,8 @@
 - [第 7 章 中国大陆网络适配（重点）](#第-7-章-中国大陆网络适配重点)
 - [第 8 章 资源规划与容量估算](#第-8-章-资源规划与容量估算)
 - [第 9 章 验收清单与常见故障](#第-9-章-验收清单与常见故障)
+- [第 10 章 服务能力全景：搭完之后你到底得到了什么](#第-10-章-服务能力全景搭完之后你到底得到了什么)
+- [第 11 章 运维手册：搭完之后怎么养](#第-11-章-运维手册搭完之后怎么养)
 
 ---
 
@@ -48,7 +50,7 @@
 2. 所有 Web 服务的 `listen` 绑 `127.0.0.1` 或内网网卡地址。
 3. 出门用手机连 VPN，再访问内网地址——体验和连家里 WiFi 一样。
 
-> **国内落地提醒**：家里没有公网 IPv4 时，第 3 条要改用第 5 章的 Tailscale/FRP 方案。
+> **国内落地提醒**：家里没有公网 IPv4 时，第 3 条要改用第 7 章的 Tailscale/FRP 方案。
 
 ### 1.2 原则二：优先原生二进制，其次容器；能不装包就不装
 
@@ -1510,6 +1512,779 @@ flowchart LR
 
 ---
 
+## 第 10 章 服务能力全景：搭完之后你到底得到了什么
+
+前面 9 章讲的是「怎么装」。这一章反过来讲：**装完之后，你的生活里多了哪些能力**。
+
+这是自托管最容易被忽视的一环。装完 28 个服务，如果只是「端口开了」，那只是自嗨；只有把它们**组合成日常可用的工作流**，这套东西才真正产生价值。
+
+### 10.1 从「服务清单」到「能力清单」
+
+原文是按技术栈列的（17 个 systemd + 11 个 Podman）。但用户感知到的不是 systemd 和 Podman，而是**能力**。同一批服务重组后是 9 大能力域：
+
+```mermaid
+mindmap
+  root(("自托管<br/>能力全景"))
+    影音娱乐
+      Jellyfin 影视
+      Audiobookshelf 有声书
+      MPD + Snapcast 音乐
+      ARM 光驱抓轨
+    照片记忆
+      Immich 照片库
+      智能家居联动
+    文件与同步
+      Syncthing 设备同步
+      Samba 局域网共享
+      Transmission BT 下载
+      Gonic + slskd 音乐交换
+    密码与身份
+      Vaultwarden 密码库
+      Forgejo 私有 Git
+    信息与任务
+      FreshRSS 订阅
+      Readeck 稍后读
+      Vikunja 待办
+      Actual Budget 记账
+    监控与告警
+      Beszel 资源监控
+      Uptime Kuma 可用性
+      Gotify 通知中枢
+      Homepage 总入口
+    数据与容灾
+      Backrest 备份
+      PocketBase 轻后端
+    基础设施
+      Caddy 反代与证书
+      Cockpit 管理面板
+```
+
+### 10.2 九大能力域逐个拆解
+
+每条能力我按 **「能干什么 → 谁在用 → 依赖哪些服务 → 日常怎么用」** 四个维度说明。
+
+#### 10.2.1 影音娱乐域
+
+| 服务 | 提供的能力 | 使用者 | 依赖 |
+| --- | --- | --- | --- |
+| **Jellyfin** | 自建影视/剧集/动漫库，手机/电视/网页多端播放，自动刮削元数据、生成缩略图、追剧进度多端同步 | 全家 | Caddy + GPU 透传 + 媒体库 |
+| **Audiobookshelf** | 有声书管理与串流，支持多播客源、章节、进度同步、书签 | 本人 | Caddy + 有声书文件 |
+| **MPD + Snapcast** | 无状态音乐播放服务；Snapcast 把一路音频同步到全屋音箱（手机/树莓派/PC） | 全家 | MPD 音乐库 + 多个客户端 |
+| **ARM** | 把实体 CD/DVD 自动抓轨成 FLAC/MP3，直接入库（喂给 MPD） | 本人 | 光驱 + 音乐库 |
+
+**能力闭环**：
+```
+CD/DVD ──ARM 抓轨──▶ 音乐库 ──MPD 播放──▶ Snapcast 分发 ──▶ 全屋音箱
+                                    └──▶ 有声书 ──▶ Audiobookshelf ──▶ 手机
+                                    └──▶ 影视 ──▶ Jellyfin ──▶ 电视/手机
+```
+
+**日常用法**：
+- 电视端装 Jellyfin 官方 TV 客户端，登录后选库。
+- 手机端用 Jellyfin / Audiobookshelf App。
+- 音乐用任意 MPD 客户端（如 ncmpcpp、客户端 App），或直接用 Snapcast 客户端指定房间。
+
+> ⚠️ **媒体版权**：只处理你自有或已获授权的内容。原文的 \*arr 之所以被砍掉，一部分原因就是它容易滑向盗版抓取。
+
+#### 10.2.2 照片与记忆域
+
+| 服务 | 提供的能力 | 依赖 |
+| --- | --- | --- |
+| **Immich** | 手机照片自动备份（类似 iCloud/Google Photos）、时间轴浏览、人脸/地点识别、地图视图、多端分享 | 手机 App + 备份策略 |
+| **Home Assistant** | 统一接入智能家居设备（灯、插座、传感器、摄像头），做自动化联动、地理围栏、场景 | 设备接入（Zigbee/WiFi） |
+
+**关键工作流（"自动"是核心价值）**：
+```mermaid
+flowchart LR
+    A["手机拍摄"] -->|"Immich App<br/>后台自动上传"| B["Immich 服务器"]
+    C["Home Assistant<br/>检测到你在家"] -->|"触发场景"| D["开灯 + 放音乐"]
+    B --> E["时间轴 / 人脸 / 地图"]
+    B -->|"Backrest 每日备份"| F["异地加密副本"]
+```
+
+**这是最值得投入的域**：Immich 的**自动备份**能真正防止「手机丢了照片没了」——而这正是 Backrest 存在的主要理由之一（照片不可再生）。
+
+#### 10.2.3 文件与同步域
+
+| 服务 | 提供的能力 | 典型场景 |
+| --- | --- | --- |
+| **Syncthing** | 点对点自动同步，多设备间文件实时互备，**不经过云端** | 笔记本 ↔ 台式机 ↔ NAS 保持同一份工作目录 |
+| **Samba** | 局域网 SMB 共享，Windows/macOS 挂载成本地磁盘 | 媒体库、老电影、临时交换区 |
+| **Transmission** | BT 下载（做种/下载），支持 RSS 订阅自动下载 | 追剧种子、公开数据集 |
+| **Gonic + slskd** | Soulseek 网络：slskd 下载、Gonic 把你的音乐库分享出去 | 音乐爱好者的内容交换 |
+| **Backrest（容器版能力）** | 快照式备份 | 见 10.2.7 |
+
+**注意 Syncthing ≠ 备份**：它是同步，删除会传播。真要防误删，务必开 `.stversions` 版本控制，或用 Backrest 做独立备份。
+
+#### 10.2.4 密码与身份域
+
+| 服务 | 提供的能力 | 重要性 |
+| --- | --- | --- |
+| **Vaultwarden** | Bitwarden 兼容的密码库：密码自动填充、跨设备同步、TOTP 二次验证、**自建端到端加密** | 🔴 **全家最该自托管的服务** |
+| **Forgejo** | 私有 Git 托管：代码、配置、笔记的版本化存储，带 Web UI / Issue / Wiki | 中高 |
+| **PocketBase** | 轻量 BaaS：给 Homepage、家庭自动化、小工具提供数据库 + Auth + 文件存储 | 基础设施级 |
+
+**为什么 Vaultwarden 是第一优先级**：
+- 用别人的密码库 = 把全家密码交给第三方（哪怕他们说端到端加密）。
+- 自建后**密码库文件在你自己手上**（`/srv/vaultwarden/data`）。
+- 配合 Backrest 异地加密备份，**做到"服务挂了也能恢复密码"**——这是自托管密码库唯一真正的风险点。
+
+> 🔒 **务必做的三件事**：① 首次注册后立即 `SIGNUPS_ALLOWED=false`；② 强主密码（这是唯一的解密钥匙，服务器上没有）；③ `data` 目录进 Backrest 且**异地 + 加密**。
+
+#### 10.2.5 信息与任务域
+
+| 服务 | 提供的能力 |
+| --- | --- |
+| **FreshRSS** | RSS 聚合，把 100+ 信息源收敛成一个阅读器，配合 Fever API 接入手机阅读 App |
+| **Readeck** | 「稍后读」：网页文章存下来打标签，跨设备阅读，可导出 |
+| **Vikunja** | 待办 / 任务管理：看板视图、多人协作、到期提醒、重复任务 |
+| **Actual Budget** | 个人/家庭记账：规则化分类、预算、报表，**纯本地数据不外传** |
+
+**这套组合的隐藏价值**：把「信息洪水」变成**一个入口**。FreshRSS 收 → Readeck 存 → Vikunja 变成行动项 → Homepage 统一看。
+
+#### 10.2.6 监控与告警域
+
+| 服务 | 提供的能力 | 回答什么问题 |
+| --- | --- | --- |
+| **Beszel** | 主机与容器的 CPU / 内存 / 磁盘 / 网络 / 容器状态，带历史曲线与告警 | 「机器健康吗？趋势如何？」 |
+| **Uptime Kuma** | HTTP/TCP/ICMP 探针，从外部视角监控每个服务，宕机即通知 | 「服务还在线吗？」 |
+| **Gotify** | 推送中枢：任意服务/脚本都能 HTTP POST 一条消息到手机 | 「有事发生，怎么第一时间知道？」 |
+| **Homepage** | 所有服务的可视化入口面板，显示每个服务的在线状态 | 「我现在该点哪个？」 |
+
+**告警闭环**（这三者如何协同）：
+```mermaid
+flowchart TB
+    A["Uptime Kuma<br/>探针发现 502"] -->|"通知"| B["Gotify<br/>推送到手机"]
+    C["Beszel<br/>发现磁盘 92% / 内存飙升"] -->|"通知"| B
+    D["Backrest<br/>备份失败"] -->|"通知"| B
+    B --> E["手机通知栏"]
+    E --> F["你处理 → Homepage 定位 → SSH 修复"]
+```
+
+**这是整套方案里投入产出比最高的部分**：14 个服务的根因，往往就是「磁盘满了」「内存 OOM」「证书过期」「上游依赖挂了」这四类。
+
+#### 10.2.7 数据与容灾域
+
+| 服务 | 提供的能力 |
+| --- | --- |
+| **Backrest** | 基于 Restic 的备份：本地 / SFTP / S3 / B2 多种后端，计划任务、快照浏览、一键恢复、Web UI |
+| **Cockpit** | 服务器管理面板：终端、日志、服务启停、磁盘、网络、防火墙、用户管理 |
+
+**Backrest 的定位要拎清**：
+- **它不是同步，是快照备份**——带时间点，可以恢复到任意历史版本。
+- **不可再生的数据必须进来**：Immich 照片、Vaultwarden 密码库、Forgejo 代码、Gotify/Backrest 自身配置、Readeck 收藏。
+- **可再生的不用进**：电影、音乐（重新下载）、apt 缓存。
+
+#### 10.2.8 基础设施域
+
+| 服务 | 提供的能力 |
+| --- | --- |
+| **Caddy** | 唯一反向代理入口：自动 TLS 证书、HTTP/3、路径路由、Basic Auth、可选的访问日志 |
+| **Cockpit** | 系统级管理（见上） |
+
+**基础设施域是「隐身的服务」**：用户永远看不到它，但所有 Web 服务都靠它才有 HTTPS 和统一入口。**Caddy 挂掉 = 所有 Web 服务对外不可达**（内网直连 IP 仍可），所以它的可用性优先级最高。
+
+### 10.3 五个端到端场景（服务如何串起来）
+
+场景比单个服务更能说明价值。
+
+#### 场景 A：出门在外访问家里的一切
+```mermaid
+sequenceDiagram
+    participant U as 手机
+    participant V as VPN/Tailscale
+    participant C as Caddy
+    participant J as Jellyfin
+    U->>V: 连 VPN，拿到内网 IP
+    U->>C: https://jellyfin.内网域名
+    C->>J: reverse_proxy 到 8096
+    J-->>U: 视频流
+    Note over U,J: 全程不出公网，不经过任何第三方
+```
+
+#### 场景 B：照片自动备份 + 异地容灾
+```mermaid
+sequenceDiagram
+    participant P as 手机
+    participant I as Immich
+    participant B as Backrest
+    participant R as 异地 Restic 仓库
+    P->>I: 拍摄后自动上传
+    Note over I: 存在 /srv/immich
+    B->>I: 每日定时读取新增
+    B->>R: 加密上传（S3/B2/SFTP）
+    Note over R: 异地副本，服务器全毁也不丢
+```
+
+#### 场景 C：服务挂了 60 秒内知道并修好
+```mermaid
+sequenceDiagram
+    participant K as Uptime Kuma
+    participant G as Gotify
+    participant M as 手机
+    participant H as Homepage
+    K->>K: 探针连续失败
+    K->>G: 发送告警
+    G->>M: 推送通知
+    M->>H: 打开面板，看哪个服务红了
+    M->>M: SSH 上去 systemctl --user restart xxx
+```
+
+#### 场景 D：新人/家人怎么用（零门槛）
+```mermaid
+flowchart LR
+    A["家人打开 Homepage"] --> B["看到所有服务卡片<br/>绿色=在线"]
+    B --> C["点 Jellyfin 卡片<br/>→ 电视上直接播放"]
+    B --> D["点 Vikunja 卡片<br/>→ 看到要交电费"]
+    B --> E["忘记密码<br/>→ Vaultwarden App 自动填充"]
+```
+
+#### 场景 E：一条命令发通知
+```bash
+# 任何脚本执行完都能推到你手机
+curl -s -X POST "http://127.0.0.1:8080/message?token=<你的AppToken>"   -H "Title: 备份完成"   -d "Backrest 增量备份完成，耗时 3m12s"
+```
+
+### 10.4 三个角色看到的不同东西
+
+| 角色 | 主要入口 | 关心什么 | 典型操作 |
+| --- | --- | --- | --- |
+| **家人 / 非技术用户** | Homepage、Jellyfin App、Vaultwarden App | 服务能不能用、别让我折腾 | 点开即用，不碰配置 |
+| **你（运维者）** | SSH、Cockpit、Beszel、Uptime Kuma | 谁挂了、为什么、资源够不够 | 看监控 → 定位 → 重启 |
+| **开发者 / 写代码的** | Forgejo、Readeck、FreshRSS | 代码与知识的版本管理 | push 代码、收订阅、做笔记 |
+
+> **设计含义**：Homepage 的存在不是为了好看，而是为了让**非技术用户有唯一入口**。否则你会被"这个服务怎么访问"的问题淹没。
+
+### 10.5 能力到服务的映射总表（速查）
+
+| 能力 | 核心服务 | 辅助服务 | 对外入口 |
+| --- | --- | --- | --- |
+| 看影视 | Jellyfin | Backrest, Caddy | `jellyfin.域名` |
+| 听有声书 | Audiobookshelf | Caddy | `abs.域名` |
+| 全屋音乐 | MPD + Snapcast | ARM, Gonic | 客户端直连 |
+| 管照片 | Immich | Backrest | `immich.域名` |
+| 智能家居 | Home Assistant | PocketBase, Gotify | `ha.域名` |
+| 多设备文件同步 | Syncthing | Backrest | 客户端直连 |
+| 局域网共享 | Samba | — | `smb://内网IP` |
+| 下种子 | Transmission | — | `transmission.域名` |
+| 存密码 | Vaultwarden | Backrest | `vault.域名` |
+| 存代码 | Forgejo | Backrest | `git.域名` |
+| 读订阅 | FreshRSS | Readeck | `rss.域名` |
+| 稍后读 | Readeck | FreshRSS | `readeck.域名` |
+| 管任务 | Vikunja | Gotify | `todo.域名` |
+| 记流水 | Actual Budget | Backrest | `budget.域名` |
+| 看监控 | Beszel | Homepage | `beszel.域名` |
+| 收告警 | Uptime Kuma + Gotify | — | 手机推送 |
+| 统一入口 | Homepage | — | `home.域名` |
+| 备份恢复 | Backrest | — | `backrest.域名` |
+| 管服务器 | Cockpit | — | `cockpit.域名` |
+
+---
+
+## 第 11 章 运维手册：搭完之后怎么养
+
+**自托管真正的成本不在搭建，在运维。** 原文花了大量篇幅讲「装什么」，但没讲「怎么养」——而这恰恰是大多数自托管项目烂尾的原因：服务挂了没人管、磁盘满了没发现、证书过期访问不了、备份从没验证过。
+
+这一章给出**可长期执行的运维体系**。
+
+### 11.1 运维的三个层次
+
+```mermaid
+flowchart TB
+    subgraph L1["① 观测层 —— 知道发生了什么"]
+        A["Beszel<br/>资源趋势"]
+        B["Uptime Kuma<br/>服务在线"]
+        C["日志 journalctl"]
+        D["Backrest<br/>备份状态"]
+    end
+    subgraph L2["② 控制层 —— 能改能修"]
+        E["systemctl<br/>启停"]
+        F["Caddyfile<br/>改配置"]
+        G["Quadlet<br/>改容器"]
+        H["SSH / Cockpit"]
+    end
+    subgraph L3["③ 恢复层 —— 出事能回到过去"]
+        I["Backrest<br/>时间点恢复"]
+        J["Syncthing<br/>版本历史"]
+        K["重装流程文档化"]
+    end
+    L1 -->|发现问题| L2
+    L2 -->|修不好| L3
+    L3 -->|恢复后| L1
+```
+
+**关键认知**：这三层缺一层，自托管就会退化。
+- 没有**观测** → 你只能等用户投诉才知道坏了（最糟的运维模式）。
+- 没有**控制** → 知道坏了但改不动，只能重装。
+- 没有**恢复** → 知道坏了也修不好，只能重买硬件（最贵的失败）。
+
+### 11.2 日常巡检：日 / 周 / 月 / 季
+
+不要天天手工查 28 个服务。**把巡检做成固定节奏 + 自动化脚本**。
+
+| 频率 | 检查项 | 命令 / 入口 | 触发动作 |
+| --- | --- | --- | --- |
+| **每日**（自动） | 服务在线状态 | Uptime Kuma 探针 | 挂了 → Gotify 推你 |
+| **每日**（自动） | 备份是否成功 | Backrest 计划任务 | 失败 → Gotify 推你 |
+| **每日**（自动） | 磁盘使用率 | 巡检脚本 | >85% → 告警 |
+| **每周** | 容器/服务异常退出 | `journalctl --user -p err` | 排查反复重启的服务 |
+| **每周** | 证书剩余天数 | `caddy list-certificates` | <15 天 → 处理 |
+| **每月** | **恢复演练** | 从 Backrest 随机抽一个仓库做 restore 测试 | 恢复失败 → 立刻修 |
+| **每月** | 系统更新 | `apt update && apt list --upgradable` | 打安全补丁 |
+| **每季** | 容量规划 | 媒体库增长率 | 规划扩容 |
+| **每季** | **整机迁移演练** | 按文档重装一台 | 验证「我能恢复」 |
+
+**每月恢复演练是整套运维的皇冠动作**。备份没验证过 = 没有备份。详见 11.5。
+
+### 11.3 巡检脚本：一条命令看全貌
+
+把每日检查写成脚本，扔进 cron，异常就推 Gotify。
+
+```bash
+#!/usr/bin/env bash
+# /home/selfhost/bin/daily-check.sh
+set -uo pipefail
+
+GOTIFY_URL="http://127.0.0.1:8080"
+GOTIFY_TOKEN="<你的AppToken>"
+BACKREST_URL="http://127.0.0.1:9898"
+WARN_DS=85          # 磁盘告警阈值 %
+WARN_MEM=90         # 内存告警阈值 %
+
+notify() {
+    curl -s -X POST "${GOTIFY_URL}/message?token=${GOTIFY_TOKEN}" \
+        -H "Title: $1" -d "$2" >/dev/null
+}
+
+problems=()
+
+# 1) 磁盘使用率（排除 tmpfs，因为 df 会把 tmpfs 算成 100%）
+while read -r usage mount; do
+    pct="${usage%%%*}"
+    if [[ "$pct" =~ ^[0-9]+$ ]] && [ "$pct" -ge "$WARN_DS" ]; then
+        problems+=("磁盘 $mount 使用率 ${pct}%")
+    fi
+done < <(df -PT -x tmpfs -x devtmpfs | tail -n +2 | awk '{print $6, $7}')
+
+# 2) 内存
+mem_pct=$(free | awk '/Mem:/ {printf "%d", $3/$2*100}')
+[ "$mem_pct" -ge "$WARN_MEM" ] && problems+=("内存使用率 ${mem_pct}%")
+
+# 3) 失败的 user 服务
+failed=$(systemctl --user list-units --state=failed --no-legend --no-pager | awk '{print $1}')
+[ -n "$failed" ] && problems+=("失败的 user 服务: $(echo $failed | tr '\n' ' ')")
+
+# 4) 重启过的容器（近 24h）
+crashed=$(podman ps -a --filter "status=exited" --format "{{.Names}}" | tr '\n' ' ')
+[ -n "$crashed" ] && problems+=("已退出的容器: $crashed")
+
+# 5) 最近的备份记录（Backrest API 需按版本调整路径）
+recent_backup=$(curl -s "$BACKREST_URL/api/restic/backups" 2>/dev/null | head -c 200)
+if ! echo "$recent_backup" | grep -q '"time"'; then
+    problems+=("Backrest 备份状态异常，请检查 Web UI")
+fi
+
+# 6) 汇总上报
+if [ ${#problems[@]} -gt 0 ]; then
+    notify "自托管巡检告警" "$(printf '%s\n' "${problems[@]}")"
+    echo "发现问题 ${#problems[@]} 项，已推送通知"
+else
+    echo "巡检通过：磁盘/内存/服务/容器/备份 全部正常"
+fi
+```
+
+**挂到 cron（每天 8:30）**：
+
+```bash
+chmod +x ~/bin/daily-check.sh
+crontab -e
+# 加入：
+30 8 * * * /home/selfhost/bin/daily-check.sh >> /home/selfhost/logs/daily-check.log 2>&1
+```
+
+> 用 `cron` 而非 systemd timer 的理由：脚本极轻、失败不影响系统；systemd timer 更适合有状态的长任务。两者都可行，看你习惯。
+
+### 11.4 升级：两条路径
+
+原生服务和容器的升级方式完全不同，别搞混。
+
+#### 11.4.1 原生服务升级
+
+```bash
+# 1) 先备份配置和数据
+sudo tar czf ~/backup-$(date +%F).tar.gz /etc/<service>/ /var/lib/<service>/
+
+# 2) 查更新
+apt list --upgradable
+
+# 3) 只升级目标服务（避免连带升级一堆）
+sudo apt install --only-upgrade <packagename>
+
+# 4) 重启并确认
+sudo systemctl restart <service>
+systemctl status <service>
+```
+
+**手工安装的二进制（Backrest / Forgejo / Gonic / Gotify / PocketBase / slskd 等）**：
+
+```bash
+# 套路：下载新版本 → 停服务 → 换二进制 → 启服务 → 验证
+cd /tmp
+VERSION=<新版本号>
+curl -LO "https://github.com/<org>/<repo>/releases/download/v${VERSION}/<binary>"
+
+sudo systemctl stop <service>          # 停
+sudo install -m755 <binary> /usr/local/bin/<binary>   # 换（先备份旧的）
+# sudo cp /usr/local/bin/<binary> /usr/local/bin/<binary>.bak
+sudo systemctl start <service>         # 起
+systemctl status <service> && journalctl -u <service> -n 50 --no-pager
+```
+
+> ⚠️ **务必先备份旧二进制**（`cp xxx xxx.bak`）。新版本可能改配置文件格式，起不来时能秒回滚。
+
+#### 11.4.2 Podman 容器升级
+
+```bash
+# 1) 改 Quadlet 文件里的 tag：latest → 具体版本号（生产环境别用 latest！）
+#    Image=docker.io/jellyfin/jellyfin:10.9.11
+
+# 2) 重载并重建
+systemctl --user daemon-reload
+systemctl --user restart jellyfin.service
+
+# 3) 看日志确认新版起来了
+podman logs --tail 50 jellyfin
+podman image ls | head   # 确认新镜像
+```
+
+**镜像清理（rootless Podman 会越攒越多）**：
+
+```bash
+podman image prune -f          # 清理悬空镜像
+podman system df               # 看占用
+podman image prune -a -f       # 谨慎：删除所有未被使用的镜像
+```
+
+> 💡 **生产建议**：Quadlet 里**写死版本号**而不是 `latest`。`latest` 意味着某天 `podman pull` 拉到一个有 bug 的版本，你排查时会多花几小时。
+
+#### 11.4.3 升级纪律
+
+| 规则 | 原因 |
+| --- | --- |
+| 生产环境写死版本号 | `latest` 会静默引入变更 |
+| 升级前必备份二进制 + 数据目录 | 出问题能秒回滚 |
+| 一次只升一个服务，升完验证再下一个 | 出问题时归因清晰 |
+| 非紧急补丁不必当天打 | 观察 2~3 天再升，避免踩上游新 bug |
+| 安全高危补丁立即打 | 前提是已有备份和恢复路径 |
+
+### 11.5 备份与恢复：真正重要的一章
+
+#### 11.5.1 备份分层
+
+```mermaid
+flowchart LR
+    A["数据源<br/>Immich 照片"] --> B["Backrest 计划任务<br/>Restic 增量快照"]
+    B --> C["本地仓库<br/>/srv/backup-repo"]
+    B --> D["异地仓库<br/>S3 / B2 / SFTP"]
+    C --> E["恢复演练<br/>每月抽检"]
+    D --> E
+```
+
+**三层数据分级**：
+
+| 等级 | 内容 | 备份策略 |
+| --- | --- | --- |
+| 🔴 **不可再生** | Immich 照片、Vaultwarden 密码库、Forgejo 代码、Backrest 自身配置 | 每日增量 + 异地 + **每月恢复演练** |
+| 🟡 **半可再生** | Readeck 收藏、Actual 账本、Gotify 通知历史 | 每周 |
+| 🟢 **可再生** | 影视、音乐、apt 缓存、容器镜像 | 不备份 |
+
+#### 11.5.2 恢复演练（必做）
+
+**没有验证过的备份不算备份。** 每月做一次，流程固定：
+
+```bash
+# 1) 列出所有仓库和快照
+backrest repo list
+backrest snapshot list --repo <repo-name>
+
+# 2) 选一个快照，恢复到临时目录（不覆盖现有数据！）
+backrest restore --repo <repo-name> --snapshot <snapshot-id> --target /tmp/restore-test
+
+# 3) 验证内容
+ls -la /tmp/restore-test/
+find /tmp/restore-test -name "*.jpg" | head      # 照片类
+# 密码库：确认 pb_data / vaultwarden data 在
+
+# 4) 清理
+rm -rf /tmp/restore-test
+```
+
+**在 Backrest Web UI 里做更直观**：Plans → 对应 plan → Snapshot 列表 → 选一个 → Restore → 选目标目录 → 恢复后打开文件校验。
+
+> 🔴 **密码库专项演练**：定期（每季）**在一台干净的机器/容器里**恢复 Vaultwarden 的数据目录，验证能用主密码正常解密。只在原机器上"恢复成功"说明不了问题——**真正的风险是解密密钥验证流程没走过**。
+
+#### 11.5.3 异地备份的现实问题
+
+- **成本**：Backblaze B2 / 阿里 OSS / 腾讯 COS，媒体库不大（只备不可再生数据）的话，月成本通常在几元到几十元。
+- **加密**：Restic 客户端加密，**异地仓库里是密文**——这既是安全优势，也是风险（**密码丢了，备份也解不开**）。密码要存在密码管理器之外的第二处。
+- **一致性**：数据库类数据（SQLite）备份时若正在写入，恢复出来可能损坏。解法：
+  - 优先用服务自带的备份机制（Immich 有官方 backup 流程）；
+  - 或用 SQLite 的 `.backup` 命令而非直接复制文件；
+  - 或接受"最坏情况下丢最近几分钟"。
+
+### 11.6 证书与域名运维
+
+| 事项 | 频率 | 操作 |
+| --- | --- | --- |
+| 检查证书有效期 | 每周/自动 | `sudo caddy list-certificates` |
+| 确认自动续期正常 | 每月 | `journalctl -u caddy \| grep -i renew` |
+| 域名 DNS 记录核对 | 每季 | 确认 AAAA 仍指向本机 |
+| 证书签发失败排查 | 出现时 | 80/443 可达？DNS 生效？配额？ |
+
+**Caddy 自动续期失败的三种典型原因**：
+1. **80 端口被占用或不通** → HTTP-01 验证失败。
+2. **DNS 记录未生效** → 验证请求打不到你的机器。
+3. **Let's Encrypt 速率限制** → 短时间重复签发被限（5 次/小时等）。别反复重试，看 `journalctl` 里的具体错误码。
+
+**兜底方案**：即使 Caddy 挂了，你还能从内网直连服务 IP 应急（这也是"服务不直接暴露公网"的另一个好处——不影响内网使用）。
+
+### 11.7 磁盘与容量管理
+
+**媒体库是会持续增长的**，这是长期运维最大的隐性成本。
+
+```bash
+# 1) 找出空间大户
+sudo du -h --max-depth=1 /srv/media | sort -h | tail -20
+
+# 2) inode 检查（小文件太多也会满）
+df -i
+
+# 3) 找大文件（Top 50）
+sudo find /srv/media -type f -size +2G -exec du -h {} + 2>/dev/null | sort -rh | head -50
+
+# 4) 日志占位
+sudo du -sh /var/log/* 2>/dev/null | sort -h | tail -10
+journalctl --disk-usage
+```
+
+**必做的两件事**：
+1. **限制 journald 占用**（否则日志把根分区写满，全盘服务挂掉）：
+
+```bash
+# /etc/systemd/journald.conf
+[Journal]
+SystemMaxUse=500M
+MaxRetentionSec=2week
+```
+```bash
+sudo systemctl restart systemd-journald
+sudo journalctl --vacuum-size=500M
+```
+
+2. **给媒体库设增长预期**：按当前速率估算 6 个月后占多少，提前扩容。原文 6TB 听着多，但 4K 媒体一年吃掉好几 TB；**如果按他的 720p 策略，每年增长会慢得多**。
+
+### 11.8 安全运维
+
+#### 11.8.1 密钥与凭据管理
+
+| 凭据 | 存放位置 | 轮换周期 |
+| --- | --- | --- |
+| Vaultwarden 主密码 | **只在脑子里** | 无法轮换，强度决定一切 |
+| 各服务密码 | Vaultwarden | 6~12 个月 |
+| WireGuard/Tailscale 密钥 | 服务器 + 客户端 | 设备丢失时立即吊销 |
+| Caddy Cloudflare API Token | 环境变量 / secret 文件 | 6~12 个月 |
+| Podman registry 凭据 | `~/.config/containers/auth.json` | 按需 |
+| Backrest Restic 仓库密码 | Backrest 配置 | 谨慎变更（改了要重加密） |
+
+**一条铁律**：**自托管的凭据不能存在同一台机器上**。用 Vaultwarden 存其他服务的密码，Vaultwarden 的主密码靠记忆 + 纸质备份（放在保险的地方）。
+
+#### 11.8.2 暴露面定期核查
+
+```bash
+# 1) 本机所有监听端口——只应该有内网地址 + 必要端口
+ss -tlnp
+
+# 2) 确认没有意外的 0.0.0.0 监听（对公网的服务）
+ss -tlnp | grep '0.0.0.0' | awk '{print $4}'
+
+# 3) 从外部视角自查（用手机关掉 WiFi，用 4G 访问）
+#    逐个访问你的域名，应该全部打不开（除了 VPN 端口）
+```
+
+> 💡 **定期从"外网视角"检查**是最有效的安全习惯。家里宽带可以用另一条线路（手机热点）做这件事。
+
+#### 11.8.3 认证审计
+
+- Uptime Kuma 里给每个服务配**外部探针**（从外部网络请求），而不只是内网自检。
+- 定期检查 Vaultwarden 是否有异常登录。
+- **Vaultwarden 关闭注册后，任何"注册成功"都是异常信号**。
+
+### 11.9 故障处理：从现象到根因
+
+#### 11.9.1 分级与响应
+
+| 级别 | 定义 | 例子 | 响应时间 | 处理方式 |
+| --- | --- | --- | --- | --- |
+| **P0** | 全家不可用 | 主机宕机、网络断了 | 立即 | 查硬件/网络，考虑备用方案 |
+| **P1** | 核心服务不可用 | Jellyfin 挂了、密码库进不去 | 2 小时内 | 重启 → 查日志 → 查资源 |
+| **P2** | 单个非核心服务异常 | FreshRSS 抓取失败 | 当天 | 记录，周末批量修 |
+| **P3** | 体验类问题 | 媒体库刮削不干净 | 择机 | 有空再管 |
+
+#### 11.9.2 标准排障流程
+
+```mermaid
+flowchart TB
+    A["发现异常"] --> B["确认范围<br/>单个服务？全部？"]
+    B -->|全部| C["查主机层<br/>电源/网络/磁盘/内存"]
+    B -->|单个| D["查服务层<br/>systemctl status"]
+    C --> E["查资源<br/>df / free / dmesg"]
+    D --> F["查日志<br/>journalctl -n 100"]
+    E --> G{"能修吗"}
+    F --> G
+    G -->|能| H["修复 + 记录"]
+    G -->|不能| I["回滚<br/>备份/旧二进制/重装"]
+    H --> J["复盘<br/>加监控/改配置防复发"]
+    I --> J
+```
+
+**命令速查（按顺序试）**：
+
+```bash
+# 服务层
+systemctl --user status <svc>          # 原生服务
+systemctl --user restart <svc>          # 先重启止血
+journalctl --user -u <svc> -n 100 --no-pager   # 看错误
+journalctl --user -u <svc> -f          # 实时跟踪
+
+# 容器层
+podman ps -a                            # 容器状态
+podman logs --tail 100 <container>
+podman inspect <container> | grep -A5 State
+
+# 系统层
+df -h && df -i                          # 磁盘
+free -h                                 # 内存
+dmesg -T | tail -50                     # 内核消息（OOM！）
+uptime                                  # 负载
+sudo systemctl --failed                 # 失败的系统服务
+
+# 网络层
+ss -tlnp                               # 端口监听
+curl -sv http://127.0.0.1:8096          # 本地直连测试
+sudo caddy validate --config /etc/caddy/Caddyfile   # 反代配置
+```
+
+#### 11.9.3 常见根因速查（按出现频率排序）
+
+| 现象 | 最可能的根因 | 第一动作 |
+| --- | --- | --- |
+| 多个服务同时挂 | 主机资源耗尽（磁盘满/OOM） | `df -h`、`free -h`、`dmesg` |
+| 单个服务反复重启 | 配置错、依赖未起、端口冲突 | `journalctl -u <svc>` 看最后一次退出原因 |
+| 页面打不开但服务在跑 | Caddy 配置/证书问题 | `caddy validate`、`caddy list-certificates` |
+| 变慢/卡顿 | 内存不足开始 swap，或磁盘 IO 饱和 | `free -h`、`iostat -x 1` |
+| 手机连不上 | VPN/Tailscale 断了 | 重连；看服务端握手日志 |
+| 备份突然变大 | 媒体库被扫进备份了 | 检查 Backrest plan 路径 |
+| 照片不见了 | Immich 存储目录写满/挂载失败 | `df -h /srv/immich` |
+
+### 11.10 自动化运维：用 systemd timer 做周期任务
+
+比 cron 更"原生"的做法，适合长任务：
+
+```ini
+# ~/.config/systemd/user/backup-verify.timer
+[Unit]
+Description=每周验证备份可恢复性
+
+[Timer]
+OnCalendar=Sun 03:00
+Persistent=true          # 关机错过了，开机后补跑
+
+[Install]
+WantedBy=timers.target
+```
+
+```ini
+# ~/.config/systemd/user/backup-verify.service
+[Unit]
+Description=验证备份
+
+[Service]
+Type=oneshot
+ExecStart=%h/bin/backup-verify.sh
+```
+
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now backup-verify.timer
+systemctl --user list-timers       # 确认下次触发时间
+```
+
+**`Persistent=true` 很关键**：笔记本/迷你主机断电或关机错过了任务，开机后会自动补跑，不会静默丢失。
+
+### 11.11 整机迁移与灾难恢复
+
+**这是"自托管"区别于"装软件"的最后一环**：如果这台机器明天彻底坏了，你能在多久内恢复全部服务？
+
+**必须提前写好的文档（写在纸上或离线存一份）**：
+
+```markdown
+# 灾难恢复手册
+
+## 1. 硬件清单
+- 主机：Beelink S12 Pro (N100/16GB/512GB)
+- 存储：6TB HDD (数据), 128GB SSD (系统)
+- 网络：路由器 WireGuard，客户端密钥 <存放位置>
+
+## 2. 恢复顺序
+1. 安装 Debian 12
+2. 恢复 6TB 数据盘（挂载到 /srv/media）
+3. 安装 Caddy，恢复 /etc/caddy/Caddyfile，重载
+4. 恢复各服务配置与数据目录（从 Backrest 拉）
+5. 部署 systemd unit 与 Quadlet 文件
+6. loginctl enable-linger
+7. 逐个验证（见验收清单）
+
+## 3. 关键配置备份位置
+- Caddyfile: <位置>
+- Quadlet 文件: <位置>
+- 各服务数据目录: <列表>
+- Backrest 仓库凭据: <位置>
+- Vaultwarden 主密码: <纸质备份位置>
+
+## 4. 联系方式
+- 家人如何访问: <说明>
+```
+
+**恢复演练**（每季度一次，或至少每年一次）：
+- 找台旧电脑/虚拟机，**从头照着文档装一遍**。
+- 会发现文档里缺失的步骤 —— **那正是它的价值**。
+- 演练耗时的 2~3 倍，就是你真实的灾难恢复时间（RTO）。
+
+### 11.12 运维成熟度自查
+
+```mermaid
+flowchart LR
+    L1["L0 能用<br/>装完能访问"] --> L1a["✓ 服务能开<br/>✗ 挂了不知道"]
+    L1 --> L2["L1 能看<br/>有监控有告警"]
+    L2 --> L2a["✓ 挂了知道<br/>✗ 修不动/恢复不了"]
+    L2 --> L3["L3 能修<br/>有流程有回滚"]
+    L3 --> L3a["✓ 知道+能修<br/>✗ 数据恢复没验证"]
+    L3 --> L4["L4 能扛<br/>备份+演练+迁移"]
+    L4 --> L4a["✓ 观测/控制/恢复<br/>三层齐备"]
+```
+
+**自评：**
+
+| 维度 | 达成标准 |
+| --- | --- |
+| **观测** | 手机关 WiFi 用 4G 访问，全部服务打不开但 VPN 能通；服务挂掉 1 分钟内收到推送 |
+| **控制** | 知道服务名后，30 秒内完成「定位 → 查看日志 → 重启 → 验证」 |
+| **恢复** | 每月完成一次实际 restore 并打开文件验证；知道从零重建全栈需要多久 |
+| **安全** | 从外网扫描只有一个 VPN 端口开放；Vaultwarden 注册已关闭；所有凭据在密码库里 |
+| **容量** | 知道当前磁盘用了多少、按当前速率 6 个月后会是多少、有明确扩容计划 |
+
+---
+
 ## 附：与原文的差异说明（本文档做的增补）
 
 | 项 | 原文 | 本文档 |
@@ -1521,5 +2296,7 @@ flowchart LR
 | 容量 | 给了实测（7.5G/16G、30-40% CPU） | **补内存/磁盘估算表 + 存储规划（DB 放 SSD、媒体放 HDD）** |
 | 验收 | 无 | **新增逐条验收清单 + 故障速查表** |
 | 不自托管 | 列了 6 个 + 理由 | **提炼成通用判据决策树，可复用到任何服务** |
+| 服务能力 | 只列了服务名 | **第 10 章：9 大能力域重组 + 5 个端到端场景 + 能力→服务映射总表** |
+| 运维 | 几乎没提 | **第 11 章：观测/控制/恢复三层体系、巡检脚本、升级纪律、恢复演练、灾难恢复手册、成熟度自查** |
 
 > ⚠️ **免责与校验说明**：本文档中 systemd unit、Quadlet 文件、配置文件均为**按各服务官方文档与通用实践整理的模板**，服务版本迭代较快，**具体镜像 tag、命令行参数请以各项目官方文档为准**；落地时请先用单个服务验证通再批量应用。国内网络章节是结合通用情况的工程方案，涉及付费服务（VPS/Tailscale 等）请自行评估合规与成本。
