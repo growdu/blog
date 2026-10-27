@@ -51,6 +51,7 @@ mindmap
       源码深度拆解
         snapbuild.c
         reorderbuffer.c
+        stream 协议
         syscache
         row-lock
         shared memory
@@ -178,6 +179,7 @@ mindmap
 - [PostgreSQL 逻辑复制 LSN 推进全景](../db/postgresql/postgresql-logical-replication-lsn-flow/index.html)
 - [PostgreSQL 逻辑复制:catalog 改动、可见性判定与 xmin/xmax 推进全景](../db/postgresql/postgresql-logical-replication-catalog-visibility/index.html) — **NEW_CID 全链路**
 - [PostgreSQL 18 流式逻辑复制发布端深度解析](../db/postgresql/postgresql-logical-replication-stream-publisher/index.html)
+- [PostgreSQL 逻辑复制 Stream 执行逻辑源码级拆解](./postgresql-stream-execution-logic/index.html) — reorderbuffer 触发 → 订阅端落盘回放
 - [PostgreSQL 逻辑复制性能分析:火焰图实战](../db/postgresql/postgresql-flame-graph/index.html)
 
 ### 5.2 逻辑复制 — SnapBuild / ReorderBuffer 子系统
