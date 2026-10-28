@@ -374,13 +374,32 @@ myHonors:
       level: 集团级 称号
       year: ''
 
-# mermaid 图（主题默认 enable: false，仅在文章详情页 is_post() 时加载）。
-# database 专题页用 mermaid 画主题关系图，需要在所有页面启用。
+# mermaid 图。
+#
+# 加载方式：patch-theme.py 把 loader 注入到 layout.ejs 的 </body> 之前，
+# loader 先检查页面上是否存在 .mermaid 容器，没有就完全不下载 mermaid。
+# 因此只有真正含图的 138 个页面会拉取这 3.3 MB 的库（此前是全站每个页面
+# 都加载，且文章页会重复加载两次）。
+#
+# options 下的布局参数会传给 mermaid.initialize()，用于压缩图表占用的版面：
+# mermaid 默认 nodeSpacing/rankSpacing 都是 50、padding 15，实测把 docs/ 里
+# 60 张真实图表的高度压掉约 18%、面积压掉约 23%。
 mermaid:
   enable: true
   version: 'latest'
   options:
-    theme: 'default'
+    # 实际渲染用的主题。主题自带的 layout.ejs 里硬编码了 'forest'，而
+    # 这里的取值此前从未生效过；现在以本配置为准。
+    theme: 'forest'
+    # flowchart 布局密度
+    nodeSpacing: 30
+    rankSpacing: 30
+    padding: 10
+    wrappingWidth: 220
+    # sequenceDiagram 布局（不开启 wrap：开启后消息换行会让图反而变高 11%）
+    diagramMarginX: 8
+    actorMargin: 30
+    boxMargin: 4
 
 # 主题默认 libs.js.mermaid 指向 /libs/mermaid/mermaid.min.js (复数)，
 # 但 copy-vendor.py 把 mermaid 复制到 source/lib/mermaid/ (单数)，
