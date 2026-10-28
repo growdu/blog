@@ -27,3 +27,6 @@ db.json
 
 # npm dependency lock (managed by release, not committed)
 package-lock.json
+
+# Reward QR copies produced by tools/patch-theme.py (sources live in the repo root)
+themes/matery/source/medias/reward/gzh.jpg
