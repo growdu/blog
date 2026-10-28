@@ -33,7 +33,8 @@ tags:
 - 技术文档请查阅 [docs/database/postgresql-senior-kernel-developer](../database/postgresql-senior-kernel-developer/index.html) —— **如何成为资深的 PG 内核开发者**（含 18 月路径图 + 36 主题地图 + 12 子系统架构）
 
 ### 路径 C：周期与个人防线（宏观 → 公司 → 自己 → 家庭）
-1. 先读 [大环境之下：一个数据库内核开发工程师的思考、建议与自处](./economic-downturn-strategy/index.html)：**我怎么想 → 给公司的建议 → 我自己的策略**
+1. 先读 [大环境之下：一个数据库内核开发工程师的思考、建议与自处](./economic-downturn-strategy/index.html)：**我怎么想 → 给公司的建议 → 我自己的策略**（304 行，只给结论）
+2. 需要完整推演与数据口径，再读 [经济下行周期下的数据库内核工程师：深度版](./economic-downturn-deep-dive/index.html)：**十四项读数 → 两个参照系 → 八条建议 → 指标看板**（1200 行）
 
 ## 文档索引
 
@@ -43,6 +44,7 @@ tags:
 | 2 | [电子科技大学计算机自考：HFUT 机械本科补 B0809 学位路径](./电子科技大学-计算机-自考-复习计划/index.html) | 2026-10-13 | 自考决策 / 复习计划 / 与考公双线推进 |
 | 3 | [自托管服务全家桶：17 原生 + 11 容器实操手册](./self-host/index.html) | 2026-10-23 | 自托管 / systemd / Podman Quadlet / Caddy / 内网服务 |
 | 4 | [大环境之下：一个数据库内核开发工程师的思考、建议与自处](./economic-downturn-strategy/index.html) | 2026-10-28 | 经济研判 / 公司三条建议 / 产品力·销售力·服务力 / 个人三条底线 |
+| 5 | [经济下行周期下的数据库内核工程师：深度版 —— 十四项关键读数、八条建议与指标看板](./economic-downturn-deep-dive/index.html) | 2026-10-28 | 深度版 / 十四项读数 / 大萧条与日本二十年 / 八条建议 / 24 项指标看板 |
 
 ## 核心约束（跨文档共通）
 
