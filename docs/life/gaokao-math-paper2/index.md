@@ -990,4 +990,4 @@ p''(x) = 4e^{2x}(k+2+x)
 > **相关阅读**
 >
 > - [高考数学：中等水平者的做题方法与学习路径](../gaokao-math-methods/index.html) —— 这篇讲**通用方法**，本文讲**一套真题怎么用**，两篇配合看。
-> - [经济下行周期下的数据库内核工程师](./economic-downturn-strategy/index.html) —— 有点不搭，但这是我另一个身份在写的东西。
+> - [经济下行周期下的数据库内核工程师](../economic-downturn-strategy/index.html) —— 有点不搭，但这是我另一个身份在写的东西。
