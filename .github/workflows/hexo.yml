@@ -153,7 +153,7 @@ jobs:
           GITALK_SITE_URL: https://growdu.cn
           GITALK_SITE_ROOT: /
       - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: blog-public
           path: ./public
