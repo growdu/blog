@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 
 from pyv import palette
 from pyv.timeline import Storyboard
@@ -49,13 +50,31 @@ def cmd_align(args: argparse.Namespace) -> int:
 
 
 def cmd_render(args: argparse.Namespace) -> int:
-    from pyv import render
+    from pyv import render, subtitle
     storyboard = _load_or_report(args)
     if storyboard is None:
         return 1
     palette.assert_font_available()
-    outputs = render.render_storyboard(storyboard, args.out)
-    print(f"OK 渲染 {len(outputs)} 个片段 → {args.out}")
+    # 预览片同样烧字幕，保证与成片一致、可被 compose 直接复用
+    burner = subtitle.SubtitleBurner(
+        storyboard.subtitle_events(), storyboard.subtitle_style
+    )
+    source_mtime = Path(args.storyboard).stat().st_mtime
+    reused = sum(
+        1 for scene in storyboard.scenes
+        if scene.type == "code"
+        and render.clip_is_fresh(
+            Path(args.out) / f"{scene.id}.mp4", scene, source_mtime
+        )
+    )
+    outputs = render.render_storyboard(
+        storyboard, args.out, burner=burner, reuse=True,
+        source_mtime=source_mtime,
+    )
+    print(
+        f"OK {len(outputs)} 个片段（{reused} 个复用，"
+        f"{len(outputs) - reused} 个新渲染）→ {args.out}"
+    )
     return 0
 
 
@@ -65,7 +84,8 @@ def cmd_compose(args: argparse.Namespace) -> int:
     if storyboard is None:
         return 1
     out = compose.compose(
-        storyboard, args.build, args.out, narration=args.narration
+        storyboard, args.build, args.out, narration=args.narration,
+        source_mtime=Path(args.storyboard).stat().st_mtime,
     )
     print(f"OK 成片 → {out}")
     return 0

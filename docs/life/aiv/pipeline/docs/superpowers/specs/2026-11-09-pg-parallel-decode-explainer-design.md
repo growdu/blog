@@ -75,7 +75,7 @@ pipeline 不依赖 Design 项目目录（`~/Movies/Hub/Projects/.projects/...`�
 
 - 「本地优先」仅指画布素材存本机，生成算力全在云端；第三方模型不可本地跑。
 - **语义编辑不稳**（调色几乎无效、换背景主体变形）；分镜、剪辑、字幕、裁切、转场可用。
-  → 分工原则：**模型只生成，不修图；像素级确定的操作走 ffmpeg/ASS**。
+  → 分工原则：**模型只生成，不修图；像素级确定的操作走 ffmpeg + cairo 直绘**。
 - H3 2K = 120 积分/秒（实测）；768P ≈ 70 积分/秒（公开换算口径）。
 - **套餐积分只在 Design 客户端内消耗**；直接调用开放平台 H3 V2 API 走 API 余额，不扣套餐积分。
 - 本地跑 H3 权重需 NVIDIA CUDA，Apple Silicon 不成立。
@@ -135,7 +135,8 @@ index.sqlite                    → resources / compositions / project_compositi
  29.599s 新旁白     │                    │                │  cairo 逐帧渲染
                     │                    │                ▼
                     │                    │        build/scene-*.mp4
-                    │                    │                │  ffmpeg concat + ASS 烧字幕
+                    │                    │                │  ffmpeg concat + 混旁白
+                    │                    │                │  （字幕已在渲染阶段由 cairo 烧入）
                     │                    │                ▼
                     │                    │        out/pg-parallel-decode.mp4
                     │                    │                │
@@ -155,7 +156,7 @@ index.sqlite                    → resources / compositions / project_compositi
 | 角色一致性、跨镜头形象 | ✅ 资产中心（参考图） | 读 `growdu.png` 做部件切分 |
 | reader→worker、32 核、2–5 倍、提交顺序 | ❌ 模型写不对 | ✅ 精确绘制 |
 | 小象挥手/点头/指示 | 少量质感镜头 | ✅ 2D 部件动画 |
-| 文字、数字、字幕 | ❌ | ✅ ASS 烧制 |
+| 文字、数字、字幕 | ❌ | ✅ cairo 直绘 |
 | 旁白 | 保留音频 | ✅ 按时间码对齐，0 成本 |
 | 时间线合并、成片输出 | 导入后终审 + 多平台导出 | ✅ ffmpeg 主合成 |
 | 逐项检查 | ✅ 节点级检查点 | 自动校验（时长/字幕/响度） |
@@ -178,10 +179,10 @@ docs/life/aiv/
 │   │   ├── palette.py          # 配色与字体常量（§2.3）
 │   │   ├── easing.py           # 缓动函数
 │   │   ├── timeline.py         # 场景装载与时间码校验
-│   │   ├── subtitle.py         # ASS 生成
+│   │   ├── subtitle.py         # ASS 生成 + cairo 字幕直烧
 │   │   ├── align.py            # 旁白静音切分 → 时间码草稿
 │   │   ├── render.py           # 逐帧渲染 + ffmpeg 编码
-│   │   ├── compose.py          # concat + 混音 + ASS 烧制
+│   │   ├── compose.py          # concat + 混音 + 出片
 │   │   ├── elephant.py         # 小象部件切分与 2D 动作
 │   │   └── scenes/             # 一场景一模块（s01_hook.py …）
 │   ├── tests/                  # pytest：单测 + 集成
@@ -239,13 +240,18 @@ Design 策划里的时间点（0–6.5 / 6.5–13 / 13–19 / 19–26 / 26–31 
 ## 6. 渲染引擎
 
 - 技术选型：cairo 逐帧绘制 → rawvideo 管道喂 ffmpeg → 单场景无声 mp4（1920×1080 / 24fps / H.264 yuv420p）
-  → concat → 混旁白 → ASS 烧字幕。
+  → concat → 混旁白 → 出片。
 - 场景是纯函数式 `render(ctx, t_local)`，`t_local ∈ [0,1]`，无全局状态 → 可单测、可重放、可单场景重渲。
 - 小象 2D 动画：`elephant.py` 从 `growdu.png` 切出部件（头/双耳/双臂/鼻/胸牌/数据库图标），
   用旋转 + 位移 + 缓动驱动；动作限于挥手、点头、轻微转动、指向。**不做口型**（无模型视频即无口型需求）。
   白底矢量图便于按几何与颜色分离部件，无需抠图模型。
 - 旁白：`pa_decode_v2.mp3` 原样保留，不变速、不重录、无 BGM。
 - 字幕：`pyv/subtitle.py` 生成 ASS，样式按 §2.3，时间码直接来自 `storyboard.json`。
+
+> **实现偏离（实测）**：本机 ffmpeg 8.1 未编译 libass（`--enable-libass` 缺失，`ass=`/`drawtext` 滤镜均不可用），
+> 无法用 ffmpeg 烧 ASS。改为**在渲染阶段由 cairo 直接把字幕画进画面**，字体仍是 PingFang SC，
+> 与画面同源、排版一致；ASS 文件同时输出在 `build/subtitles.ass`，作为导入 Design 时的副产物复用。
+> 副作用是正面收益：字幕与图形共用同一套渲染管线，不存在二次缩放导致的字号漂移。
 
 ---
 
@@ -285,7 +291,7 @@ Design 策划里的时间点（0–6.5 / 6.5–13 / 13–19 / 19–26 / 26–31 
 | M0 | 骨架 + 契约校验器 + **导入通道验证**（成片能否被 Design 正常接收与导出） | `chore` | 契约校验单测；导入为人工验证项 |
 | M1 | `align.py` 对齐新旁白 → `storyboard.json` | `feat` | 单测：静音切分边界、句数匹配、时间码单调 |
 | M2 | 渲染引擎 core（cairo→ffmpeg）+ `render.py` | `feat` | 单测：easing/调色/时间码换算；集成：渲 1 场景并 ffprobe 断言 |
-| M3 | 字幕 ASS 生成器 | `feat` | 单测：ASS 时间码格式、样式映射、行宽 |
+| M3 | 字幕 ASS 生成器 + cairo 直烧 | `feat` | 单测：ASS 时间码格式、样式映射、行宽、落底位置 |
 | M4 | 段 A–B（片头/标题/串行瓶颈） | `feat` | 集成：拼接时长断言 |
 | M5 | 段 C（32 核图示 + 场景对比）★ | `feat` | 集成：帧数 = 契约时长×fps；元素断言 |
 | M6 | 段 D–E（reader→worker + 顺序一致性 + 数字）★ | `feat` | 集成：同上 |
