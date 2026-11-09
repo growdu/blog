@@ -46,7 +46,7 @@ categories:
 | openGauss 专题 | `docs/db/opengauss-*/` | 并行解码设计、CSN 全序 | 稀缺内容，竞品几乎没人讲 |
 | 性能与火焰图 | `docs/db/performance/flame-graph-analysis/` | 1 套方法论 | 工具型内容，搜索长尾极好 |
 | 自托管手册 | `docs/life/self-host/index.md` | 88K | 泛技术 audiences 引流入口 |
-| 视频生产链路（**只借鉴流程，不复用素材**） | `docs/db/aiv/` | 15 mp4 + 6 md + 字幕 + 配音 + 海报 | 分镜 / 配音 / 字幕 / 落版的**流程**可以照着搭；**画面、吉祥物、配色、脚本本身是公司物料，个人号不能用**（见 §1.4） |
+| 视频生产链路（**只借鉴流程，不复用素材**） | [AIV 视频生产线专题](../aiv/index.html) | 8 份 md + `storyboard.json` 契约 + 渲染引擎（**音视频一律不入库**） | 分镜 / 配音 / 字幕 / 落版的**流程**可以照着搭；**画面、吉祥物、配色、脚本本身是公司物料，个人号不能用**（见 §1.4） |
 | 视频元文章 | `docs/database/postgresql-senior-kernel-developer/index.md` | 49.7K | 学习路径类内容，长期搜索流量 |
 
 **总量换算**：保守估计，**存量文档至少能支撑 200 条以上的视频选题**。按每周 1 条长视频 + 2 条切片算，**够做两年半**。
@@ -844,7 +844,7 @@ gantt
 | 逻辑复制专题 | 11 个子专题 + 17 篇长文 | `docs/db/logical_decode/` |
 | openGauss 专题 | 并行解码设计、CSN 全序 | `docs/db/opengauss-*/` |
 | 内核开发者元文章 | 49.7K（18 月路线 + 36 主题地图） | `docs/database/postgresql-senior-kernel-developer/index.md` |
-| 视频生产链路（**流程可借鉴，素材不外带**） | 6 份 md + 15 个 mp4 + 字幕 + 配音 + 海报 | `docs/db/aiv/` |
+| 视频生产链路（**流程可借鉴，素材不外带**） | 8 份 md + 契约 + 渲染引擎；音视频不入库 | [AIV 视频生产线专题](../aiv/index.html) |
 | 自托管手册 | 88.5K | `docs/life/self-host/index.md` |
 
 **相关阅读**
