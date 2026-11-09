@@ -1,7 +1,7 @@
 # 并行解码讲解片 · 代码驱动动画 + MiniMax Design 协作设计
 
 - 日期：2026-11-09
-- 目标成片：`docs/db/aiv/` 下的 34.488 秒「海量数据库 · 逻辑复制并行解码」讲解片
+- 目标成片：`docs/life/aiv/` 下的 34.488 秒「海量数据库 · 逻辑复制并行解码」讲解片
 - 分工模式：**代码渲染分镜 → 写回 canvas.json → MiniMax Design 画布完成最终合并与多平台导出**
 - 画面来源：**B 混合档**（技术图示全代码 + 3–5 秒 768P 质感片头/转场 + 封面锚图），目标积分 290–430（原全 H3 方案 4200）
 
@@ -32,7 +32,7 @@
 
 ## 2. 已核验的事实基线
 
-### 2.1 素材现状（`docs/db/aiv/`）
+### 2.1 素材现状（`docs/life/aiv/`）
 
 | 资产 | 规格 | 用途 |
 | --- | --- | --- |
@@ -124,7 +124,7 @@ width, height, duration_ms, mime_type, name, metadata, created_at, updated_at, .
 ## 4. 目录与契约
 
 ```
-docs/db/aiv/
+docs/life/aiv/
 ├── assets/                     # 输入素材（不入库）
 ├── pa_decode.mp3               # 旁白（唯一音轨基准）
 ├── 字幕-并行解码.md             # 口播稿
@@ -295,7 +295,7 @@ docs/db/aiv/
 | M10 | `compose.py` 端到端合成 | `feat` | 集成：成片时长 = 34.488±0.1s、音轨存在、字幕条数 = 场景数 |
 | M11 | Design 终审与多平台导出 | 人工 | 人工检查点 |
 
-测试运行方式：`cd docs/db/aiv/pipeline && python -m pytest tests/ -q`。
+测试运行方式：`cd docs/life/aiv/pipeline && python -m pytest tests/ -q`。
 
 ---
 

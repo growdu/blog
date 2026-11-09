@@ -905,14 +905,20 @@ def rewrite_links(content, rel):
             return m.group(0)
         if raw.startswith('/'):
             return m.group(0)
-        # Normalise away any leading ./ or ../ segments.
-        cleaned = raw.lstrip('./')
-        candidate = os.path.normpath(os.path.join(post_dir, cleaned))
+        # Resolve the link against the post's own directory, keeping the
+        # leading ../ segments. Dropping them before normpath() (the old
+        # behaviour) mis-resolves any link that points at a sibling
+        # top-level section — e.g. life/aiv/ -> db/postgresql/... — and
+        # leaves it as a relative URL that 404s on the published site.
+        candidate = os.path.normpath(os.path.join(post_dir, raw))
         # normpath can produce a leading '../' if the link escaped the
-        # current subtree — bail out in that case to avoid rewriting
+        # docs tree entirely — bail out in that case to avoid rewriting
         # something we don't actually understand.
-        if candidate.startswith('..'):
+        if candidate.startswith('..') or os.path.isabs(candidate):
             return m.group(0)
+        # Normalise away any leading ./ segments for the sibling fallback
+        # below, which re-tries the lookup one directory up.
+        cleaned = raw.lstrip('./')
         # First try the path as written.  If the post is a page bundle
         # (docs/<section>/<slug>/index.md) the author is often thinking
         # in terms of the permalink folder `<slug>/` rather than the
