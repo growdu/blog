@@ -1,0 +1,31 @@
+# 本目录只入库代码与契约，媒体产物一律不入库。
+# 媒体资产（旁白、素材、成片）保留在本机，Design 与本地流水线都直接引用它们。
+
+# 媒体文件
+*.mp4
+*.mp3
+*.wav
+*.m4a
+*.mov
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+
+# 渲染产物
+build/
+out/
+frames/
+
+# Design 运行时状态（画布节点图与资产索引，由应用与流水线共同写入）
+.hilo/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# macOS
+.DS_Store
