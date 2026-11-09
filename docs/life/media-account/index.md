@@ -849,6 +849,7 @@ gantt
 
 **相关阅读**
 
+- [从 Hexo 博客到公众号与视频号：一次发布，自动分发两个平台](./blog-to-wechat/index.html) —— 本文讲的是**内容怎么做**，那篇讲的是**内容怎么自动发出去**：Markdown 转公众号 HTML、`draft/add` + `freepublish/submit` 状态机、视频号的三条路线与自动出片落点
 - [PostgreSQL 逻辑复制 Stream 执行逻辑源码级拆解](../../db/postgresql/postgresql-logical-replication-stream-publisher/index.html) —— 上面反复提到的"并行 apply / commit 顺序"的源码底稿
 - [如何成为资深的 PostgreSQL 内核开发者](../../database/postgresql-senior-kernel-developer/index.html) —— 36 个内核主题地图，就是现成的选题库
 - [经济下行周期下的数据库内核工程师](../economic-downturn-strategy/index.html) —— 另一条线：**周期里个人怎么攒资产**
