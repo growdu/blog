@@ -9,15 +9,35 @@
 2. **规则真的抓得住**——每条规则都要有正反用例；
    再拿一份真实的历史口播稿跑一遍，确认不误伤。
 """
+import importlib.util
 import re
+import sys
 from pathlib import Path
 
-from pyv import cli, persona
+from pyv import character, cli, persona
 
 FIXTURES = Path(__file__).parent / "fixtures"
 OK_SCRIPT = FIXTURES / "persona_script_ok.md"
 BAD_SCRIPT = FIXTURES / "persona_script_bad.md"
 REAL_SCRIPT = FIXTURES / "persona_script_real.md"
+
+
+def _load(name: str, relative: str):
+    """加载 character/scripts/ 下的脚本（不在 pipeline 包内，按路径载入）。"""
+    path = character.AIV_ROOT / relative
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _persona_module():
+    return _load("persona_prompt", "character/scripts/_persona.py")
+
+
+def _generate_character():
+    return _load("generate_character", "character/scripts/generate_character.py")
 
 
 def _spec_text() -> str:
@@ -89,6 +109,29 @@ def test_spec_and_code_agree_on_thresholds():
     assert f"≤ {persona.SHORT_SENTENCE_WIDTH}" in spec
     assert f"≥ {persona.SHORT_SENTENCE_RATIO:.0%}" in spec
     assert f"≤ {persona.MAX_SENTENCE_WIDTH}" in spec
+
+
+# ---------------------------------------------------------------- 视觉气质
+
+
+def test_persona_traits_are_in_sync_with_the_spec():
+    """人格特质的关键词，规范与生成脚本必须一致。"""
+    traits = _persona_module().PERSONA_TRAITS
+    spec_traits = _spec_table_first_column("1.1 视觉气质（落到形象上）")
+    assert set(spec_traits) == set(traits), (
+        f"规范 §1.1 与 _persona.py 的特质不一致："
+        f"{sorted(set(spec_traits) ^ set(traits))}"
+    )
+
+
+def test_character_prompt_carries_the_persona():
+    """主形象与姿态表的生成 prompt 都必须带人格气质。"""
+    module = _persona_module()
+    generate = _generate_character()
+    for trait in module.PERSONA_TRAITS:
+        assert trait in module.PERSONA_PROMPT
+    assert module.PERSONA_PROMPT in generate.CHARACTER_PROMPT
+    assert module.PERSONA_PROMPT in generate.POSE_PROMPT
 
 
 # ---------------------------------------------------------------- 硬约束

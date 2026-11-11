@@ -29,6 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _mcode import call, download, upload  # noqa: E402  同目录脚本
+from _persona import PERSONA_PROMPT  # noqa: E402  人格气质唯一来源
 from add_glasses import GLASSES_COLOR, GLASSES_STYLE  # noqa: E402  眼镜规格唯一来源
 from stamp_badge import stamp_badge  # noqa: E402  同目录脚本
 
@@ -46,6 +47,8 @@ GLASSES_PROMPT = f"""眼镜（必须戴）：
 CHARACTER_PROMPT = f"""以图1（3D 渲染的可爱小象幼崽坐姿形象）为主体原型，生成一张专业的产品级角色设定图（character turnaround sheet）。
 
 角色设定：一位讲解数据库内核技术的拟人化小象「Growdu」，定位是「专注数据库内核方向的独立开发者」的技术讲解者。
+
+{PERSONA_PROMPT}
 
 必须保留图1的视觉特征：
 - 圆润饱满的浅蓝灰色皮肤，3D 卡通渲染质感，大眼、粉色面颊、小巧象牙
@@ -70,6 +73,8 @@ CHARACTER_PROMPT = f"""以图1（3D 渲染的可爱小象幼崽坐姿形象）�
 POSE_PROMPT = f"""以图1（3D 渲染的可爱小象角色，穿深藏蓝色工装马甲、佩戴黑色头戴耳机、胸口有琥珀黄圆柱数据库图标）为唯一原型，生成一张角色姿态设定表。
 
 IMPORTANT — 铭牌上绝对不要有任何文字：胸口那块白色矩形铭牌必须是完全空白的纯白色，没有任何字母、汉字、符号、条纹或任何类似文字的痕迹。
+
+{PERSONA_PROMPT}
 
 排版：3 列 × 2 行网格，共 6 个姿态，均匀排列在纯白背景 (#FFFFFF) 上，每个姿态之间有清晰的白色间隔，风格与光完全一致。
 
