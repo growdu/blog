@@ -235,7 +235,11 @@ def test_compose_re_renders_when_source_is_newer(tmp_path):
 
 
 def test_real_storyboard_matches_real_narration():
-    """真实契约：成片时长必须等于旁白时长（29.599 秒）。"""
+    """真实契约：正文时长必须等于旁白时长（29.599 秒）。
+
+    套上品牌片头/片尾后，契约总时长会变长，但正文（品牌片之外的部分）
+    必须仍然等于旁白时长。
+    """
     storyboard_path = ROOT / "storyboard.json"
     narration_path = ROOT / "pa_decode_v2.mp3"
     if not storyboard_path.exists() or not narration_path.exists():
@@ -243,8 +247,10 @@ def test_real_storyboard_matches_real_narration():
 
     sb = Storyboard.load(storyboard_path)
     assert sb.validate() == []
+    body = [s for s in sb.scenes if not s.id.startswith("brand_")]
+    body_duration = max(s.end for s in body) - min(s.start for s in body)
     info = _probe(narration_path)
     assert float(info["format"]["duration"]) == pytest.approx(
-        sb.duration, abs=0.05
+        body_duration, abs=0.05
     )
-    assert sb.duration == pytest.approx(29.599, abs=0.001)
+    assert body_duration == pytest.approx(29.599, abs=0.001)

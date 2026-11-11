@@ -29,13 +29,26 @@ def _write_concat_list(clips: list[Path], list_path: Path) -> None:
     )
 
 
-def _resolve_h3_clip(scene: Scene, build_dir: Path) -> Path:
-    """h3 片段路径：绝对路径直接用，相对路径按 build 目录解析。"""
-    raw = Path(scene.clip or "")
+def _resolve_asset(raw_path: str | None, build_dir: Path, label: str,
+                   scene_id: str) -> Path:
+    """素材路径：绝对路径直接用，相对路径按 build 目录解析。"""
+    raw = Path(raw_path or "")
     path = raw if raw.is_absolute() else build_dir / raw
     if not path.exists():
-        raise FileNotFoundError(f"场景 {scene.id} 缺少 h3 片段：{path}")
+        raise FileNotFoundError(f"场景 {scene_id} 缺少 {label} 片段：{path}")
     return path
+
+
+def _resolve_h3_clip(scene: Scene, build_dir: Path) -> Path:
+    return _resolve_asset(scene.clip, build_dir, "h3", scene.id)
+
+
+def _resolve_brand_clip(scene: Scene, build_dir: Path) -> Path:
+    return _resolve_asset(scene.clip, build_dir, "clip", scene.id)
+
+
+def _resolve_brand_audio(scene: Scene, build_dir: Path) -> Path:
+    return _resolve_asset(scene.audio, build_dir, "audio", scene.id)
 
 
 def _newest_source_mtime(scene: Scene, extra_mtime: float | None) -> float:
@@ -50,7 +63,7 @@ def _clip_is_fresh(clip: Path, scene: Scene, extra_mtime: float | None) -> bool:
 
 def _collect_clips(storyboard: Storyboard, build_dir: Path, burner,
                    reuse: bool = True, source_mtime: float | None = None) -> list[Path]:
-    """按时间顺序收集待拼接片段：code 场景现场渲染，h3 场景用现成素材。"""
+    """按时间顺序收集待拼接片段：code 场景现场渲染，h3/clip 场景用现成素材。"""
     clips: list[Path] = []
     for scene in storyboard.scenes:
         if scene.type == "code":
@@ -64,37 +77,59 @@ def _collect_clips(storyboard: Storyboard, build_dir: Path, burner,
                 storyboard.video.fps, burner=burner,
             )
             clips.append(out)
+        elif scene.type == "clip":
+            clips.append(_resolve_brand_clip(scene, build_dir))
         else:
             clips.append(_resolve_h3_clip(scene, build_dir))
     return clips
 
 
+def _narration_delay(storyboard: Storyboard) -> float:
+    """旁白要推迟到正文真正开始的位置（片头品牌片占着前几秒）。"""
+    for scene in storyboard.scenes:
+        if scene.type == "code":
+            return scene.start
+    return 0.0
+
+
 def _mux_cmd(silent: Path, out_path: Path, storyboard: Storyboard,
-             narration: Path, bgm: Path | None,
-             bgm_gain_db: float | None) -> list[str]:
-    """拼出「视频 + 旁白 (+ BGM)」的 ffmpeg 命令。"""
+             sources: list[tuple[Path, float, float]]) -> list[str]:
+    """拼出「视频 + 多路音频」的 ffmpeg 命令。
+
+    sources 每项是 (音频文件, 延迟秒数, 增益)；所有音频都在同一个
+    filter_complex 里用 adelay 对齐后 amix（同一路流不能同时用 -af
+    与 -filter_complex）。
+    """
     fps = storyboard.video.fps
     duration = storyboard.duration
-    cmd = ["ffmpeg", "-y", "-i", str(silent), "-i", str(narration)]
+    cmd = ["ffmpeg", "-y", "-i", str(silent)]
+    for path, _, _ in sources:
+        cmd += ["-i", str(path)]
 
-    if bgm is not None:
-        cmd += ["-i", str(bgm)]
-        gain_db = DEFAULT_BGM_GAIN_DB if bgm_gain_db is None else bgm_gain_db
-        gain = 10 ** (gain_db / 20)
-        # apad 必须放进复杂滤镜链：同一路流不能同时用 -af 与 -filter_complex
-        cmd += [
-            "-filter_complex",
-            f"[1:a]volume=1.0[n];[2:a]volume={gain:.6f}[b];"
-            "[n][b]amix=inputs=2:duration=longest:dropout_transition=0:"
-            "normalize=0,apad[mix]",
-            "-map", "0:v:0", "-map", "[mix]",
-        ]
-    else:
-        cmd += ["-map", "0:v:0", "-map", "1:a:0", "-af", "apad"]
+    chains = []
+    labels = []
+    for index, (_, delay, gain) in enumerate(sources):
+        ms = int(round(delay * 1000))
+        chains.append(
+            f"[{index + 1}:a]aresample=48000,"
+            # pan 而不是 aformat=channel_layouts=stereo：后者把单声道上混时
+            # 会按功率衰减 3dB，旁白会比立体声的品牌音轨明显小声一截
+            "aformat=sample_fmts=fltp,pan=stereo\\|c0=c0\\|c1=c0,"
+            f"volume={gain:.6f},adelay={ms}:all=1[a{index}]"
+        )
+        labels.append(f"[a{index}]")
+    chains.append(
+        "".join(labels)
+        + f"amix=inputs={len(sources)}:duration=longest:"
+        "dropout_transition=0:normalize=0,apad[mix]"
+    )
 
     cmd += [
+        "-filter_complex", ";".join(chains),
+        "-map", "0:v:0", "-map", "[mix]",
         "-c:v", "libx264", "-preset", "medium", "-crf", "18",
         "-pix_fmt", "yuv420p", "-r", str(fps),
+        "-video_track_timescale", str(fps * 1000),
     ]
     cmd += ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2"]
     cmd += ["-t", f"{duration:.3f}", "-movflags", "+faststart", str(out_path)]
@@ -137,6 +172,7 @@ def compose(storyboard: Storyboard, build_dir: str | Path, out_path: str | Path,
         "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(list_path),
         "-c:v", "libx264", "-preset", "medium", "-crf", "18",
         "-pix_fmt", "yuv420p", "-r", str(storyboard.video.fps),
+        "-video_track_timescale", str(storyboard.video.fps * 1000),
         "-an", str(silent),
     ])
 
@@ -159,6 +195,18 @@ def compose(storyboard: Storyboard, build_dir: str | Path, out_path: str | Path,
     if bgm_path is not None and not bgm_path.exists():
         raise FileNotFoundError(f"找不到 BGM：{bgm_path}")
 
-    _run(_mux_cmd(silent, out_path, storyboard, narration_path,
-                  bgm_path, bgm_gain_db))
+    # 音频源：(文件, 延迟秒数, 增益)
+    sources: list[tuple[Path, float, float]] = []
+    # 旁白对齐到正文起点（前面有品牌片时整体后移）
+    sources.append((narration_path, _narration_delay(storyboard), 1.0))
+    for scene in storyboard.scenes:
+        if scene.type == "clip":
+            sources.append(
+                (_resolve_brand_audio(scene, build_dir), scene.start, 1.0)
+            )
+    if bgm_path is not None:
+        gain_db = DEFAULT_BGM_GAIN_DB if bgm_gain_db is None else bgm_gain_db
+        sources.append((bgm_path, 0.0, 10 ** (gain_db / 20)))
+
+    _run(_mux_cmd(silent, out_path, storyboard, sources))
     return out_path

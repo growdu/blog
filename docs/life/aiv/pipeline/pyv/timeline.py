@@ -73,6 +73,7 @@ class Scene:
     params: dict = field(default_factory=dict)
     h3: dict | None = None
     clip: str | None = None
+    audio: str | None = None
 
     @property
     def duration(self) -> float:
@@ -105,6 +106,7 @@ class Storyboard:
                 params=s.get("params", {}) or {},
                 h3=s.get("h3"),
                 clip=s.get("clip"),
+                audio=s.get("audio"),
             )
             for s in raw["scenes"]
         ]
@@ -181,10 +183,17 @@ class Storyboard:
     @staticmethod
     def _validate_scene(scene: Scene) -> list[str]:
         errors: list[str] = []
-        if scene.type not in ("code", "h3"):
-            errors.append(f"场景 {scene.id} 的 type 必须是 code 或 h3，实际 {scene.type}")
+        if scene.type not in ("code", "h3", "clip"):
+            errors.append(
+                f"场景 {scene.id} 的 type 必须是 code、h3 或 clip，实际 {scene.type}"
+            )
         if scene.type == "code" and not scene.renderer:
             errors.append(f"场景 {scene.id} 缺少 renderer")
+        if scene.type == "clip":
+            if not scene.clip:
+                errors.append(f"场景 {scene.id} 缺少 clip")
+            if not scene.audio:
+                errors.append(f"场景 {scene.id} 缺少 audio")
         if scene.type == "h3":
             if not scene.clip:
                 errors.append(f"场景 {scene.id} 缺少 clip")

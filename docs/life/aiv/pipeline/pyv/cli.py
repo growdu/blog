@@ -85,9 +85,33 @@ def cmd_compose(args: argparse.Namespace) -> int:
         return 1
     out = compose.compose(
         storyboard, args.build, args.out, narration=args.narration,
+        bgm=args.bgm,
         source_mtime=Path(args.storyboard).stat().st_mtime,
     )
     print(f"OK 成片 → {out}")
+    return 0
+
+
+def cmd_brand(args: argparse.Namespace) -> int:
+    from pyv import brand
+    out = brand.apply_plates(
+        args.storyboard, args.out, args.build,
+        intro=not args.no_intro, outro=not args.no_outro,
+    )
+    storyboard = Storyboard.load(out)
+    errors = storyboard.validate()
+    if errors:
+        for e in errors:
+            print(f"ERROR {e}", file=sys.stderr)
+        return 1
+    plates = [s for s in storyboard.scenes if s.id.startswith("brand_")]
+    detail = "、".join(
+        f"{s.id} {s.duration:.3f}s" for s in plates
+    ) or "无品牌片"
+    print(
+        f"OK 品牌片：{detail}；"
+        f"{len(storyboard.scenes)} 个场景，总时长 {storyboard.duration:.3f}s → {out}"
+    )
     return 0
 
 
@@ -115,7 +139,16 @@ def main(argv: list[str] | None = None) -> int:
     p_compose.add_argument("--build", required=True)
     p_compose.add_argument("--out", required=True)
     p_compose.add_argument("--narration", default=None)
+    p_compose.add_argument("--bgm", default=None)
     p_compose.set_defaults(func=cmd_compose)
+
+    p_brand = sub.add_parser("brand")
+    p_brand.add_argument("--storyboard", required=True)
+    p_brand.add_argument("--out", required=True)
+    p_brand.add_argument("--build", required=True)
+    p_brand.add_argument("--no-intro", action="store_true")
+    p_brand.add_argument("--no-outro", action="store_true")
+    p_brand.set_defaults(func=cmd_brand)
 
     args = parser.parse_args(argv)
     return args.func(args)
