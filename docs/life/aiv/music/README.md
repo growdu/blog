@@ -54,6 +54,23 @@ python -m pyv.cli bgm library          # 台账自洽性（授权、指纹、角
 python -m pyv.cli bgm check --music <文件>   # 判单条曲子合不合格
 ```
 
+## 当前曲库
+
+| id | 曲名 | 艺人 | 角色 | 时长 | 授权 |
+| --- | --- | --- | --- | --- | --- |
+| `series-motif-01` | The Deep End | Ocoeur | `motif` | 291.0 s | CC0-1.0 |
+| `series-bed-01` | Subdued | Jason Van Wyk | `bed` | 209.2 s | CC0-1.0 |
+
+两首都出自 [archive.org](https://archive.org/)（`connections-raw-wav`、
+`threads-raw-wav`，均为 vinyl rip，licenseurl 指向 CC0 1.0），免署名。
+
+选曲过程：**机器判据是门槛，风格靠人听**。候选 12 轨里有 2 轨没过机器判据
+（1~4 kHz 超标、真峰值超标），其余按《背景音乐规范》§3.1 的人工清单挑——
+自动评分会偏好「几乎没有低频」的曲子，而规范要求低频是律动，不能反过来让分数选曲。
+
+`series-bed-01` 的低频占 31.7%，是 `series-motif-01`（15.3%）的两倍：
+铺底要「托着」，动机只要「点一下」。
+
 ## 下载
 
 ```bash
@@ -70,6 +87,30 @@ python3 scripts/fetch_music.py --all
 各站点的页面结构不同，接的时候一个站点写一个适配器；
 没接的站点会直接报错，不会去猜 URL。
 
+已接：**archive.org**（取 `/metadata/<id>` 里的文件级直链与时长，
+按曲名前缀/后缀匹配文件）。ccMixter 与 Pixabay 也留了位置，
+但它们的 CC0 曲目太少 / 直链需要额外签名，没当成主源。
+
+**归一化跑两遍。** loudnorm 是两遍式算法，只跑一遍的话增益用的是第一遍的
+估计，落不到 -20（实测只到 -18.5 ~ -19.1 LUFS）。差 1.5 dB 不是小数目：
+《背景音乐规范》§5.1 的整条混音推导都是从 -20 算出来的。
+
+## 验收成片
+
+曲子入库只是第一步，混完之后还要量一遍成片：
+
+```bash
+cd aiv/pipeline
+python -m pyv.cli bgm verify \
+    --video ../out/pg-parallel-decode.mp4 \
+    --narration ../narration_pg-parallel-decode.mp3 \
+    --music ../music/tracks/series-bed-01.wav \
+    --storyboard ../storyboard.json
+```
+
+量四件事：稳态 duck 深度、旁白活跃段与 BGM 的电平差、成片真峰值、
+旁白在成片里的增益偏差。判据见《背景音乐规范》§5.7。
+
 ## 落盘规格
 
 | 项 | 值 |
@@ -77,7 +118,7 @@ python3 scripts/fetch_music.py --all
 | 格式 | 16 bit PCM wav |
 | 采样率 | 48 kHz |
 | 声道 | 立体声 |
-| 响度 | -20 LUFS |
+| 响度 | -20 LUFS（两遍 loudnorm） |
 | 真峰值 | ≤ -3.0 dBTP |
 
 归一化不是可选项：曲库母版的响度差能到 10 dB 以上，

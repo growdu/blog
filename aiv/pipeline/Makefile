@@ -20,10 +20,12 @@ STORYBOARD := $(ROOT)/storyboard.json
 SCRIPT := $(ROOT)/字幕-并行解码.md
 NARRATION := $(ROOT)/narration_pg-parallel-decode.mp3
 CONTRACT := $(ROOT)/contracts/pg-parallel-decode.json
+# 正文铺底（曲库台账里 series_role=bed 的那首）
+BGM := $(ROOT)/music/tracks/series-bed-01.wav
 BUILD := $(ROOT)/build
 OUT := $(ROOT)/out/pg-parallel-decode.mp4
 
-.PHONY: all test validate align brand render compose probe persona bgm clean
+.PHONY: all test validate align brand render compose probe persona bgm mix-verify clean
 
 all: validate brand render compose
 
@@ -46,13 +48,18 @@ render:
 
 compose:
 	$(PY) -m pyv.cli compose --storyboard $(STORYBOARD) --build $(BUILD) \
-		--out $(OUT) --narration $(NARRATION)
+		--out $(OUT) --narration $(NARRATION) --bgm $(BGM)
 
 persona:
 	$(PY) -m pyv.cli persona check --script $(SCRIPT)
 
 bgm:
 	$(PY) -m pyv.cli bgm library
+
+# 成片级验收：稳态 duck 深度、旁白/BGM 电平差、真峰值、旁白增益（规范 §5.7）
+mix-verify:
+	$(PY) -m pyv.cli bgm verify --video $(OUT) --narration $(NARRATION) \
+		--music $(BGM) --storyboard $(STORYBOARD)
 
 probe:
 	ffprobe -v error -show_entries format=duration \

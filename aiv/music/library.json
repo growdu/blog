@@ -1,4 +1,39 @@
 {
   "version": 1,
-  "tracks": []
+  "tracks": [
+    {
+      "id": "series-motif-01",
+      "title": "The Deep End",
+      "artist": "Ocoeur",
+      "source": "archive.org",
+      "source_url": "https://archive.org/details/connections-raw-wav",
+      "license": "CC0-1.0",
+      "attribution_required": false,
+      "attribution_text": "",
+      "series_role": "motif",
+      "local_path": "music/tracks/series-motif-01.wav",
+      "bpm": null,
+      "duration_s": 291.0,
+      "sha256": "994ef3acf4d8ba7fb38e27336d3ef694424f47aa6279ef580d2b4bbadbb72888",
+      "downloaded_at": "2026-11-11",
+      "notes": "档案页 https://archive.org/details/connections-raw-wav；专辑《Ocoeur - Connections vinyl rip》，元数据无 artist 字段，艺人取自标题前缀；licenseurl 为 http://creativecommons.org/publicdomain/zero/1.0/；标签 Ambient; vaporwave; IDM; epectronic; experiental; ambient electronic; music; double album; N5MD; vinyl; vinyl rip; audiophile; analog；实测 重心 113 Hz、1~4 kHz 0.7%、低频 15.3%、低频包络起伏 0.34"
+    },
+    {
+      "id": "series-bed-01",
+      "title": "Subdued",
+      "artist": "Jason Van Wyk",
+      "source": "archive.org",
+      "source_url": "https://archive.org/details/threads-raw-wav",
+      "license": "CC0-1.0",
+      "attribution_required": false,
+      "attribution_text": "",
+      "series_role": "bed",
+      "local_path": "music/tracks/series-bed-01.wav",
+      "bpm": null,
+      "duration_s": 209.2,
+      "sha256": "d64f7d22642e89514531059fd07b699e6ef1d528567875eefebcbc61047ad083",
+      "downloaded_at": "2026-11-11",
+      "notes": "档案页 https://archive.org/details/threads-raw-wav；专辑《Jason Van Wyk - Threads vinyl rip》，元数据无 artist 字段，艺人取自标题前缀；licenseurl 为 http://creativecommons.org/publicdomain/zero/1.0/；标签 vaporwave; ambient; dark ambient; Modern Classical; Experimental; vinyl; vinyl rip; audiophile; analog; limited edition; music; remastered；实测 重心 225 Hz、1~4 kHz 2.3%、低频 31.7%、低频包络起伏 0.35"
+    }
+  ]
 }

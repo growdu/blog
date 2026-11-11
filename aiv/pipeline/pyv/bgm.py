@@ -21,6 +21,7 @@ import json
 import math
 import re
 import subprocess
+import tempfile
 import wave
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -103,6 +104,11 @@ RULE_IDS = (
     "bgm.attribution",
     "bgm.fingerprint",
     "bgm.series-role",
+    # 成片级（混完之后）的判据，见规范 §5.7
+    "bgm.mix-duck-depth",
+    "bgm.mix-voice-to-bgm",
+    "bgm.mix-true-peak",
+    "bgm.mix-voice-gain",
 )
 
 ERROR = "error"
@@ -450,12 +456,23 @@ def speech_activity(narration: np.ndarray, sample_rate: int = 48000) -> np.ndarr
 
 def duck_curve(narration: np.ndarray, depth_db: float = DUCK_DEPTH_DB,
                sample_rate: int = 48000) -> np.ndarray:
-    """逐样本的增益因子（1.0 = 不压低，越小压得越狠）。"""
+    """逐样本的增益因子（1.0 = 不压低，越小压得越狠）。
+
+    返回长度**必须**与旁白逐样本相等：混音时增益曲线要盖在 BGM 上，
+    两边长度差一个样本都广播不了。包络按 10 ms 窗算，末尾不足一窗的
+    那截按最后一帧的值补齐（零阶保持），否则曲线会比旁白短最多 479 个样本。
+    """
     activity = speech_activity(narration, sample_rate)
     if activity.size == 0:
-        return np.ones(0)
+        # 连一窗都不到，判断不出有人在说话：整段不压低。
+        return np.ones(narration.size)
     window = max(1, int(sample_rate * ENVELOPE_WINDOW_MS / 1000))
-    curve = np.repeat(activity, window)[:narration.size]
+    curve = np.repeat(activity, window)
+    if curve.size < narration.size:
+        curve = np.concatenate(
+            [curve, np.full(narration.size - curve.size, curve[-1])])
+    else:
+        curve = curve[:narration.size]
     # depth_db 是负数：曲线为 1（有人说话）时增益 < 1（压低），为 0 时增益 = 1
     return 10 ** (depth_db * curve / 20)
 
@@ -538,3 +555,214 @@ def parse_bpm(text: str) -> float | None:
     """从「92 BPM」「92bpm」这类文本里取 BPM。"""
     match = re.search(r"(\d+(?:\.\d+)?)\s*bpm", text, re.IGNORECASE)
     return float(match.group(1)) if match else None
+
+
+# ---------------------------------------------------------------- 成片级判据
+#
+# 前面那些规则管的是「曲子本身」和「台账」。这里管的是**混完之后**：
+# 整期片子做完了，旁白清不清楚、BGM 与旁白差多少、削没削顶——
+# 这些以前只能靠耳朵（规范 §8 的待办）。
+
+# 稳态 duck 深度的容差。设定值就是 DUCK_DEPTH_DB，判据与 §5.2 同源。
+MIX_DUCK_DEPTH_TOLERANCE_DB = 0.5
+# 旁白活跃段里，旁白至少要比 BGM 高多少。
+# §5.1 的设计目标是 18.3 dB（LUFS 口径）；这里按同窗口径实测，
+# 取同一个数当保守下界：实测口径下也不许比设计目标更挤。
+MIX_VOICE_TO_BGM_MIN_DB = 18.3
+# 成片真峰值上限：留 1 dB 余量，不许削顶。
+MIX_TRUE_PEAK_MAX_DB = -1.0
+# 旁白在成片里的增益偏差上限：混音不该动旁白的音量。
+MIX_VOICE_GAIN_TOLERANCE_DB = 0.5
+# 算「稳态」时，包络要爬到多高才算说完了。
+# 上升沿是单极点（120 ms 时间常数），从 0 爬到 0.99 要 560 ms；
+# 爬到 0.99 之后增益与设定值的偏差不超过 7×0.01 = 0.07 dB，
+# 远小于 ±0.5 dB 的判据容差。
+SATURATED_ENVELOPE = 0.99
+
+
+@dataclass(frozen=True)
+class MixReport:
+    """成片混音的实测结果。"""
+
+    duck_depth_db: float
+    voice_to_bgm_db: float
+    voice_rms_db: float
+    bgm_rms_db: float
+    true_peak_db: float
+    voice_gain_db: float
+    active_ratio: float
+    body_start_s: float
+    body_end_s: float
+
+    def summary(self) -> str:
+        return (
+            f"稳态 duck 深度   {self.duck_depth_db:6.2f} dB\n"
+            f"旁白活跃段旁白   {self.voice_rms_db:6.2f} dBFS\n"
+            f"旁白活跃段 BGM   {self.bgm_rms_db:6.2f} dBFS\n"
+            f"电平差           {self.voice_to_bgm_db:6.2f} dB\n"
+            f"旁白增益偏差     {self.voice_gain_db:+6.2f} dB\n"
+            f"成片真峰值       {self.true_peak_db:6.2f} dBTP\n"
+            f"正文区间         {self.body_start_s:.3f} ~ {self.body_end_s:.3f} s\n"
+            f"旁白活跃帧占比   {self.active_ratio * 100:6.1f} %"
+        )
+
+
+def _decode_stereo(path: str | Path, sample_rate: int = 48000) -> np.ndarray:
+    """解码成立体声 float64 数组（形状 n×2）。"""
+    raw = _run([
+        "ffmpeg", "-v", "error", "-i", str(path),
+        "-f", "f32le", "-ac", "2", "-ar", str(sample_rate), "-",
+    ], text=False).stdout
+    frames = np.frombuffer(raw, dtype=np.float32).astype(np.float64)
+    if frames.size % 2:
+        frames = frames[:-1]
+    return frames.reshape(-1, 2)
+
+
+def _to_mono(stereo: np.ndarray) -> np.ndarray:
+    """立体声按等权平均下混成单声道。
+
+    **不要用 ffmpeg 的 `-ac 1`**：它的下混系数是每声道 0.7071，
+    对左右同相的信号整体高 3 dB（实测 L=R=0.5 解回来是 0.707）。
+    这里要的是「和成片里那一路一样」的等权平均，否则量出来的差值会偏 3 dB。
+    """
+    if stereo.size == 0:
+        return np.zeros(0)
+    return (stereo[:, 0] + stereo[:, 1]) / 2
+
+
+def _rms_db(samples: np.ndarray) -> float:
+    """RMS 电平（dBFS）。"""
+    if samples.size == 0:
+        return -120.0
+    value = float(np.sqrt(np.mean(samples ** 2)))
+    return float(20 * np.log10(max(value, 1e-12)))
+
+
+def saturated_mask(narration: np.ndarray, sample_rate: int = 48000) -> np.ndarray:
+    """旁白「正在说话」的逐样本掩码（包络已到平台期的那些样本）。
+
+    只取平台段：词间空隙处包络在回落，增益本来就在回升，
+    拿它一起算会把压深算浅。上升沿有 120 ms 的时间常数，
+    爬到 SATURATED_ENVELOPE 还要 560 ms，这段也不算。
+    """
+    activity = speech_activity(narration, sample_rate)
+    window = max(1, int(sample_rate * ENVELOPE_WINDOW_MS / 1000))
+    frames = np.repeat(activity, window)
+    if frames.size == 0:
+        return np.zeros(narration.size, dtype=bool)
+    if frames.size < narration.size:
+        frames = np.concatenate(
+            [frames, np.full(narration.size - frames.size, frames[-1])])
+    else:
+        frames = frames[:narration.size]
+    return frames >= SATURATED_ENVELOPE
+
+
+def measure_duck_depth(bgm_path: str | Path, narration_path: str | Path,
+                       duration_s: float | None = None) -> float:
+    """量稳态 duck 深度（dB，正数）。
+
+    跑一遍 duck，把母带与 duck 后的 BGM 在旁白**饱和帧**上比 RMS：
+    饱和帧里包络恒为 1，增益恒为 10^(depth/20)，量出来的就是设定深度。
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        ducked_path = Path(tmp) / "ducked.wav"
+        duck_bgm(bgm_path, narration_path, ducked_path, duration_s=duration_s)
+        master = decode_mono(bgm_path)
+        ducked = decode_mono(ducked_path)
+    narration = decode_mono(narration_path)
+    mask = saturated_mask(narration)
+    length = min(master.size, ducked.size, mask.size)
+    mask = mask[:length]
+    if not mask.any():
+        raise ValueError("旁白里找不到持续说话段，量不出 duck 深度")
+    return _rms_db(master[:length][mask]) - _rms_db(ducked[:length][mask])
+
+
+def measure_mix(video: str | Path, narration: str | Path, music: str | Path,
+                body_start: float, body_end: float,
+                sample_rate: int = 48000) -> MixReport:
+    """量成片的混音关系。
+
+    做法：正文区间的混音 = 旁白 + BGM（`amix` 的 `normalize=0` 是纯求和），
+    于是把旁白按正文起点摆回成片的时间轴、从成片里减掉，剩下的就是 BGM。
+    两边用同一批样本、同一套统计量（RMS dBFS）比，差值就是「旁白高 BGM 多少」。
+    """
+    stereo = _decode_stereo(video, sample_rate)
+    mix = _to_mono(stereo)
+    voice = decode_mono(narration, sample_rate)
+    delay = int(round(body_start * sample_rate))
+    body0 = int(round(body_start * sample_rate))
+    body1 = min(mix.size, int(round(body_end * sample_rate)))
+    if body1 <= body0:
+        raise ValueError("正文区间是空的，算不了混音关系")
+
+    voice_at = np.zeros(mix.size)
+    end = min(mix.size, delay + voice.size)
+    voice_at[delay:end] = voice[:end - delay]
+    bgm_only = mix - voice_at
+
+    active = np.zeros(mix.size, dtype=bool)
+    core = saturated_mask(voice, sample_rate)
+    active[delay:end] = core[:end - delay]
+    index = np.arange(mix.size)
+    in_body = (index >= body0) & (index < body1)
+    active = active & in_body
+    if not active.any():
+        raise ValueError("成片的正文区间里找不到旁白活跃段")
+
+    voice_rms = _rms_db(voice_at[active])
+    bgm_rms = _rms_db(bgm_only[active])
+
+    segment_mix = mix[body0:body1]
+    segment_voice = voice_at[body0:body1]
+    denominator = float(segment_voice @ segment_voice)
+    gain = float(segment_mix @ segment_voice / denominator) if denominator > 0 else 0.0
+
+    _, true_peak = measure_loudness(video)
+
+    return MixReport(
+        duck_depth_db=measure_duck_depth(
+            music, narration, duration_s=body_end - body_start),
+        voice_to_bgm_db=voice_rms - bgm_rms,
+        voice_rms_db=voice_rms,
+        bgm_rms_db=bgm_rms,
+        true_peak_db=true_peak,
+        voice_gain_db=20 * math.log10(gain) if gain > 0 else -120.0,
+        active_ratio=float(active.sum()) / float(int(in_body.sum())),
+        body_start_s=body_start,
+        body_end_s=body_end,
+    )
+
+
+def check_mix(report: MixReport) -> list[Finding]:
+    """把实测结果变成判据。"""
+    findings: list[Finding] = []
+    depth = report.duck_depth_db
+    if abs(depth - abs(DUCK_DEPTH_DB)) > MIX_DUCK_DEPTH_TOLERANCE_DB:
+        findings.append(Finding(
+            "bgm.mix-duck-depth", ERROR,
+            f"稳态 duck 深度实测 {depth:.2f} dB，应为 "
+            f"{abs(DUCK_DEPTH_DB):.1f} ± {MIX_DUCK_DEPTH_TOLERANCE_DB} dB",
+        ))
+    gap = report.voice_to_bgm_db
+    if gap < MIX_VOICE_TO_BGM_MIN_DB:
+        findings.append(Finding(
+            "bgm.mix-voice-to-bgm", ERROR,
+            f"旁白活跃段旁白只比 BGM 高 {gap:.2f} dB，"
+            f"至少要 {MIX_VOICE_TO_BGM_MIN_DB} dB",
+        ))
+    if report.true_peak_db > MIX_TRUE_PEAK_MAX_DB:
+        findings.append(Finding(
+            "bgm.mix-true-peak", ERROR,
+            f"成片真峰值 {report.true_peak_db:.2f} dBTP，"
+            f"超过上限 {MIX_TRUE_PEAK_MAX_DB} dBTP",
+        ))
+    if abs(report.voice_gain_db) > MIX_VOICE_GAIN_TOLERANCE_DB:
+        findings.append(Finding(
+            "bgm.mix-voice-gain", ERROR,
+            f"旁白在成片里的增益偏离 {report.voice_gain_db:+.2f} dB，"
+            f"应在 ±{MIX_VOICE_GAIN_TOLERANCE_DB} dB 内",
+        ))
+    return findings

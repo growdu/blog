@@ -143,7 +143,7 @@ def cmd_persona(args: argparse.Namespace) -> int:
 
 
 def cmd_bgm(args: argparse.Namespace) -> int:
-    """背景音乐检查：单条曲子 / 台账 / 混音参数。"""
+    """背景音乐检查：单条曲子 / 台账 / 混音参数 / 成片混音。"""
     from pyv import bgm
 
     if args.bgm_command == "mix":
@@ -156,6 +156,20 @@ def cmd_bgm(args: argparse.Namespace) -> int:
         print(f"高通              {bgm.HIGHPASS_HZ} Hz")
         print(f"通道链             {bgm.bgm_chain()}")
         return 0
+
+    if args.bgm_command == "verify":
+        body_start, body_end = _mix_body_range(args)
+        report = bgm.measure_mix(
+            args.video, args.narration, args.music, body_start, body_end)
+        print(report.summary())
+        findings = bgm.check_mix(report)
+        for finding in findings:
+            print(f"{finding.level.upper():7} {finding}")
+        if not findings:
+            print("OK 成片混音合格")
+            return 0
+        print(f"FAIL {len(findings)} 个硬约束违规", file=sys.stderr)
+        return 1
 
     if args.bgm_command == "library":
         entries = bgm.load_library(args.library)
@@ -183,6 +197,19 @@ def cmd_bgm(args: argparse.Namespace) -> int:
         return 1
     print("OK 通过（只有倾向类提示）")
     return 0
+
+
+def _mix_body_range(args: argparse.Namespace) -> tuple[float, float]:
+    """正文区间：优先从 storyboard 取，和 compose 用的是同一段。"""
+    if getattr(args, "storyboard", None):
+        from pyv import compose
+        from pyv.timeline import Storyboard
+
+        storyboard = Storyboard.load(args.storyboard)
+        return compose._body_range(storyboard)
+    if args.body_start is None or args.body_end is None:
+        raise SystemExit("要么给 --storyboard，要么给 --body-start 和 --body-end")
+    return args.body_start, args.body_end
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -246,6 +273,16 @@ def main(argv: list[str] | None = None) -> int:
 
     p_bgm_mix = bgm_sub.add_parser("mix")
     p_bgm_mix.set_defaults(func=cmd_bgm)
+
+    p_bgm_verify = bgm_sub.add_parser("verify")
+    p_bgm_verify.add_argument("--video", required=True, help="成片文件")
+    p_bgm_verify.add_argument("--narration", required=True, help="旁白文件")
+    p_bgm_verify.add_argument("--music", required=True, help="BGM 母带")
+    p_bgm_verify.add_argument("--storyboard", default=None,
+                              help="正文区间从这里取（与 compose 同一段）")
+    p_bgm_verify.add_argument("--body-start", type=float, default=None)
+    p_bgm_verify.add_argument("--body-end", type=float, default=None)
+    p_bgm_verify.set_defaults(func=cmd_bgm)
 
     args = parser.parse_args(argv)
     return args.func(args)

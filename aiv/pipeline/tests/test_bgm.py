@@ -376,6 +376,115 @@ def test_duck_curve_is_bounded():
     assert curve.max() <= 1.0
 
 
+def test_duck_curve_covers_every_sample():
+    """曲线要逐样本对齐旁白：末尾不足一窗也得补齐。
+
+    旁白解码长度常常不是 10 ms 窗的整数倍（mp3 解码会裁掉尾部样本），
+    曲线若按整窗截断就会比旁白短一截，混音时两边长度对不上。
+    """
+    narration = _speech_like(4.0)[:144336]
+    assert narration.size % 480 != 0, "这个用例要的就是非整窗长度"
+    curve = bgm.duck_curve(narration)
+    assert curve.size == narration.size
+
+
+def test_duck_bgm_handles_partial_window(tmp_path):
+    """旁白长度不是整窗时，ducking 也要照常出片，且不吞样本。"""
+    bgm_path = _make_track(tmp_path / "bgm.wav", seconds=6.0)
+    samples = 144336
+    narration = _write_wav(tmp_path / "narr.wav", _speech_like(4.0)[:samples], SR, 1)
+    out = bgm.duck_bgm(bgm_path, narration, tmp_path / "ducked.wav")
+    assert bgm.decode_mono(out).size == samples
+
+
+# ---------------------------------------------------------------- 成片级判据
+
+
+def test_to_mono_is_an_equal_weight_average():
+    """立体声下混要等权平均，不能用 ffmpeg 的 `-ac 1`。
+
+    `-ac 1` 的系数是每声道 0.7071，对左右同相的信号整体高 3 dB；
+    用它量电平差会凭空多出 3 dB。
+    """
+    stereo = np.stack([np.full(100, 0.5), np.full(100, 0.5)], axis=1)
+    mono = bgm._to_mono(stereo)
+    assert np.allclose(mono, 0.5), f"下混成了 {mono[0]:.4f}，应为 0.5"
+
+
+def test_saturated_mask_picks_only_speaking_frames():
+    """饱和掩码只圈出「正在说话」的帧。
+
+    静音段也要在掩码外：那里 duck 增益正在回升，算进去会把压深算浅。
+    说话段开头有一段不算：上升沿有 120 ms 时间常数，爬到平台还要 560 ms。
+    """
+    speaking = _speech_like(4.0)
+    silence = np.zeros(SR)
+    narration = np.concatenate([silence, speaking])
+    mask = bgm.saturated_mask(narration)
+    assert not mask[:SR].any(), "静音段不该被圈进去"
+    plateau = mask[int(SR + 0.6 * SR):]
+    assert plateau.mean() > 0.9, f"平台段只圈到 {plateau.mean() * 100:.1f}%"
+
+
+def test_measure_duck_depth_is_exact_on_synthetic(tmp_path):
+    """稳态 duck 深度量出来就是设定的那个数。"""
+    bgm_path = _make_track(tmp_path / "bgm.wav", seconds=6.0)
+    narration = _write_wav(tmp_path / "narr.wav", _speech_like(4.0), SR, 1)
+    depth = bgm.measure_duck_depth(bgm_path, narration)
+    assert abs(depth - abs(bgm.DUCK_DEPTH_DB)) < 0.5, f"实测压深 {depth:.2f} dB"
+
+
+def test_measure_mix_reads_the_level_gap(tmp_path):
+    """成片级测量：旁白与 BGM 的电平差要被量出来。
+
+    这里手工造一条「成片」：旁白延迟到正文起点，BGM 按 duck 后的电平铺底。
+    """
+    body_start, body_end = 1.0, 5.0
+    bgm_path = _make_track(tmp_path / "bgm.wav", seconds=8.0)
+    voice = _speech_like(4.0)
+    narration = _write_wav(tmp_path / "narr.wav", voice, SR, 1)
+
+    bed = bgm.decode_mono(bgm_path)
+    delay = int(body_start * SR)
+    span = int((body_end - body_start) * SR)
+    gain = 10 ** ((bgm.BGM_GAIN_DB + bgm.DUCK_DEPTH_DB) / 20)
+    mix = np.zeros(delay + span)
+    mix[delay:delay + voice.size] = voice
+    mix[delay:delay + span] += bed[:span] * gain
+    video = _write_wav(tmp_path / "film.wav", mix, SR, 2)
+
+    report = bgm.measure_mix(video, narration, bgm_path, body_start, body_end)
+    assert abs(report.voice_gain_db) < 0.2, f"旁白增益偏差 {report.voice_gain_db:.2f} dB"
+    assert abs(report.duck_depth_db - abs(bgm.DUCK_DEPTH_DB)) < 0.5
+    # 手工算一遍期望值
+    active = bgm.saturated_mask(voice)
+    expected = (_rms_db(voice[active])
+                - _rms_db(bed[:span][active[:span]] * gain))
+    assert abs(report.voice_to_bgm_db - expected) < 1.0, (
+        f"实测差值 {report.voice_to_bgm_db:.2f} dB，期望 {expected:.2f} dB")
+
+
+def test_check_mix_flags_each_violation():
+    """四条判据各自都要能抓到违规。"""
+    good = bgm.MixReport(
+        duck_depth_db=abs(bgm.DUCK_DEPTH_DB), voice_to_bgm_db=20.0,
+        voice_rms_db=-25.0, bgm_rms_db=-45.0, true_peak_db=-3.0,
+        voice_gain_db=0.0, active_ratio=0.5, body_start_s=0.0, body_end_s=5.0)
+    assert bgm.check_mix(good) == []
+
+    bad_depth = bgm.MixReport(**{**good.__dict__, "duck_depth_db": 3.0})
+    assert any(f.rule_id == "bgm.mix-duck-depth" for f in bgm.check_mix(bad_depth))
+
+    bad_gap = bgm.MixReport(**{**good.__dict__, "voice_to_bgm_db": 8.0})
+    assert any(f.rule_id == "bgm.mix-voice-to-bgm" for f in bgm.check_mix(bad_gap))
+
+    bad_peak = bgm.MixReport(**{**good.__dict__, "true_peak_db": -0.2})
+    assert any(f.rule_id == "bgm.mix-true-peak" for f in bgm.check_mix(bad_peak))
+
+    bad_gain = bgm.MixReport(**{**good.__dict__, "voice_gain_db": -6.0})
+    assert any(f.rule_id == "bgm.mix-voice-gain" for f in bgm.check_mix(bad_gain))
+
+
 # ---------------------------------------------------------------- 混音链
 
 
