@@ -654,6 +654,43 @@ def test_publish_collection_reports_an_unknown_collection(tmp_path, server, monk
     assert "/cgi-bin/draft/add" not in _Handler.calls
 
 
+def test_publish_collection_takes_a_mermaid_diagram_as_cover(tmp_path, server, monkeypatch):
+    """In the learning-path series the only picture is a diagram.
+
+    The cover of a collection's index article comes from the articles
+    of that collection, so a diagram has to count as a picture.
+    """
+    from wechat import mermaid as mermaid_module
+
+    posts_dir = tmp_path / "source" / "_posts"
+    target = posts_dir / "database"
+    target.mkdir(parents=True)
+    source = "graph TD;\nA-->B;\n"
+    for name in ("one", "two"):
+        (target / (name + ".md")).write_text(
+            "---\ntitle: \"{}\"\ndate: 2026-11-01 15:00:00\nauthor: growdu\n"
+            "categories:\n  - 数据库\n---\n\n正文。\n\n```mermaid\n{}\n```\n".format(
+                name, source),
+            encoding="utf-8")
+
+    png = tmp_path / "diagram.png"
+    _write_png(png)
+    asset = mermaid_module.MermaidAsset(
+        key=mermaid_module.mermaid_key(source), source=source, png=png)
+    monkeypatch.setattr(
+        "wechat.cli.mermaid_module.render_mermaid",
+        lambda blocks, out_dir: {asset.key: asset})
+
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["publish-collection", "数据库"]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 0
+    article = json.loads(_Handler.bodies["/cgi-bin/draft/add"])["articles"][0]
+    assert article["thumb_media_id"] == "COVER_ID"
+
+
 # --- the category tag ------------------------------------------------------
 
 

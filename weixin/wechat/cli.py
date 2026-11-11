@@ -583,9 +583,13 @@ def cmd_collections(args) -> int:
 def _collection_cover(collection, posts, args) -> str:
     """Find the cover image of a collection's index article.
 
-    The collection's own articles supply it: the first local image of
-    the first article that has one.  A collection of articles without
-    any picture needs an explicit ``--cover``.
+    The collection's own articles supply it: the first picture of the
+    first article that has one.  A diagram rendered from mermaid counts
+    as a picture -- for the learning-path series it is the only one
+    there is.
+
+    The search stops at the first article that yields a picture, so a
+    collection whose leading articles are text-only costs nothing.
     """
     if args.cover:
         return args.cover
@@ -594,9 +598,11 @@ def _collection_cover(collection, posts, args) -> str:
         post = by_slug.get(ref.slug)
         if post is None:
             continue
-        assets = render_module.render(parse(post.body), highlight=False).assets
-        if assets:
-            return assets[0]
+        assets = _mermaid_assets(post, args)
+        result = render_module.render(
+            parse(post.body), resolver=_Resolver(assets), highlight=False)
+        if result.assets:
+            return result.assets[0]
     raise CoverRequired(
         "合集「{}」没有可用封面：请用 --cover 或 WX_COVER 指定一张封面".format(
             collection.title))
