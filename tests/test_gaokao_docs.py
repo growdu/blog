@@ -148,7 +148,70 @@ def test_section_has_the_expected_docs(docs):
     assert "physics-methods/index.md" in names, "物理方法文档缺失"
     assert "chemistry-methods/index.md" in names, "化学方法文档缺失"
     assert "biology-methods/index.md" in names, "生物方法文档缺失"
+    assert "politics-methods/index.md" in names, "政治方法文档缺失"
+    assert "geography-methods/index.md" in names, "地理方法文档缺失"
     assert "_index.md" in names, "小节索引缺失"
+
+
+# The single-subject write-ups share one house style: a byline table, a
+# TL;DR block, a table of contents, numbered chapters, a one-page cheat
+# sheet, a "相关阅读" list, a "资料来源与核对入口" table and a final
+# verification table.  The style is what makes the series readable as a set,
+# so a new chapter that drops one of those parts is a regression -- not a
+# matter of taste.
+#
+# The chapter count is not uniform, and that is deliberate: 物理 is a 首选
+# 科目 scored on raw marks, so it has no 等级赋分 chapter and runs eight.
+# The four 再选科目 write-ups all carry the 赋分 chapter and run nine.
+_SINGLE_SUBJECT_DOCS = {
+    "physics-methods/index.md": 8,
+    "chemistry-methods/index.md": 9,
+    "biology-methods/index.md": 9,
+    "politics-methods/index.md": 9,
+    "geography-methods/index.md": 9,
+}
+
+_HOUSE_STYLE_MARKERS = (
+    "| 编写人 | 编写内容 | 编写时间 |",
+    "> **TL;DR**",
+    "## 目录",
+    "## 相关阅读",
+    "## 资料来源与核对入口",
+    "| 编写人 | 校验内容 | 时间 |",
+)
+
+_CHINESE_NUMERALS = ("一", "二", "三", "四", "五", "六", "七", "八", "九")
+
+
+@pytest.mark.parametrize("name", sorted(_SINGLE_SUBJECT_DOCS))
+def test_single_subject_doc_keeps_the_house_style(name, docs):
+    body = next((text for path, text in docs if path.relative_to(SECTION).as_posix() == name), "")
+    assert body, f"{name} 缺失"
+
+    missing = [marker for marker in _HOUSE_STYLE_MARKERS if marker not in body]
+    assert not missing, f"{name} 缺少统一模板的组成部分: {missing}"
+
+    # The numbered chapters must run 一..N with no gap and no stray extra.
+    expected = _CHINESE_NUMERALS[: _SINGLE_SUBJECT_DOCS[name]]
+    found = [
+        numeral
+        for numeral in _CHINESE_NUMERALS
+        if re.search(rf"^## {numeral}、", body, re.M)
+    ]
+    assert found == list(expected), (
+        f"{name} 的章节编号不连续: 期望 {expected}，实际 {found}"
+    )
+
+    # Every source table must say where the numbers came from, and must
+    # flag the nature of the answer data -- collected / recollection /
+    # third-party analysis are all acceptable, silence is not.  That is the
+    # whole reason the series can be trusted.
+    answer_provenance = ("网络收集版", "考生回忆版", "原卷配套解析")
+    assert any(marker in body for marker in answer_provenance), (
+        f"{name} 没有标注逐题答案的来源性质"
+    )
+    assert "ynzs.cn" in body, f"{name} 没有给出官方核对入口"
+
 
 
 @pytest.mark.parametrize("path", _doc_paths(), ids=lambda p: p.relative_to(SECTION).as_posix())
