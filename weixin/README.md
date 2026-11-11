@@ -6,11 +6,14 @@
 
 - 语料：**564 篇**文章、7689 个代码围栏（mermaid 1280）、13512 行表格、568 张图、1208 处站外链接
 - 合规：标题 ≤32 字过 459 → 原始正文 ≤2 万字过 444 → 渲染后 HTML ≤2 万字符过 **357 篇（63.3%）**（其中 18 篇靠关闭代码高亮才放得下）
-- 测试：159 个，全绿，不依赖网络
+- 测试：**229 个**，全绿，不依赖网络
 - **发布链路已用真实账号实测**：`stable_token` / `media/uploadimg` /
   `material/add_material` / `draft/add` 全部通过，草稿已进草稿箱；
   `freepublish/submit` 返回 **48001 api unauthorized**——该账号没有发表权限，
   最后「点一下发表」由人完成
+- **分类与合集**：平台没有开放接口（`draft/add` 无 category 字段、`api.weixin.qq.com`
+  无对应端点、合集只收已发布文章），但**分类标签、合集计划、合集导览文章、
+  后台勾选清单**都能自动生成。见 [docs/04-分类与合集.md](docs/04-分类与合集.md)
 
 ## 实测结论速查
 
@@ -22,6 +25,7 @@
 | 外链图片 | 微信会**静默删除**非 mmbiz 的图片。工具会下载并转存，转存失败的降级为可见提示 |
 | 幂等 | 同一篇跑两次复用同一个 `media_id`，不产生第二篇草稿 |
 | 失败行为 | 退出码 3、`publish_id` 不写、错误不吞——不会静默成功 |
+| 分类 / 合集 | **接口层面做不了**：`draft/add` 无 category 字段，`api.weixin.qq.com` 无对应端点，合集后台只收**已发布**文章。工具负责内容与清单，平台上的归属仍需人工勾选 |
 
 ## 文档
 
@@ -31,6 +35,7 @@
 | [docs/01-转换规则.md](docs/01-转换规则.md) | Markdown → 公众号 HTML 的逐条规则、链接降级、图片两段式、mermaid 降级、体积预算 |
 | [docs/02-接口与发布.md](docs/02-接口与发布.md) | 6 个微信接口、字段限制、token 选型、publish_status 状态机、三层幂等、错误码 |
 | [docs/03-试点记录.md](docs/03-试点记录.md) | 单篇实测数据、mermaid 成功/失败两条路径、Phase 0 接口实测清单 |
+| [docs/04-分类与合集.md](docs/04-分类与合集.md) | 分类与合集的平台边界（实测探测）、分类标签、合集计划、导览文章、后台勾选清单 |
 | [docs/10-设计.md](docs/10-设计.md) | 设计规格（语料盘点 → 模块规格 → 风险） |
 | [docs/11-实施计划.md](docs/11-实施计划.md) | 实施计划 + **试点后的修订记录**（哪些假设被推翻） |
 
@@ -71,12 +76,16 @@ cd weixin && python3 -m wechat.cli convert <slug>
 | `convert <slug>` | 转换一篇，产出 HTML 到 `out/` |
 | `publish <slug>` | 转换 + 上传 + 建草稿（**本号自动化能到的最远一步**） |
 | `publish <slug> --publish` | 额外提交发表（该账号会返回 48001，无权限） |
+| `categories [名称]` | 列出分类及文章数，或某一个分类下的文章 |
+| `collections [名称] [--write]` | 列出合集；`--write` 写出导览文章与后台勾选清单 |
+| `publish-collection 名称` | 把合集导览文章推进草稿箱 |
 | `status` | 查看所有文章的状态 |
 
 `<slug>` 是文章相对 `source/_posts/` 的路径去掉 `.md`，例如
 `db/postgresql/postgresql-logical-replication-add-guc`。
 
-全局选项（`--posts-dir` / `--out-dir` / `--source-url`）写在子命令前后都行。
+全局选项（`--posts-dir` / `--out-dir` / `--source-url` / `--category-tag`）
+写在子命令前后都行。
 
 ## 环境变量
 
@@ -100,6 +109,9 @@ shell 历史里。格式见 `secrets.example.json`：
 ```
 
 优先级：**命令行参数 > 环境变量 > `secrets.json`**。用 `--secrets-file` 指定别的路径。
+
+合集的手工配置放在 `weixin/collections.json`（同样是本地文件，已 gitignore），
+格式见 `weixin/collections.example.json`。文件不存在时，合集按分类自动生成。
 
 ### 草稿就绪通知
 
@@ -153,8 +165,10 @@ export WX_NOTIFY_KEY=SCTxxxxxxxx     # https://sct.ftqq.com 扫码登录即可�
 | 接口 | `publish.py` | ✅ 6 个接口，错误不吞 |
 | 幂等 | `state.py` | ✅ 三层键 |
 | 通知 | `notify.py` | ✅ Server酱 / 企业微信 / 通用 webhook |
+| 分类 / 合集 | `collection.py` | ✅ 分类标签、合集计划、导览文章、勾选清单（**平台上的归属仍是人工**） |
+| 站点复用 | `hexo.py` | ✅ 复用 `sync-hexo.py` 的 slugize，分类归档路径与站点一致 |
 | 审计 | `audit.py` | ✅ 复算全语料统计与 HTML 合规检查 |
-| CLI | `cli.py` | ✅ scan / audit / convert / publish / status |
+| CLI | `cli.py` | ✅ scan / audit / convert / publish / categories / collections / publish-collection / status |
 
 ## 测试
 
@@ -172,3 +186,4 @@ cd /Users/growduduan/code/blog && python3 -m pytest weixin/tests -q
 - **mermaid 渲染失败会显式降级**为源码块并记入报告，不会静默丢图。
 - **全流程幂等**：正文指纹 / `media_id` / `publish_id` 三层键，重复执行不会发两遍。
 - **38% 的文章渲染后超限**：这是平台的结构性约束（HTML 标签和样式都计入 2 万字符），不是实现缺陷。出路是拆篇，或发摘要版 + 全文放「阅读原文」。
+- **分类与合集只能自动化到内容层**：公众号没有开放的分类 / 合集接口，合集还只收已发布文章。工具生成分类标签、合集计划、导览文章和后台勾选清单；**把文章挂到平台上的合集对象上，仍需在后台人工勾选**。

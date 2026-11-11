@@ -1,0 +1,12 @@
+{
+  "collections": [
+    {
+      "title": "PostgreSQL 源码修炼之路",
+      "description": "从编译到执行器，逐篇读 PostgreSQL 源码。",
+      "categories": ["PostgreSQL 源码修炼之路"],
+      "slugs": [],
+      "exclude": [],
+      "order": "asc"
+    }
+  ]
+}

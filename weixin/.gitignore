@@ -6,6 +6,9 @@ secrets.json
 .env
 *.secret
 
+# Local collection configuration — the checked-in copy is an example.
+collections.json
+
 # Python
 __pycache__/
 *.py[cod]
