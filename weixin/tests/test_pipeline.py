@@ -6,6 +6,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import pytest
 from PIL import Image
 
+from wechat import notify as notify_module
 from wechat.cli import main
 
 SAMPLE = """---
@@ -453,3 +454,77 @@ def test_publish_leaves_a_note_when_an_external_image_cannot_be_fetched(
     assert "{{ext:" not in article["content"]
     assert "原图未能转存" in article["content"]
     assert "原图未能转存" in capsys.readouterr().out
+
+
+# --- notifications ---------------------------------------------------------
+
+
+def test_publish_notifies_when_a_draft_is_created(sample_post, tmp_path, server, monkeypatch):
+    """The last click is a human's job, so the phone should be told."""
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    sent = []
+    monkeypatch.setattr(
+        "wechat.cli.notify_module.send",
+        lambda backend, key, title, body, **kw: sent.append((backend, key, title, body)))
+
+    code = main(["publish", slug, "--notify", "serverchan", "--notify-key", "SCT1"]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 0
+    assert len(sent) == 1
+    backend, key, title, body = sent[0]
+    assert backend == "serverchan"
+    assert key == "SCT1"
+    assert "草稿" in title
+    assert "演示文章" in body
+    assert "mp.weixin.qq.com" in body
+
+
+def test_publish_does_not_notify_again_for_a_reused_draft(sample_post, tmp_path, server, monkeypatch):
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    sent = []
+    monkeypatch.setattr(
+        "wechat.cli.notify_module.send",
+        lambda backend, key, title, body, **kw: sent.append(title))
+
+    args = ["publish", slug, "--notify", "serverchan", "--notify-key", "SCT1"]
+    assert main(args + _args(posts_dir, tmp_path / "out", server=server)) == 0
+    assert len(sent) == 1
+    assert main(args + _args(posts_dir, tmp_path / "out", server=server)) == 0
+    assert len(sent) == 1
+
+
+def test_a_failed_notification_does_not_fail_the_publish(sample_post, tmp_path, server, monkeypatch, capsys):
+    """The draft is in the box; a broken notification is only a warning."""
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    def boom(*args, **kwargs):
+        raise notify_module.NotifyError("no such key")
+
+    monkeypatch.setattr("wechat.cli.notify_module.send", boom)
+
+    code = main(["publish", slug, "--notify", "serverchan", "--notify-key", "SCT1"]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 0
+    assert "通知发送失败" in capsys.readouterr().err
+    assert "/cgi-bin/draft/add" in _Handler.calls
+
+
+def test_publish_stays_quiet_without_a_notify_channel(sample_post, tmp_path, server, monkeypatch):
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    def boom(*args, **kwargs):
+        raise AssertionError("should not be called")
+
+    monkeypatch.setattr("wechat.cli.notify_module.send", boom)
+    code = main(["publish", slug] + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 0

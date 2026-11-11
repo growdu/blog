@@ -25,6 +25,7 @@ from pathlib import Path
 from . import assets as assets_module
 from . import audit as audit_module
 from . import mermaid as mermaid_module
+from . import notify as notify_module
 from . import publish as publish_module
 from . import render as render_module
 from .mdparse import parse
@@ -275,6 +276,45 @@ def _upload_cover(client, result, args):
     return media_id, assets_module.cover_crop_list(prepared.width, prepared.height)
 
 
+def _notify(args, post, result, state, *, created: bool, published: bool) -> None:
+    """Tell the phone that something is waiting, if a channel is set up.
+
+    A failed notification is a warning, never a failure: the draft is
+    already in the box, and that is what matters.  A reused draft does
+    not notify again -- nobody needs to be told twice about the same
+    article.
+    """
+    backend, key = args.notify, args.notify_key
+    if not backend or not key:
+        return
+    if published:
+        title = "公众号文章已提交发表"
+        body = "《{}》\npublish_id: {}".format(post.title, state.publish_id)
+    elif created:
+        title = "公众号草稿已就绪"
+        body = (
+            "《{}》\n"
+            "正文 {} 字符\n"
+            "阅读原文: {}{}\n"
+            "\n"
+            "去公众号后台点「发表」即可发布：{}"
+        ).format(
+            post.title,
+            result.content_length,
+            args.source_url.rstrip("/"),
+            post.permalink,
+            notify_module.DRAFT_BOX_URL,
+        )
+    else:
+        return
+    try:
+        notify_module.send(backend, key, title, body)
+    except notify_module.NotifyError as error:
+        print("  通知发送失败: {}".format(error), file=sys.stderr)
+        return
+    print("  已通知: {}".format(notify_module.describe(backend, key)))
+
+
 def cmd_publish(args) -> int:
     post = _resolve_post(args.posts_dir, args.slug)
     if post is None:
@@ -346,7 +386,8 @@ def cmd_publish(args) -> int:
         "cover_info": {"crop_percent_list": crop_list},
     }
 
-    if needs_draft(post.fingerprint, state):
+    created = needs_draft(post.fingerprint, state)
+    if created:
         state.media_id = client.add_draft(article)
         state.fingerprint = post.fingerprint
         state.publish_id = None
@@ -355,9 +396,11 @@ def cmd_publish(args) -> int:
     else:
         print("内容未变，复用已有草稿 {}".format(state.media_id))
 
+    published = False
     if args.publish and needs_submit(state):
         state.publish_id = client.freepublish_submit(state.media_id)
         store.save(post.slug, state)
+        published = True
 
     print("已建草稿: {}".format(post.slug))
     print("  media_id: {}".format(state.media_id))
@@ -368,6 +411,7 @@ def cmd_publish(args) -> int:
         print("  外链图转存: {} / {} 张".format(fetched, len(result.external_images)))
     for url, error in external_failures:
         print("    ! 原图未能转存: {} -> {}".format(url, error))
+    _notify(args, post, result, state, created=created, published=published)
     if state.publish_id:
         print("  publish_id: {}".format(state.publish_id))
     else:
@@ -441,6 +485,10 @@ def _add_common_options(parser, *, suppress: bool) -> None:
     parser.add_argument("--cover", default=default(""), help="封面图路径，默认取文章首图")
     parser.add_argument("--secrets-file", type=Path, default=default(DEFAULT_SECRETS_FILE),
                         help="本地凭据 JSON，默认 weixin/secrets.json")
+    parser.add_argument("--notify", default=default(""),
+                        help="通知通道: serverchan / wechat_work / webhook，默认取环境变量 WX_NOTIFY")
+    parser.add_argument("--notify-key", default=default(""),
+                        help="通知凭据（SendKey / webhook key / URL），默认取环境变量 WX_NOTIFY_KEY")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -481,6 +529,8 @@ def main(argv=None) -> int:
     args.appsecret = args.appsecret or os.environ.get("WX_APPSECRET", "")
     args.source_url = os.environ.get("WX_SOURCE_URL", args.source_url)
     args.cover = args.cover or os.environ.get("WX_COVER", "")
+    args.notify = args.notify or os.environ.get("WX_NOTIFY", "")
+    args.notify_key = args.notify_key or os.environ.get("WX_NOTIFY_KEY", "")
     if not (args.appid and args.appsecret):
         secrets = _load_secrets(args.secrets_file)
         args.appid = args.appid or secrets.get("appid", "")
