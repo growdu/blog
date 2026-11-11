@@ -123,7 +123,7 @@ flowchart TD
 
 ## 二、一个母稿，三个平台：形态差异是硬约束
 
-《[数据库技术自媒体运营手册](../media-account/index.html)》里已经定过原则：**网站是母版，其他是切片**。这篇要补的是**技术层面的差异**——哪些差异是"改改文字"能解决的，哪些是**必须换渲染方式**的。
+《[数据库技术自媒体运营手册](../shehui/media-account/index.html)》里已经定过原则：**网站是母版，其他是切片**。这篇要补的是**技术层面的差异**——哪些差异是"改改文字"能解决的，哪些是**必须换渲染方式**的。
 
 ### 2.1 三个平台的硬约束对照
 
@@ -866,6 +866,6 @@ WX_DRY_RUN=1       只产出 HTML 不调接口
 
 **相关阅读**
 
-- [数据库技术自媒体运营手册](../media-account/index.html) —— 内容侧的母版/切片原则、平台分工、选题方法
+- [数据库技术自媒体运营手册](../shehui/media-account/index.html) —— 内容侧的母版/切片原则、平台分工、选题方法
 - [AIV 视频生产线：九个环节、唯一契约与入库边界](../aiv/index.html) —— 出片流水线的九个环节与边界
 - [PostgreSQL 逻辑复制 Stream 执行逻辑源码级拆解](../../db/postgresql/postgresql-logical-replication-stream-publisher/index.html) —— 拿来做端到端试跑的那一篇

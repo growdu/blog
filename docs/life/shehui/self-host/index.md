@@ -320,42 +320,45 @@ ss -tlnp | grep -E "8096|2283|:80|:443"
 
 ```mermaid
 flowchart TB
-    subgraph L1["基础设施（原生）"]
-        Caddy["Caddy 反代"]
-        Samba["Samba 文件共享"]
-        Cockpit["Cockpit 管理面板"]
+    subgraph Row1[" "]
+        direction LR
+        subgraph L1["基础设施"]
+            Caddy["Caddy"]
+            Samba["Samba"]
+            Cockpit["Cockpit"]
+        end
+        subgraph L2["监控/备份"]
+            Beszel["Beszel"]
+            Backrest["Backrest"]
+            Uptime["Uptime Kuma"]
+        end
+        subgraph L3["媒体/影音"]
+            Jelly["Jellyfin"]
+            ABS["Audiobookshelf"]
+            MPD["MPD"]
+            Snapcast["Snapcast"]
+        end
     end
-    subgraph L2["监控 / 备份（原生）"]
-        Beszel["Beszel 资源监控"]
-        Backrest["Backrest 备份"]
-        Uptime["Uptime Kuma 可用性"]
+    subgraph Row2[" "]
+        direction LR
+        subgraph L4["阅读/笔记"]
+            FreshRSS["FreshRSS"]
+            Readeck["Readeck"]
+            Forgejo["Forgejo"]
+        end
+        subgraph L5["同步/下载"]
+            Syncthing["Syncthing"]
+            Transmission["Transmission"]
+            Slskd["slskd"]
+            Gonic["Gonic"]
+        end
+        subgraph L6["通知/面板"]
+            Gotify["Gotify"]
+            Homepage["Homepage"]
+            PocketBase["PocketBase"]
+        end
     end
-    subgraph L3["媒体 / 影音（原生）"]
-        Jelly["Jellyfin（容器）"]
-        ABS["Audiobookshelf"]
-        MPD["MPD 音乐"]
-        Snapcast["Snapcast 多房间音频"]
-    end
-    subgraph L4["阅读 / 笔记（原生）"]
-        FreshRSS["FreshRSS"]
-        Readeck["Readeck 稍后读"]
-        Forgejo["Forgejo Git"]
-    end
-    subgraph L5["同步 / 下载（原生）"]
-        Syncthing["Syncthing"]
-        Transmission["Transmission"]
-        Slskd["slskd Soulseek"]
-        Gonic["Gonic Soulseek 服务端"]
-    end
-    subgraph L6["通知 / 面板（原生）"]
-        Gotify["Gotify 推送"]
-        Homepage["Homepage 面板"]
-        PocketBase["PocketBase 后端"]
-    end
-    L1 --> L2 --> L3
-    L2 --> L4
-    L3 --> L5
-    L4 --> L6
+    Row1 --> Row2
 ```
 
 ### 4.1 基础设施三件套
@@ -1300,11 +1303,11 @@ podman logs <containerName>           # 容器 stdout/stderr
 
 ```mermaid
 flowchart TB
-    Start["想自托管某个服务 X"] --> Q1{"成熟 SaaS 又好又便宜<br/>（免费额度够 / 低价）?"}
-    Q1 -->|是| UseSaaS["用 SaaS<br/>不自托管"]
-    Q1 -->|否| Q2{"自建后维护成本<br/>风险是否大于收益?"}
-    Q2 -->|是| Skip["放弃自托管<br/>找替代/降级需求"]
-    Q2 -->|否| Q3{"依赖复杂到原生装容易翻车?"}
+    Start["想自托管某个服务 X"] --> Q1{"成熟 SaaS 又好又便宜?"}
+    Q1 -->|是| UseSaaS["用 SaaS"]
+    Q1 -->|否| Q2{"维护成本 > 收益?"}
+    Q2 -->|是| Skip["放弃自托管"]
+    Q2 -->|否| Q3{"依赖复杂到翻车?"}
     Q3 -->|是| Container["Podman 容器跑"]
     Q3 -->|否| Native["原生二进制/包跑"]
 ```
@@ -1503,11 +1506,11 @@ loginctl show-user $USER | grep Linger        # 期望 Linger=yes
 
 ```mermaid
 flowchart LR
-    A["① 全服务自动启动"] --> B["② 只经 VPN/Tailscale 可达"]
-    B --> C["③ HTTPS 证书正常"]
-    C --> D["④ Beszel/Kuma 有数据无异常"]
-    D --> E["⑤ Backrest 备份成功且可恢复"]
-    E --> F["✓ 这套自托管才算真正跑通"]
+    A["① 自动启动"] --> B["② 仅 VPN 可达"]
+    B --> C["③ 证书正常"]
+    C --> D["④ 监控无异常"]
+    D --> E["⑤ 备份可恢复"]
+    E --> F["✓ 跑通"]
 ```
 
 ---
@@ -1791,26 +1794,33 @@ curl -s -X POST "http://127.0.0.1:8080/message?token=<你的AppToken>"   -H "Tit
 
 ```mermaid
 flowchart TB
-    subgraph L1["① 观测层 —— 知道发生了什么"]
-        A["Beszel<br/>资源趋势"]
-        B["Uptime Kuma<br/>服务在线"]
-        C["日志 journalctl"]
-        D["Backrest<br/>备份状态"]
+    subgraph Row1[" "]
+        direction LR
+        subgraph L1["① 观测层 —— 知道发生了什么"]
+            direction TB
+            A["Beszel<br/>资源趋势"]
+            B["Uptime Kuma<br/>服务在线"]
+            C["日志 journalctl"]
+            D["Backrest<br/>备份状态"]
+        end
+        subgraph L2["② 控制层 —— 能改能修"]
+            direction TB
+            E["systemctl<br/>启停"]
+            F["Caddyfile<br/>改配置"]
+            G["Quadlet<br/>改容器"]
+            H["SSH / Cockpit"]
+        end
     end
-    subgraph L2["② 控制层 —— 能改能修"]
-        E["systemctl<br/>启停"]
-        F["Caddyfile<br/>改配置"]
-        G["Quadlet<br/>改容器"]
-        H["SSH / Cockpit"]
+    subgraph Row2[" "]
+        direction LR
+        subgraph L3["③ 恢复层 —— 出事能回到过去"]
+            direction TB
+            I["Backrest<br/>时间点恢复"]
+            J["Syncthing<br/>版本历史"]
+            K["重装流程文档化"]
+        end
     end
-    subgraph L3["③ 恢复层 —— 出事能回到过去"]
-        I["Backrest<br/>时间点恢复"]
-        J["Syncthing<br/>版本历史"]
-        K["重装流程文档化"]
-    end
-    L1 -->|发现问题| L2
-    L2 -->|修不好| L3
-    L3 -->|恢复后| L1
+    Row1 --> Row2
 ```
 
 **关键认知**：这三层缺一层，自托管就会退化。

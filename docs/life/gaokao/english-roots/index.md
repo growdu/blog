@@ -619,8 +619,8 @@ express 表达      expression 表达（名词） expressive 富有表现力的
 
 ## 相关阅读
 
-- [高考数学：中等水平者的做题方法与学习路径](../gaokao-math-methods/index.html) —— 同样的"先诊断丢分、再定方法"框架
-- [全国卷二逐题拆解：一个普通高三学生的答题思路与考场操作](../gaokao-math-paper2/index.html) —— 拿一套真实卷子走一遍
+- [高考数学：中等水平者的做题方法与学习路径](../math-methods/index.html) —— 同样的"先诊断丢分、再定方法"框架
+- [全国卷二逐题拆解：一个普通高三学生的答题思路与考场操作](../math-paper2/index.html) —— 拿一套真实卷子走一遍
 
 ---
 

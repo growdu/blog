@@ -46,7 +46,7 @@ categories:
 | openGauss 专题 | `docs/db/opengauss-*/` | 并行解码设计、CSN 全序 | 稀缺内容，竞品几乎没人讲 |
 | 性能与火焰图 | `docs/db/performance/flame-graph-analysis/` | 1 套方法论 | 工具型内容，搜索长尾极好 |
 | 自托管手册 | `docs/life/self-host/index.md` | 88K | 泛技术 audiences 引流入口 |
-| 视频生产链路（**只借鉴流程，不复用素材**） | [AIV 视频生产线专题](../aiv/index.html) | 8 份 md + `storyboard.json` 契约 + 渲染引擎（**音视频一律不入库**） | 分镜 / 配音 / 字幕 / 落版的**流程**可以照着搭；**画面、吉祥物、配色、脚本本身是公司物料，个人号不能用**（见 §1.4） |
+| 视频生产链路（**只借鉴流程，不复用素材**） | [AIV 视频生产线专题](../../aiv/index.html) | 8 份 md + `storyboard.json` 契约 + 渲染引擎（**音视频一律不入库**） | 分镜 / 配音 / 字幕 / 落版的**流程**可以照着搭；**画面、吉祥物、配色、脚本本身是公司物料，个人号不能用**（见 §1.4） |
 | 视频元文章 | `docs/database/postgresql-senior-kernel-developer/index.md` | 49.7K | 学习路径类内容，长期搜索流量 |
 
 **总量换算**：保守估计，**存量文档至少能支撑 200 条以上的视频选题**。按每周 1 条长视频 + 2 条切片算，**够做两年半**。
@@ -844,12 +844,12 @@ gantt
 | 逻辑复制专题 | 11 个子专题 + 17 篇长文 | `docs/db/logical_decode/` |
 | openGauss 专题 | 并行解码设计、CSN 全序 | `docs/db/opengauss-*/` |
 | 内核开发者元文章 | 49.7K（18 月路线 + 36 主题地图） | `docs/database/postgresql-senior-kernel-developer/index.md` |
-| 视频生产链路（**流程可借鉴，素材不外带**） | 8 份 md + 契约 + 渲染引擎；音视频不入库 | [AIV 视频生产线专题](../aiv/index.html) |
+| 视频生产链路（**流程可借鉴，素材不外带**） | 8 份 md + 契约 + 渲染引擎；音视频不入库 | [AIV 视频生产线专题](../../aiv/index.html) |
 | 自托管手册 | 88.5K | `docs/life/self-host/index.md` |
 
 **相关阅读**
 
-- [从 Hexo 博客到公众号与视频号：一次发布，自动分发两个平台](./blog-to-wechat/index.html) —— 本文讲的是**内容怎么做**，那篇讲的是**内容怎么自动发出去**：Markdown 转公众号 HTML、`draft/add` + `freepublish/submit` 状态机、视频号的三条路线与自动出片落点
-- [PostgreSQL 逻辑复制 Stream 执行逻辑源码级拆解](../../db/postgresql/postgresql-logical-replication-stream-publisher/index.html) —— 上面反复提到的"并行 apply / commit 顺序"的源码底稿
-- [如何成为资深的 PostgreSQL 内核开发者](../../database/postgresql-senior-kernel-developer/index.html) —— 36 个内核主题地图，就是现成的选题库
+- [从 Hexo 博客到公众号与视频号：一次发布，自动分发两个平台](../../blog-to-wechat/index.html) —— 本文讲的是**内容怎么做**，那篇讲的是**内容怎么自动发出去**：Markdown 转公众号 HTML、`draft/add` + `freepublish/submit` 状态机、视频号的三条路线与自动出片落点
+- [PostgreSQL 逻辑复制 Stream 执行逻辑源码级拆解](../../../db/postgresql/postgresql-logical-replication-stream-publisher/index.html) —— 上面反复提到的"并行 apply / commit 顺序"的源码底稿
+- [如何成为资深的 PostgreSQL 内核开发者](../../../database/postgresql-senior-kernel-developer/index.html) —— 36 个内核主题地图，就是现成的选题库
 - [经济下行周期下的数据库内核工程师](../economic-downturn-strategy/index.html) —— 另一条线：**周期里个人怎么攒资产**
