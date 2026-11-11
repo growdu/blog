@@ -217,7 +217,11 @@ def test_publish_requires_credentials(sample_post, tmp_path, server, monkeypatch
     posts_dir, slug = sample_post
     monkeypatch.delenv("WX_APPID", raising=False)
     monkeypatch.delenv("WX_APPSECRET", raising=False)
-    code = main(["publish", slug] + _args(posts_dir, tmp_path / "out", server=server))
+    # Point at a file that does not exist: the default path is the
+    # developer's own weixin/secrets.json, which may well hold real
+    # credentials and must never leak into a test run.
+    code = main(["publish", slug, "--secrets-file", str(tmp_path / "absent.json")]
+                + _args(posts_dir, tmp_path / "out", server=server))
     assert code == 2
     assert "WX_APPID" in capsys.readouterr().err
 
