@@ -18,12 +18,13 @@ from pathlib import Path
 
 from PIL import Image
 
-__all__ = ["PreparedImage", "prepare_image"]
+__all__ = ["PreparedImage", "prepare_image", "cover_crop_list"]
 
 DEFAULT_LIMIT_BYTES = 1024 * 1024
 DEFAULT_MAX_WIDTH = 1080
 _JPEG_QUALITY_STEPS = (90, 80, 70, 60, 50, 40, 30, 20)
 _MIN_DIMENSION = 64
+COVER_RATIOS = ("2.35_1", "1_1")
 
 
 @dataclass(frozen=True)
@@ -95,3 +96,40 @@ def prepare_image(path: Path, *, limit_bytes: int = DEFAULT_LIMIT_BYTES,
         width=image.width,
         height=image.height,
     )
+
+
+def _crop(ratio: float, width: int, height: int) -> dict:
+    """Largest centred crop of the requested aspect ratio.
+
+    The official API takes the crop rectangle as percentages of the
+    image, with (0,0) at the top-left and (1,1) at the bottom-right.
+    """
+    image_ratio = float(width) / float(height)
+    if image_ratio > ratio:
+        # Too wide: trim the sides.
+        keep = ratio / image_ratio
+        x1 = (1.0 - keep) / 2.0
+        return {"x1": x1, "y1": 0.0, "x2": 1.0 - x1, "y2": 1.0}
+    # Too tall: trim the top and bottom.
+    keep = image_ratio / ratio
+    y1 = (1.0 - keep) / 2.0
+    return {"x1": 0.0, "y1": y1, "x2": 1.0, "y2": 1.0 - y1}
+
+
+def cover_crop_list(width: int, height: int) -> list:
+    """Build the ``cover_info.crop_percent_list`` for a cover image.
+
+    WeChat wants both a 2.35:1 and a 1:1 crop of the cover; the API
+    accepts them as percentages with six decimals.
+    """
+    crops = []
+    for name, ratio in (("2.35_1", 2.35), ("1_1", 1.0)):
+        crop = _crop(ratio, width, height)
+        crops.append({
+            "ratio": name,
+            "x1": "{:.6f}".format(crop["x1"]),
+            "y1": "{:.6f}".format(crop["y1"]),
+            "x2": "{:.6f}".format(crop["x2"]),
+            "y2": "{:.6f}".format(crop["y2"]),
+        })
+    return crops

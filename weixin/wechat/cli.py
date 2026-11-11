@@ -25,11 +25,11 @@ from . import mermaid as mermaid_module
 from . import publish as publish_module
 from . import render as render_module
 from .mdparse import parse
-from .posts import CONTENT_LIMIT, check_eligibility, discover, load_post
+from .posts import AUTHOR_LIMIT, CONTENT_BYTES_LIMIT, CONTENT_LIMIT, check_eligibility, discover, load_post
 from .state import StateStore, needs_draft, needs_submit
 
-DEFAULT_POSTS_DIR = Path("source/_posts")
-DEFAULT_OUT_DIR = Path("out")
+DEFAULT_POSTS_DIR = Path(__file__).resolve().parents[2] / "source" / "_posts"
+DEFAULT_OUT_DIR = Path(__file__).resolve().parents[1] / "out"
 DEFAULT_SOURCE_URL = "https://growdu.cn"
 
 EXIT_OK = 0
@@ -52,10 +52,10 @@ def _resolve_post(posts_dir: Path, slug: str):
     return None
 
 
-def _prepare(post, args, resolver=None):
+def _prepare(post, args, resolver=None, highlight: bool = True):
     """Render one post and return the render result."""
     blocks = parse(post.body)
-    result = render_module.render(blocks, resolver=resolver)
+    result = render_module.render(blocks, resolver=resolver, highlight=highlight)
     target_dir = Path(args.out_dir) / post.slug
     target_dir.mkdir(parents=True, exist_ok=True)
     (target_dir / "article.html").write_text(result.html, encoding="utf-8")
@@ -107,6 +107,18 @@ def cmd_convert(args) -> int:
 
     assets = _mermaid_assets(post, args)
     result = _prepare(post, args, resolver=_Resolver(assets))
+    degraded = False
+
+    # Syntax colouring costs one <span> per token.  On a code-heavy
+    # article that is a quarter of the character budget, so when the
+    # highlighted version does not fit, plain code is used instead:
+    # readable content beats colourful content.
+    if result.content_length > CONTENT_LIMIT:
+        plain = _prepare(post, args, resolver=_Resolver(assets), highlight=False)
+        if plain.content_length < result.content_length:
+            result = plain
+            degraded = True
+
     failures = [asset for asset in assets.values() if asset.png is None]
 
     print("已转换: {}".format(post.slug))
@@ -115,7 +127,9 @@ def cmd_convert(args) -> int:
     print("  阅读原文: {}{}".format(args.source_url.rstrip("/"), post.permalink))
     print("  HTML: {}".format(
         (Path(args.out_dir) / post.slug / "article.html").as_posix()))
-    print("  正文长度: {} 字符 (上限 {})".format(result.content_length, CONTENT_LIMIT))
+    print("  正文长度: {} 字符 (上限 {}){}".format(
+        result.content_length, CONTENT_LIMIT,
+        "  [已关闭代码高亮以压缩体积]" if degraded else ""))
     print("  待上传图片: {}".format(len(result.assets)))
     print("  站外链接: {}".format(len(result.external_links)))
     print("  mermaid: {} 个 (渲染失败 {} 个)".format(len(assets), len(failures)))
@@ -163,7 +177,7 @@ def _upload_assets(client, result, args):
 
 
 def _upload_cover(client, result, args):
-    """Upload the cover image and return its material media_id.
+    """Upload the cover image and return ``(media_id, crop_percent_list)``.
 
     WeChat requires a cover.  Without a configured cover the article's
     first image is used; an article with neither cannot be published.
@@ -178,7 +192,8 @@ def _upload_cover(client, result, args):
     if not resolved.is_file():
         raise AssetNotFound("封面图不存在: {}".format(resolved))
     prepared = assets_module.prepare_image(resolved)
-    return client.upload_cover(prepared.data, prepared.filename)
+    media_id = client.upload_cover(prepared.data, prepared.filename)
+    return media_id, assets_module.cover_crop_list(prepared.width, prepared.height)
 
 
 def cmd_publish(args) -> int:
@@ -196,6 +211,10 @@ def cmd_publish(args) -> int:
         print("缺少 WX_APPID / WX_APPSECRET 环境变量", file=sys.stderr)
         return EXIT_REJECTED
 
+    if len(args.author) > AUTHOR_LIMIT:
+        print("作者 {} 超过上限 {} 字符".format(args.author, AUTHOR_LIMIT), file=sys.stderr)
+        return EXIT_REJECTED
+
     assets = _mermaid_assets(post, args)
     result = _prepare(post, args, resolver=_Resolver(assets))
 
@@ -203,8 +222,19 @@ def cmd_publish(args) -> int:
     # enforces is the length of the rendered content, which is larger
     # than the markdown because every element carries inline styles.
     if result.content_length > CONTENT_LIMIT:
+        plain = _prepare(post, args, resolver=_Resolver(assets), highlight=False)
+        if plain.content_length < result.content_length:
+            result = plain
+
+    if result.content_length > CONTENT_LIMIT:
         print("渲染后正文 {} 字符，超过上限 {} 字符，已拒绝发布".format(
             result.content_length, CONTENT_LIMIT), file=sys.stderr)
+        print("提示：这类文章需要拆成多篇，或在公众号发摘要版并把全文放在阅读原文", file=sys.stderr)
+        return EXIT_REJECTED
+
+    if len(result.html.encode("utf-8")) >= CONTENT_BYTES_LIMIT:
+        print("渲染后正文 {} 字节，超过上限 {} 字节，已拒绝发布".format(
+            len(result.html.encode("utf-8")), CONTENT_BYTES_LIMIT), file=sys.stderr)
         return EXIT_REJECTED
 
     client = publish_module.WeChatClient(
@@ -215,9 +245,10 @@ def cmd_publish(args) -> int:
 
     urls = _upload_assets(client, result, args)
     html = result.substitute(urls)
-    cover_media_id = _upload_cover(client, result, args)
+    cover_media_id, crop_list = _upload_cover(client, result, args)
 
     article = {
+        "article_type": "news",
         "title": post.title,
         "author": args.author,
         "digest": post.digest,
@@ -226,6 +257,7 @@ def cmd_publish(args) -> int:
         "thumb_media_id": cover_media_id,
         "need_open_comment": 0,
         "only_fans_can_comment": 0,
+        "cover_info": {"crop_percent_list": crop_list},
     }
 
     if needs_draft(post.fingerprint, state):

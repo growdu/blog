@@ -39,25 +39,35 @@ from .mdparse import (
 
 __all__ = ["RenderResult", "Resolver", "render", "mermaid_key"]
 
-BODY_FONT = "font-size:15px; line-height:1.75; margin:0 0 16px; word-break:break-word;"
-H2_STYLE = ("font-size:18px; font-weight:700; margin:28px 0 14px; "
-            "border-left:4px solid #3d7ea6; padding-left:10px;")
-H3_STYLE = "font-size:16px; font-weight:700; margin:24px 0 12px;"
-H4_STYLE = "font-size:15px; font-weight:700; margin:20px 0 10px;"
-CODE_BLOCK_STYLE = (
-    "background:#f6f8fa; padding:12px; border-radius:4px; overflow-x:auto; "
-    "font-size:13px; line-height:1.5; margin:0 0 16px; "
-    "font-family:Menlo,Consolas,'Courier New',monospace;"
-)
-INLINE_CODE_STYLE = "background:#f6f8fa; padding:2px 5px; border-radius:3px; font-size:14px;"
-TABLE_STYLE = "border-collapse:collapse; width:100%; font-size:13px;"
-TABLE_CELL_STYLE = "border:1px solid #dfe2e5; padding:7px 9px; text-align:left;"
-QUOTE_STYLE = "border-left:3px solid #d0d0d0; padding-left:12px; color:#666; margin:0 0 16px;"
-IMAGE_STYLE = "max-width:100%; height:auto; display:block; margin:0 auto 16px;"
-MUTED_STYLE = "color:#888; font-size:13px; margin:0 0 8px;"
-LIST_STYLE = "padding-left:22px; margin:0 0 16px;"
-ITEM_STYLE = "margin:0 0 6px;"
-CODE_FONT = "font-family:Menlo,Consolas,'Courier New',monospace;"
+
+def _css(*declarations: str) -> str:
+    """Join CSS declarations and drop the optional whitespace.
+
+    WeChat counts the ``content`` field in characters, so every space
+    in a style string is paid for on every element.  The site has 1234
+    style attributes in a single long article; trimming them is the
+    difference between fitting the limit and not.
+    """
+    text = ";".join(declarations)
+    return text.replace(": ", ":").replace("; ", ";").strip()
+
+
+BODY_FONT = _css("font-size: 15px", "line-height: 1.75", "margin: 0 0 12px")
+H2_STYLE = _css("font-size: 17px", "font-weight: 700", "margin: 24px 0 12px",
+                "border-left: 4px solid #3d7ea6", "padding-left: 10px")
+H3_STYLE = _css("font-size: 16px", "font-weight: 700", "margin: 20px 0 10px")
+H4_STYLE = _css("font-size: 15px", "font-weight: 700", "margin: 18px 0 10px")
+CODE_BLOCK_STYLE = _css("background: #f6f8fa", "padding: 12px", "overflow-x: auto",
+                        "font-size: 13px", "line-height: 1.5")
+INLINE_CODE_STYLE = _css("background: #f6f8fa", "padding: 2px 5px", "border-radius: 3px")
+TABLE_STYLE = _css("border-collapse: collapse", "width: 100%", "font-size: 13px")
+TABLE_CELL_STYLE = _css("border: 1px solid #dfe2e5", "padding: 7px 9px")
+QUOTE_STYLE = _css("border-left: 3px solid #d0d0d0", "padding-left: 12px", "color: #666")
+IMAGE_STYLE = _css("max-width: 100%")
+MUTED_STYLE = _css("color: #888", "font-size: 13px")
+LIST_STYLE = _css("padding-left: 22px")
+HR_STYLE = _css("border: none", "border-top: 1px solid #e5e5e5", "margin: 24px 0")
+CODE_FONT = _css("font-family: Menlo, Consolas, monospace")
 
 _TAG_RE = re.compile(r"<[^>]+>")
 
@@ -124,8 +134,9 @@ def _strip_tags(text: str) -> str:
 
 
 class _Renderer:
-    def __init__(self, resolver=None):
+    def __init__(self, resolver=None, highlight: bool = True):
         self.resolver = resolver or Resolver()
+        self.highlight = highlight
         self.token = uuid.uuid4().hex[:8]
         self.assets = []
         self.asset_index = {}
@@ -178,9 +189,13 @@ class _Renderer:
         if isinstance(node, CodeBlock):
             if node.lang.lower() == "mermaid":
                 return self._mermaid(node)
-            from .highlight import highlight_code
+            if self.highlight:
+                from .highlight import highlight_code
+                code = highlight_code(node.code, node.lang)
+            else:
+                code = _escape(node.code)
             return ("<pre style=\"%s\"><code style=\"%s\">%s</code></pre>") % (
-                CODE_BLOCK_STYLE, CODE_FONT, highlight_code(node.code, node.lang))
+                CODE_BLOCK_STYLE, CODE_FONT, code)
         if isinstance(node, Table):
             return self._table(node)
         if isinstance(node, ListBlock):
@@ -232,24 +247,31 @@ class _Renderer:
             elif item.checked is False:
                 marker = "<span style=\"color:#999;\">☐ </span>"
             inner = "".join(self.block(child) for child in item.blocks)
-            items.append("<li style=\"%s\">%s%s</li>" % (ITEM_STYLE, marker, inner))
+            items.append("<li>%s%s</li>" % (marker, inner))
         tag = "ol" if node.ordered else "ul"
         return "<{tag} style=\"{style}\">{items}</{tag}>".format(
             tag=tag, style=LIST_STYLE, items="".join(items))
 
 
-def render(blocks: list, *, resolver=None) -> RenderResult:
-    """Render a block AST into WeChat-ready HTML."""
-    renderer = _Renderer(resolver)
+def render(blocks: list, *, resolver=None, highlight: bool = True) -> RenderResult:
+    """Render a block AST into WeChat-ready HTML.
+
+    ``highlight=False`` renders code blocks as plain escaped text.  That
+    is the fallback for articles that would otherwise exceed WeChat's
+    20000-character limit: syntax colouring costs one ``<span>`` per
+    token, which on a code-heavy article is more than a quarter of the
+    budget.
+    """
+    renderer = _Renderer(resolver, highlight=highlight)
     body = "".join(renderer.block(block) for block in blocks)
 
     if renderer.external_links:
         items = "".join(
-            "<li style=\"%s\">%s：%s</li>" % (ITEM_STYLE, _escape(text), _escape(url))
+            "<li>%s：%s</li>" % (_escape(text), _escape(url))
             for text, url in renderer.external_links
         )
         body += (
-            "<section style=\"margin:24px 0 0; padding-top:12px; border-top:1px solid #e5e5e5;\">"
+            "<section style=\"margin:24px 0 0;padding-top:12px;border-top:1px solid #e5e5e5;\">"
             "<p style=\"%s\">参考链接</p><ul style=\"padding-left:22px;\">%s</ul></section>"
         ) % (MUTED_STYLE, items)
 

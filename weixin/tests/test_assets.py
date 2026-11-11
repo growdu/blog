@@ -3,7 +3,7 @@ import io
 import pytest
 from PIL import Image
 
-from wechat.assets import prepare_image
+from wechat.assets import cover_crop_list, prepare_image
 
 
 def _png(width: int, height: int, color=(200, 30, 30)) -> bytes:
@@ -87,3 +87,47 @@ def test_prepare_image_handles_rgba_png(tmp_path):
     path.write_bytes(buffer.getvalue())
     prepared = prepare_image(path)
     assert len(prepared.data) > 0
+
+
+def test_cover_crop_list_has_both_required_ratios():
+    crops = cover_crop_list(1200, 600)
+    assert [crop["ratio"] for crop in crops] == ["2.35_1", "1_1"]
+
+
+def test_cover_crop_list_uses_six_decimals():
+    for crop in cover_crop_list(1200, 600):
+        for key in ("x1", "y1", "x2", "y2"):
+            assert len(crop[key].split(".")[1]) == 6
+
+
+def test_cover_crop_list_keeps_everything_for_an_exact_ratio_image():
+    crops = {crop["ratio"]: crop for crop in cover_crop_list(2350, 1000)}
+    wide = crops["2.35_1"]
+    assert wide["x1"] == "0.000000"
+    assert wide["y1"] == "0.000000"
+    assert wide["x2"] == "1.000000"
+    assert wide["y2"] == "1.000000"
+
+
+def test_cover_crop_list_trims_sides_for_a_too_wide_image():
+    crops = {crop["ratio"]: crop for crop in cover_crop_list(2400, 1000)}
+    wide = crops["2.35_1"]
+    assert wide["y1"] == "0.000000"
+    assert wide["y2"] == "1.000000"
+    assert float(wide["x1"]) > 0
+
+
+def test_cover_crop_list_trims_top_and_bottom_for_a_tall_image():
+    crops = {crop["ratio"]: crop for crop in cover_crop_list(600, 1200)}
+    tall = crops["2.35_1"]
+    assert tall["x1"] == "0.000000"
+    assert tall["x2"] == "1.000000"
+    assert float(tall["y1"]) > 0
+
+
+def test_cover_crop_list_square_is_centred():
+    crops = {crop["ratio"]: crop for crop in cover_crop_list(1200, 600)}
+    square = crops["1_1"]
+    assert float(square["x1"]) == pytest.approx(1.0 - float(square["x2"]), abs=1e-6)
+    assert float(square["y1"]) == 0.0
+    assert float(square["y2"]) == 1.0

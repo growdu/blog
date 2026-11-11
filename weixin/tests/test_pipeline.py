@@ -239,6 +239,27 @@ def test_status_reports_recorded_state(sample_post, tmp_path, server, monkeypatc
     assert "DRAFT_ID" in out
 
 
+def test_publish_sends_cover_crop_info(sample_post, tmp_path, server, monkeypatch):
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+    main(["publish", slug] + _args(posts_dir, tmp_path / "out", server=server))
+    payload = json.loads(_Handler.bodies["/cgi-bin/draft/add"])
+    crops = payload["articles"][0]["cover_info"]["crop_percent_list"]
+    assert [crop["ratio"] for crop in crops] == ["2.35_1", "1_1"]
+
+
+def test_publish_rejects_an_overlong_author(sample_post, tmp_path, server, monkeypatch, capsys):
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+    code = main(["publish", slug, "--author", "x" * 20]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 2
+    assert "作者" in capsys.readouterr().err
+    assert "/cgi-bin/draft/add" not in _Handler.calls
+
+
 def test_publish_refuses_content_over_the_limit(tmp_path, server, monkeypatch, capsys):
     posts_dir = tmp_path / "source" / "_posts"
     target = posts_dir / "database" / "huge.md"

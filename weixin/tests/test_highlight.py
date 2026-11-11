@@ -47,3 +47,23 @@ def test_highlight_handles_c_code():
 def test_highlight_never_raises_on_empty_code():
     html = highlight_code("", "sql")
     assert isinstance(html, str)
+
+
+def test_highlight_keeps_the_code_text_intact():
+    """The tag stripping must not change a single visible character."""
+    code = "int main(void) {\n  return 0;  // 注释\n}\n"
+    html = highlight_code(code, "c")
+    text = re.sub(r"<[^>]+>", "", html)
+    assert text == code
+
+
+def test_highlight_unwraps_whitespace_only_spans():
+    html = highlight_code("echo hello", "bash")
+    assert 'style="color: #BBB">' not in html
+    assert "echo hello" in re.sub(r"<[^>]+>", "", html)
+
+
+def test_highlight_compacts_style_values():
+    html = highlight_code("SELECT 1;", "sql")
+    assert "style=\"color:#" in html
+    assert ": " not in html.replace("font-family:", "")

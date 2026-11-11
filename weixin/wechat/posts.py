@@ -16,17 +16,19 @@ from pathlib import Path
 from urllib.parse import quote
 
 BODY_LIMIT = 20000
-TITLE_LIMIT = 64
+TITLE_LIMIT = 32
 DIGEST_LIMIT = 120
+AUTHOR_LIMIT = 16
 
 # WeChat caps the article body at 20000 characters of the ``content``
-# field, which is the rendered HTML.  BODY_LIMIT is a cheap pre-check on
-# the raw markdown; it is a necessary but not sufficient condition --
-# across the corpus 38 posts pass the raw check and still exceed the
-# limit once rendered.  The authoritative check therefore runs on the
-# rendered content (RenderResult.content_length) before anything is
-# uploaded.
+# field, which is the rendered HTML, and at 1 MB of bytes.  BODY_LIMIT is
+# a cheap pre-check on the raw markdown; it is a necessary but not
+# sufficient condition -- across the corpus 38 posts pass the raw check
+# and still exceed the limit once rendered.  The authoritative check
+# therefore runs on the rendered content (RenderResult.content_length)
+# before anything is uploaded.
 CONTENT_LIMIT = 20000
+CONTENT_BYTES_LIMIT = 1024 * 1024
 
 _FM_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 _FENCE_RE = re.compile(r"^\s*(```|~~~)")
@@ -239,7 +241,8 @@ def check_eligibility(post: Post) -> Eligibility:
     """Check the post against WeChat's hard limits.
 
     Overlong posts are reported, never silently truncated: a truncated
-    deep-dive article is worse than no article at all.
+    deep-dive article is worse than no article at all.  The same goes
+    for an overlong title -- a cut-off title means nothing to a reader.
     """
     reasons = []
 

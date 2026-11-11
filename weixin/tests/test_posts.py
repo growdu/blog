@@ -10,7 +10,7 @@ from wechat.posts import (
 )
 
 FM = """---
-title: "从内核开发者视角,在 PostgreSQL 18 逻辑复制中新增一个 GUC 参数"
+title: "在 PostgreSQL 18 逻辑复制中新增 GUC 参数"
 date: 2026-11-09 15:00:00
 author: growdu
 categories:
@@ -40,7 +40,7 @@ def _write(tmp_path, rel, content):
 
 def test_parse_front_matter_splits_and_reads_scalars():
     fm, body = parse_front_matter(FM)
-    assert fm["title"] == "从内核开发者视角,在 PostgreSQL 18 逻辑复制中新增一个 GUC 参数"
+    assert fm["title"] == "在 PostgreSQL 18 逻辑复制中新增 GUC 参数"
     assert fm["date"] == "2026-11-09 15:00:00"
     assert fm["author"] == "growdu"
     assert body.lstrip().startswith("## 第一节")
@@ -154,6 +154,22 @@ def test_check_eligibility_rejects_overlong_title(tmp_path):
     result = check_eligibility(post)
     assert result.ok is False
     assert any("标题" in reason for reason in result.reasons)
+
+
+def test_check_eligibility_title_boundary(tmp_path):
+    """The official limit is 32 characters, not 64."""
+    assert TITLE_LIMIT == 32
+    exact = "标" * TITLE_LIMIT
+    posts_dir, target = _write(
+        tmp_path, "database/exact.md", FM.replace(FM.split('"')[1], exact))
+    post = load_post(target, posts_dir)
+    assert check_eligibility(post).ok is True
+
+    over = "标" * (TITLE_LIMIT + 1)
+    posts_dir, target = _write(
+        tmp_path, "database/over.md", FM.replace(FM.split('"')[1], over))
+    post = load_post(target, posts_dir)
+    assert check_eligibility(post).ok is False
 
 
 def test_check_eligibility_body_limit_boundary(tmp_path):
