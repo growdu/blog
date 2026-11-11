@@ -150,6 +150,43 @@ def test_character_prompt_carries_the_persona():
     assert module.PERSONA_PROMPT in generate.POSE_PROMPT
 
 
+# ---------------------------------------------------------------- 品牌片文案
+
+
+def _render_brand():
+    return _load("render_brand", "brand/scripts/render_brand.py")
+
+
+def test_brand_copy_is_in_sync_with_the_specs():
+    """片头片尾的文案，三处（渲染脚本 / 形象规范 / 品牌 README）必须一致。
+
+    文案散在三个地方最容易漂——改了渲染脚本忘了改文档，
+    下一次照文档重渲就又换回去了。
+    """
+    render = _render_brand()
+    aiv = character.AIV_ROOT
+    docs = {
+        "形象与音色规范": (aiv / "形象与音色规范.md").read_text(encoding="utf-8"),
+        "人格规范": (aiv / "人格规范.md").read_text(encoding="utf-8"),
+        "brand/README": (aiv / "brand" / "README.md").read_text(encoding="utf-8"),
+    }
+    for text in (render.INTRO_TAGLINE, render.INTRO_CAPTION, render.OUTRO_SUBTITLE,
+                 render.INTRO_NARRATION, render.OUTRO_NARRATION):
+        for name, doc in docs.items():
+            assert text in doc, f"{name} 里没有这句文案：{text}"
+
+
+def test_brand_copy_passes_the_persona_check():
+    """片头片尾的文案本身就得过人格检查。"""
+    render = _render_brand()
+    report = persona.check_sentences([
+        render.INTRO_TAGLINE,
+        render.INTRO_CAPTION,
+        render.OUTRO_SUBTITLE,
+    ])
+    assert report.errors == [], [f.message for f in report.errors]
+
+
 # ---------------------------------------------------------------- 硬约束
 
 

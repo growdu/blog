@@ -54,6 +54,18 @@ DURATION = 2.833          # 68 帧 ≈ 2.833 秒，留出淡出余量
 FRAMES = int(round(DURATION * FPS))
 TIMESCALE = FPS * 1000    # 与流水线一致：concat 要求各片段时间基相同
 
+# 片头 / 片尾的文案。文字一律用真实字体在 cairo 阶段渲染，模型不碰。
+# 片尾副标题按《人格规范》§8 改写过——原「与你一起探索数据库的无边世界」
+# 是营销腔，换成「把踩过的坑写成方法」，同时命中「现场验证者」与「方法论者」。
+INTRO_TAGLINE = "Database · Knowledge · Growth"
+INTRO_CAPTION = "深入数据库 · 分享技术之美"
+OUTRO_SUBTITLE = "Growdu · 把踩过的坑写成方法"
+
+# 旁白台词。音色与参数见《形象与音色规范》§2.2；
+# 重新合成：python3 ../voice/scripts/synthesize_narration.py --text "<台词>" --out <路径>
+INTRO_NARRATION = "欢迎来到 growdu，深入数据库。"
+OUTRO_NARRATION = "下次卡住的时候，记得回来。"
+
 FONT = "PingFang SC"
 WHITE = (1.0, 1.0, 1.0)
 AMBER = (245 / 255, 166 / 255, 35 / 255)
@@ -240,12 +252,12 @@ def render_intro_frame(t: float, bg: Image.Image,
     text(ctx, "Growdu", tx, ty, 142, WHITE, bold=True, alpha=tw)
 
     # 标语：说明文字
-    text(ctx, "Database · Knowledge · Growth", tx, ty + 64, 40,
+    text(ctx, INTRO_TAGLINE, tx, ty + 64, 40,
          LIGHT, alpha=tw * 0.95)
 
     # 胶囊标签：深色底 + 亮蓝边，保证在深背景上清晰可读
     cap = ease_out((t - 0.42) / 0.40)
-    cap_text = "深入数据库 · 分享技术之美"
+    cap_text = INTRO_CAPTION
     ctx.select_font_face(FONT, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_BOLD)
     ctx.set_font_size(42)
     cap_w = ctx.text_extents(cap_text).width
@@ -313,7 +325,7 @@ def render_outro_frame(t: float, bg: Image.Image,
     ty = H * 0.325 + (1 - tw) * H * 0.022
 
     text(ctx, "感谢观看", tx, ty, 126, DEEP, bold=True, alpha=tw)
-    text(ctx, "Growdu · 与你一起探索数据库的无边世界", tx, ty + 64, 38,
+    text(ctx, OUTRO_SUBTITLE, tx, ty + 64, 38,
          DEEP, alpha=tw * 0.92)
 
     # 三个胶囊按钮
