@@ -60,6 +60,41 @@ DATE_OVERRIDES = {
     'life/shehui/zhuangxiu.md': '2026-10-21 16:38:27',
 }
 
+# Permalinks that changed when docs/life/ was restructured into
+# gaokao/ daxue/ shehui/.  Keyed by the OLD post path (docs/-relative,
+# without the .md extension for single-file posts), value = the new
+# post path.  write_redirects() emits a redirect page at the old URL.
+REDIRECTS = {
+    'life/gaokao-math-methods': 'life/gaokao/math-methods',
+    'life/gaokao-math-paper2': 'life/gaokao/math-paper2',
+    'life/gaokao-english-roots': 'life/gaokao/english-roots',
+    'life/电子科技大学-计算机-自考-复习计划': 'life/daxue/电子科技大学-计算机-自考-复习计划',
+    'life/腾冲事业编-公务员备考计划': 'life/daxue/腾冲事业编-公务员备考计划',
+    'life/economic-downturn-strategy': 'life/shehui/economic-downturn-strategy',
+    'life/economic-downturn-deep-dive': 'life/shehui/economic-downturn-deep-dive',
+    'life/media-account': 'life/shehui/media-account',
+    'life/self-host': 'life/shehui/self-host',
+    'life/area': 'life/shehui/area',
+    'life/zhuangxiu': 'life/shehui/zhuangxiu',
+}
+
+REDIRECT_TEMPLATE = """<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="0; url={new_url}">
+<link rel="canonical" href="{new_url}">
+<meta name="robots" content="noindex, follow">
+<title>页面已移动</title>
+</head>
+<body>
+<p>这篇文章已移动到新的目录，点击继续：</p>
+<p><a href="{new_url}">{new_url}</a></p>
+<script>location.replace("{new_url}");</script>
+</body>
+</html>
+"""
+
 TOPIC_DEFS = [
     # (name, icon, color, blurb)
     ('内核基础',     'fa-microchip',     '#4283D4', '进程模型 · 存储 · WAL · 执行器 · 学习路径'),
@@ -1165,6 +1200,46 @@ def create_theme_pages():
         f.write(about_md)
 
 
+def write_redirects():
+    """Generate redirect pages for permalinks that changed.
+
+    A doc moved to a new directory gets a new permalink, so every old
+    URL that was ever published (and every link from outside the site)
+    would 404.  For each entry in REDIRECTS we emit a static HTML page
+    at the OLD path that forwards to the new one.  The pages live in
+    source/ (not source/_posts/), so Hexo copies them verbatim into
+    public/ and they survive as plain files.
+
+    Returns the number of redirect pages written.
+    """
+    written = 0
+    for old_path, new_path in REDIRECTS.items():
+        if new_path.endswith('.md'):
+            new_file = os.path.join(DOCS, new_path)
+        else:
+            new_file = os.path.join(DOCS, new_path, 'index.md')
+            if not os.path.isfile(new_file):
+                # Single-file post (foo.md) rather than a page bundle.
+                new_file = os.path.join(DOCS, new_path + '.md')
+        if not os.path.isfile(new_file):
+            print(f'WARNING redirect target missing: {new_path}', file=sys.stderr)
+            continue
+        date = git_date(new_file)
+        stamp = f'{date[:4]}/{date[5:7]}/{date[8:10]}'
+        old_url = f'/{stamp}/{quote(old_path)}/'
+        new_url = f'/{stamp}/{quote(new_path)}/'
+        out_dir = os.path.join(SRC, old_url.strip('/'))
+        os.makedirs(out_dir, exist_ok=True)
+        with open(os.path.join(out_dir, 'index.html'), 'w', encoding='utf-8') as f:
+            f.write(REDIRECT_TEMPLATE.format(
+                old_url=old_url,
+                new_url=new_url,
+                title=new_path.rsplit('/', 1)[-1],
+            ))
+        written += 1
+    return written
+
+
 def main():
     # Preserve custom pages (source/all/, source/recommended/) across regeneration
     import tempfile
@@ -1239,6 +1314,9 @@ def main():
                 print(f'ERROR {fp}: {e}', file=sys.stderr)
     print(f'Markdown posts: {n_md}')
     print(f'HTML docs:      {n_html}')
+
+    n_redirect = write_redirects()
+    print(f'Redirect pages: {n_redirect}')
 
 
     # robots.txt for SEO
