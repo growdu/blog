@@ -56,6 +56,7 @@ DATE_OVERRIDES = {
     'life/gaokao/math-methods/index.md': '2026-11-06 21:20:33',
     'life/gaokao/math-paper2/index.md': '2026-11-08 11:59:40',
     'life/gaokao/english-roots/index.md': '2026-11-11 12:04:05',
+    'life/gaokao/yunnan-policy/index.md': '2026-11-11 21:00:00',
     'life/daxue/电子科技大学-计算机-自考-复习计划/index.md': '2026-10-13 11:28:09',
     'life/daxue/腾冲事业编-公务员备考计划/index.md': '2026-10-13 11:07:22',
     'life/shehui/economic-downturn-strategy/index.md': '2026-10-28 14:09:55',
