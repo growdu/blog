@@ -757,17 +757,20 @@ def cmd_batch(args) -> int:
         except RejectedPost as error:
             rejected += 1
             reason = str(error).splitlines()[0]
-            failures.append({"slug": post.slug, "title": post.title, "reason": reason})
+            failures.append({"slug": post.slug, "title": post.title,
+                             "kind": "rejected", "reason": reason})
             print("  ! 已跳过: {}".format(reason), file=sys.stderr)
             continue
         except (AssetNotFound, CoverRequired) as error:
             failed += 1
-            failures.append({"slug": post.slug, "title": post.title, "reason": str(error)})
+            failures.append({"slug": post.slug, "title": post.title,
+                             "kind": "failed", "reason": str(error)})
             print("  ! 资源缺失: {}".format(error), file=sys.stderr)
             continue
         except publish_module.WeChatError as error:
             failed += 1
-            failures.append({"slug": post.slug, "title": post.title, "reason": str(error)})
+            failures.append({"slug": post.slug, "title": post.title,
+                             "kind": "failed", "reason": str(error)})
             print("  ! 接口报错: {}".format(error), file=sys.stderr)
             if error.errcode == 45009:
                 print("  触发接口调用上限，本轮到此为止；"
@@ -784,7 +787,7 @@ def cmd_batch(args) -> int:
         if args.delay and index < len(selected):
             time.sleep(args.delay)
 
-    _write_batch_report(args, selected, created, updated, rejected, failures)
+    _write_batch_report(args, selected, created, updated, failures)
 
     print()
     print("本轮完成: 新建 {} 篇，就地更新 {} 篇，跳过 {} 篇（超限），失败 {} 篇".format(
@@ -798,7 +801,7 @@ def cmd_batch(args) -> int:
         print("（因接口调用上限提前结束，剩余 {} 篇下次继续）".format(
             len(selected) - created - updated - rejected - failed))
     if created or updated:
-        _notify_batch(args, created, updated, rejected, len(failures))
+        _notify_batch(args, created, updated, rejected, failed)
     return EXIT_API_ERROR if failed else EXIT_OK
 
 
@@ -825,14 +828,20 @@ def _notify_batch(args, created, updated, rejected, failed) -> None:
     print("  已通知: {}".format(notify_module.describe(args.notify, args.notify_key)))
 
 
-def _write_batch_report(args, selected, created, updated, rejected, failures):
-    """Write what the run did, so a long backfill can be reviewed later."""
+def _write_batch_report(args, selected, created, updated, failures):
+    """Write what the run did, so a long backfill can be reviewed later.
+
+    ``failures`` holds both kinds of problem, so the counts are derived
+    from the entries themselves: an article that was too long was
+    *skipped*, not *failed*, and a report that calls it a failure makes
+    the run look broken when it was not.
+    """
     report = {
         "total_selected": len(selected),
         "created": created,
         "updated": updated,
-        "rejected": rejected,
-        "failed": len(failures),
+        "rejected": sum(1 for item in failures if item.get("kind") == "rejected"),
+        "failed": sum(1 for item in failures if item.get("kind") == "failed"),
         "failures": failures,
     }
     target = Path(args.out_dir) / "batch-report.json"

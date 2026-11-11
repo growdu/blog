@@ -913,6 +913,31 @@ def test_batch_skips_an_article_that_is_too_long(tmp_path, server, monkeypatch, 
     assert _Handler.calls.count("/cgi-bin/draft/add") == 1
 
 
+def test_the_report_tells_skips_and_failures_apart(tmp_path, server, monkeypatch):
+    """A skip is not a failure, and the report must not call it one.
+
+    Both end up in the same list, so the counts are derived from the
+    entries themselves.  Otherwise a run that skipped twelve long
+    articles would report twelve failures and look broken when it was
+    not.
+    """
+    posts_dir = _batch_posts(tmp_path, count=2)
+    (posts_dir / "database" / "huge.md").write_text(
+        "---\ntitle: \"太长\"\ndate: 2026-11-05 15:00:00\nauthor: growdu\n"
+        "categories:\n  - 数据库\n---\n\n" + ("\n\n".join("短。" for _ in range(400))) + "\n",
+        encoding="utf-8")
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+    _Handler.fail_titles = {"文章0"}
+
+    main(["batch"] + _args(posts_dir, tmp_path / "out", server=server))
+    report = json.loads((tmp_path / "out" / "batch-report.json").read_text(encoding="utf-8"))
+    assert report["rejected"] == 1
+    assert report["failed"] == 1
+    assert report["created"] == 1
+    assert sorted(item["kind"] for item in report["failures"]) == ["failed", "rejected"]
+
+
 # --- auto-draft ------------------------------------------------------------
 
 
