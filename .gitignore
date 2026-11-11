@@ -19,6 +19,13 @@ node_modules/
 __pycache__/
 .pytest_cache/
 
+# Isolated git worktrees for feature work (git worktree add .worktrees/<branch>).
+# Ignored so a worktree checkout is never mistaken for repository content.
+.worktrees/
+
+# Superpowers scratch: SDD ledgers, task briefs, review packages.
+.superpowers/
+
 # Media assets (audio / video) — never committed, kept on local disk only.
 # A single finished cut is 15~35 MB; 100 episodes would be GB-scale, and a
 # binary blob in git is unreadable in every diff and review. What belongs in
