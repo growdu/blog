@@ -46,6 +46,10 @@ DEFAULT_SECRETS_FILE = Path(__file__).resolve().parents[1] / "secrets.json"
 DEFAULT_COLLECTIONS_FILE = Path(__file__).resolve().parents[1] / "collections.json"
 DEFAULT_REPO_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_STAMP_FILE = Path(__file__).resolve().parents[1] / "out" / ".auto-draft-stamp"
+# The cover used when an article has no picture of its own.  Most of
+# this corpus has none, and a draft with no cover is not something
+# WeChat accepts.
+DEFAULT_COVER = Path(__file__).resolve().parents[1] / "assets" / "default-cover.png"
 
 EXIT_OK = 0
 EXIT_NOT_FOUND = 1
@@ -284,36 +288,57 @@ def _fetch_external_images(client, result):
 
     A picture that cannot be fetched is reported and replaced by a
     visible note, never dropped silently.
+
+    Returns ``(urls, failures, first_prepared)``.  The third value is
+    the first picture that was fetched successfully, which is what the
+    cover falls back to when the article has no local picture.
     """
     urls = []
     failures = []
+    first_prepared = None
     for url in result.external_images:
         try:
             data = assets_module.download_image(url)
             prepared = assets_module.prepare_image_bytes(data, stem="ext")
             urls.append(client.upload_body_image(prepared.data, prepared.filename))
+            if first_prepared is None:
+                first_prepared = prepared
         except (ValueError, OSError, publish_module.WeChatError) as error:
             urls.append(None)
             failures.append((url, str(error)))
-    return urls, failures
+    return urls, failures, first_prepared
 
 
-def _upload_cover(client, result, args):
+def _upload_cover(client, result, args, external_prepared=None):
     """Upload the cover image and return ``(media_id, crop_percent_list)``.
 
-    WeChat requires a cover.  Without a configured cover the article's
-    first image is used; an article with neither cannot be published.
+    WeChat requires a cover, so there is always an answer:
+
+    1. the cover the user named (``--cover`` / ``WX_COVER``)
+    2. the article's first **local** picture
+    3. the article's first **external** picture, already re-hosted on
+       WeChat -- it was fetched anyway, so it is free to reuse
+    4. the default cover that ships with this tool
+
+    The last two matter more than they look: 380 of the 444 eligible
+    articles have no picture at all, and 39 more have only external
+    ones.  Without a fallback those 419 articles could never become a
+    draft, and a draft with no cover is not something WeChat accepts.
     """
-    cover_path = args.cover
-    if not cover_path and result.assets:
-        cover_path = result.assets[0]
-    if not cover_path:
-        raise CoverRequired(
-            "文章没有图片，也没有指定封面图：请用 --cover 或 WX_COVER 指定一张封面")
-    resolved = _resolve_asset(cover_path, args.posts_dir)
-    if not resolved.is_file():
-        raise AssetNotFound("封面图不存在: {}".format(resolved))
-    prepared = assets_module.prepare_image(resolved)
+    if args.cover:
+        resolved = _resolve_asset(args.cover, args.posts_dir)
+        if not resolved.is_file():
+            raise AssetNotFound("封面图不存在: {}".format(resolved))
+        prepared = assets_module.prepare_image(resolved)
+    elif result.assets:
+        resolved = _resolve_asset(result.assets[0], args.posts_dir)
+        if not resolved.is_file():
+            raise AssetNotFound("图片不存在: {}".format(resolved))
+        prepared = assets_module.prepare_image(resolved)
+    elif external_prepared is not None:
+        prepared = external_prepared
+    else:
+        prepared = assets_module.prepare_image(DEFAULT_COVER)
     media_id = client.upload_cover(prepared.data, prepared.filename)
     return media_id, assets_module.cover_crop_list(prepared.width, prepared.height)
 
@@ -490,12 +515,14 @@ def _draft_one(client, store, post, args) -> DraftResult:
     html = result.substitute(urls)
 
     external_failures = []
+    external_prepared = None
     if result.external_images:
-        external_urls, external_failures = _fetch_external_images(client, result)
+        external_urls, external_failures, external_prepared = \
+            _fetch_external_images(client, result)
         html = result.substitute_external(
             external_urls, fallback=EXTERNAL_IMAGE_FALLBACK, html=html)
 
-    cover_media_id, crop_list = _upload_cover(client, result, args)
+    cover_media_id, crop_list = _upload_cover(client, result, args, external_prepared)
 
     article = {
         "article_type": "news",
@@ -930,6 +957,7 @@ def _collection_cover(collection, posts, args) -> str:
 
     The search stops at the first article that yields a picture, so a
     collection whose leading articles are text-only costs nothing.
+    Falls back to the default cover.
     """
     if args.cover:
         return args.cover
@@ -943,9 +971,7 @@ def _collection_cover(collection, posts, args) -> str:
             parse(post.body), resolver=_Resolver(assets), highlight=False)
         if result.assets:
             return result.assets[0]
-    raise CoverRequired(
-        "合集「{}」没有可用封面：请用 --cover 或 WX_COVER 指定一张封面".format(
-            collection.title))
+    return str(DEFAULT_COVER)
 
 
 def cmd_publish_collection(args) -> int:

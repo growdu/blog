@@ -104,7 +104,7 @@ cd weixin && python3 -m wechat.cli convert <slug>
 | `WX_APPID` | 公众号 AppID |
 | `WX_APPSECRET` | 公众号 AppSecret（**不要提交到仓库**） |
 | `WX_SOURCE_URL` | 站点根 URL，用于拼「阅读原文」，默认 `https://growdu.cn` |
-| `WX_COVER` | 封面图路径（未指定时取文章首图） |
+| `WX_COVER` | 封面图路径（未指定时依次取文章首张本地图、首张外链图、仓库自带默认封面） |
 | `WX_NOTIFY` | 通知通道：`serverchan` / `wechat_work` / `webhook` |
 | `WX_NOTIFY_KEY` | 通知凭据：SendKey / webhook key / 完整 URL |
 

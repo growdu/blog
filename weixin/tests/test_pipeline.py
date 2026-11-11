@@ -360,7 +360,12 @@ def test_publish_reports_missing_image(sample_post, tmp_path, server, monkeypatc
     assert "图片不存在" in capsys.readouterr().err
 
 
-def test_publish_requires_a_cover_for_articles_without_images(tmp_path, server, monkeypatch, capsys):
+def test_publish_uses_the_default_cover_for_articles_without_images(tmp_path, server, monkeypatch):
+    """Most of this corpus has no picture, and a draft still needs a cover.
+
+    WeChat rejects a draft without ``thumb_media_id``, so the tool
+    ships a default cover rather than refusing the article.
+    """
     posts_dir = tmp_path / "source" / "_posts"
     target = posts_dir / "database" / "plain.md"
     target.parent.mkdir(parents=True)
@@ -369,9 +374,11 @@ def test_publish_requires_a_cover_for_articles_without_images(tmp_path, server, 
     monkeypatch.setenv("WX_APPSECRET", "secret")
 
     code = main(["publish", "database/plain"] + _args(posts_dir, tmp_path / "out", server=server))
-    assert code == 2
-    assert "封面" in capsys.readouterr().err
-    assert "/cgi-bin/draft/add" not in _Handler.calls
+    assert code == 0
+    payload = json.loads(_Handler.bodies["/cgi-bin/draft/add"])
+    assert payload["articles"][0]["thumb_media_id"] == "COVER_ID"
+    # The default cover is uploaded; no body picture was involved.
+    assert _Handler.calls.count("/cgi-bin/media/uploadimg") == 0
 
 
 def test_publish_uses_configured_cover_for_articles_without_images(tmp_path, server, monkeypatch):
@@ -1019,3 +1026,51 @@ def test_auto_draft_runs_the_sync_when_docs_changed(tmp_path, server, monkeypatc
     assert stamp.read_text(encoding="utf-8").strip() == subprocess.run(
         ["git", "rev-parse", "HEAD"], cwd=str(repo), capture_output=True,
         text=True).stdout.strip()
+
+
+def test_an_external_picture_can_serve_as_the_cover(tmp_path, server, monkeypatch):
+    """An article with only external pictures still gets a cover.
+
+    The picture is fetched and re-hosted anyway, so reusing it costs
+    one extra upload and saves the default cover.
+    """
+    payload = io.BytesIO()
+    Image.new("RGB", (40, 30), (10, 120, 200)).save(payload, format="PNG")
+
+    class _ImageHandler(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def do_GET(self):
+            data = payload.getvalue()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+    image_httpd = HTTPServer(("127.0.0.1", 0), _ImageHandler)
+    threading.Thread(target=image_httpd.serve_forever, daemon=True).start()
+    image_base = "http://127.0.0.1:{}".format(image_httpd.server_port)
+
+    posts_dir = tmp_path / "source" / "_posts"
+    posts_dir.mkdir(parents=True)
+    (posts_dir / "ext.md").write_text(
+        "---\ntitle: \"只有外链图\"\ndate: 2026-11-09 15:00:00\n---\n\n"
+        "正文。\n\n![图]({}/a.png)\n".format(image_base),
+        encoding="utf-8")
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["publish", "ext", "--posts-dir", str(posts_dir),
+                 "--out-dir", str(tmp_path / "out"), "--api-base", server,
+                 "--secrets-file", str(tmp_path / "absent.json")])
+    image_httpd.shutdown()
+    assert code == 0
+
+    article = json.loads(_Handler.bodies["/cgi-bin/draft/add"])["articles"][0]
+    assert article["thumb_media_id"] == "COVER_ID"
+    # The picture was fetched once and uploaded twice: once into the
+    # body, once as the cover.
+    assert _Handler.calls.count("/cgi-bin/media/uploadimg") == 1
+    assert _Handler.calls.count("/cgi-bin/material/add_material") == 1
