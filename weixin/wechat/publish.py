@@ -55,10 +55,13 @@ class WeChatClient:
 
     # -- transport ----------------------------------------------------
 
-    def _request(self, path: str, *, data=None, headers=None, params=None):
+    def _request(self, path: str, *, data=None, headers=None, params=None, token=None):
         url = self.base_url + path
-        if params:
-            url += "?" + urllib.parse.urlencode(params)
+        query = dict(params or {})
+        if token:
+            query["access_token"] = token
+        if query:
+            url += "?" + urllib.parse.urlencode(query)
         request = urllib.request.Request(url, data=data, headers=headers or {}, method="POST")
         try:
             with urllib.request.urlopen(request, timeout=self.timeout) as response:
@@ -75,9 +78,10 @@ class WeChatClient:
     def _post_json(self, path: str, payload: dict, *, with_token: bool = True):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         headers = {"Content-Type": "application/json; charset=utf-8"}
-        if with_token:
-            headers["Authorization"] = "Bearer {}".format(self.stable_token())
-        response = self._request(path, data=body, headers=headers)
+        token = self.stable_token() if with_token else None
+        if token:
+            headers["Authorization"] = "Bearer {}".format(token)
+        response = self._request(path, data=body, headers=headers, token=token)
         errcode = response.get("errcode", 0)
         if errcode:
             raise WeChatError(errcode, response.get("errmsg", ""), path)
@@ -94,11 +98,12 @@ class WeChatClient:
             data,
             "\r\n--{}--\r\n".format(boundary).encode(),
         ])
+        token = self.stable_token()
         headers = {
             "Content-Type": "multipart/form-data; boundary={}".format(boundary),
-            "Authorization": "Bearer {}".format(self.stable_token()),
+            "Authorization": "Bearer {}".format(token),
         }
-        response = self._request(path, data=body, headers=headers, params=params)
+        response = self._request(path, data=body, headers=headers, params=params, token=token)
         errcode = response.get("errcode", 0)
         if errcode:
             raise WeChatError(errcode, response.get("errmsg", ""), path)
@@ -107,12 +112,19 @@ class WeChatClient:
     # -- endpoints ----------------------------------------------------
 
     def stable_token(self) -> str:
-        """Fetch (and cache) an access token."""
+        """Fetch (and cache) an access token.
+
+        The official field table calls the credential ``appsecret``, but
+        the live endpoint only reads ``secret`` -- sending ``appsecret``
+        alone is answered with ``41004 appsecret missing``.  Both names
+        are sent so the call works whichever one the endpoint looks for.
+        """
         if self._token:
             return self._token
         payload = {
             "grant_type": "client_credential",
             "appid": self.appid,
+            "secret": self.appsecret,
             "appsecret": self.appsecret,
             "force_refresh": False,
         }

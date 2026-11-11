@@ -10,6 +10,8 @@ from wechat.publish import WeChatClient, WeChatError
 class _Handler(BaseHTTPRequestHandler):
     calls = []
     bodies = {}
+    urls = []
+    headers_seen = {}
 
     def log_message(self, *args):
         pass
@@ -31,6 +33,8 @@ class _Handler(BaseHTTPRequestHandler):
         path = self.path.split("?")[0]
         _Handler.calls.append(path)
         _Handler.bodies[path] = body
+        _Handler.urls.append(self.path)
+        _Handler.headers_seen[path] = dict(self.headers)
         if path.endswith("/stable_token"):
             self._json({"access_token": "TOKEN", "expires_in": 7200})
         elif path.endswith("/media/uploadimg"):
@@ -68,6 +72,53 @@ def test_stable_token_is_fetched_once(server):
     client.stable_token()
     client.stable_token()
     assert [path for path in _Handler.calls if "stable_token" in path] == ["/cgi-bin/stable_token"]
+
+
+def test_stable_token_sends_the_credential_as_secret(server):
+    """The live endpoint reads ``secret``, not the documented ``appsecret``.
+
+    Sending ``appsecret`` alone is answered with ``41004 appsecret
+    missing``, so the credential goes out under both names.
+    """
+    client = WeChatClient("appid", "s3cret", base_url=server)
+    client.stable_token()
+    payload = json.loads(_Handler.bodies["/cgi-bin/stable_token"])
+    assert payload["secret"] == "s3cret"
+    assert payload["appsecret"] == "s3cret"
+    assert payload["appid"] == "appid"
+    assert payload["grant_type"] == "client_credential"
+
+
+def test_the_token_travels_in_the_query_as_well_as_the_header(server):
+    """The upload endpoints ignore the Bearer header.
+
+    ``media/uploadimg`` and ``material/add_material`` answer
+    ``41001 access_token missing`` when the token is only in the
+    header, so it goes out as a query parameter too.
+    """
+    client = WeChatClient("appid", "secret", base_url=server)
+    client.upload_body_image(b"\x89PNG\r\n\x1a\n", "a.png")
+
+    url = [u for u in _Handler.urls if "uploadimg" in u][0]
+    assert "access_token=TOKEN" in url
+    header = _Handler.headers_seen["/cgi-bin/media/uploadimg"]
+    assert header.get("Authorization") == "Bearer TOKEN"
+
+
+def test_draft_add_carries_the_token_in_both_places(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    client.add_draft({"articles": []})
+    url = [u for u in _Handler.urls if "draft/add" in u][0]
+    assert "access_token=TOKEN" in url
+    assert _Handler.headers_seen["/cgi-bin/draft/add"].get("Authorization") == "Bearer TOKEN"
+
+
+def test_the_token_request_itself_carries_no_token(server):
+    """Fetching the token must not ask for one."""
+    client = WeChatClient("appid", "secret", base_url=server)
+    client.stable_token()
+    url = [u for u in _Handler.urls if "stable_token" in u][0]
+    assert "access_token" not in url
 
 
 def test_upload_body_image_returns_url(server):
