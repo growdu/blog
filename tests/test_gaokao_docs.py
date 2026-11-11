@@ -261,10 +261,20 @@ def test_toc_anchors_point_at_real_headings(path: Path):
         pytest.skip(f"{path.name} 没有目录")
 
     ids = set(_heading_ids(text))
+    # The anchor is compared *literally* against the heading ids, because
+    # that is what the browser does: it looks for an element whose id is
+    # byte-for-byte the (percent-decoded) fragment in the href.
+    #
+    # Slugizing the anchor again would be more forgiving -- and would hide
+    # a real defect: `slugize()` collapses runs of hyphens into one, so an
+    # anchor written as `48--52` would be *repaired* by a second slugize
+    # pass while the rendered page kept the broken `48--52` fragment.  The
+    # link still renders, still looks clickable, and lands at the top of
+    # the page instead of the section it names.
     missing = [
         (label, anchor)
         for label, anchor in anchors
-        if _slugize(_strip_quotes(anchor)) not in ids
+        if _strip_quotes(anchor) not in ids
     ]
     assert not missing, (
         f"{path.name} 的目录锚点指向不存在的标题: {missing}\n"
