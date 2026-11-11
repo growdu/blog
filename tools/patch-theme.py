@@ -160,6 +160,7 @@ print(f'Wrote {os.path.relpath(reward_ejs_path, theme_dir)} (centered-modal rewa
 
 # --- 2. Inject prism.js CSS + Mermaid.js ---
 inject_css = """<meta property="og:title" content="<%= page.title || config.title %>">
+<% var _u = url_for(page.path); var _rel = (config.root && _u.indexOf(config.root) === 0) ? _u.slice(config.root.length) : _u.replace(/^\/+/, ''); var _selfUrl = config.url + '/' + _rel; var _ogRaw = page.cover || page.thumbnail || '/medias/featureimages/0.jpg'; var ogImage = /^https?:\/\//i.test(_ogRaw) ? _ogRaw : config.url + _ogRaw; %>
 <meta name="theme-color" content="#009688">
 <link rel="preconnect" href="https://vercount.one">
 <link rel="dns-prefetch" href="https://vercount.one">
@@ -167,7 +168,7 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <link rel="dns-prefetch" href="https://api.github.com">
 <meta property="og:site_name" content="<%= config.title %>">
 <meta property="og:type" content="<%= page.layout === 'post' ? 'article' : 'website' %>">
-<meta property="og:url" content="<%- config.url %><%- url_for(page.path) %>">
+<meta property="og:url" content="<%- _selfUrl %>">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:description" content="<%= (page.description || config.description || '').replace(/"/g, '&quot;') %>">
 <meta name="twitter:card" content="summary">
@@ -185,19 +186,19 @@ inject_css = """<meta property="og:title" content="<%= page.title || config.titl
 <% }); %>
 <% } %>
 <% } %>
-<meta property="og:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
-<meta name="twitter:image" content="<%- config.url %><%- url_for('/medias/featureimages/0.jpg') %>">
-<link rel="manifest" href="/manifest.json">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="canonical" href="<%- config.url %><%- url_for(page.path) %>">
+<meta property="og:image" content="<%- ogImage %>">
+<meta name="twitter:image" content="<%- ogImage %>">
+<link rel="manifest" href="<%- url_for('/manifest.json') %>">
+<link rel="icon" type="image/svg+xml" href="<%- url_for('/favicon.svg') %>">
+<link rel="canonical" href="<%- _selfUrl %>">
 <% if (page.layout === 'post') { %>
 <% var _cat = (page.categories && page.categories.data && page.categories.data.length > 0) ? page.categories.data[0].name : ''; %>
 <% var _tags = (page.tags && page.tags.data) ? page.tags.data.map(function(t) { return t.name; }).join(', ') : ''; %>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"<%= page.title %>","datePublished":"<%- date(page.date, 'YYYY-MM-DD') %>","author":{"@type":"Person","name":"<%= config.author %>"},"publisher":{"@type":"Organization","name":"<%= config.title %>"},"mainEntityOfPage":{"@type":"WebPage","@id":"<%- config.url %><%- url_for(page.path) %>"}<% if (_cat) { %>,"articleSection":"<%= _cat %>"<% } %><% if (_tags) { %>,"keywords":"<%= _tags %>"<% } %>}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"BlogPosting","headline":"<%= page.title %>","datePublished":"<%- date(page.date, 'YYYY-MM-DD') %>","author":{"@type":"Person","name":"<%= config.author %>"},"publisher":{"@type":"Organization","name":"<%= config.title %>"},"mainEntityOfPage":{"@type":"WebPage","@id":"<%- _selfUrl %>"}<% if (_cat) { %>,"articleSection":"<%= _cat %>"<% } %><% if (_tags) { %>,"keywords":"<%= _tags %>"<% } %>}</script>
 <% } else { %>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"<%= config.title %>","url":"<%- config.url %>"}</script>
 <% } %>
-<link href="/libs/prism/prism.min.css" rel="stylesheet"/>
+<link href="<%- url_for('/libs/prism/prism.min.css') %>" rel="stylesheet"/>
 <style>
 pre[class*="language-"]{background:#263238!important;border-radius:6px;padding:14px 16px;font-size:14px;margin:16px 0;overflow-x:auto;line-height:1.55}
 code[class*="language-"]{background:transparent!important;padding:0;font-family:Consolas,Monaco,'Source Code Pro',monospace;font-size:14px}

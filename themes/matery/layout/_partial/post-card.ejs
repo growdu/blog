@@ -10,7 +10,7 @@
   var post = post || {};
   var cover = (post.cover && post.cover.length) ? post.cover
             : (post.thumbnail && post.thumbnail.length) ? post.thumbnail
-            : '/medias/featureimages/' + ((post._id ? Math.abs(post._id.split('').reduce(function(a,c){return ((a<<5)-a)+c.charCodeAt(0);},0)) % 24 : 0)) + '.jpg';
+            : url_for('/medias/featureimages/') + ((post._id ? Math.abs(post._id.split('').reduce(function(a,c){return ((a<<5)-a)+c.charCodeAt(0);},0)) % 24 : 0)) + '.jpg';
   var title = post.title || '(无标题)';
   var mins = (function () {
     try { return min2read(post.content, {cn: 450, en: 250}); } catch (e) { return 1; }

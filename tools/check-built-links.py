@@ -33,6 +33,22 @@ from urllib.parse import unquote
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PUBLIC = REPO_ROOT / "public"
 
+# The mount point the site is built for (`root:` in _config.yml).  The
+# GitHub Pages build mounts the site under /blog/, and its links carry
+# that prefix; the paths inside public/ never do, so the prefix has to
+# come back off before a link is resolved against the built tree.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from site_root import site_root  # noqa: E402
+
+ROOT_PREFIX = site_root()
+
+
+def strip_root(link: str) -> str:
+    """Remove the mount-point prefix from a built link."""
+    if ROOT_PREFIX and link.startswith(ROOT_PREFIX + "/"):
+        return link[len(ROOT_PREFIX):]
+    return link
+
 # Anchors injected by the theme itself (search box, back-to-top, ...).
 THEME_ANCHORS = {"searchModal", "top", "!", "headerlink", "comments"}
 
@@ -82,7 +98,7 @@ def main() -> int:
             failures.append(f"{rel}: 失效页内锚点 {dead}")
 
         for link in sorted(set(LINK_RE.findall(html))):
-            target = PUBLIC / link.strip("/") / "index.html"
+            target = PUBLIC / strip_root(link).strip("/") / "index.html"
             if not target.exists():
                 failures.append(f"{rel}: 失效文章链接 {link}")
 

@@ -9,6 +9,16 @@ Creates:
 Does NOT modify docs/ — runs in CI on a fresh checkout.
 """
 import os, re, shutil, subprocess, sys, json
+
+# The permalinks this tool emits must carry the mount point the
+# site is served under (`root:` in _config.yml): the primary domain
+# is at `/`, the GitHub Pages mirror at `/blog/`.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from site_root import permalink as _permalink
+from site_root import root_prefix_urls as _root_prefix_urls
+from site_root import site_root as _site_root
+
+SITE_ROOT = _site_root()
 from urllib.parse import quote, unquote
 
 DOCS = 'docs'
@@ -389,7 +399,7 @@ def collect_database_posts(section_titles, cascades):
             # include the bundle directory a second time.
             source_dir = os.path.dirname(fdir) if filename == 'index.md' and fdir else fdir
             post_path = os.path.join(source_dir, slug) if source_dir and source_dir != '.' else slug
-            url = f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
+            url = _permalink(date, post_path)
             posts.append({
                 'title': title,
                 'url': url,
@@ -945,7 +955,7 @@ def _resolve_link_target(rel_target, current_post_dir):
                     parent = os.path.dirname(bundle_dir_rel)
                     post_path = os.path.join(parent, slug) if parent else slug
                     date = git_date(bundle_index)
-                    return f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
+                    return _permalink(date, post_path)
             return None
     if os.path.isdir(abs_target):
         # Page bundle — look for an index file inside it.
@@ -956,7 +966,7 @@ def _resolve_link_target(rel_target, current_post_dir):
                 parent = os.path.dirname(rel_target.rstrip('/'))
                 post_path = os.path.join(parent, slug) if parent else slug
                 date = git_date(bundle_index)
-                return f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
+                return _permalink(date, post_path)
         return None
     if os.path.isfile(abs_target):
         ext = os.path.splitext(rel_target)[1].lower()
@@ -966,7 +976,7 @@ def _resolve_link_target(rel_target, current_post_dir):
         parent = os.path.dirname(rel_target)
         post_path = os.path.join(parent, slug) if parent else slug
         date = git_date(abs_target)
-        return f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
+        return _permalink(date, post_path)
     # Extension-less link such as `./foo` — try common suffixes.
     for ext in ('.md', '.html', '.htm'):
         candidate = abs_target + ext
@@ -977,7 +987,7 @@ def _resolve_link_target(rel_target, current_post_dir):
             parent = os.path.dirname(candidate)
             post_path = os.path.join(parent, slug) if parent else slug
             date = git_date(candidate)
-            return f'/{date[:4]}/{date[5:7]}/{date[8:10]}/{quote(post_path)}/'
+            return _permalink(date, post_path)
     return None
 
 
@@ -1014,8 +1024,14 @@ def rewrite_links(content, rel):
         if not raw or raw.startswith(('http://', 'https://', 'data:',
                                        'mailto:', 'tel:', '#')):
             return m.group(0)
-        if raw.startswith('/'):
+        if raw.startswith('//'):
             return m.group(0)
+        if raw.startswith('/'):
+            # A root-absolute site-internal link still needs the
+            # mount point on the GitHub Pages mirror.
+            if not SITE_ROOT:
+                return m.group(0)
+            return f'[{text}]({SITE_ROOT}{raw}{suffix})'
         # Resolve the link against the post's own directory, keeping the
         # leading ../ segments. Dropping them before normpath() (the old
         # behaviour) mis-resolves any link that points at a sibling
@@ -1292,7 +1308,7 @@ def write_redirects():
         os.makedirs(out_dir, exist_ok=True)
         with open(os.path.join(out_dir, 'index.md'), 'w', encoding='utf-8') as f:
             f.write(REDIRECT_PAGE.format(
-                new_url=new_url,
+                new_url=f'{SITE_ROOT}{new_url}',
                 title=new_path.rsplit('/', 1)[-1],
             ))
         written += 1
@@ -1311,8 +1327,8 @@ def write_category_redirects():
     """
     written = 0
     for old_path, new_path in CATEGORY_REDIRECTS.items():
-        new_url = f'/categories/{quote(new_path)}/'
-        old_url = f'/categories/{quote(old_path)}/'
+        new_url = f'{SITE_ROOT}/categories/{quote(new_path)}/'
+        old_url = f'{SITE_ROOT}/categories/{quote(old_path)}/'
         out_dir = os.path.join(SRC, 'categories', old_path)
         os.makedirs(out_dir, exist_ok=True)
         with open(os.path.join(out_dir, 'index.md'), 'w', encoding='utf-8') as f:
@@ -1446,7 +1462,7 @@ def main():
     # 404 page (upgraded with search + recent posts)
     notfound_path = os.path.join(SRC, '404.html')
     with open(notfound_path, 'w', encoding='utf-8') as f:
-        f.write("""<!DOCTYPE html>
+        f.write(_root_prefix_urls("""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
@@ -1564,7 +1580,7 @@ fetch('/recent-posts.json').then(function(r){return r.json();}).then(function(po
 }).catch(function(){});
 </script>
 </body>
-</html>""")
+</html>"""))
     print('Created 404.html')
 
     # Recent posts JSON: consumed by the 404 page.
@@ -1625,6 +1641,7 @@ def create_database_landing_page(database_data):
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     with open(template, encoding='utf-8') as f:
         content = f.read()
+    content = rewrite_links(content, 'database/index.md')
 
     topics_marker = '<!-- DATABASE_TOPICS_START -->'
     topics_end = '<!-- DATABASE_TOPICS_END -->'
@@ -1691,7 +1708,7 @@ def create_database_landing_page(database_data):
         count = len(group)
         if count == 0:
             continue
-        tag_url = f'/tags/{quote(slugize(name))}/'
+        tag_url = f'{SITE_ROOT}/tags/{quote(slugize(name))}/'
         topic_index_lines.append(
             f'- <i class="fa-solid {icon}" style="color:{color}"></i> [{name}]({tag_url}) · **{count}** 篇 · {blurb}'
         )
@@ -1713,7 +1730,7 @@ def create_database_landing_page(database_data):
             continue
         preview = group[:5]
         tag_slug = quote(slugize(name))
-        tag_url = f'/tags/{tag_slug}/'
+        tag_url = f'{SITE_ROOT}/tags/{tag_slug}/'
         cards = ''.join(
             f'<li><a href="{_esc(p["url"])}">{_esc(p["title"])}</a></li>'
             for p in preview

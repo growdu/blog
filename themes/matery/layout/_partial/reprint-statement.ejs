@@ -1,6 +1,10 @@
 <%
 let reprintPolicyEnabled = theme.reprint && theme.reprint.enable;
 let reprintPolicy = page.reprintPolicy || theme.reprint.default || 'cc_by';
+var _u = url_for(page.path);
+var _rel = (config.root && _u.indexOf(config.root) === 0)
+  ? _u.slice(config.root.length) : _u.replace(/^\/+/, '');
+var _selfUrl = config.url + '/' + _rel;
 %>
 <% if (reprintPolicyEnabled) { %>
     <div class="reprint" id="reprint-statement">
@@ -22,7 +26,7 @@ let reprintPolicy = page.reprintPolicy || theme.reprint.default || 'cc_by';
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="<%- config.url %><%- url_for(page.path) %>"><%- config.url %><%- url_for(page.path) %></a>
+                    <a href="<%- _selfUrl %>"><%- _selfUrl %></a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -57,7 +61,7 @@ let reprintPolicy = page.reprintPolicy || theme.reprint.default || 'cc_by';
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="<%- config.url %><%- url_for(page.path) %>"><%- config.url %><%- url_for(page.path) %></a>
+                    <a href="<%- _selfUrl %>"><%- _selfUrl %></a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -92,7 +96,7 @@ let reprintPolicy = page.reprintPolicy || theme.reprint.default || 'cc_by';
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="<%- config.url %><%- url_for(page.path) %>"><%- config.url %><%- url_for(page.path) %></a>
+                    <a href="<%- _selfUrl %>"><%- _selfUrl %></a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -127,7 +131,7 @@ let reprintPolicy = page.reprintPolicy || theme.reprint.default || 'cc_by';
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="<%- config.url %><%- url_for(page.path) %>"><%- config.url %><%- url_for(page.path) %></a>
+                    <a href="<%- _selfUrl %>"><%- _selfUrl %></a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -162,7 +166,7 @@ let reprintPolicy = page.reprintPolicy || theme.reprint.default || 'cc_by';
                     </i>
                     </span>
                 <span class="reprint-info">
-                    <a href="<%- config.url %><%- url_for(page.path) %>"><%- config.url %><%- url_for(page.path) %></a>
+                    <a href="<%- _selfUrl %>"><%- _selfUrl %></a>
                 </span>
             </div>
             <div class="reprint__notice">
@@ -197,7 +201,7 @@ let reprintPolicy = page.reprintPolicy || theme.reprint.default || 'cc_by';
                     </i>
                 </span>
                 <span class="reprint-info">
-                    <a href="<%- config.url %><%- url_for(page.path) %>"><%- config.url %><%- url_for(page.path) %></a>
+                    <a href="<%- _selfUrl %>"><%- _selfUrl %></a>
                 </span>
             </div>
             <div class="reprint__notice">
