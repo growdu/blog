@@ -144,6 +144,7 @@ def docs() -> list[tuple[Path, str]]:
 def test_section_has_the_expected_docs(docs):
     names = {path.relative_to(SECTION).as_posix() for path, _ in docs}
     assert "yunnan-policy/index.md" in names, "云南政策文档缺失"
+    assert "yunnan-apply/index.md" in names, "云南报考文档缺失"
     assert "_index.md" in names, "小节索引缺失"
 
 
