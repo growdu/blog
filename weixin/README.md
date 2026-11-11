@@ -19,6 +19,7 @@
 | IP 白名单填哪个 IP | **以 `40164` 报错里的为准**。走分流代理时 `curl ifconfig.me` 拿到的不是微信看到的那个 |
 | `stable_token` 的凭据字段名 | 用 **`secret`**，不是文档写的 `appsecret`（只发 appsecret 会被回 `41004`） |
 | `media/uploadimg` 的 token 位置 | 走 **query 参数** `?access_token=`，`Authorization` header 对这两个老接口无效 |
+| 外链图片 | 微信会**静默删除**非 mmbiz 的图片。工具会下载并转存，转存失败的降级为可见提示 |
 | 幂等 | 同一篇跑两次复用同一个 `media_id`，不产生第二篇草稿 |
 | 失败行为 | 退出码 3、`publish_id` 不写、错误不吞——不会静默成功 |
 
@@ -126,7 +127,7 @@ shell 历史里。格式见 `secrets.example.json`：
 | 渲染 | `render.py` | ✅ inline style，0 个 `class`，原始 HTML 会清洗 |
 | 高亮 | `highlight.py` | ✅ Pygments，nowrap + noclasses |
 | mermaid | `mermaid.py` | ✅ 失败显式降级为源码块 |
-| 资产 | `assets.py` | ✅ 压缩到 ≤ 1 MB、封面裁剪框 |
+| 资产 | `assets.py` | ✅ 压缩到 ≤ 1 MB、封面裁剪框、外链图下载 |
 | 接口 | `publish.py` | ✅ 6 个接口，错误不吞 |
 | 幂等 | `state.py` | ✅ 三层键 |
 | 审计 | `audit.py` | ✅ 复算全语料统计与 HTML 合规检查 |
