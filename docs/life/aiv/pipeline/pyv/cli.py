@@ -6,6 +6,7 @@
     python -m pyv.cli render   --storyboard ../storyboard.json --out ../build
     python -m pyv.cli compose  --storyboard ../storyboard.json --build ../build --out ../out
     python -m pyv.cli persona check --script ../字幕-并行解码.md
+    python -m pyv.cli bgm check --music ../music/tracks/motif.wav
 """
 from __future__ import annotations
 
@@ -138,7 +139,52 @@ def cmd_persona(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_bgm(args: argparse.Namespace) -> int:
+    """背景音乐检查：单条曲子 / 台账 / 混音参数。"""
+    from pyv import bgm
+
+    if args.bgm_command == "mix":
+        print(f"BGM 母带归一化     {bgm.MASTER_LUFS} LUFS")
+        print(f"基础增益           {bgm.BGM_GAIN_DB} dB")
+        print(f"duck 深度         {bgm.DUCK_DEPTH_DB} dB"
+              f"（起落 {bgm.DUCK_ATTACK_MS}/{bgm.DUCK_RELEASE_MS} ms）")
+        print(f"避让 EQ           {bgm.EQ_BELL_HZ} Hz / {bgm.EQ_BELL_DB} dB"
+              f" / Q={bgm.EQ_BELL_Q}")
+        print(f"高通              {bgm.HIGHPASS_HZ} Hz")
+        print(f"通道链             {bgm.bgm_chain()}")
+        return 0
+
+    if args.bgm_command == "library":
+        entries = bgm.load_library(args.library)
+        findings = bgm.check_library(entries, args.library)
+        for finding in findings:
+            print(f"{finding.level.upper():7} {finding}")
+        print(f"台账 {len(entries)} 首，{len(findings)} 个问题")
+        return 1 if any(f.level == bgm.ERROR for f in findings) else 0
+
+    # check
+    profile = bgm.measure(args.music)
+    print(f"{Path(args.music).name}  {profile.duration_s:.1f}s / "
+          f"{profile.sample_rate} Hz / {profile.channels} ch / "
+          f"LUFS {profile.lufs:.1f} / 真峰值 {profile.true_peak_db:.1f} dBTP / "
+          f"重心 {profile.centroid_hz:.0f} Hz")
+    findings = bgm.check_track(args.music, args.duration)
+    for finding in findings:
+        print(f"{finding.level.upper():7} {finding}")
+    if not findings:
+        print("OK 这条曲子合格")
+        return 0
+    errors = [f for f in findings if f.level == bgm.ERROR]
+    if errors:
+        print(f"FAIL {len(errors)} 个硬约束违规", file=sys.stderr)
+        return 1
+    print("OK 通过（只有倾向类提示）")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
+    from pyv import bgm
+
     parser = argparse.ArgumentParser(prog="pyv")
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -179,6 +225,22 @@ def main(argv: list[str] | None = None) -> int:
     p_persona_check = persona_sub.add_parser("check")
     p_persona_check.add_argument("--script", required=True)
     p_persona_check.set_defaults(func=cmd_persona)
+
+    p_bgm = sub.add_parser("bgm")
+    bgm_sub = p_bgm.add_subparsers(dest="bgm_command", required=True)
+
+    p_bgm_check = bgm_sub.add_parser("check")
+    p_bgm_check.add_argument("--music", required=True)
+    p_bgm_check.add_argument("--duration", type=float, default=None,
+                             help="目标视频时长（秒）；曲子短于此则不合格")
+    p_bgm_check.set_defaults(func=cmd_bgm)
+
+    p_bgm_library = bgm_sub.add_parser("library")
+    p_bgm_library.add_argument("--library", default=str(bgm.LIBRARY_PATH))
+    p_bgm_library.set_defaults(func=cmd_bgm)
+
+    p_bgm_mix = bgm_sub.add_parser("mix")
+    p_bgm_mix.set_defaults(func=cmd_bgm)
 
     args = parser.parse_args(argv)
     return args.func(args)

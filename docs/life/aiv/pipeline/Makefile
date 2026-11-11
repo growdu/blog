@@ -7,6 +7,7 @@
 #   make render    渲染各场景片段（预览用，与成片同样烧字幕）
 #   make compose   拼接 + 混音 + 出片
 #   make persona   按《人格规范》检查口播稿
+#   make bgm       按《背景音乐规范》检查曲库台账
 #   make all       validate → brand → render → compose
 #
 # align 是手工步骤，需要在 all 之前单独跑。
@@ -21,7 +22,7 @@ NARRATION := $(ROOT)/pa_decode_v2.mp3
 BUILD := $(ROOT)/build
 OUT := $(ROOT)/out/pg-parallel-decode.mp4
 
-.PHONY: all test validate align brand render compose probe persona clean
+.PHONY: all test validate align brand render compose probe persona bgm clean
 
 all: validate brand render compose
 
@@ -48,6 +49,9 @@ compose:
 
 persona:
 	$(PY) -m pyv.cli persona check --script $(SCRIPT)
+
+bgm:
+	$(PY) -m pyv.cli bgm library
 
 probe:
 	ffprobe -v error -show_entries format=duration \
