@@ -142,6 +142,24 @@ def cmd_persona(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_topics(args: argparse.Namespace) -> int:
+    """检查选题库的结构、口径与出处。"""
+    from pyv import topics
+
+    episodes = topics.parse_topics(args.library or topics.TOPICS_PATH)
+    findings = topics.check_topics(episodes)
+    for finding in findings:
+        marker = "ERROR  " if finding.level == topics.ERROR else "WARNING"
+        print(f"{marker} {finding.rule_id}  {finding.message}")
+    print(f"选题库 {len(episodes)} 期，{len(findings)} 个问题")
+    if any(f.level == topics.ERROR for f in findings):
+        sys.stdout.flush()
+        print("FAIL 有硬约束违规，定稿前必须改", file=sys.stderr)
+        return 1
+    print("OK 选题库检查通过")
+    return 0
+
+
 def cmd_bgm(args: argparse.Namespace) -> int:
     """背景音乐检查：单条曲子 / 台账 / 混音参数 / 成片混音。"""
     from pyv import bgm
@@ -257,6 +275,14 @@ def main(argv: list[str] | None = None) -> int:
     p_persona_check = persona_sub.add_parser("check")
     p_persona_check.add_argument("--script", required=True)
     p_persona_check.set_defaults(func=cmd_persona)
+
+    p_topics = sub.add_parser("topics")
+    topics_sub = p_topics.add_subparsers(dest="topics_command", required=True)
+
+    p_topics_check = topics_sub.add_parser("check")
+    p_topics_check.add_argument("--library", default=None,
+                                help="选题库文件，默认 aiv/选题库.md")
+    p_topics_check.set_defaults(func=cmd_topics)
 
     p_bgm = sub.add_parser("bgm")
     bgm_sub = p_bgm.add_subparsers(dest="bgm_command", required=True)

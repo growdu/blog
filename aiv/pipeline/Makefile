@@ -25,7 +25,7 @@ BGM := $(ROOT)/music/tracks/series-bed-01.wav
 BUILD := $(ROOT)/build
 OUT := $(ROOT)/out/pg-parallel-decode.mp4
 
-.PHONY: all test validate align brand render compose probe persona bgm mix-verify clean
+.PHONY: all test validate align brand render compose probe persona bgm mix-verify topics clean
 
 all: validate brand render compose
 
@@ -55,6 +55,10 @@ persona:
 
 bgm:
 	$(PY) -m pyv.cli bgm library
+
+# 选题库检查：结构、口径、句数字数、数字出处
+topics:
+	$(PY) -m pyv.cli topics check
 
 # 成片级验收：稳态 duck 深度、旁白/BGM 电平差、真峰值、旁白增益（规范 §5.7）
 mix-verify:
