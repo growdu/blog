@@ -41,6 +41,25 @@ FEATURED_POSTS = {
 }
 
 
+# Documents moved to a new directory keep their original publication date.
+# git_date() derives the date from the git history under the CURRENT path,
+# and a move only creates a new commit for that path -- so without this
+# table every moved article would be dated with its move commit and jump
+# to the top of "recent posts".  Keyed by docs/-relative path.
+DATE_OVERRIDES = {
+    'life/gaokao/math-methods/index.md': '2026-11-06 21:20:33',
+    'life/gaokao/math-paper2/index.md': '2026-11-08 11:59:40',
+    'life/gaokao/english-roots/index.md': '2026-11-11 12:04:05',
+    'life/daxue/电子科技大学-计算机-自考-复习计划/index.md': '2026-10-13 11:28:09',
+    'life/daxue/腾冲事业编-公务员备考计划/index.md': '2026-10-13 11:07:22',
+    'life/shehui/economic-downturn-strategy/index.md': '2026-10-28 14:09:55',
+    'life/shehui/economic-downturn-deep-dive/index.md': '2026-10-28 16:30:00',
+    'life/shehui/media-account/index.md': '2026-11-09 16:01:13',
+    'life/shehui/self-host/index.md': '2026-10-23 14:28:54',
+    'life/shehui/area.md': '2026-10-21 16:38:27',
+    'life/shehui/zhuangxiu.md': '2026-10-21 16:38:27',
+}
+
 TOPIC_DEFS = [
     # (name, icon, color, blurb)
     ('内核基础',     'fa-microchip',     '#4283D4', '进程模型 · 存储 · WAL · 执行器 · 学习路径'),
@@ -308,6 +327,9 @@ def git_date(filepath):
     single .md files to page bundles (dir/index.md), so we search
     multiple historical path candidates on every branch."""
     rel = os.path.relpath(filepath, DOCS)
+    override = DATE_OVERRIDES.get(rel.replace(os.sep, '/'))
+    if override:
+        return override
     candidates = [f'docs/{rel}', rel]
     if os.path.basename(filepath) == 'index.md':
         parent = os.path.dirname(rel)
