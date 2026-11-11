@@ -1,0 +1,150 @@
+import json
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+import pytest
+
+from wechat.publish import WeChatClient, WeChatError
+
+
+class _Handler(BaseHTTPRequestHandler):
+    calls = []
+    bodies = {}
+
+    def log_message(self, *args):
+        pass
+
+    def _read_body(self):
+        length = int(self.headers.get("Content-Length", "0"))
+        return self.rfile.read(length)
+
+    def _json(self, payload):
+        body = json.dumps(payload).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def do_POST(self):
+        body = self._read_body()
+        path = self.path.split("?")[0]
+        _Handler.calls.append(path)
+        _Handler.bodies[path] = body
+        if path.endswith("/stable_token"):
+            self._json({"access_token": "TOKEN", "expires_in": 7200})
+        elif path.endswith("/media/uploadimg"):
+            self._json({"url": "https://mmbiz.qpic.cn/mmbiz_jpg/x/1"})
+        elif path.endswith("/material/add_material"):
+            self._json({"media_id": "COVER_ID"})
+        elif path.endswith("/draft/add"):
+            self._json({"media_id": "DRAFT_ID"})
+        elif path.endswith("/freepublish/submit"):
+            self._json({"publish_id": "PUBLISH_ID"})
+        elif path.endswith("/freepublish/get"):
+            self._json({"publish_status": 0, "article_id": "ARTICLE_ID"})
+        else:
+            self._json({"errcode": 404, "errmsg": "not found"})
+
+
+@pytest.fixture
+def server():
+    _Handler.calls = []
+    _Handler.bodies = {}
+    httpd = HTTPServer(("127.0.0.1", 0), _Handler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    yield "http://127.0.0.1:{}".format(httpd.server_port)
+    httpd.shutdown()
+
+
+def test_stable_token_returns_token(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    assert client.stable_token() == "TOKEN"
+
+
+def test_stable_token_is_fetched_once(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    client.stable_token()
+    client.stable_token()
+    assert [path for path in _Handler.calls if "stable_token" in path] == ["/cgi-bin/stable_token"]
+
+
+def test_upload_body_image_returns_url(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    assert client.upload_body_image(b"\x89PNG\r\n\x1a\n", "a.png") == \
+        "https://mmbiz.qpic.cn/mmbiz_jpg/x/1"
+
+
+def test_upload_body_image_sends_multipart_with_media_field(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    client.upload_body_image(b"\x89PNG\r\n\x1a\n", "a.png")
+    body = _Handler.bodies["/cgi-bin/media/uploadimg"]
+    assert b'name="media"' in body
+    assert b'filename="a.png"' in body
+
+
+def test_upload_cover_returns_media_id(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    assert client.upload_cover(b"\x89PNG\r\n\x1a\n", "cover.png") == "COVER_ID"
+
+
+def test_upload_cover_sends_type_image_param(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    client.upload_cover(b"\x89PNG\r\n\x1a\n", "cover.png")
+    assert any("material/add_material" in path for path in _Handler.calls)
+
+
+def test_add_draft_sends_expected_payload(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    media_id = client.add_draft({
+        "title": "标题",
+        "author": "growdu",
+        "digest": "摘要",
+        "content": "<p>正文</p>",
+        "content_source_url": "https://growdu.cn/2026/11/09/a/",
+        "thumb_media_id": "COVER",
+    })
+    assert media_id == "DRAFT_ID"
+    payload = json.loads(_Handler.bodies["/cgi-bin/draft/add"])
+    article = payload["articles"][0]
+    assert article["title"] == "标题"
+    assert article["author"] == "growdu"
+    assert article["digest"] == "摘要"
+    assert article["content"] == "<p>正文</p>"
+    assert article["thumb_media_id"] == "COVER"
+    assert article["content_source_url"].startswith("https://growdu.cn/")
+
+
+def test_freepublish_submit_returns_publish_id(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    assert client.freepublish_submit("DRAFT_ID") == "PUBLISH_ID"
+
+
+def test_freepublish_get_returns_status_and_article_id(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    status, article_id = client.freepublish_get("PUBLISH_ID")
+    assert status == 0
+    assert article_id == "ARTICLE_ID"
+
+
+def test_error_code_raises_wechat_error(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    with pytest.raises(WeChatError) as excinfo:
+        client._post_json("/unknown/endpoint", {})
+    assert excinfo.value.errcode == 404
+    assert "not found" in excinfo.value.errmsg
+    assert excinfo.value.endpoint == "/unknown/endpoint"
+
+
+def test_error_message_mentions_the_endpoint(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    with pytest.raises(WeChatError) as excinfo:
+        client._post_json("/unknown/endpoint", {})
+    assert "/unknown/endpoint" in str(excinfo.value)
+
+
+def test_network_failure_raises_wechat_error():
+    client = WeChatClient("appid", "secret", base_url="http://127.0.0.1:1", timeout=2)
+    with pytest.raises(WeChatError):
+        client.stable_token()

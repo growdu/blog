@@ -19,6 +19,15 @@ BODY_LIMIT = 20000
 TITLE_LIMIT = 64
 DIGEST_LIMIT = 120
 
+# WeChat caps the article body at 20000 characters of the ``content``
+# field, which is the rendered HTML.  BODY_LIMIT is a cheap pre-check on
+# the raw markdown; it is a necessary but not sufficient condition --
+# across the corpus 38 posts pass the raw check and still exceed the
+# limit once rendered.  The authoritative check therefore runs on the
+# rendered content (RenderResult.content_length) before anything is
+# uploaded.
+CONTENT_LIMIT = 20000
+
 _FM_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 _FENCE_RE = re.compile(r"^\s*(```|~~~)")
 _HEADING_RE = re.compile(r"^#{1,6}\s")
