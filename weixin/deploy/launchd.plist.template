@@ -24,9 +24,19 @@
   IP 是动态的，所有调用都会被 40164 挡下。发布动作必须留在固定 IP 的机器上。
 
   跑的是什么：
-  python3 -m wechat.cli auto-draft
+    python3 -m wechat.cli auto-draft （带 new-only 参数）
     docs/ 变了   -> 重新生成 source/_posts/（约 3 分钟），再推进草稿箱
     docs/ 没变   -> 跳过生成，但仍然跑一次批量（免费的，且能接上次没跑完的）
+
+  为什么只认新增：
+  这个任务只管「新增的文档」。存量文章的大批量回填是一次性的、需要人
+  点头的动作（草稿箱会一下子多出几百篇，配额也要占掉一半），用
+  `python3 -m wechat.cli batch` 手动跑。加上 new-only 之后，定时任务
+  永远只处理「从没建过草稿的文章」，不会在你没同意的时候把整个存量铺进
+  草稿箱。
+
+  说明：XML 注释里不能出现连续两个连字符（那是注释的结束符），所以这段
+  说明里写的是 new-only。参数本体在下面的 ProgramArguments 里。
 -->
 <plist version="1.0">
 <dict>
@@ -39,6 +49,7 @@
         <string>-m</string>
         <string>wechat.cli</string>
         <string>auto-draft</string>
+        <string>--new-only</string>
     </array>
 
     <key>WorkingDirectory</key>
