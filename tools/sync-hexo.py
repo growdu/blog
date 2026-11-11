@@ -60,6 +60,7 @@ DATE_OVERRIDES = {
     'life/gaokao/yunnan-apply/index.md': '2026-11-11 22:30:00',
     'life/gaokao/physics-methods/index.md': '2026-11-11 22:50:00',
     'life/gaokao/chemistry-methods/index.md': '2026-11-11 23:20:00',
+    'life/gaokao/biology-methods/index.md': '2026-11-11 23:50:00',
     'life/daxue/电子科技大学-计算机-自考-复习计划/index.md': '2026-10-13 11:28:09',
     'life/daxue/腾冲事业编-公务员备考计划/index.md': '2026-10-13 11:07:22',
     'life/shehui/economic-downturn-strategy/index.md': '2026-10-28 14:09:55',
