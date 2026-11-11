@@ -86,6 +86,8 @@ cd weixin && python3 -m wechat.cli convert <slug>
 | `WX_APPSECRET` | 公众号 AppSecret（**不要提交到仓库**） |
 | `WX_SOURCE_URL` | 站点根 URL，用于拼「阅读原文」，默认 `https://growdu.cn` |
 | `WX_COVER` | 封面图路径（未指定时取文章首图） |
+| `WX_NOTIFY` | 通知通道：`serverchan` / `wechat_work` / `webhook` |
+| `WX_NOTIFY_KEY` | 通知凭据：SendKey / webhook key / 完整 URL |
 
 凭据也可以放进 `weixin/secrets.json`（已在 `.gitignore` 里），避免 secret 落到
 shell 历史里。格式见 `secrets.example.json`：
@@ -98,6 +100,26 @@ shell 历史里。格式见 `secrets.example.json`：
 ```
 
 优先级：**命令行参数 > 环境变量 > `secrets.json`**。用 `--secrets-file` 指定别的路径。
+
+### 草稿就绪通知
+
+这个账号发不了表（个人主体被回收了发表接口权限），最后那次点击必须由人做。
+所以草稿建好时推一条通知到手机，省得你回后台看。
+
+```bash
+export WX_NOTIFY=serverchan
+export WX_NOTIFY_KEY=SCTxxxxxxxx     # https://sct.ftqq.com 扫码登录即可生成
+```
+
+| 通道 | 凭据 | 说明 |
+| --- | --- | --- |
+| `serverchan` | SendKey | 直推微信，免费额度每天 5 条（够日更一篇） |
+| `wechat_work` | 群机器人 webhook key | 企业微信群机器人 |
+| `webhook` | 完整 URL | 任何接受 `{"title","body"}` 的 endpoint（Bark、Discord 等） |
+
+- 新建草稿时通知一次；**复用已有草稿不重复打扰**
+- 通知失败只打印警告，**不影响发布结果**
+- 不配置就完全安静——没通知不是错误
 
 ### 凭据从哪来
 
@@ -130,6 +152,7 @@ shell 历史里。格式见 `secrets.example.json`：
 | 资产 | `assets.py` | ✅ 压缩到 ≤ 1 MB、封面裁剪框、外链图下载 |
 | 接口 | `publish.py` | ✅ 6 个接口，错误不吞 |
 | 幂等 | `state.py` | ✅ 三层键 |
+| 通知 | `notify.py` | ✅ Server酱 / 企业微信 / 通用 webhook |
 | 审计 | `audit.py` | ✅ 复算全语料统计与 HTML 合规检查 |
 | CLI | `cli.py` | ✅ scan / audit / convert / publish / status |
 
