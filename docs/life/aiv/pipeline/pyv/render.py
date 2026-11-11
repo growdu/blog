@@ -7,6 +7,7 @@ from pathlib import Path
 
 import cairo
 
+from pyv import character
 from pyv.palette import COLORS, FPS, HEIGHT, WIDTH, hex_to_rgb
 from pyv.timeline import Scene, Storyboard
 
@@ -29,6 +30,9 @@ def newest_source_mtime(scene: Scene, extra_mtime: float | None = None) -> float
         for name in RENDER_INPUT_MODULES
         if (package / name).exists()
     ]
+    # 形象素材也是渲染输入：换了小象的图（重新生成、戴眼镜……），
+    # 已经渲染好的片段必须作废重渲，否则画面里还是旧形象。
+    candidates.extend(character.asset_mtimes())
     if extra_mtime:
         candidates.append(extra_mtime)
     # 只看这个场景自己的源码：改一个场景不该作废其它场景的片段

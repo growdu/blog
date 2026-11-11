@@ -150,3 +150,17 @@ class Mascot:
 def avatar_path() -> Path | None:
     """个人头像（落版用）。没有就返回 None，调用方跳过整块。"""
     return AVATAR_IMAGE if AVATAR_IMAGE.exists() else None
+
+
+def asset_mtimes() -> list[float]:
+    """形象素材的修改时间。
+
+    渲染的产物依赖这些素材：换了小象的图（重新生成、加眼镜……），
+    已经渲染好的片段就该作废重渲，否则画面里还是旧形象。
+    只看 Python 模块的修改时间是发现不了素材换了的。
+    """
+    times: list[float] = []
+    for path in (STATIC_IMAGE, LEGACY_IMAGE, AVATAR_IMAGE):
+        if path.exists():
+            times.append(path.stat().st_mtime)
+    return times
