@@ -37,7 +37,7 @@ from .mdparse import (
     ThematicBreak,
 )
 
-__all__ = ["RenderResult", "Resolver", "render", "mermaid_key"]
+__all__ = ["RenderResult", "Resolver", "render", "mermaid_key", "sanitize_html"]
 
 
 def _css(*declarations: str) -> str:
@@ -70,6 +70,26 @@ HR_STYLE = _css("border: none", "border-top: 1px solid #e5e5e5", "margin: 24px 0
 CODE_FONT = _css("font-family: Menlo, Consolas, monospace")
 
 _TAG_RE = re.compile(r"<[^>]+>")
+
+# Raw HTML blocks are rare in this corpus but not forbidden, so they are
+# cleaned rather than trusted.  WeChat honours inline styles only, runs no
+# JavaScript, and rejects script/style/iframe outright.
+_RAW_DROP_RE = re.compile(r"<(script|style|iframe)\b.*?(?:</\1\s*>|$)", re.I | re.S)
+_CLASS_ATTR_RE = re.compile(r"""\s+class\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)""", re.I)
+_EVENT_ATTR_RE = re.compile(r"""\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)""", re.I)
+
+
+def sanitize_html(raw: str) -> str:
+    """Make a raw HTML block safe for WeChat.
+
+    Drops ``script``/``style``/``iframe`` elements together with their
+    content, and strips ``class`` and event handler attributes from what
+    is left.  Everything else is passed through unchanged.
+    """
+    text = _RAW_DROP_RE.sub("", raw)
+    text = _CLASS_ATTR_RE.sub("", text)
+    text = _EVENT_ATTR_RE.sub("", text)
+    return text
 
 
 @dataclass(frozen=True)
@@ -204,9 +224,9 @@ class _Renderer:
             inner = "".join(self.block(child) for child in node.blocks)
             return "<section style=\"%s\">%s</section>" % (QUOTE_STYLE, inner)
         if isinstance(node, ThematicBreak):
-            return "<hr style=\"border:none; border-top:1px solid #e5e5e5; margin:24px 0;\" />"
+            return "<hr style=\"%s\" />" % HR_STYLE
         if isinstance(node, HtmlBlock):
-            return node.html
+            return sanitize_html(node.html)
         return ""
 
     def _mermaid(self, node) -> str:

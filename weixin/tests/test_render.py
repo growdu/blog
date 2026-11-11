@@ -133,6 +133,49 @@ def test_render_escapes_html_in_text():
     assert "&lt;script&gt;" in html
 
 
+def test_render_sanitizes_raw_html_block():
+    """A raw HTML block must not smuggle a class attribute through.
+
+    WeChat honours inline styles only, so a ``class`` attribute is dead
+    weight there -- and the project rule is that the output never carries
+    one.
+    """
+    html = _html('<div class="mermaid">图</div>\n')
+    assert "class=" not in html
+    assert "<div>图</div>" in html
+
+
+def test_render_drops_iframe_from_raw_html():
+    html = _html('<iframe src="https://video.example.com/x"></iframe>\n')
+    assert "<iframe" not in html
+
+
+def test_render_escapes_script_that_stands_alone_as_text():
+    """A lone ``<script>`` is not a raw HTML block, so it becomes text."""
+    html = _html("<script>alert(1)</script>\n")
+    assert "<script" not in html
+    assert "&lt;script&gt;" in html
+
+
+def test_render_drops_script_inside_a_raw_html_block():
+    """Inside a raw HTML block the whole element is removed, content and all."""
+    html = _html('<div>块</div>\n<script>alert(1)</script>\n')
+    assert "<script" not in html
+    assert "alert(1)" not in html
+    assert "<div>块</div>" in html
+
+
+def test_render_strips_event_handlers_from_raw_html():
+    html = _html('<div onclick="steal()">正文</div>\n')
+    assert "onclick" not in html
+
+
+def test_render_uses_compressed_style_for_thematic_break():
+    html = _html("---\n")
+    assert "<hr" in html
+    assert ": " not in html.split("<hr")[1].split(">")[0]
+
+
 def test_render_emits_reference_link_for_each_external_link():
     result = render(parse("[a](https://one.com) 和 [b](https://two.com)\n"))
     assert result.external_links == (("a", "https://one.com"), ("b", "https://two.com"))
