@@ -50,6 +50,22 @@ def test_scenes_do_not_pass_pose():
         assert "pose=" not in path.read_text(encoding="utf-8"), path.name
 
 
+def test_draw_without_asset_does_not_raise(monkeypatch):
+    """没有形象素材时不画、也不报错。
+
+    2D 兜底移除后，缺素材只剩这一条路。媒体产物不入库，
+    新克隆的机器上就没有小象——流水线照样要跑得完。
+    """
+    monkeypatch.setattr(character, "STATIC_IMAGE",
+                        character.REPO_ROOT / "__no_such_mascot__.png")
+    mascot = character.Mascot()
+    assert mascot.mode == "none"
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 320, 180)
+    ctx = cairo.Context(surface)
+    mascot.draw(ctx, (160.0, 170.0), 120.0)
+    assert not any(byte != 0 for byte in surface.get_data())
+
+
 def test_mascot_draws_pixels():
     mascot = character.Mascot()
     if mascot.mode == "none":
