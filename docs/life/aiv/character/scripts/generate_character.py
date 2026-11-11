@@ -18,10 +18,9 @@
 
 注意：
   - 每次生成都会消耗生成额度，重复运行前先确认是否真的需要重做。
-  - 铭牌必须留空：模型生成的中英文文字会乱码，文字一律由代码用真实字体渲染
-    （同 brand/scripts/fix_plates.py 的处理原则）。
-    主形象这次碰巧写对了 "growdu"，但生成后仍会跑一遍 blank_badge.py
-    把铭牌刷成纯白，不靠模型运气。
+  - 铭牌必须显示 growdu（品牌标识），但**文字不能由模型生成**：模型的中英文会
+    乱码（growdu 可能变成 giowdu / grawdu）。生成后统一跑一遍 stamp_badge.py，
+    把铭牌刷成纯白再用 PingFang SC 写上 growdu。
 """
 from __future__ import annotations
 
@@ -31,7 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from blank_badge import blank_badge  # noqa: E402  同目录脚本
+from stamp_badge import stamp_badge  # noqa: E402  同目录脚本
 
 HERE = Path(__file__).resolve().parent
 AIV = HERE.parent.parent           # docs/life/aiv
@@ -142,9 +141,9 @@ def main() -> int:
     }]})
     download(res["success_items"][0]["node_id"], CHAR_DIR / "growdu_pose_sheet.png")
 
-    print("擦掉铭牌上的模型文字…")
+    print("给铭牌印上 growdu（真实字体渲染）…")
     for target in (main_png, CHAR_DIR / "growdu_character_2k_nobg.png"):
-        blank_badge(target)
+        stamp_badge(target)
 
     print("完成。规范见 docs/life/aiv/形象与音色规范.md")
     return 0

@@ -44,6 +44,7 @@ from PIL import Image
 
 HERE = Path(__file__).resolve().parent
 BRAND = HERE.parent
+AIV = BRAND.parent
 ASSETS = BRAND / "assets"
 CLIPS = BRAND / "clips"
 
@@ -350,6 +351,23 @@ def render_outro_frame(t: float, bg: Image.Image,
 
 # ---------------------------------------------------------------- 编码
 
+def stamp_badge(char_path: Path) -> None:
+    """给胸口铭牌印上 growdu（真实字体渲染）。
+
+    铭牌是品牌标识，必须显示 growdu；但文字不能交给模型生成——模型的中英文
+    会乱码。所以合成前统一盖一次章：刷白铭牌，再用 PingFang SC 写上 growdu。
+    幂等：已经盖过章再盖一次结果完全一致。
+    """
+    script = AIV / "character" / "scripts" / "stamp_badge.py"
+    if not script.exists():
+        print(f"  - 找不到铭牌盖章脚本 {script}，跳过", file=sys.stderr)
+        return
+    subprocess.run(
+        [sys.executable, str(script), str(char_path)],
+        check=True, cwd=str(script.parent),
+    )
+
+
 def verify_frames(path: Path, expected: int) -> None:
     """校验成片帧数。
 
@@ -371,6 +389,8 @@ def verify_frames(path: Path, expected: int) -> None:
 def render(which: str, bg_path: Path, char_path: Path, out_path: Path,
            audio_path: Path | None) -> None:
     bg = Image.open(bg_path).convert("RGBA")
+    # 铭牌盖章要在把形象读进 cairo 之前
+    stamp_badge(char_path)
     char_img = Image.open(char_path).convert("RGBA")
     # 脚底在素材画布中的相对位置（透明留白不算），决定接地阴影落在哪
     foot_ratio = subject_bbox(char_img)[3] / char_img.height

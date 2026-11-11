@@ -44,9 +44,13 @@ AI 生成的纯环境背景（无角色、无文字、无 Logo）
 
 1. **文字一律用真实字体在 cairo 阶段渲染。** 模型生成的中英文会乱码
    （见 `scripts/fix_plates.py` 记录的同一类问题）。背景可以交给模型，文字不行。
-2. **背景与形象分开生成。** AI 只画环境；小象用 canonical 参考图生成并保持空白铭牌；
-   文字与版式由代码确定。
+2. **背景与形象分开生成。** AI 只画环境；小象用 canonical 参考图生成，
+   铭牌由代码盖章；文字与版式由代码确定。
 3. **技术图示绝不交给模型生成。**
+
+铭牌的 `growdu` 也不是模型写的：`render_brand.py` 渲染前会自动调
+`character/scripts/stamp_badge.py` 给姿态素材盖一次章——刷白铭牌，再用
+`PingFang SC` 写上 `growdu`。幂等，重复渲染结果一致。
 
 ### 为什么不用 H3 视频生成
 
@@ -58,7 +62,7 @@ H3 视频生成最短 4 秒，做不出 3 秒以内的片头，所以整条链�
 ```bash
 cd docs/life/aiv/brand
 python3 scripts/make_audio_brand.py   # 从 bgm_*.wav 里挑 3 秒窗口并混音
-python3 scripts/render_brand.py       # 渲染片头 + 片尾（--intro / --outro 可单渲）
+python3 scripts/render_brand.py       # 铭牌盖章 + 渲染片头 + 片尾（--intro / --outro 可单渲）
 ```
 
 渲染完会自动核对帧数（`verify_frames`）：帧数不对直接报错，不让问题流到成片。
