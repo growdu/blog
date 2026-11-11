@@ -1,0 +1,12 @@
+# Generated artifacts: rendered HTML, mermaid PNGs, upload caches.
+out/
+
+# Local credentials — never commit the appsecret.
+secrets.json
+.env
+*.secret
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
