@@ -21,7 +21,7 @@
     "hexo-generator-category": "^2.0.0",
     "hexo-generator-tag": "^2.0.0",
     "hexo-generator-sitemap": "^3.0.0",
-    "hexo-generator-feed": "^3.0.0",
+    "hexo-generator-feed": "^4.0.0",
     "hexo-wordcount": "^6.0.1",
     "prismjs": "^1.29.0",
     "mermaid": "10.9.8",
