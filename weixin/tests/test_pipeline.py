@@ -528,3 +528,177 @@ def test_publish_stays_quiet_without_a_notify_channel(sample_post, tmp_path, ser
     monkeypatch.setattr("wechat.cli.notify_module.send", boom)
     code = main(["publish", slug] + _args(posts_dir, tmp_path / "out", server=server))
     assert code == 0
+
+
+# --- categories and collections --------------------------------------------
+
+
+def _series_posts(tmp_path):
+    """Two posts sharing one category, so they form a collection."""
+    posts_dir = tmp_path / "source" / "_posts"
+    target = posts_dir / "database"
+    target.mkdir(parents=True)
+    for name, title in (("one", "第一篇"), ("two", "第二篇")):
+        (target / (name + ".md")).write_text(
+            "---\ntitle: \"{}\"\ndate: 2026-11-0{} 15:00:00\nauthor: growdu\n"
+            "categories:\n  - 数据库\n---\n\n正文一段。\n\n![图](images/demo.png)\n".format(
+                title, "1" if name == "one" else "2"),
+            encoding="utf-8")
+    _write_png(tmp_path / "source" / "images" / "demo.png")
+    return posts_dir
+
+
+def test_categories_lists_every_category_with_its_size(tmp_path, capsys):
+    posts_dir = _series_posts(tmp_path)
+    code = main(["categories"] + _args(posts_dir, tmp_path / "out"))
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "数据库" in out
+    assert "2 篇" in out
+
+
+def test_categories_lists_the_articles_of_one_category(tmp_path, capsys):
+    posts_dir = _series_posts(tmp_path)
+    code = main(["categories", "数据库"] + _args(posts_dir, tmp_path / "out"))
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "第一篇" in out
+    assert "第二篇" in out
+
+
+def test_categories_reports_an_unknown_category(tmp_path, capsys):
+    posts_dir = _series_posts(tmp_path)
+    code = main(["categories", "没有这个分类"] + _args(posts_dir, tmp_path / "out"))
+    assert code == 1
+    assert "找不到分类" in capsys.readouterr().err
+
+
+def test_collections_lists_the_collections(tmp_path, capsys):
+    posts_dir = _series_posts(tmp_path)
+    code = main(["collections"] + _args(posts_dir, tmp_path / "out"))
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "数据库" in out
+
+
+def test_collections_writes_the_index_article_and_the_checklist(tmp_path, capsys):
+    posts_dir = _series_posts(tmp_path)
+    out_dir = tmp_path / "out"
+    code = main(["collections", "数据库", "--write"] + _args(posts_dir, out_dir))
+    assert code == 0
+
+    target = out_dir / "collections" / "数据库"
+    html = (target / "article.html").read_text(encoding="utf-8")
+    plan = (target / "plan.md").read_text(encoding="utf-8")
+    assert "第一篇" in html and "第二篇" in html
+    assert "class=" not in html
+    assert "1. [ ] 第一篇" in plan
+
+
+def test_collections_reports_an_unknown_collection(tmp_path, capsys):
+    posts_dir = _series_posts(tmp_path)
+    code = main(["collections", "没有这个合集"] + _args(posts_dir, tmp_path / "out"))
+    assert code == 1
+    assert "找不到合集" in capsys.readouterr().err
+
+
+def test_publish_collection_creates_a_draft(tmp_path, server, monkeypatch):
+    posts_dir = _series_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["publish-collection", "数据库"]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 0
+
+    article = json.loads(_Handler.bodies["/cgi-bin/draft/add"])["articles"][0]
+    assert article["title"] == "「数据库」合集目录"
+    assert "第一篇" in article["content"]
+    assert "第二篇" in article["content"]
+    assert article["thumb_media_id"] == "COVER_ID"
+    assert article["content_source_url"].startswith("https://growdu.cn/categories/")
+
+
+def test_publish_collection_is_idempotent(tmp_path, server, monkeypatch):
+    posts_dir = _series_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    args = ["publish-collection", "数据库"] + _args(posts_dir, tmp_path / "out", server=server)
+    assert main(args) == 0
+    assert main(args) == 0
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 1
+
+
+def test_publish_collection_requires_credentials(tmp_path, server, monkeypatch, capsys):
+    posts_dir = _series_posts(tmp_path)
+    monkeypatch.delenv("WX_APPID", raising=False)
+    monkeypatch.delenv("WX_APPSECRET", raising=False)
+
+    code = main(["publish-collection", "数据库", "--secrets-file",
+                 str(tmp_path / "absent.json")]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 2
+    assert "WX_APPID" in capsys.readouterr().err
+    assert "/cgi-bin/draft/add" not in _Handler.calls
+
+
+def test_publish_collection_reports_an_unknown_collection(tmp_path, server, monkeypatch, capsys):
+    posts_dir = _series_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["publish-collection", "没有这个合集"]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 1
+    assert "/cgi-bin/draft/add" not in _Handler.calls
+
+
+# --- the category tag ------------------------------------------------------
+
+
+def test_publish_prints_the_category_tag_on_the_article(sample_post, tmp_path, server, monkeypatch):
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    main(["publish", slug] + _args(posts_dir, tmp_path / "out", server=server))
+    article = json.loads(_Handler.bodies["/cgi-bin/draft/add"])["articles"][0]
+    assert "分类" in article["content"]
+    assert "数据库" in article["content"]
+
+
+def test_publish_can_leave_the_category_tag_out(sample_post, tmp_path, server, monkeypatch):
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    main(["publish", slug, "--category-tag", "none"]
+         + _args(posts_dir, tmp_path / "out", server=server))
+    article = json.loads(_Handler.bodies["/cgi-bin/draft/add"])["articles"][0]
+    assert "分类 ·" not in article["content"]
+
+
+def test_publish_can_put_the_category_tag_at_the_end(sample_post, tmp_path, server, monkeypatch):
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    main(["publish", slug, "--category-tag", "bottom"]
+         + _args(posts_dir, tmp_path / "out", server=server))
+    content = json.loads(_Handler.bodies["/cgi-bin/draft/add"])["articles"][0]["content"]
+    # The tag closes the article, above the mechanical list of links.
+    assert content.index("分类 ·") > content.index("正文")
+    assert content.index("分类 ·") < content.index("参考链接")
+
+
+def test_changing_the_category_tag_creates_a_new_draft(sample_post, tmp_path, server, monkeypatch):
+    """The tag is part of the body, so a changed tag invalidates the draft."""
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    args = _args(posts_dir, tmp_path / "out", server=server)
+    assert main(["publish", slug] + args) == 0
+    assert main(["publish", slug, "--category-tag", "none"] + args) == 0
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 2

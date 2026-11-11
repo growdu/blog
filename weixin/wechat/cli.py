@@ -17,13 +17,16 @@ box is a useful human review gate either way.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
+import unicodedata
 from pathlib import Path
 
 from . import assets as assets_module
 from . import audit as audit_module
+from . import collection as collection_module
 from . import mermaid as mermaid_module
 from . import notify as notify_module
 from . import publish as publish_module
@@ -37,6 +40,7 @@ DEFAULT_POSTS_DIR = Path(__file__).resolve().parents[2] / "source" / "_posts"
 DEFAULT_OUT_DIR = Path(__file__).resolve().parents[1] / "out"
 DEFAULT_SOURCE_URL = "https://growdu.cn"
 DEFAULT_SECRETS_FILE = Path(__file__).resolve().parents[1] / "secrets.json"
+DEFAULT_COLLECTIONS_FILE = Path(__file__).resolve().parents[1] / "collections.json"
 
 EXIT_OK = 0
 EXIT_NOT_FOUND = 1
@@ -66,14 +70,47 @@ def _resolve_post(posts_dir: Path, slug: str):
     return None
 
 
+def _category_tag(post, args) -> str:
+    """The category line printed on an article, per ``--category-tag``.
+
+    WeChat has no field for a category, so this line is the only place
+    the classification can live.  With ``--category-tag none`` the
+    article keeps exactly the body it had before.
+    """
+    if getattr(args, "category_tag", "top") == "none":
+        return ""
+    return collection_module.render_category_tag(post.categories)
+
+
 def _prepare(post, args, resolver=None, highlight: bool = True):
     """Render one post and return the render result."""
     blocks = parse(post.body)
-    result = render_module.render(blocks, resolver=resolver, highlight=highlight)
+    tag = _category_tag(post, args)
+    position = getattr(args, "category_tag", "top")
+    result = render_module.render(
+        blocks, resolver=resolver, highlight=highlight,
+        head_html=tag if position == "top" else "",
+        tail_html=tag if position == "bottom" else "",
+    )
     target_dir = Path(args.out_dir) / post.slug
     target_dir.mkdir(parents=True, exist_ok=True)
     (target_dir / "article.html").write_text(result.html, encoding="utf-8")
     return result
+
+
+def _fingerprint(post, tag_html: str) -> str:
+    """Content hash covering everything that ends up in the published body.
+
+    The markdown on its own is not enough: the category tag is part of
+    the content WeChat stores, so a changed tag has to invalidate the
+    draft.  Otherwise the draft would be reused and the change would
+    silently never reach the reader.
+    """
+    digest = hashlib.sha256()
+    digest.update(post.fingerprint.encode("utf-8"))
+    digest.update(b"\x00")
+    digest.update(tag_html.encode("utf-8"))
+    return digest.hexdigest()
 
 
 def _mermaid_assets(post, args):
@@ -276,7 +313,8 @@ def _upload_cover(client, result, args):
     return media_id, assets_module.cover_crop_list(prepared.width, prepared.height)
 
 
-def _notify(args, post, result, state, *, created: bool, published: bool) -> None:
+def _notify(args, title: str, length: int, source_url: str, state, *,
+            created: bool, published: bool) -> None:
     """Tell the phone that something is waiting, if a channel is set up.
 
     A failed notification is a warning, never a failure: the draft is
@@ -288,31 +326,59 @@ def _notify(args, post, result, state, *, created: bool, published: bool) -> Non
     if not backend or not key:
         return
     if published:
-        title = "公众号文章已提交发表"
-        body = "《{}》\npublish_id: {}".format(post.title, state.publish_id)
+        heading = "公众号文章已提交发表"
+        body = "《{}》\npublish_id: {}".format(title, state.publish_id)
     elif created:
-        title = "公众号草稿已就绪"
+        heading = "公众号草稿已就绪"
         body = (
             "《{}》\n"
             "正文 {} 字符\n"
-            "阅读原文: {}{}\n"
+            "阅读原文: {}\n"
             "\n"
             "去公众号后台点「发表」即可发布：{}"
         ).format(
-            post.title,
-            result.content_length,
-            args.source_url.rstrip("/"),
-            post.permalink,
+            title,
+            length,
+            source_url,
             notify_module.DRAFT_BOX_URL,
         )
     else:
         return
     try:
-        notify_module.send(backend, key, title, body)
+        notify_module.send(backend, key, heading, body)
     except notify_module.NotifyError as error:
         print("  通知发送失败: {}".format(error), file=sys.stderr)
         return
     print("  已通知: {}".format(notify_module.describe(backend, key)))
+
+
+def _create_draft(client, store, key: str, fingerprint: str, article: dict):
+    """Create the draft, or reuse the one that is already there.
+
+    Returns ``(state, created)``.  ``created`` is False when the
+    content is unchanged, in which case the existing draft is kept and
+    nothing was uploaded twice.
+    """
+    state = store.get(key)
+    created = needs_draft(fingerprint, state)
+    if created:
+        state.media_id = client.add_draft(article)
+        state.fingerprint = fingerprint
+        state.publish_id = None
+        state.publish_status = None
+        store.save(key, state)
+    else:
+        print("内容未变，复用已有草稿 {}".format(state.media_id))
+    return state, created
+
+
+def _submit(client, store, key: str, state, publish: bool) -> bool:
+    """Submit the draft for publishing, when asked to."""
+    if not publish or not needs_submit(state):
+        return False
+    state.publish_id = client.freepublish_submit(state.media_id)
+    store.save(key, state)
+    return True
 
 
 def cmd_publish(args) -> int:
@@ -360,7 +426,6 @@ def cmd_publish(args) -> int:
         args.appid, args.appsecret, base_url=args.api_base)
 
     store = StateStore(Path(args.out_dir) / "state.json")
-    state = store.get(post.slug)
 
     urls = _upload_assets(client, result, args)
     html = result.substitute(urls)
@@ -386,21 +451,9 @@ def cmd_publish(args) -> int:
         "cover_info": {"crop_percent_list": crop_list},
     }
 
-    created = needs_draft(post.fingerprint, state)
-    if created:
-        state.media_id = client.add_draft(article)
-        state.fingerprint = post.fingerprint
-        state.publish_id = None
-        state.publish_status = None
-        store.save(post.slug, state)
-    else:
-        print("内容未变，复用已有草稿 {}".format(state.media_id))
-
-    published = False
-    if args.publish and needs_submit(state):
-        state.publish_id = client.freepublish_submit(state.media_id)
-        store.save(post.slug, state)
-        published = True
+    fingerprint = _fingerprint(post, _category_tag(post, args))
+    state, created = _create_draft(client, store, post.slug, fingerprint, article)
+    published = _submit(client, store, post.slug, state, args.publish)
 
     print("已建草稿: {}".format(post.slug))
     print("  media_id: {}".format(state.media_id))
@@ -411,7 +464,211 @@ def cmd_publish(args) -> int:
         print("  外链图转存: {} / {} 张".format(fetched, len(result.external_images)))
     for url, error in external_failures:
         print("    ! 原图未能转存: {} -> {}".format(url, error))
-    _notify(args, post, result, state, created=created, published=published)
+    _notify(args, post.title, result.content_length,
+            args.source_url.rstrip("/") + post.permalink, state,
+            created=created, published=published)
+    if state.publish_id:
+        print("  publish_id: {}".format(state.publish_id))
+    else:
+        print("  未提交发表（如需自动发表请加 --publish）")
+    return EXIT_OK
+
+
+def _display_width(text: str) -> int:
+    """The width of a string as it appears in a terminal.
+
+    A Chinese character takes two columns, so padding by ``len`` would
+    leave the list ragged.
+    """
+    return sum(2 if unicodedata.east_asian_width(ch) in "WF" else 1 for ch in text)
+
+
+def _pad(text: str, width: int) -> str:
+    """Pad a string to a terminal width."""
+    return text + " " * max(0, width - _display_width(text))
+
+
+def cmd_categories(args) -> int:
+    """List the categories of the corpus, or the articles of one."""
+    posts = discover(args.posts_dir)
+    categories = collection_module.build_categories(posts)
+
+    if args.name:
+        refs = categories.get(args.name)
+        if refs is None:
+            print("找不到分类: {}".format(args.name), file=sys.stderr)
+            return EXIT_NOT_FOUND
+        print("分类「{}」共 {} 篇\n".format(args.name, len(refs)))
+        for ref in refs:
+            print("  {}  {}".format(ref.label, ref.title))
+        print("\n归档页: {}".format(
+            collection_module.category_archive_url(args.source_url, args.name)))
+        return EXIT_OK
+
+    total = sum(len(refs) for refs in categories.values())
+    print("共 {} 个分类，{} 篇文章（分类计数 {} 次，一篇文章可有多个分类）\n".format(
+        len(categories), len(posts), total))
+    width = max((_display_width(name) for name in categories), default=0)
+    for name, refs in categories.items():
+        print("  {}  {:>4} 篇".format(_pad(name, width), len(refs)))
+    return EXIT_OK
+
+
+def _find_collection(collections, name: str):
+    """Look a collection up by title or by its filesystem-safe slug."""
+    for collection in collections:
+        if name in (collection.title, collection.slug):
+            return collection
+    return None
+
+
+def _collection_archive_url(collection, source_url: str) -> str:
+    """Where the index article's 「阅读原文」 points.
+
+    A collection that maps to a single category points at that
+    category's archive page on the blog -- the one clickable target a
+    reader has inside a WeChat article.  A curated collection spans
+    several categories and has no such page, so it points at the blog's
+    home page instead.
+    """
+    return collection.archive_url(source_url)
+
+
+def _write_collection(collection, args) -> Path:
+    """Write the index article and the backend checklist of a collection."""
+    target = Path(args.out_dir) / "collections" / collection.slug
+    target.mkdir(parents=True, exist_ok=True)
+    index_html = collection_module.render_collection_index(collection, args.source_url)
+    (target / "article.html").write_text(index_html, encoding="utf-8")
+    plan = collection_module.render_collection_plan(collection, args.source_url)
+    (target / "plan.md").write_text(plan, encoding="utf-8")
+    return target
+
+
+def cmd_collections(args) -> int:
+    """List the collections, or write the artefacts of one."""
+    posts = discover(args.posts_dir)
+    spec = collection_module.load_spec(args.collections_file)
+    collections = collection_module.build_collections(posts, spec)
+
+    if args.name:
+        collection = _find_collection(collections, args.name)
+        if collection is None:
+            print("找不到合集: {}".format(args.name), file=sys.stderr)
+            return EXIT_NOT_FOUND
+        print("合集「{}」共 {} 篇".format(collection.title, collection.count))
+        if collection.description:
+            print("简介: {}".format(collection.description))
+        print("归档页: {}\n".format(_collection_archive_url(collection, args.source_url)))
+        for index, ref in enumerate(collection.articles, 1):
+            print("  {}. {}  {}".format(index, ref.label, ref.title))
+        if args.write:
+            target = _write_collection(collection, args)
+            print("\n已写出: {}".format(target.as_posix()))
+        return EXIT_OK
+
+    if not collections:
+        print("没有可用的合集")
+        print("（默认把文章数 >= 2 的分类当成合集；"
+              "也可以写 weixin/collections.json 手工指定）")
+        return EXIT_OK
+
+    print("共 {} 个合集\n".format(len(collections)))
+    width = max(_display_width(c.title) for c in collections)
+    for collection in collections:
+        print("  {}  {:>4} 篇".format(_pad(collection.title, width), collection.count))
+    return EXIT_OK
+
+
+def _collection_cover(collection, posts, args) -> str:
+    """Find the cover image of a collection's index article.
+
+    The collection's own articles supply it: the first local image of
+    the first article that has one.  A collection of articles without
+    any picture needs an explicit ``--cover``.
+    """
+    if args.cover:
+        return args.cover
+    by_slug = {post.slug: post for post in posts}
+    for ref in collection.articles:
+        post = by_slug.get(ref.slug)
+        if post is None:
+            continue
+        assets = render_module.render(parse(post.body), highlight=False).assets
+        if assets:
+            return assets[0]
+    raise CoverRequired(
+        "合集「{}」没有可用封面：请用 --cover 或 WX_COVER 指定一张封面".format(
+            collection.title))
+
+
+def cmd_publish_collection(args) -> int:
+    """Push the index article of a collection into the draft box."""
+    posts = discover(args.posts_dir)
+    spec = collection_module.load_spec(args.collections_file)
+    collections = collection_module.build_collections(posts, spec)
+    collection = _find_collection(collections, args.name)
+    if collection is None:
+        print("找不到合集: {}".format(args.name), file=sys.stderr)
+        return EXIT_NOT_FOUND
+    if not collection.articles:
+        print("合集「{}」没有文章".format(collection.title), file=sys.stderr)
+        return EXIT_REJECTED
+
+    title = "「{}」合集目录".format(collection.title)
+    if len(title) > TITLE_LIMIT:
+        print("合集标题过长：{}（{} 字符，上限 {}）".format(
+            title, len(title), TITLE_LIMIT), file=sys.stderr)
+        return EXIT_REJECTED
+
+    if not args.appid or not args.appsecret:
+        print("缺少 WX_APPID / WX_APPSECRET 环境变量", file=sys.stderr)
+        return EXIT_REJECTED
+
+    html = collection_module.render_collection_index(collection, args.source_url)
+    if len(html) > CONTENT_LIMIT:
+        print("合集导览正文 {} 字符，超过上限 {} 字符，已拒绝发布".format(
+            len(html), CONTENT_LIMIT), file=sys.stderr)
+        return EXIT_REJECTED
+
+    client = publish_module.WeChatClient(
+        args.appid, args.appsecret, base_url=args.api_base)
+
+    cover_path = _resolve_asset(_collection_cover(collection, posts, args), args.posts_dir)
+    if not cover_path.is_file():
+        raise AssetNotFound("封面图不存在: {}".format(cover_path))
+    prepared = assets_module.prepare_image(cover_path)
+    cover_media_id = client.upload_cover(prepared.data, prepared.filename)
+
+    archive = _collection_archive_url(collection, args.source_url)
+    article = {
+        "article_type": "news",
+        "title": title,
+        "author": args.author,
+        "digest": collection_module.collection_digest(collection),
+        "content": html,
+        "content_source_url": archive,
+        "thumb_media_id": cover_media_id,
+        "need_open_comment": 0,
+        "only_fans_can_comment": 0,
+        "cover_info": {"crop_percent_list": assets_module.cover_crop_list(
+            prepared.width, prepared.height)},
+    }
+
+    key = "collection/{}".format(collection.slug)
+    store = StateStore(Path(args.out_dir) / "state.json")
+    fingerprint = hashlib.sha256(html.encode("utf-8")).hexdigest()
+    state, created = _create_draft(client, store, key, fingerprint, article)
+    published = _submit(client, store, key, state, args.publish)
+
+    print("已建合集导览草稿: {}".format(collection.title))
+    print("  media_id: {}".format(state.media_id))
+    print("  正文长度: {} 字符".format(len(html)))
+    print("  阅读原文: {}".format(archive))
+    print("  合集文章: {} 篇（平台上的合集仍需在后台手工勾选）".format(
+        collection.count))
+    _notify(args, title, len(html), archive, state,
+            created=created, published=published)
     if state.publish_id:
         print("  publish_id: {}".format(state.publish_id))
     else:
@@ -485,6 +742,11 @@ def _add_common_options(parser, *, suppress: bool) -> None:
     parser.add_argument("--cover", default=default(""), help="封面图路径，默认取文章首图")
     parser.add_argument("--secrets-file", type=Path, default=default(DEFAULT_SECRETS_FILE),
                         help="本地凭据 JSON，默认 weixin/secrets.json")
+    parser.add_argument("--collections-file", type=Path, default=default(DEFAULT_COLLECTIONS_FILE),
+                        help="合集配置 JSON，默认 weixin/collections.json")
+    parser.add_argument("--category-tag", choices=("top", "bottom", "none"),
+                        default=default("top"),
+                        help="分类标签位置: top / bottom / none，默认 top")
     parser.add_argument("--notify", default=default(""),
                         help="通知通道: serverchan / wechat_work / webhook，默认取环境变量 WX_NOTIFY")
     parser.add_argument("--notify-key", default=default(""),
@@ -518,6 +780,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = sub.add_parser("status", help="查看发布状态", parents=[common])
     status.set_defaults(func=cmd_status)
+
+    categories = sub.add_parser("categories", help="列出分类", parents=[common])
+    categories.add_argument("name", nargs="?", default="", help="只看某一个分类")
+    categories.set_defaults(func=cmd_categories)
+
+    collections = sub.add_parser("collections", help="列出合集", parents=[common])
+    collections.add_argument("name", nargs="?", default="", help="只看某一个合集")
+    collections.add_argument("--write", action="store_true",
+                             help="写出导览文章与后台勾选清单")
+    collections.set_defaults(func=cmd_collections)
+
+    publish_collection = sub.add_parser(
+        "publish-collection", help="把合集导览文章推到草稿箱", parents=[common])
+    publish_collection.add_argument("name", help="合集标题")
+    publish_collection.add_argument("--publish", action="store_true", help="额外提交发表")
+    publish_collection.set_defaults(func=cmd_publish_collection)
 
     return parser
 
