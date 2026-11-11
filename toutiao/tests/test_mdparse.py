@@ -21,6 +21,26 @@ def test_front_matter_scalars_and_lists():
     assert body.strip() == "正文第一段。"
 
 
+def test_escaped_quotes_are_unescaped():
+    """``tools/sync-hexo.py`` escapes quotes inside a title; we must undo it.
+
+    ``yaml_escape`` writes ``\\"`` for a quote inside a double-quoted title,
+    so a post whose title contains ``"`` reaches us as ``\\"``.  Hexo reads
+    that back with a real YAML parser, which turns ``\\"`` into ``"``; if we
+    keep the backslash the published title shows ``\\"`` to the reader.
+    """
+    fields, _ = parse_front_matter(
+        '---\ntitle: "为什么\\"获得就释放\\"的机制"\n---\n\nx\n'
+    )
+    assert fields["title"] == '为什么"获得就释放"的机制'
+
+
+def test_escaped_backslash_is_unescaped():
+    """``yaml_escape`` doubles a backslash, so ``\\`` must become ``\\``."""
+    fields, _ = parse_front_matter('---\ntitle: "C:\\\\路径"\n---\n\nx\n')
+    assert fields["title"] == "C:\\路径"
+
+
 def test_unknown_keys_are_kept():
     fields, _ = parse_front_matter(
         "---\nfoo: bar\nplatforms:\n  - wechat\n---\n\nx\n"

@@ -15,6 +15,12 @@ __all__ = ["SourcePost", "parse_front_matter", "load_post", "discover"]
 
 _FM_RE = re.compile(r"^---\n(.*?)\n---\n", re.S)
 
+# The escapes ``tools/sync-hexo.py`` writes into a double-quoted value.
+# ``yaml_escape`` doubles a backslash and escapes a double quote, so these
+# two are exactly what can come back out of a quoted title.
+_ESCAPES = {"\\": "\\", '"': '"'}
+_ESCAPE_RE = re.compile(r"\\(.)")
+
 
 @dataclass(frozen=True)
 class SourcePost:
@@ -28,9 +34,21 @@ class SourcePost:
 
 
 def _unquote(value: str) -> str:
+    """Strip the surrounding quotes and undo the escapes inside them.
+
+    ``tools/sync-hexo.py`` writes the title as a double-quoted YAML scalar
+    and escapes what it has to (``yaml_escape``).  Hexo reads that back
+    with a real YAML parser, which turns ``\\"`` into ``"`` again -- so we
+    must undo the same escapes, otherwise the published title carries
+    stray backslashes.  Single-quoted scalars keep their content verbatim,
+    which is what YAML says.
+    """
     value = value.strip()
     if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
-        return value[1:-1]
+        inner = value[1:-1]
+        if value[0] == '"':
+            inner = _ESCAPE_RE.sub(lambda m: _ESCAPES.get(m.group(1), m.group(0)), inner)
+        return inner
     return value
 
 
