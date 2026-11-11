@@ -162,6 +162,24 @@ class WeChatClient:
             raise WeChatError(-1, "no media_id in response", "/cgi-bin/draft/add")
         return media_id
 
+    def update_draft(self, media_id: str, article: dict, index: int = 0) -> None:
+        """Replace one article of an existing draft, in place.
+
+        ``draft/add`` always creates *another* draft, so an edited
+        article would leave the previous version behind in the box and
+        the reader would find two versions of the same piece.
+        Updating in place keeps the box free of stale copies.
+
+        Unlike ``add``, ``articles`` here is a single object rather
+        than a list, and the position inside a multi-article draft is
+        given by ``index``.
+        """
+        self._post_json("/cgi-bin/draft/update", {
+            "media_id": media_id,
+            "index": index,
+            "articles": article,
+        })
+
     def freepublish_submit(self, media_id: str) -> str:
         """Submit a draft for publishing; returns the asynchronous publish_id."""
         response = self._post_json("/cgi-bin/freepublish/submit", {"media_id": media_id})

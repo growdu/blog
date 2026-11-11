@@ -1,5 +1,6 @@
 import io
 import json
+import subprocess
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
@@ -7,7 +8,7 @@ import pytest
 from PIL import Image
 
 from wechat import notify as notify_module
-from wechat.cli import main
+from wechat.cli import _docs_changed, main
 
 SAMPLE = """---
 title: "演示文章"
@@ -56,6 +57,9 @@ def _write_png(path):
 class _Handler(BaseHTTPRequestHandler):
     calls = []
     bodies = {}
+    # Titles the fake server should reject, so a batch can be tested
+    # against an article that fails.
+    fail_titles = set()
 
     def log_message(self, *args):
         pass
@@ -84,7 +88,13 @@ class _Handler(BaseHTTPRequestHandler):
         elif path.endswith("/material/add_material"):
             self._json({"media_id": "COVER_ID"})
         elif path.endswith("/draft/add"):
+            title = json.loads(body)["articles"][0].get("title", "")
+            if title in _Handler.fail_titles:
+                self._json({"errcode": 40007, "errmsg": "invalid media_id"})
+                return
             self._json({"media_id": "DRAFT_ID"})
+        elif path.endswith("/draft/update"):
+            self._json({"errcode": 0, "errmsg": "ok"})
         elif path.endswith("/freepublish/submit"):
             self._json({"publish_id": "PUBLISH_ID"})
         elif path.endswith("/freepublish/get"):
@@ -97,6 +107,7 @@ class _Handler(BaseHTTPRequestHandler):
 def server():
     _Handler.calls = []
     _Handler.bodies = {}
+    _Handler.fail_titles = set()
     httpd = HTTPServer(("127.0.0.1", 0), _Handler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
@@ -729,8 +740,12 @@ def test_publish_can_put_the_category_tag_at_the_end(sample_post, tmp_path, serv
     assert content.index("分类 ·") < content.index("参考链接")
 
 
-def test_changing_the_category_tag_creates_a_new_draft(sample_post, tmp_path, server, monkeypatch):
-    """The tag is part of the body, so a changed tag invalidates the draft."""
+def test_changing_the_category_tag_updates_the_draft_in_place(sample_post, tmp_path, server, monkeypatch):
+    """The tag is part of the body, so a changed tag has to reach the draft.
+
+    The draft is updated rather than duplicated: ``draft/add`` would
+    leave the old version in the box next to the new one.
+    """
     posts_dir, slug = sample_post
     monkeypatch.setenv("WX_APPID", "appid")
     monkeypatch.setenv("WX_APPSECRET", "secret")
@@ -738,4 +753,269 @@ def test_changing_the_category_tag_creates_a_new_draft(sample_post, tmp_path, se
     args = _args(posts_dir, tmp_path / "out", server=server)
     assert main(["publish", slug] + args) == 0
     assert main(["publish", slug, "--category-tag", "none"] + args) == 0
+
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 1
+    assert _Handler.calls.count("/cgi-bin/draft/update") == 1
+
+    payload = json.loads(_Handler.bodies["/cgi-bin/draft/update"])
+    assert payload["media_id"] == "DRAFT_ID"
+    assert payload["index"] == 0
+    assert "分类 ·" not in payload["articles"]["content"]
+
+
+# --- batch -----------------------------------------------------------------
+
+
+def _batch_posts(tmp_path, count=3):
+    """Several posts sharing one category, all with a picture."""
+    posts_dir = tmp_path / "source" / "_posts"
+    target = posts_dir / "database"
+    target.mkdir(parents=True)
+    for index in range(count):
+        (target / ("post{}.md".format(index))).write_text(
+            "---\ntitle: \"文章{}\"\ndate: 2026-11-0{} 15:00:00\nauthor: growdu\n"
+            "categories:\n  - 数据库\n---\n\n正文一段。\n\n![图](images/demo.png)\n".format(
+                index, index + 1),
+            encoding="utf-8")
+    _write_png(tmp_path / "source" / "images" / "demo.png")
+    return posts_dir
+
+
+def test_batch_dry_run_touches_no_network(tmp_path, capsys):
+    posts_dir = _batch_posts(tmp_path)
+    code = main(["batch", "--dry-run"] + _args(posts_dir, tmp_path / "out"))
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "预检" in out
+    assert "database/post0" in out
+    assert not (tmp_path / "out" / "state.json").exists()
+
+
+def test_batch_creates_a_draft_for_every_eligible_post(tmp_path, server, monkeypatch):
+    posts_dir = _batch_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["batch"] + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 0
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 3
+
+
+def test_batch_is_resumable_and_costs_nothing_the_second_time(tmp_path, server, monkeypatch):
+    """Re-running over the whole corpus must not upload a single image."""
+    posts_dir = _batch_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    args = _args(posts_dir, tmp_path / "out", server=server)
+    assert main(["batch"] + args) == 0
+    uploads_after_first = _Handler.calls.count("/cgi-bin/media/uploadimg")
+
+    _Handler.calls = []
+    assert main(["batch"] + args) == 0
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 0
+    assert _Handler.calls.count("/cgi-bin/media/uploadimg") == 0
+    assert uploads_after_first == 3
+
+
+def test_batch_new_only_skips_articles_that_already_have_a_draft(tmp_path, server, monkeypatch):
+    posts_dir = _batch_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    args = _args(posts_dir, tmp_path / "out", server=server)
+    assert main(["batch"] + args) == 0
+    _Handler.calls = []
+    assert main(["batch", "--new-only"] + args) == 0
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 0
+
+
+def test_batch_changed_only_picks_up_an_edited_article(tmp_path, server, monkeypatch):
+    posts_dir = _batch_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    args = _args(posts_dir, tmp_path / "out", server=server)
+    assert main(["batch"] + args) == 0
+
+    edited = posts_dir / "database" / "post0.md"
+    edited.write_text(edited.read_text(encoding="utf-8") + "\n补一段。\n", encoding="utf-8")
+
+    _Handler.calls = []
+    assert main(["batch", "--changed-only"] + args) == 0
+    assert _Handler.calls.count("/cgi-bin/draft/update") == 1
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 0
+
+
+def test_batch_limit_caps_the_number_of_articles(tmp_path, server, monkeypatch):
+    posts_dir = _batch_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["batch", "--limit", "2"] + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 0
     assert _Handler.calls.count("/cgi-bin/draft/add") == 2
+
+
+def test_one_failing_article_does_not_stop_the_batch(tmp_path, server, monkeypatch, capsys):
+    """A single broken article must not cost the others their draft."""
+    posts_dir = _batch_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+    _Handler.fail_titles = {"文章1"}
+
+    code = main(["batch"] + _args(posts_dir, tmp_path / "out", server=server))
+    out = capsys.readouterr()
+    assert code == 3
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 3
+    assert "失败 1 篇" in out.out
+    assert "database/post1" in out.out
+
+
+def test_batch_records_what_it_did(tmp_path, server, monkeypatch):
+    posts_dir = _batch_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    main(["batch"] + _args(posts_dir, tmp_path / "out", server=server))
+    report = json.loads((tmp_path / "out" / "batch-report.json").read_text(encoding="utf-8"))
+    assert report["created"] == 3
+    assert report["failed"] == 0
+
+
+def test_batch_skips_an_article_that_is_too_long(tmp_path, server, monkeypatch, capsys):
+    """Over the limit is a skip, not a failure: the rest still get drafted.
+
+    400 short paragraphs are 800 characters of markdown but 26000 of
+    rendered HTML -- every paragraph carries its own inline style.  That
+    is the shape of the articles that do not fit, and one of them must
+    not take the rest of the batch down with it.
+    """
+    posts_dir = _batch_posts(tmp_path, count=1)
+    (posts_dir / "database" / "huge.md").write_text(
+        "---\ntitle: \"太长\"\ndate: 2026-11-05 15:00:00\nauthor: growdu\n"
+        "categories:\n  - 数据库\n---\n\n" + ("\n\n".join("短。" for _ in range(400))) + "\n",
+        encoding="utf-8")
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["batch"] + _args(posts_dir, tmp_path / "out", server=server))
+    out = capsys.readouterr()
+    assert code == 0
+    assert "跳过 1 篇" in out.out
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 1
+
+
+# --- auto-draft ------------------------------------------------------------
+
+
+def _git_repo(tmp_path):
+    """A tiny git repository with a docs/ directory."""
+    repo = tmp_path / "repo"
+    (repo / "docs").mkdir(parents=True)
+    (repo / "docs" / "a.md").write_text("第一篇\n", encoding="utf-8")
+    (repo / "tools").mkdir()
+    (repo / "tools" / "sync-hexo.py").write_text("# stub\n", encoding="utf-8")
+
+    def git(*args):
+        subprocess.run(["git"] + list(args), cwd=str(repo), check=True,
+                       capture_output=True)
+    git("init", "-q")
+    git("config", "user.email", "t@example.com")
+    git("config", "user.name", "test")
+    git("add", ".")
+    git("commit", "-q", "-m", "init")
+    return repo
+
+
+def test_docs_changed_is_false_right_after_a_commit(tmp_path):
+    repo = _git_repo(tmp_path)
+    stamp = tmp_path / "stamp"
+    stamp.write_text(subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=str(repo), capture_output=True,
+        text=True).stdout.strip() + "\n", encoding="utf-8")
+    assert _docs_changed(repo, stamp) is False
+
+
+def test_docs_changed_notices_a_new_committed_article(tmp_path):
+    repo = _git_repo(tmp_path)
+    stamp = tmp_path / "stamp"
+    stamp.write_text(subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=str(repo), capture_output=True,
+        text=True).stdout.strip() + "\n", encoding="utf-8")
+    (repo / "docs" / "b.md").write_text("第二篇\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=str(repo), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-q", "-m", "new"], cwd=str(repo), check=True,
+                   capture_output=True)
+    assert _docs_changed(repo, stamp) is True
+
+
+def test_docs_changed_notices_an_uncommitted_article(tmp_path):
+    """The author may have written the article and not committed it yet."""
+    repo = _git_repo(tmp_path)
+    stamp = tmp_path / "stamp"
+    stamp.write_text(subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=str(repo), capture_output=True,
+        text=True).stdout.strip() + "\n", encoding="utf-8")
+    (repo / "docs" / "b.md").write_text("第二篇\n", encoding="utf-8")
+    assert _docs_changed(repo, stamp) is True
+
+
+def test_docs_changed_ignores_changes_outside_docs(tmp_path):
+    repo = _git_repo(tmp_path)
+    stamp = tmp_path / "stamp"
+    stamp.write_text(subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=str(repo), capture_output=True,
+        text=True).stdout.strip() + "\n", encoding="utf-8")
+    (repo / "README.md").write_text("改了\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=str(repo), check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-q", "-m", "readme"], cwd=str(repo), check=True,
+                   capture_output=True)
+    assert _docs_changed(repo, stamp) is False
+
+
+def test_auto_draft_skips_the_sync_when_nothing_changed(tmp_path, server, monkeypatch, capsys):
+    """``sync-hexo.py`` takes three minutes; it must not run for nothing."""
+    repo = _git_repo(tmp_path)
+    stamp = tmp_path / "stamp"
+    stamp.write_text(subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=str(repo), capture_output=True,
+        text=True).stdout.strip() + "\n", encoding="utf-8")
+
+    calls = []
+    monkeypatch.setattr("wechat.cli._run_sync", lambda repo_dir: calls.append(repo_dir) or 0)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    posts_dir = tmp_path / "source" / "_posts"
+    posts_dir.mkdir(parents=True)
+    code = main(["auto-draft", "--repo-dir", str(repo), "--stamp-file", str(stamp),
+                 "--posts-dir", str(posts_dir), "--out-dir", str(tmp_path / "out"),
+                 "--api-base", server])
+    out = capsys.readouterr().out
+    assert code == 0
+    assert calls == []
+    assert "没有变化" in out
+
+
+def test_auto_draft_runs_the_sync_when_docs_changed(tmp_path, server, monkeypatch, capsys):
+    repo = _git_repo(tmp_path)
+    stamp = tmp_path / "stamp"
+    (repo / "docs" / "b.md").write_text("第二篇\n", encoding="utf-8")
+
+    calls = []
+    monkeypatch.setattr("wechat.cli._run_sync", lambda repo_dir: calls.append(repo_dir) or 0)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    posts_dir = tmp_path / "source" / "_posts"
+    posts_dir.mkdir(parents=True)
+    code = main(["auto-draft", "--repo-dir", str(repo), "--stamp-file", str(stamp),
+                 "--posts-dir", str(posts_dir), "--out-dir", str(tmp_path / "out"),
+                 "--api-base", server])
+    assert code == 0
+    assert calls == [repo]
+    # The stamp records the commit, so the next run does not sync again.
+    assert stamp.read_text(encoding="utf-8").strip() == subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=str(repo), capture_output=True,
+        text=True).stdout.strip()
