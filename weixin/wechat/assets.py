@@ -13,18 +13,24 @@ text in screenshots legible.
 from __future__ import annotations
 
 import io
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
 from PIL import Image
 
-__all__ = ["PreparedImage", "prepare_image", "cover_crop_list"]
+__all__ = ["PreparedImage", "prepare_image", "prepare_image_bytes",
+           "download_image", "cover_crop_list"]
 
 DEFAULT_LIMIT_BYTES = 1024 * 1024
 DEFAULT_MAX_WIDTH = 1080
 _JPEG_QUALITY_STEPS = (90, 80, 70, 60, 50, 40, 30, 20)
 _MIN_DIMENSION = 64
 COVER_RATIOS = ("2.35_1", "1_1")
+# Some hosts reject requests without a browser-ish User-Agent.
+_USER_AGENT = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+               "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36")
 
 
 @dataclass(frozen=True)
@@ -51,30 +57,24 @@ def _encode_jpeg(image, quality: int) -> bytes:
     return buffer.getvalue()
 
 
-def prepare_image(path: Path, *, limit_bytes: int = DEFAULT_LIMIT_BYTES,
-                  max_width: int = DEFAULT_MAX_WIDTH) -> PreparedImage:
-    """Read, shrink and compress one image so WeChat accepts it."""
-    path = Path(path)
-    if not path.is_file():
-        raise FileNotFoundError("image not found: {}".format(path))
+def _compress(image, stem: str, limit_bytes: int, max_width: int):
+    """Shrink and encode one image so WeChat accepts it.
 
-    with Image.open(path) as raw:
-        raw.load()
-        image = raw.copy()
-
+    Returns ``(data, content_type, filename, width, height)``.
+    """
     if image.width > max_width:
         ratio = max_width / float(image.width)
         image = image.resize((max_width, max(1, int(image.height * ratio))), Image.LANCZOS)
 
     data = _encode_png(image)
     content_type = "image/png"
-    filename = path.stem + ".png"
+    filename = stem + ".png"
 
     if len(data) > limit_bytes:
         for quality in _JPEG_QUALITY_STEPS:
             data = _encode_jpeg(image, quality)
             content_type = "image/jpeg"
-            filename = path.stem + ".jpg"
+            filename = stem + ".jpg"
             if len(data) <= limit_bytes:
                 break
 
@@ -88,14 +88,72 @@ def prepare_image(path: Path, *, limit_bytes: int = DEFAULT_LIMIT_BYTES,
         )
         data = _encode_jpeg(image, 60)
 
+    return data, content_type, filename, image.width, image.height
+
+
+def prepare_image(path: Path, *, limit_bytes: int = DEFAULT_LIMIT_BYTES,
+                  max_width: int = DEFAULT_MAX_WIDTH) -> PreparedImage:
+    """Read, shrink and compress one image so WeChat accepts it."""
+    path = Path(path)
+    if not path.is_file():
+        raise FileNotFoundError("image not found: {}".format(path))
+
+    with Image.open(path) as raw:
+        raw.load()
+        image = raw.copy()
+
+    data, content_type, filename, width, height = _compress(
+        image, path.stem, limit_bytes, max_width)
+
     return PreparedImage(
         source=path,
         data=data,
         filename=filename,
         content_type=content_type,
-        width=image.width,
-        height=image.height,
+        width=width,
+        height=height,
     )
+
+
+def prepare_image_bytes(data: bytes, stem: str = "image", *,
+                        limit_bytes: int = DEFAULT_LIMIT_BYTES,
+                        max_width: int = DEFAULT_MAX_WIDTH) -> PreparedImage:
+    """Compress image bytes that were fetched from elsewhere."""
+    with Image.open(io.BytesIO(data)) as raw:
+        raw.load()
+        image = raw.copy()
+
+    data, content_type, filename, width, height = _compress(
+        image, stem, limit_bytes, max_width)
+
+    return PreparedImage(
+        source=Path(stem),
+        data=data,
+        filename=filename,
+        content_type=content_type,
+        width=width,
+        height=height,
+    )
+
+
+def download_image(url: str, *, timeout: int = 20) -> bytes:
+    """Fetch an external image.
+
+    Raises ``ValueError`` when the host refuses, the file is missing, or
+    the payload is not an image -- the caller turns that into a visible
+    note rather than a silently missing picture.
+    """
+    request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            data = response.read()
+    except urllib.error.HTTPError as error:
+        raise ValueError("HTTP {} for {}".format(error.code, url)) from error
+    except urllib.error.URLError as error:
+        raise ValueError("{} for {}".format(error.reason, url)) from error
+    if not data:
+        raise ValueError("empty response for {}".format(url))
+    return data
 
 
 def _crop(ratio: float, width: int, height: int) -> dict:

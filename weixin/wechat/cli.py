@@ -42,6 +42,14 @@ EXIT_NOT_FOUND = 1
 EXIT_REJECTED = 2
 EXIT_API_ERROR = 3
 
+# Stands in for an externally hosted picture that could not be fetched and
+# re-hosted on WeChat.  WeChat removes such pictures silently, so the
+# reader gets a note instead of a paragraph that stops for no reason.
+EXTERNAL_IMAGE_FALLBACK = (
+    "<p style=\"color:#888;font-size:13px;\">"
+    "（此处的原图未能转存，点击「阅读原文」查看完整图文）</p>"
+)
+
 
 def _resolve_post(posts_dir: Path, slug: str):
     """Find a post by slug, tolerating a missing or extra ``.md``."""
@@ -176,6 +184,8 @@ def cmd_convert(args) -> int:
         result.content_length, CONTENT_LIMIT,
         "  [已关闭代码高亮以压缩体积]" if degraded else ""))
     print("  待上传图片: {}".format(len(result.assets)))
+    if result.external_images:
+        print("  外链图片: {} 张（发布时会下载并转存到微信）".format(len(result.external_images)))
     print("  站外链接: {}".format(len(result.external_links)))
     print("  mermaid: {} 个 (渲染失败 {} 个)".format(len(assets), len(failures)))
     for asset in failures:
@@ -219,6 +229,30 @@ def _upload_assets(client, result, args):
         prepared = assets_module.prepare_image(resolved)
         urls.append(client.upload_body_image(prepared.data, prepared.filename))
     return urls
+
+
+def _fetch_external_images(client, result):
+    """Download externally hosted images and store them on WeChat.
+
+    WeChat drops any image whose URL does not come from
+    ``media/uploadimg`` -- it removes the element without leaving a
+    trace, so the reader sees a paragraph that simply stops.  Fetching
+    the picture and uploading it keeps the article whole.
+
+    A picture that cannot be fetched is reported and replaced by a
+    visible note, never dropped silently.
+    """
+    urls = []
+    failures = []
+    for url in result.external_images:
+        try:
+            data = assets_module.download_image(url)
+            prepared = assets_module.prepare_image_bytes(data, stem="ext")
+            urls.append(client.upload_body_image(prepared.data, prepared.filename))
+        except (ValueError, OSError, publish_module.WeChatError) as error:
+            urls.append(None)
+            failures.append((url, str(error)))
+    return urls, failures
 
 
 def _upload_cover(client, result, args):
@@ -290,6 +324,13 @@ def cmd_publish(args) -> int:
 
     urls = _upload_assets(client, result, args)
     html = result.substitute(urls)
+
+    external_failures = []
+    if result.external_images:
+        external_urls, external_failures = _fetch_external_images(client, result)
+        html = result.substitute_external(
+            external_urls, fallback=EXTERNAL_IMAGE_FALLBACK, html=html)
+
     cover_media_id, crop_list = _upload_cover(client, result, args)
 
     article = {
@@ -322,6 +363,11 @@ def cmd_publish(args) -> int:
     print("  media_id: {}".format(state.media_id))
     print("  正文长度: {} 字符".format(result.content_length))
     print("  阅读原文: {}{}".format(args.source_url.rstrip("/"), post.permalink))
+    if result.external_images:
+        fetched = len(result.external_images) - len(external_failures)
+        print("  外链图转存: {} / {} 张".format(fetched, len(result.external_images)))
+    for url, error in external_failures:
+        print("    ! 原图未能转存: {} -> {}".format(url, error))
     if state.publish_id:
         print("  publish_id: {}".format(state.publish_id))
     else:

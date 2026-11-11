@@ -1,8 +1,10 @@
+import io
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
+from PIL import Image
 
 from wechat.cli import main
 
@@ -375,3 +377,79 @@ def test_publish_uses_configured_cover_for_articles_without_images(tmp_path, ser
     assert code == 0
     payload = json.loads(_Handler.bodies["/cgi-bin/draft/add"])
     assert payload["articles"][0]["thumb_media_id"] == "COVER_ID"
+
+
+# --- external images ------------------------------------------------------
+
+
+def test_publish_rehosts_an_external_image(tmp_path, server, monkeypatch):
+    """WeChat deletes images it does not host, so they must be re-hosted.
+
+    The picture is fetched, uploaded, and the placeholder in the body
+    replaced with the mmbiz URL.
+    """
+    payload = io.BytesIO()
+    Image.new("RGB", (40, 30), (10, 120, 200)).save(payload, format="PNG")
+
+    class _ImageHandler(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            pass
+
+        def do_GET(self):
+            data = payload.getvalue()
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+
+    image_httpd = HTTPServer(("127.0.0.1", 0), _ImageHandler)
+    threading.Thread(target=image_httpd.serve_forever, daemon=True).start()
+    image_base = "http://127.0.0.1:{}".format(image_httpd.server_port)
+
+    posts_dir = tmp_path / "source" / "_posts"
+    posts_dir.mkdir(parents=True)
+    (posts_dir / "ext.md").write_text(
+        "---\ntitle: \"外链图\"\ndate: 2026-11-09 15:00:00\n---\n\n"
+        "正文。\n\n![封面](images/cover.png)\n\n![图]({}/a.png)\n".format(image_base),
+        encoding="utf-8")
+    _write_png(tmp_path / "source" / "images" / "cover.png")
+
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["publish", "ext", "--posts-dir", str(posts_dir),
+                 "--out-dir", str(tmp_path / "out"), "--api-base", server,
+                 "--secrets-file", str(tmp_path / "absent.json")])
+    image_httpd.shutdown()
+    assert code == 0
+
+    article = json.loads(_Handler.bodies["/cgi-bin/draft/add"])["articles"][0]
+    assert "https://mmbiz.qpic.cn/body/1" in article["content"]
+    assert "{{ext:" not in article["content"]
+
+
+def test_publish_leaves_a_note_when_an_external_image_cannot_be_fetched(
+        tmp_path, server, monkeypatch, capsys):
+    """A picture that cannot be fetched leaves a visible note, not a gap."""
+    posts_dir = tmp_path / "source" / "_posts"
+    posts_dir.mkdir(parents=True)
+    (posts_dir / "ext.md").write_text(
+        "---\ntitle: \"外链图\"\ndate: 2026-11-09 15:00:00\n---\n\n"
+        "正文。\n\n![封面](images/cover.png)\n\n"
+        "![图](http://127.0.0.1:1/nope.png)\n",
+        encoding="utf-8")
+    _write_png(tmp_path / "source" / "images" / "cover.png")
+
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["publish", "ext", "--posts-dir", str(posts_dir),
+                 "--out-dir", str(tmp_path / "out"), "--api-base", server,
+                 "--secrets-file", str(tmp_path / "absent.json")])
+    assert code == 0
+
+    article = json.loads(_Handler.bodies["/cgi-bin/draft/add"])["articles"][0]
+    assert "{{ext:" not in article["content"]
+    assert "原图未能转存" in article["content"]
+    assert "原图未能转存" in capsys.readouterr().out

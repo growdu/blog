@@ -82,10 +82,42 @@ def test_render_content_length_counts_html_characters():
     assert result.content_length == len(result.html)
 
 
-def test_render_keeps_remote_image_as_is():
+def test_render_gives_a_remote_image_its_own_placeholder():
+    """WeChat deletes images it does not host, so a remote one needs
+    a placeholder the publish step can fill with a re-hosted URL."""
     result = render(parse("![远](https://example.com/a.png)\n"))
     assert result.assets == ()
-    assert "https://example.com/a.png" in result.html
+    assert result.external_images == ("https://example.com/a.png",)
+    assert result.external_placeholder(0) in result.html
+    assert "https://example.com/a.png" not in result.html
+
+
+def test_substitute_external_replaces_the_remote_placeholder():
+    result = render(parse("![远](https://example.com/a.png)\n"))
+    html = result.substitute_external(["https://mmbiz.qpic.cn/1"])
+    assert "https://mmbiz.qpic.cn/1" in html
+    assert "{{ext:" not in html
+
+
+def test_substitute_external_falls_back_to_a_visible_note():
+    """A picture that cannot be fetched leaves a note, never a gap."""
+    result = render(parse("![远](https://example.com/a.png)\n"))
+    html = result.substitute_external([None], fallback="<p>原图未能转存</p>")
+    assert "<p>原图未能转存</p>" in html
+    assert "{{ext:" not in html
+
+
+def test_local_and_remote_images_use_separate_placeholders():
+    result = render(parse("![本](images/a.png)\n\n![远](https://example.com/b.png)\n"))
+    assert result.assets == ("images/a.png",)
+    assert result.external_images == ("https://example.com/b.png",)
+    html = result.substitute(["https://mmbiz.qpic.cn/local"])
+    html = result.substitute_external(
+        ["https://mmbiz.qpic.cn/remote"], fallback="", html=html)
+    assert "https://mmbiz.qpic.cn/local" in html
+    assert "https://mmbiz.qpic.cn/remote" in html
+    assert "{{img:" not in html
+    assert "{{ext:" not in html
 
 
 def test_render_falls_back_to_source_block_when_mermaid_fails():

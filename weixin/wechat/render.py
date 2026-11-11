@@ -105,17 +105,43 @@ class RenderResult:
     html: str
     assets: tuple = ()
     external_links: tuple = ()
+    external_images: tuple = ()
     token: str = ""
 
     def placeholder(self, index: int) -> str:
         """The placeholder token standing in for asset ``index``."""
         return "{{img:%d:%s}}" % (index, self.token)
 
-    def substitute(self, urls) -> str:
-        """Replace every placeholder with the uploaded URL at that index."""
-        out = self.html
+    def external_placeholder(self, index: int) -> str:
+        """The placeholder standing in for an externally hosted image."""
+        return "{{ext:%d:%s}}" % (index, self.token)
+
+    def substitute(self, urls, html: str = None) -> str:
+        """Replace every placeholder with the uploaded URL at that index.
+
+        ``html`` lets a second substitution continue where this one
+        stopped; without it the substitution starts from :attr:`html`.
+        """
+        out = self.html if html is None else html
         for index, url in enumerate(urls):
             out = out.replace(self.placeholder(index), url)
+        return out
+
+    def substitute_external(self, urls, fallback: str = "", html: str = None) -> str:
+        """Replace the external-image placeholders.
+
+        ``urls`` holds the uploaded URL of each external image, in the
+        order they appear in :attr:`external_images`.  A missing entry
+        means the image could not be fetched; ``fallback`` then takes its
+        place so the reader sees a note instead of a silent gap.
+        """
+        out = self.html if html is None else html
+        for index in range(len(self.external_images)):
+            url = urls[index] if index < len(urls) else None
+            if url:
+                out = out.replace(self.external_placeholder(index), url)
+            else:
+                out = out.replace(self.external_placeholder(index), fallback)
         return out
 
     @property
@@ -161,6 +187,7 @@ class _Renderer:
         self.assets = []
         self.asset_index = {}
         self.external_links = []
+        self.external_images = []
 
     def register(self, path: str) -> str:
         """Return the placeholder token for a local asset, registering once."""
@@ -171,6 +198,17 @@ class _Renderer:
 
     def placeholder(self, index: int) -> str:
         return "{{img:%d:%s}}" % (index, self.token)
+
+    def register_external(self, url: str) -> str:
+        """Return the placeholder for an externally hosted image.
+
+        WeChat drops any image whose URL does not come from
+        ``media/uploadimg`` -- it removes the element without a trace.
+        So an external image is given a placeholder too, and the publish
+        step downloads it and stores it on WeChat.
+        """
+        self.external_images.append(url)
+        return "{{ext:%d:%s}}" % (len(self.external_images) - 1, self.token)
 
     def inline(self, nodes) -> str:
         return "".join(self._inline_one(node) for node in nodes)
@@ -193,8 +231,11 @@ class _Renderer:
             alt = _escape(node.alt)
             target = node.target
             if target.startswith(("http://", "https://", "data:")):
+                # WeChat removes images that are not hosted on mmbiz, so
+                # an external image needs the same treatment as a local
+                # one: a placeholder the publish step can fill.
                 return "<img src=\"%s\" alt=\"%s\" style=\"%s\" />" % (
-                    _escape(target), alt, IMAGE_STYLE)
+                    self.register_external(target), alt, IMAGE_STYLE)
             return "<img src=\"%s\" alt=\"%s\" style=\"%s\" />" % (
                 self.register(target), alt, IMAGE_STYLE)
         return ""
@@ -299,5 +340,6 @@ def render(blocks: list, *, resolver=None, highlight: bool = True) -> RenderResu
         html=body,
         assets=tuple(renderer.assets),
         external_links=tuple(renderer.external_links),
+        external_images=tuple(renderer.external_images),
         token=renderer.token,
     )

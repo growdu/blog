@@ -1,9 +1,12 @@
 import io
+import threading
+from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
 from PIL import Image
 
-from wechat.assets import cover_crop_list, prepare_image
+from wechat.assets import (cover_crop_list, download_image, prepare_image,
+                           prepare_image_bytes)
 
 
 def _png(width: int, height: int, color=(200, 30, 30)) -> bytes:
@@ -131,3 +134,54 @@ def test_cover_crop_list_square_is_centred():
     assert float(square["x1"]) == pytest.approx(1.0 - float(square["x2"]), abs=1e-6)
     assert float(square["y1"]) == 0.0
     assert float(square["y2"]) == 1.0
+
+
+# --- fetched images -------------------------------------------------------
+
+
+class _ImageHandler(BaseHTTPRequestHandler):
+    payload = b""
+    status = 200
+
+    def log_message(self, *args):
+        pass
+
+    def do_GET(self):
+        self.send_response(self.status)
+        self.send_header("Content-Type", "image/png")
+        self.send_header("Content-Length", str(len(self.payload)))
+        self.end_headers()
+        self.wfile.write(self.payload)
+
+
+@pytest.fixture
+def image_server():
+    httpd = HTTPServer(("127.0.0.1", 0), _ImageHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    yield "http://127.0.0.1:{}".format(httpd.server_port)
+    httpd.shutdown()
+
+
+def test_download_image_fetches_the_bytes(image_server):
+    _ImageHandler.payload = _png(40, 30)
+    _ImageHandler.status = 200
+    assert download_image(image_server + "/a.png") == _png(40, 30)
+
+
+def test_download_image_raises_on_a_missing_file(image_server):
+    _ImageHandler.status = 404
+    with pytest.raises(ValueError):
+        download_image(image_server + "/gone.png")
+
+
+def test_prepare_image_bytes_compresses_fetched_data():
+    prepared = prepare_image_bytes(_png(2000, 100), stem="ext")
+    assert prepared.width <= 1080
+    assert prepared.content_type in ("image/png", "image/jpeg")
+    assert prepared.filename.endswith((".png", ".jpg"))
+
+
+def test_prepare_image_bytes_rejects_data_that_is_not_an_image():
+    with pytest.raises(OSError):
+        prepare_image_bytes(b"not an image at all")
