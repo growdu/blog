@@ -100,3 +100,38 @@ python3 aiv/scripts/sync_publish_docs.py
 
 发布目录里**只有**这些文档。`pipeline/` 下的内部设计、实施计划与测试夹具
 留在仓库里，不进博客——测试夹具尤其不能发，其中一份是故意写坏的样本。
+
+### 站内相对链接是怎么变成绝对路径的
+
+博客里大量用 `../xxx/index.html` 这种写法，但站点的真实 URL 带日期
+（`/2026/11/11/life/gaokao/yunnan-policy/`）。**Hexo 在构建时会重写**：
+目标页存在时，相对链接被改成带日期的绝对路径。
+
+**目标页不存在时，链接就原样留下**，于是 404。实测：
+`../aiv/背景音乐规范.md` 被正确重写成了 `/blog/2026/11/11/life/aiv/背景音乐规范/`，
+而 `../aiv/index.html` 因为专题页不存在，保持字面量、点了就是 404。
+
+所以补一个缺失的页面时**不用去改引用它的那些链接**——把页面写出来，
+链接会自己恢复。反过来，看到「相对链接 404」要先查目标页在不在，
+而不是去改链接文本。
+
+### AIV 专题页还缺着
+
+`docs/life/aiv/index.md`（专题页「AIV 视频生产线：九个环节、唯一契约与入库边界」）
+在目录迁移提交 `0b9cb9a` 里被删了，仓库里有 **8 处链接**指向它、目前全 404：
+
+| 位置 | 处数 |
+| --- | --- |
+| `docs/life/_index.md` | 2 |
+| `docs/life/blog-to-wechat/index.md` | 3 |
+| `docs/life/shehui/media-account/index.md` | 2 |
+| `docs/database/_index.md` | 1（路径是 `../db/aiv/index.html`，另错了一层） |
+
+旧页在 git 历史里（`0b9cb9a^:docs/life/aiv/index.md`，213 行），但**不能直接恢复**：
+里面写的是「成片线归雇主、我们支持了 X」的公司口径，与现在的第三方开发者口径冲突；
+还引用已作废的 `pa_decode_v2.mp3`、把 `storyboard.json` 说成唯一契约
+（现在契约是 `contracts/*.json`，storyboard 是产物）。要按现状重写。
+
+落地方式：正本 `aiv/index.md` + 发布副本 `docs/life/aiv/index.md`，
+并把 `index.md` 加进 `aiv/scripts/sync_publish_docs.py` 的 `PUBLISH_DOCS`，
+这样副本漂移继续被 `test_publish_copy.py` 抓住。
