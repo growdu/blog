@@ -50,5 +50,8 @@ def test_publish_dir_contains_only_whitelisted_docs():
     for path in sorted(PUBLISH_ROOT.rglob("*")):
         if path.is_dir():
             continue
+        # 隐藏文件不发布——sync-hexo.py 也会跳过它们（.DS_Store 之类）
+        if any(part.startswith('.') for part in path.relative_to(PUBLISH_ROOT).parts):
+            continue
         rel = path.relative_to(PUBLISH_ROOT).as_posix()
         assert rel in allowed, f"{rel} 不该出现在发布目录里"
