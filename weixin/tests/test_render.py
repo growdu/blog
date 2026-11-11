@@ -115,6 +115,12 @@ def test_render_styles_code_block():
     assert "overflow" in html
 
 
+def test_render_highlights_code_with_inline_spans():
+    html = _html("```sql\nSELECT 1;\n```\n")
+    assert "<span" in html
+    assert "class=" not in html
+
+
 def test_render_marks_task_list_with_checkbox():
     html = _html("- [x] done\n- [ ] todo\n")
     assert "☑" in html

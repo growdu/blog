@@ -178,8 +178,9 @@ class _Renderer:
         if isinstance(node, CodeBlock):
             if node.lang.lower() == "mermaid":
                 return self._mermaid(node)
+            from .highlight import highlight_code
             return ("<pre style=\"%s\"><code style=\"%s\">%s</code></pre>") % (
-                CODE_BLOCK_STYLE, CODE_FONT, _escape(node.code))
+                CODE_BLOCK_STYLE, CODE_FONT, highlight_code(node.code, node.lang))
         if isinstance(node, Table):
             return self._table(node)
         if isinstance(node, ListBlock):
