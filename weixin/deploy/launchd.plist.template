@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  新文档自动进草稿箱的定时任务。
+
+  安装：
+    1. 把本文件复制到 ~/Library/LaunchAgents/com.growdu.weixin.auto-draft.plist
+    2. 把 __REPO__ 换成仓库路径（本机是 /Users/growduduan/code/blog）
+    3. 把 __PYTHON__ 换成跑测试用的那个 python3
+       （`python3 -c "import sys; print(sys.executable)"`）
+    4. launchctl load -w ~/Library/LaunchAgents/com.growdu.weixin.auto-draft.plist
+
+  查看与卸载：
+    launchctl list | grep growdu.weixin
+    launchctl unload -w ~/Library/LaunchAgents/com.growdu.weixin.auto-draft.plist
+    tail -f ~/Library/Logs/weixin-auto-draft.log
+
+  为什么用 launchd 而不是 cron：
+  这台机器是 Mac，会合盖休眠。launchd 的 StartCalendarInterval 在错过的
+  时间点醒来后会补跑，cron 不会——那样就会「周一才补发周五该发的稿」。
+
+  为什么不用 GitHub Actions：
+  公众号接口要求调用方出口 IP 在后台白名单里，GitHub 托管 runner 的出口
+  IP 是动态的，所有调用都会被 40164 挡下。发布动作必须留在固定 IP 的机器上。
+
+  跑的是什么：
+  python3 -m wechat.cli auto-draft
+    docs/ 变了   -> 重新生成 source/_posts/（约 3 分钟），再推进草稿箱
+    docs/ 没变   -> 跳过生成，但仍然跑一次批量（免费的，且能接上次没跑完的）
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.growdu.weixin.auto-draft</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PYTHON__</string>
+        <string>-m</string>
+        <string>wechat.cli</string>
+        <string>auto-draft</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__REPO__/weixin</string>
+
+    <!-- launchd 的环境变量很少，PATH 要自己给：mermaid 渲染要 npx。 -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>LANG</key>
+        <string>zh_CN.UTF-8</string>
+        <key>PYTHONPATH</key>
+        <string>__REPO__/weixin</string>
+    </dict>
+
+    <!-- 每两小时一次。没变化时脚本自己什么都不做，只是空跑。 -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Hour</key><integer>1</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>3</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>5</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>9</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>11</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>13</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>15</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>17</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>21</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Hour</key><integer>23</integer><key>Minute</key><integer>0</integer></dict>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/weixin-auto-draft.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/weixin-auto-draft.log</string>
+</dict>
+</plist>
