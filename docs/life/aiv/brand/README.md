@@ -15,14 +15,15 @@ brand/
 ├── assets/
 │   ├── bg_intro.png                 AI 背景：深蓝数据中心（2720×1536）
 │   ├── bg_outro.png                 AI 背景：蓝调城市天际线（2720×1536）
-│   ├── growdu_pose_thumbsup_nobg.png  小象 · 点赞姿态（2048²，透明底）
-│   └── growdu_pose_wave_nobg.png      小象 · 挥手姿态（2048²，透明底）
+│   ├── growdu_pose_thumbsup_nobg.png  小象 · 点赞姿态（2048²，透明底，戴方框眼镜）
+│   └── growdu_pose_wave_nobg.png      小象 · 挥手姿态（2048²，透明底，戴方框眼镜）
 ├── audio/
 │   ├── voice_intro.mp3 / voice_outro.mp3   旁白（定稿音色）
 │   ├── bgm_intro.wav / bgm_outro.wav       配乐原曲（60~75 秒）
 │   └── intro_mix.wav / outro_mix.wav       成品音轨（旁白 + 配乐，2.833s）
 └── scripts/
     ├── render_brand.py              渲染两支片（当前唯一入口）
+    ├── generate_poses.py            生成点赞 / 挥手姿态素材（可复现）
     ├── make_audio_brand.py          混音成品音轨
     ├── fix_plates.py                【旧版 8 秒片】底板文字修复
     ├── make_audio.sh                【旧版 8 秒片】macOS say 旁白 + 配乐
@@ -78,6 +79,9 @@ python3 scripts/render_brand.py       # 铭牌盖章 + 渲染片头 + 片尾（-
   `render_brand.py` 会自动探测主体包围盒再推导脚底比例。
 - **AI 宽幅背景可能有贯穿全图的拼接缝。** `bg_outro.png` 初版就是左右两场景硬拼。
   羽化只会把缝糊掉，正确做法是用「单一连续空间」的 prompt 重新生成。
+- **姿态素材戴眼镜要走两步。** 模型给镜框贴白色小铭牌是固定毛病，
+  `character/scripts/add_glasses.py` 因此在图生图之后额外做一次局部修补。
+  姿态素材本身的生成入口是 `scripts/generate_poses.py`。
 
 ## 在 aiv 流水线里的用法
 

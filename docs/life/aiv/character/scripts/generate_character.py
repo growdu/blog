@@ -24,12 +24,12 @@
 """
 from __future__ import annotations
 
-import json
-import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+from _mcode import call, download, upload  # noqa: E402  同目录脚本
+from add_glasses import GLASSES_COLOR, GLASSES_STYLE  # noqa: E402  眼镜规格唯一来源
 from stamp_badge import stamp_badge  # noqa: E402  同目录脚本
 
 HERE = Path(__file__).resolve().parent
@@ -37,7 +37,13 @@ AIV = HERE.parent.parent           # docs/life/aiv
 CHAR_DIR = AIV / "character"
 SOURCE_IMAGE = AIV / "growdu2.jpeg"   # 形象原型，唯一来源
 
-CHARACTER_PROMPT = """以图1（3D 渲染的可爱小象幼崽坐姿形象）为主体原型，生成一张专业的产品级角色设定图（character turnaround sheet）。
+GLASSES_PROMPT = f"""眼镜（必须戴）：
+- 戴一副{GLASSES_STYLE}眼镜，镜框颜色深藏蓝 {GLASSES_COLOR}（与马甲同色），框条纤细规整，方形镜片带极小圆角
+- 镜片完全透明，能清楚看到眼睛，不要镜片反光、不要镜片变色、不要墨镜遮眼
+- 眼镜架在两只眼睛上，佩戴位置与角度自然，镜框总宽度与两只大眼睛的总跨度相称
+- 镜腿从镜框两侧水平伸向两只耳朵"""
+
+CHARACTER_PROMPT = f"""以图1（3D 渲染的可爱小象幼崽坐姿形象）为主体原型，生成一张专业的产品级角色设定图（character turnaround sheet）。
 
 角色设定：一位讲解数据库内核技术的拟人化小象「Growdu」，定位是「专注数据库内核方向的独立开发者」的技术讲解者。
 
@@ -51,6 +57,8 @@ CHARACTER_PROMPT = """以图1（3D 渲染的可爱小象幼崽坐姿形象）为
 - 胸前佩戴深藏蓝色 (#2B4C7E) 技术围裙 / 工装马甲，胸口有一个圆柱形数据库磁盘图标，颜色为琥珀黄 (#F5A623)
 - 马甲上别一块白色小铭牌
 
+{GLASSES_PROMPT}
+
 画面要求：
 - 纯白背景 (#FFFFFF)，无投影或极淡的接触阴影
 - 主体居中，留出充足白边，适合后续做二次合成与局部抠图
@@ -59,7 +67,7 @@ CHARACTER_PROMPT = """以图1（3D 渲染的可爱小象幼崽坐姿形象）为
 
 风格：干净的 3D 卡通渲染，产品级质感，类似现代科技品牌的吉祥物设计。"""
 
-POSE_PROMPT = """以图1（3D 渲染的可爱小象角色，穿深藏蓝色工装马甲、佩戴黑色头戴耳机、胸口有琥珀黄圆柱数据库图标）为唯一原型，生成一张角色姿态设定表。
+POSE_PROMPT = f"""以图1（3D 渲染的可爱小象角色，穿深藏蓝色工装马甲、佩戴黑色头戴耳机、胸口有琥珀黄圆柱数据库图标）为唯一原型，生成一张角色姿态设定表。
 
 IMPORTANT — 铭牌上绝对不要有任何文字：胸口那块白色矩形铭牌必须是完全空白的纯白色，没有任何字母、汉字、符号、条纹或任何类似文字的痕迹。
 
@@ -73,40 +81,17 @@ IMPORTANT — 铭牌上绝对不要有任何文字：胸口那块白色矩形铭
 5. 正面坐姿但头微微低，看向下方（沉思/讲解细节）
 6. 身体略微后仰、双手摊开，表情豁达（收束/总结姿态）
 
+{GLASSES_PROMPT}
+- 六个姿态里的小象全都戴着这副眼镜，佩戴位置与角度各自自然
+
 硬性要求：
 - 严格保持图1的角色设定不变：同一只小象、同样的浅蓝灰色皮肤、同样的圆眼与粉色面颊、同样的深藏蓝 (#2B4C7E) 马甲、同样的琥珀黄 (#F5A623) 圆柱数据库图标、同样的黑色头戴耳机
+- 每个姿态的胸口都别着一块横向长方形的**白色小铭牌**（与图1同款）
 - 铭牌严格空白纯白，无任何文字或类似文字的图案
 - 六个姿态是同一个角色的不同动作，不是不同的角色；体型比例、颜色、光照完全统一
 - 纯白背景，无投影，无场景道具
 - 不要任何文字标签、边框、说明文字、字母或数字
 - 干净的产品级 3D 卡通渲染质感"""
-
-
-def run(cmd: list[str]) -> str:
-    proc = subprocess.run(cmd, capture_output=True, text=True)
-    if proc.returncode != 0:
-        raise RuntimeError(f"命令失败：{' '.join(cmd[:3])}\n{proc.stderr[-800:]}")
-    return proc.stdout
-
-
-def upload(path: Path) -> str:
-    out = run(["mcode-tools", "upload_temp_url", str(path)])
-    return json.loads(out[out.index("{"):])["temp_url"]
-
-
-def call(tool: str, args: dict) -> dict:
-    args_file = HERE / "_args.json"
-    args_file.write_text(json.dumps(args, ensure_ascii=False), encoding="utf-8")
-    out = run(["mcode-tools", "connector", "call", tool, "--args-file", str(args_file)])
-    return json.loads(out[out.index("{"):])
-
-
-def download(node_id: str, dest: Path) -> None:
-    out = run(["mcode-tools", "get_asset_url", node_id])
-    url = json.loads(out[out.index("{"):])["download_url"]
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.run(["curl", "-sfL", "-o", str(dest), url], check=True)
-    print(f"  → {dest.relative_to(AIV)}")
 
 
 def main() -> int:
@@ -127,10 +112,12 @@ def main() -> int:
     node = res["success_items"][0]["node_id"]
     main_png = CHAR_DIR / "growdu_character_2k.png"
     download(node, main_png)
+    print(f"  → {main_png.relative_to(AIV)}")
 
     print("抠透明底…")
     res = call("connector__matrix__remove_image_background", {"image_url": upload(main_png)})
     download(res["node_id"], CHAR_DIR / "growdu_character_2k_nobg.png")
+    print(f"  → {(CHAR_DIR / 'growdu_character_2k_nobg.png').relative_to(AIV)}")
 
     print("生成 6 姿态设定表…")
     res = call("connector__matrix__generate_image", {"requests": [{
@@ -140,6 +127,7 @@ def main() -> int:
         "output_file": "growdu_pose_sheet.png", "n": 1,
     }]})
     download(res["success_items"][0]["node_id"], CHAR_DIR / "growdu_pose_sheet.png")
+    print(f"  → {(CHAR_DIR / 'growdu_pose_sheet.png').relative_to(AIV)}")
 
     print("给铭牌印上 growdu（真实字体渲染）…")
     for target in (main_png, CHAR_DIR / "growdu_character_2k_nobg.png"):
