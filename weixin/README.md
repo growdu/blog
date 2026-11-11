@@ -73,6 +73,32 @@ cd weixin && python3 -m wechat.cli convert <slug>
 | `WX_SOURCE_URL` | 站点根 URL，用于拼「阅读原文」，默认 `https://growdu.cn` |
 | `WX_COVER` | 封面图路径（未指定时取文章首图） |
 
+凭据也可以放进 `weixin/secrets.json`（已在 `.gitignore` 里），避免 secret 落到
+shell 历史里。格式见 `secrets.example.json`：
+
+```json
+{
+  "appid": "wx1234567890abcdef",
+  "appsecret": "你的 AppSecret"
+}
+```
+
+优先级：**命令行参数 > 环境变量 > `secrets.json`**。用 `--secrets-file` 指定别的路径。
+
+### 凭据从哪来
+
+登录 [微信公众平台](https://mp.weixin.qq.com/) → 左侧「**设置与开发**」→「**基本配置**」：
+
+| 要的东西 | 在哪 | 注意 |
+| --- | --- | --- |
+| 开发者 ID (AppID) | 页面右侧「开发者ID」 | 直接可见，`wx` 开头 |
+| 开发者密码 (AppSecret) | AppID 下方，点「重置」（首次是「启用」） | 管理员扫码确认，**只显示这一次**，当场复制 |
+| IP 白名单 | **在 AppSecret 下方** | 必须先启用 AppSecret，白名单入口才会出现 |
+
+白名单里填的是**调用接口这台机器的公网出口 IP**（不是微信的服务器 IP）。
+本机出口 IP：`curl ifconfig.me`。填错会报 `40164 invalid ip not in whitelist`，
+报错信息里会带上微信实际看到的那个 IP，直接把它加进去即可。
+
 ## 实现现状
 
 | 段 | 模块 | 状态 |

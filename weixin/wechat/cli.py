@@ -17,6 +17,7 @@ box is a useful human review gate either way.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from pathlib import Path
@@ -34,6 +35,7 @@ from .state import StateStore, needs_draft, needs_submit
 DEFAULT_POSTS_DIR = Path(__file__).resolve().parents[2] / "source" / "_posts"
 DEFAULT_OUT_DIR = Path(__file__).resolve().parents[1] / "out"
 DEFAULT_SOURCE_URL = "https://growdu.cn"
+DEFAULT_SECRETS_FILE = Path(__file__).resolve().parents[1] / "secrets.json"
 
 EXIT_OK = 0
 EXIT_NOT_FOUND = 1
@@ -343,6 +345,30 @@ def cmd_status(args) -> int:
     return EXIT_OK
 
 
+def _load_secrets(path: Path) -> dict:
+    """Read optional local credentials from a JSON file.
+
+    The file is optional: the environment variables win, and a missing
+    file is not an error.  A malformed file *is* worth reporting -- the
+    user probably meant to put credentials there and would otherwise get
+    a confusing "missing WX_APPID" further down.
+    """
+    if not path.is_file():
+        return {}
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except OSError as error:
+        print("读取凭据文件失败: {}".format(error), file=sys.stderr)
+        return {}
+    except json.JSONDecodeError as error:
+        print("凭据文件不是合法 JSON: {} ({})".format(path, error), file=sys.stderr)
+        return {}
+    if not isinstance(data, dict):
+        print("凭据文件应为 JSON 对象: {}".format(path), file=sys.stderr)
+        return {}
+    return data
+
+
 def _add_common_options(parser, *, suppress: bool) -> None:
     """Add the options every command understands.
 
@@ -367,6 +393,8 @@ def _add_common_options(parser, *, suppress: bool) -> None:
     parser.add_argument("--appsecret", default=default(""), help="公众号 AppSecret，默认取环境变量")
     parser.add_argument("--author", default=default("growdu"), help="作者署名")
     parser.add_argument("--cover", default=default(""), help="封面图路径，默认取文章首图")
+    parser.add_argument("--secrets-file", type=Path, default=default(DEFAULT_SECRETS_FILE),
+                        help="本地凭据 JSON，默认 weixin/secrets.json")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -407,6 +435,10 @@ def main(argv=None) -> int:
     args.appsecret = args.appsecret or os.environ.get("WX_APPSECRET", "")
     args.source_url = os.environ.get("WX_SOURCE_URL", args.source_url)
     args.cover = args.cover or os.environ.get("WX_COVER", "")
+    if not (args.appid and args.appsecret):
+        secrets = _load_secrets(args.secrets_file)
+        args.appid = args.appid or secrets.get("appid", "")
+        args.appsecret = args.appsecret or secrets.get("appsecret", "")
     try:
         return args.func(args)
     except publish_module.WeChatError as error:

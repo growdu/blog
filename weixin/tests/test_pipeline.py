@@ -118,6 +118,12 @@ def _args(posts_dir, out_dir, slug=None, server=None):
     return args
 
 
+def _secrets_file(tmp_path, content):
+    path = tmp_path / "secrets.json"
+    path.write_text(content, encoding="utf-8")
+    return path
+
+
 def test_scan_lists_eligible_and_ineligible(tmp_path, capsys):
     posts_dir = tmp_path / "source" / "_posts"
     (posts_dir / "database").mkdir(parents=True)
@@ -214,6 +220,55 @@ def test_publish_requires_credentials(sample_post, tmp_path, server, monkeypatch
     code = main(["publish", slug] + _args(posts_dir, tmp_path / "out", server=server))
     assert code == 2
     assert "WX_APPID" in capsys.readouterr().err
+
+
+def test_publish_reads_credentials_from_the_secrets_file(sample_post, tmp_path, server, monkeypatch):
+    """A local JSON file keeps the secret out of the shell history."""
+    posts_dir, slug = sample_post
+    monkeypatch.delenv("WX_APPID", raising=False)
+    monkeypatch.delenv("WX_APPSECRET", raising=False)
+    secrets = _secrets_file(tmp_path, json.dumps({"appid": "appid", "appsecret": "secret"}))
+
+    code = main(["publish", slug, "--secrets-file", str(secrets)]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 0
+    assert "/cgi-bin/draft/add" in _Handler.calls
+
+
+def test_environment_variables_win_over_the_secrets_file(sample_post, tmp_path, server, monkeypatch):
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "from-env")
+    monkeypatch.setenv("WX_APPSECRET", "from-env")
+    secrets = _secrets_file(tmp_path, json.dumps({"appid": "from-file", "appsecret": "from-file"}))
+
+    code = main(["publish", slug, "--secrets-file", str(secrets)]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 0
+    assert b"from-env" in _Handler.bodies["/cgi-bin/stable_token"]
+
+
+def test_a_malformed_secrets_file_is_reported(sample_post, tmp_path, server, monkeypatch, capsys):
+    """A broken file is worth a word: the user meant to put credentials there."""
+    posts_dir, slug = sample_post
+    monkeypatch.delenv("WX_APPID", raising=False)
+    monkeypatch.delenv("WX_APPSECRET", raising=False)
+    secrets = _secrets_file(tmp_path, "{not json")
+
+    code = main(["publish", slug, "--secrets-file", str(secrets)]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 2
+    assert "不是合法 JSON" in capsys.readouterr().err
+
+
+def test_a_missing_secrets_file_is_not_an_error(sample_post, tmp_path, server, monkeypatch, capsys):
+    posts_dir, slug = sample_post
+    monkeypatch.delenv("WX_APPID", raising=False)
+    monkeypatch.delenv("WX_APPSECRET", raising=False)
+
+    code = main(["publish", slug, "--secrets-file", str(tmp_path / "absent.json")]
+                + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 2
+    assert "缺少 WX_APPID" in capsys.readouterr().err
 
 
 def test_publish_reports_api_error(sample_post, tmp_path, server, monkeypatch, capsys):
