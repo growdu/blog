@@ -6,8 +6,21 @@
 
 - 语料：**564 篇**文章、7689 个代码围栏（mermaid 1280）、13512 行表格、568 张图、1208 处站外链接
 - 合规：标题 ≤32 字过 459 → 原始正文 ≤2 万字过 444 → 渲染后 HTML ≤2 万字符过 **357 篇（63.3%）**（其中 18 篇靠关闭代码高亮才放得下）
-- 测试：151 个，全绿，不依赖网络
-- 试点：`dpdk/vpp与dpdk的关系` 转换链路已跑通；**发布链路待用自己的号实测接口**
+- 测试：159 个，全绿，不依赖网络
+- **发布链路已用真实账号实测**：`stable_token` / `media/uploadimg` /
+  `material/add_material` / `draft/add` 全部通过，草稿已进草稿箱；
+  `freepublish/submit` 返回 **48001 api unauthorized**——该账号没有发表权限，
+  最后「点一下发表」由人完成
+
+## 实测结论速查
+
+| 事项 | 结论 |
+| --- | --- |
+| IP 白名单填哪个 IP | **以 `40164` 报错里的为准**。走分流代理时 `curl ifconfig.me` 拿到的不是微信看到的那个 |
+| `stable_token` 的凭据字段名 | 用 **`secret`**，不是文档写的 `appsecret`（只发 appsecret 会被回 `41004`） |
+| `media/uploadimg` 的 token 位置 | 走 **query 参数** `?access_token=`，`Authorization` header 对这两个老接口无效 |
+| 幂等 | 同一篇跑两次复用同一个 `media_id`，不产生第二篇草稿 |
+| 失败行为 | 退出码 3、`publish_id` 不写、错误不吞——不会静默成功 |
 
 ## 文档
 
@@ -55,8 +68,8 @@ cd weixin && python3 -m wechat.cli convert <slug>
 | `scan` | 逐篇盘点，输出合格/不合格清单 |
 | `audit` | 复算全语料统计与 HTML 合规检查 |
 | `convert <slug>` | 转换一篇，产出 HTML 到 `out/` |
-| `publish <slug>` | 转换 + 上传 + 建草稿 |
-| `publish <slug> --publish` | 额外提交发表（默认只到草稿箱） |
+| `publish <slug>` | 转换 + 上传 + 建草稿（**本号自动化能到的最远一步**） |
+| `publish <slug> --publish` | 额外提交发表（该账号会返回 48001，无权限） |
 | `status` | 查看所有文章的状态 |
 
 `<slug>` 是文章相对 `source/_posts/` 的路径去掉 `.md`，例如
