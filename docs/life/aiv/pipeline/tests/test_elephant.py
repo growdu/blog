@@ -1,9 +1,7 @@
-import os
+from pyv import character, elephant
 
-from pyv import elephant
-
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-IMAGE = os.path.join(ROOT, "growdu.png")
+# 旧 2D 形象已移到仓库根，路径统一由 character 模块给出
+IMAGE = character.LEGACY_IMAGE
 
 
 def test_load_parts_finds_expected_regions():

@@ -57,9 +57,11 @@ def test_s05_outputs_in_ascending_order():
 
 def test_s06_uses_personal_avatar_and_no_banned_words():
     import pyv.scenes.s06_outro as s06
+    from pyv import character
     from pyv.timeline import BANNED_SUBSTRINGS
     source = open(s06.__file__, encoding="utf-8").read()
-    assert "growdu.jpg" in source
+    assert "avatar_path" in source, "落版头像必须走统一入口"
+    assert character.avatar_path() is not None, "个人头像素材缺失"
     for word in BANNED_SUBSTRINGS:
         assert word.lower() not in source.lower(), word
 

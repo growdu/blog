@@ -1,9 +1,14 @@
 import subprocess
+from pathlib import Path
 
 import numpy as np
 import pytest
 
 from pyv import align
+
+# 真实口播稿在 aiv/ 根目录（属于契约素材，不随媒体产物一起入库）
+AIV_ROOT = Path(__file__).resolve().parents[2]
+REAL_MD = AIV_ROOT / "字幕-并行解码.md"
 
 
 def _make_audio(tmp_path, segments, sr=32000):
@@ -89,17 +94,19 @@ def test_build_storyboard_rejects_mismatched_counts(tmp_path):
 def test_real_contract_has_matching_counts():
     """真实契约：口播 10 句、字幕 10 行、segments 期望 10 句。"""
     from pyv.segments import sentence_count
-    md = "/Users/growduduan/code/blog/docs/life/aiv/字幕-并行解码.md"
-    sentences = align.parse_script(md)
-    subtitles = align.parse_subtitle_table(md)
+    if not REAL_MD.exists():
+        pytest.skip("口播稿不在仓库中，跳过")
+    sentences = align.parse_script(REAL_MD)
+    subtitles = align.parse_subtitle_table(REAL_MD)
     assert len(sentences) == len(subtitles) == sentence_count() == 10
 
 
 def test_real_contract_subtitles_fit_width():
     """真实契约：每条字幕的视觉宽度都不超过 14。"""
     from pyv.timeline import display_width, MAX_SUBTITLE_LINE
-    md = "/Users/growduduan/code/blog/docs/life/aiv/字幕-并行解码.md"
-    for text in align.parse_subtitle_table(md):
+    if not REAL_MD.exists():
+        pytest.skip("口播稿不在仓库中，跳过")
+    for text in align.parse_subtitle_table(REAL_MD):
         assert display_width(text) <= MAX_SUBTITLE_LINE, text
 
 

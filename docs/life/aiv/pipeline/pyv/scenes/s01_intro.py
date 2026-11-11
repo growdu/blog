@@ -1,30 +1,26 @@
 """段 A：身份 + 标题。小象挥手入场。"""
 from __future__ import annotations
 
-import os
+import math
 
-from pyv import easing
+from pyv import character, easing
 from pyv.draw import text
-from pyv.elephant import Pose, draw_elephant, load_parts
+from pyv.elephant import Pose
 from pyv.palette import COLORS
 
-_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-_IMAGE = os.path.join(_ROOT, "growdu.png")
-_parts = None
-
-
-def _get_parts():
-    global _parts
-    if _parts is None:
-        _parts = load_parts(_IMAGE)
-    return _parts
+_mascot = character.Mascot()
 
 
 def render(ctx, t: float, w: int, h: int) -> None:
     """t ∈ [0,1] 为场景内进度。"""
-    scale = h * 0.66 / 1289.0
-    pose = Pose(wave=easing.clamp01((t - 0.18) * 2.4))
-    draw_elephant(ctx, _get_parts(), pose, (w * 0.27, h * 0.90), scale)
+    # 形象：滑入 + 淡入 + 轻微浮动。
+    # 静帧形象做不了挥手，用浮动补一点生气；旧 2D 形象走部件动画。
+    enter = easing.ease_out_cubic(t / 0.25)
+    slide = (1.0 - enter) * -w * 0.08
+    bob = math.sin(t * math.pi * 2.2) * h * 0.008
+    _mascot.draw(ctx, (w * 0.27, h * 0.90), h * 0.66,
+                 alpha=enter, pose=Pose(wave=easing.clamp01((t - 0.18) * 2.4)),
+                 slide=slide, bob=bob)
 
     appear = easing.ease_out_cubic(max(0.0, min(1.0, (t - 0.30) / 0.45)))
     text(ctx, "PostgreSQL 18", w * 0.50, h * 0.40, 104, COLORS["primary"], alpha=appear)

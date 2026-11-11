@@ -13,8 +13,8 @@ from pyv.timeline import Scene, Storyboard
 
 # 只有这些模块会改变画面内容，改动它们才需要重渲染
 RENDER_INPUT_MODULES = (
-    "draw.py", "easing.py", "elephant.py", "palette.py", "subtitle.py",
-    "timeline.py",
+    "character.py", "draw.py", "easing.py", "elephant.py", "palette.py",
+    "subtitle.py", "timeline.py",
 )
 
 
@@ -82,7 +82,10 @@ def render_scene(scene: Scene, out_path: str | Path,
         "ffmpeg", "-y", "-f", "rawvideo", "-pix_fmt", "bgr0",
         "-s", f"{width}x{height}", "-r", str(fps), "-i", "-",
         "-an", "-c:v", "libx264", "-preset", "medium", "-crf", "18",
-        "-pix_fmt", "yuv420p", str(out_path),
+        "-pix_fmt", "yuv420p", "-r", str(fps),
+        # 固定时间基：concat demuxer 要求所有片段的时间基一致
+        "-video_track_timescale", str(fps * 1000),
+        str(out_path),
     ]
     proc = subprocess.Popen(cmd, stdin=subprocess.PIPE)
     assert proc.stdin is not None
