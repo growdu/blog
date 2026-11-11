@@ -146,6 +146,7 @@ def test_section_has_the_expected_docs(docs):
     assert "yunnan-policy/index.md" in names, "云南政策文档缺失"
     assert "yunnan-apply/index.md" in names, "云南报考文档缺失"
     assert "physics-methods/index.md" in names, "物理方法文档缺失"
+    assert "chemistry-methods/index.md" in names, "化学方法文档缺失"
     assert "_index.md" in names, "小节索引缺失"
 
 
@@ -214,3 +215,19 @@ def test_every_doc_is_reachable_from_the_section_index(docs):
             continue
         bundle = path.relative_to(SECTION).with_suffix("").as_posix()
         assert f"./{bundle}" in index, f"./{bundle} 没有出现在 gaokao 小节索引里"
+
+
+@pytest.mark.parametrize("path", _doc_paths(), ids=lambda p: p.relative_to(SECTION).as_posix())
+def test_no_replacement_characters(path: Path):
+    """U+FFFD means a byte sequence was decoded as garbage.
+
+    It renders as a tofu box on the site and, worse, silently breaks any
+    table-of-contents anchor that contains the corrupted character -- the
+    link still looks clickable and just lands at the top of the page.
+    """
+    text = path.read_text(encoding="utf-8")
+    lines = [n for n, line in enumerate(text.split("\n"), 1) if "\ufffd" in line]
+    assert not lines, (
+        f"{path.name} 第 {lines} 行含 U+FFFD 替换字符（写入时字节解码损坏）：\n"
+        + "\n".join(text.split("\n")[n - 1] for n in lines[:5])
+    )
