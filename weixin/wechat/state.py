@@ -70,6 +70,29 @@ class StateStore:
             encoding="utf-8",
         )
 
+    def forget_draft(self, slug: str) -> None:
+        """Forget that a draft exists for this post.
+
+        This is what a reconciliation does when the draft was deleted
+        by hand in the WeChat backend: the article has to be drafted
+        again.  The publish record is kept -- an article that was
+        already published stays published, no matter what happened to
+        its draft.
+        """
+        posts = self._load_all()
+        entry = posts.get(slug)
+        if not isinstance(entry, dict):
+            return
+        entry["media_id"] = None
+        entry["fingerprint"] = None
+        entry["updated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        posts[slug] = entry
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(
+            json.dumps({"posts": posts}, ensure_ascii=False, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+
 
 def needs_draft(fingerprint: str, state: PublishState) -> bool:
     """True when a fresh draft has to be created for this content."""

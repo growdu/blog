@@ -1080,6 +1080,88 @@ def cmd_status(args) -> int:
     return EXIT_OK
 
 
+def cmd_reconcile(args) -> int:
+    """Compare the ledger with the drafts that are actually in the box.
+
+    The ledger is the only thing that stops this tool from creating
+    the same draft twice.  But a human can delete a draft in the WeChat
+    backend, and then the ledger still claims the draft exists -- the
+    article would never be drafted again, silently, forever.
+
+    This command closes that gap: it walks the draft box, compares it
+    with the ledger and forgets the entries whose draft is gone, so the
+    next ``batch --new-only`` picks those articles up again.
+    """
+    store = StateStore(Path(args.out_dir) / "state.json")
+    entries = store.all()
+    ledger = {slug: entry for slug, entry in entries.items()
+              if isinstance(entry, dict) and entry.get("media_id")}
+
+    if not ledger:
+        print("账本里没有已建草稿的记录，无需对账")
+        return EXIT_OK
+
+    if not args.appid or not args.appsecret:
+        print("缺少 WX_APPID / WX_APPSECRET 环境变量", file=sys.stderr)
+        return EXIT_REJECTED
+
+    client = publish_module.WeChatClient(
+        args.appid, args.appsecret, base_url=args.api_base)
+    drafts = client.list_drafts()
+    in_box = {draft["media_id"]: draft for draft in drafts}
+
+    missing = []
+    for slug in sorted(ledger):
+        media_id = ledger[slug].get("media_id")
+        if media_id not in in_box:
+            missing.append({"slug": slug, "media_id": media_id})
+
+    orphans = [
+        {"media_id": draft["media_id"], "title": draft["title"]}
+        for draft in drafts if draft["media_id"] not in
+        {entry.get("media_id") for entry in ledger.values()}
+    ]
+
+    # An empty box next to a non-empty ledger is far more likely to be
+    # a wrong account or a token problem than a human who really
+    # deleted every single draft.  Pruning then would throw the whole
+    # ledger away and the next batch would rebuild all of it.
+    if not drafts and ledger and not args.force:
+        print("草稿箱是空的，但账本里有 {} 条记录——这更像是账号或凭据不对，"
+              "不是草稿真的被删光了".format(len(ledger)), file=sys.stderr)
+        print("确认要清空的话加 --force", file=sys.stderr)
+        return EXIT_REJECTED
+
+    if args.dry_run:
+        print("预检：草稿箱 {} 篇，账本 {} 条，将清理 {} 条（不写盘）".format(
+            len(drafts), len(ledger), len(missing)))
+    else:
+        for item in missing:
+            store.forget_draft(item["slug"])
+        print("草稿箱 {} 篇，账本 {} 条，已清理 {} 条".format(
+            len(drafts), len(ledger), len(missing)))
+
+    for item in missing:
+        print("  - 草稿已不存在: {} ({})".format(item["slug"], item["media_id"]))
+    for item in orphans:
+        print("  ? 草稿箱里有但账本没记: {} ({})".format(
+            item["title"] or "(无标题)", item["media_id"]))
+
+    report = {
+        "drafts_in_box": len(drafts),
+        "ledger_entries": len(ledger),
+        "missing": missing,
+        "orphans": orphans,
+        "pruned": bool(missing) and not args.dry_run,
+    }
+    out_dir = Path(args.out_dir)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "reconcile-report.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8")
+    return EXIT_OK
+
+
 def _load_secrets(path: Path) -> dict:
     """Read optional local credentials from a JSON file.
 
@@ -1177,6 +1259,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     status = sub.add_parser("status", help="查看发布状态", parents=[common])
     status.set_defaults(func=cmd_status)
+
+    reconcile = sub.add_parser(
+        "reconcile", help="对账：账本与草稿箱对齐，清理已删草稿的记录",
+        parents=[common])
+    reconcile.add_argument("--dry-run", action="store_true", help="只报告，不写盘")
+    reconcile.add_argument("--force", action="store_true",
+                           help="草稿箱为空时也照常清理")
+    reconcile.set_defaults(func=cmd_reconcile)
 
     categories = sub.add_parser("categories", help="列出分类", parents=[common])
     categories.add_argument("name", nargs="?", default="", help="只看某一个分类")

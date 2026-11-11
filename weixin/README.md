@@ -89,6 +89,7 @@ cd weixin && python3 -m wechat.cli convert <slug>
 | `publish-collection 名称` | 把合集导览文章推进草稿箱 |
 | `batch` | **批量**把文章推进草稿箱（`--dry-run` / `--new-only` / `--changed-only` / `--limit`） |
 | `auto-draft` | 新文档自动进草稿箱（定时任务用：变了就重新生成，再批量推进） |
+| `reconcile` | 对账：草稿箱与账本对齐，清理「草稿已被手删」的记录（`--dry-run`） |
 | `status` | 查看所有文章的状态 |
 
 `<slug>` 是文章相对 `source/_posts/` 的路径去掉 `.md`，例如

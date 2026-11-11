@@ -162,6 +162,45 @@ class WeChatClient:
             raise WeChatError(-1, "no media_id in response", "/cgi-bin/draft/add")
         return media_id
 
+    def list_drafts(self, page_size: int = 20) -> list:
+        """List the drafts that are currently in the box.
+
+        ``draft/batchget`` returns at most ``page_size`` items per
+        call, so the whole box is walked page by page.  ``no_content``
+        keeps the payload small: the article body is left out and only
+        the title comes back, which is all a reconciliation needs.
+
+        The walk follows ``total_count`` rather than the number of
+        items that came back: a box that holds more drafts than one
+        page is only finished when the count says so.
+        """
+        drafts = []
+        offset = 0
+        while True:
+            response = self._post_json("/cgi-bin/draft/batchget", {
+                "offset": offset,
+                "count": page_size,
+                "no_content": 1,
+            })
+            items = response.get("item") or []
+            for item in items:
+                news = ((item.get("content") or {}).get("news_item") or [])
+                title = news[0].get("title", "") if news else ""
+                drafts.append({
+                    "media_id": item.get("media_id", ""),
+                    "title": title,
+                })
+            if not items:
+                break
+            offset += len(items)
+            total = response.get("total_count")
+            if total is not None:
+                if offset >= total:
+                    break
+            elif len(items) < page_size:
+                break
+        return drafts
+
     def update_draft(self, media_id: str, article: dict, index: int = 0) -> None:
         """Replace one article of an existing draft, in place.
 

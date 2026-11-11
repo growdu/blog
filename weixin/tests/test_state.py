@@ -58,3 +58,31 @@ def test_state_store_creates_parent_directory(tmp_path):
     store = StateStore(tmp_path / "nested" / "deep" / "state.json")
     store.save("a", PublishState(media_id="m1"))
     assert (tmp_path / "nested" / "deep" / "state.json").is_file()
+
+
+def test_forget_draft_clears_the_draft_but_keeps_the_publish(tmp_path):
+    """A deleted draft has to be drafted again; a published article stays published."""
+    store = StateStore(tmp_path / "state.json")
+    store.save("a", PublishState(fingerprint="f", media_id="m1",
+                                 publish_id="p1", publish_status=0))
+    store.forget_draft("a")
+    state = store.get("a")
+    assert state.media_id is None
+    assert state.fingerprint is None
+    assert state.publish_id == "p1"
+
+
+def test_forget_draft_leaves_other_slugs_alone(tmp_path):
+    store = StateStore(tmp_path / "state.json")
+    store.save("a", PublishState(media_id="m1"))
+    store.save("b", PublishState(media_id="m2"))
+    store.forget_draft("a")
+    assert store.get("a").media_id is None
+    assert store.get("b").media_id == "m2"
+
+
+def test_forget_draft_on_an_unknown_slug_is_harmless(tmp_path):
+    store = StateStore(tmp_path / "state.json")
+    store.save("a", PublishState(media_id="m1"))
+    store.forget_draft("missing")
+    assert store.get("a").media_id == "m1"
