@@ -5,6 +5,7 @@
     python -m pyv.cli align    --audio ../pa_decode_v2.mp3 --script ../字幕-并行解码.md
     python -m pyv.cli render   --storyboard ../storyboard.json --out ../build
     python -m pyv.cli compose  --storyboard ../storyboard.json --build ../build --out ../out
+    python -m pyv.cli persona check --script ../字幕-并行解码.md
 """
 from __future__ import annotations
 
@@ -115,6 +116,28 @@ def cmd_brand(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_persona(args: argparse.Namespace) -> int:
+    """检查口播稿符不符合《人格规范》。"""
+    from pyv import persona
+
+    report = persona.check_file(args.script)
+    for finding in report.findings:
+        marker = "ERROR  " if finding.level == persona.ERROR else "WARNING"
+        print(f"{marker} {finding.rule_id}  {finding.message}")
+    print(
+        f"能力域：{report.domain_label}；"
+        f"{len(report.sentences)} 句，"
+        f"{len(report.errors)} 个硬约束违规，"
+        f"{len(report.warnings)} 个倾向未达标"
+    )
+    if not report.ok:
+        sys.stdout.flush()  # 别让 stderr 的结论跑到明细前面去
+        print("FAIL 有硬约束违规，出片前必须改", file=sys.stderr)
+        return 1
+    print("OK 人格检查通过")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="pyv")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -149,6 +172,13 @@ def main(argv: list[str] | None = None) -> int:
     p_brand.add_argument("--no-intro", action="store_true")
     p_brand.add_argument("--no-outro", action="store_true")
     p_brand.set_defaults(func=cmd_brand)
+
+    p_persona = sub.add_parser("persona")
+    persona_sub = p_persona.add_subparsers(dest="persona_command", required=True)
+
+    p_persona_check = persona_sub.add_parser("check")
+    p_persona_check.add_argument("--script", required=True)
+    p_persona_check.set_defaults(func=cmd_persona)
 
     args = parser.parse_args(argv)
     return args.func(args)
