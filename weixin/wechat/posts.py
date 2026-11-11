@@ -23,7 +23,7 @@ AUTHOR_LIMIT = 16
 # WeChat caps the article body at 20000 characters of the ``content``
 # field, which is the rendered HTML, and at 1 MB of bytes.  BODY_LIMIT is
 # a cheap pre-check on the raw markdown; it is a necessary but not
-# sufficient condition -- across the corpus 38 posts pass the raw check
+# sufficient condition -- across the corpus 142 posts pass the raw check
 # and still exceed the limit once rendered.  The authoritative check
 # therefore runs on the rendered content (RenderResult.content_length)
 # before anything is uploaded.

@@ -5,8 +5,8 @@
 ## 现状
 
 - 语料：**564 篇**文章、7689 个代码围栏（mermaid 1280）、13512 行表格、568 张图、1208 处站外链接
-- 合规：标题 ≤ 32 字（官方上限）过 459 篇、渲染后 HTML ≤ 20000 字符过 349 篇，**最终可发布 357 篇（63.3%）**
-- 测试：132 个，全绿，不依赖网络
+- 合规：标题 ≤32 字过 459 → 原始正文 ≤2 万字过 444 → 渲染后 HTML ≤2 万字符过 **357 篇（63.3%）**（其中 18 篇靠关闭代码高亮才放得下）
+- 测试：151 个，全绿，不依赖网络
 - 试点：`dpdk/vpp与dpdk的关系` 转换链路已跑通；**发布链路待用自己的号实测接口**
 
 ## 文档
@@ -41,7 +41,10 @@ python3 tools/sync-hexo.py
 # 2. 盘点：哪些文章能发，哪些不能，为什么
 cd weixin && python3 -m wechat.cli scan
 
-# 3. 转换（不调接口，只产出 HTML）
+# 3. 复算全语料统计（docs/ 里每个数字的出处，约 4.5 秒）
+cd weixin && python3 -m wechat.cli audit
+
+# 4. 转换（不调接口，只产出 HTML）
 cd weixin && python3 -m wechat.cli convert <slug>
 ```
 
@@ -49,7 +52,8 @@ cd weixin && python3 -m wechat.cli convert <slug>
 
 | 命令 | 作用 |
 | --- | --- |
-| `scan` | 盘点全部文章，输出合格/不合格清单 |
+| `scan` | 逐篇盘点，输出合格/不合格清单 |
+| `audit` | 复算全语料统计与 HTML 合规检查 |
 | `convert <slug>` | 转换一篇，产出 HTML 到 `out/` |
 | `publish <slug>` | 转换 + 上传 + 建草稿 |
 | `publish <slug> --publish` | 额外提交发表（默认只到草稿箱） |
@@ -75,13 +79,14 @@ cd weixin && python3 -m wechat.cli convert <slug>
 | --- | --- | --- |
 | 发现 / 校验 | `posts.py` | ✅ 硬限制、permalink、摘要 |
 | 解析 | `mdparse.py` | ✅ 纯函数 |
-| 渲染 | `render.py` | ✅ inline style，0 个 `class` |
+| 渲染 | `render.py` | ✅ inline style，0 个 `class`，原始 HTML 会清洗 |
 | 高亮 | `highlight.py` | ✅ Pygments，nowrap + noclasses |
 | mermaid | `mermaid.py` | ✅ 失败显式降级为源码块 |
 | 资产 | `assets.py` | ✅ 压缩到 ≤ 1 MB、封面裁剪框 |
 | 接口 | `publish.py` | ✅ 6 个接口，错误不吞 |
 | 幂等 | `state.py` | ✅ 三层键 |
-| CLI | `cli.py` | ✅ scan / convert / publish / status |
+| 审计 | `audit.py` | ✅ 复算全语料统计与 HTML 合规检查 |
+| CLI | `cli.py` | ✅ scan / audit / convert / publish / status |
 
 ## 测试
 

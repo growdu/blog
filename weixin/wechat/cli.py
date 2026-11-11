@@ -3,6 +3,7 @@
 Commands:
 
     scan                        list every post and whether it may be published
+    audit                       recompute the corpus statistics in weixin/docs/
     convert <slug>              convert one post, write the HTML, touch no network
     publish <slug>              convert, upload, and create a draft
     publish <slug> --publish    also submit the draft for publishing
@@ -21,11 +22,13 @@ import sys
 from pathlib import Path
 
 from . import assets as assets_module
+from . import audit as audit_module
 from . import mermaid as mermaid_module
 from . import publish as publish_module
 from . import render as render_module
 from .mdparse import parse
-from .posts import AUTHOR_LIMIT, CONTENT_BYTES_LIMIT, CONTENT_LIMIT, check_eligibility, discover, load_post
+from .posts import (AUTHOR_LIMIT, BODY_LIMIT, CONTENT_BYTES_LIMIT, CONTENT_LIMIT,
+                    TITLE_LIMIT, check_eligibility, discover, load_post)
 from .state import StateStore, needs_draft, needs_submit
 
 DEFAULT_POSTS_DIR = Path(__file__).resolve().parents[2] / "source" / "_posts"
@@ -91,6 +94,46 @@ def cmd_scan(args) -> int:
             print("  [跳过] {}  -> {}".format(post.slug, "; ".join(result.reasons)))
     print("\n可发布 {} 篇，跳过 {} 篇".format(eligible, len(posts) - eligible))
     print("（预检只看标题与原始正文字数；渲染后仍可能超限，publish 时会再卡一次）")
+    return EXIT_OK
+
+
+def cmd_audit(args) -> int:
+    """Recompute every number quoted in weixin/docs/."""
+    report = audit_module.audit_corpus(args.posts_dir)
+
+    print("语料: {} 篇, {} 个分类".format(report.posts, report.categories))
+    print()
+    print("三层闸门（逐层收紧，每层只数上一层放行的文章）:")
+    print("  标题 <= {} 字符         放行 {:>4}  拦下 {:>4}".format(
+        TITLE_LIMIT, report.title_ok, report.title_over))
+    print("  原始正文 <= {} 字       放行 {:>4}  拦下 {:>4}".format(
+        BODY_LIMIT, report.raw_ok, report.raw_over))
+    print("  渲染后 <= {} 字符       放行 {:>4}  拦下 {:>4}".format(
+        CONTENT_LIMIT, report.render_ok, report.render_over))
+    print()
+    print("可发布: {} 篇 ({:.1f}%)，跳过 {} 篇".format(
+        report.publishable, report.publishable_ratio,
+        report.posts - report.publishable))
+    print("  其中只有关掉代码高亮才放得下: {} 篇".format(report.needs_plain_only))
+    print()
+    print("全语料口径:")
+    print("  原始正文 <= {} 字       {:>4} 篇".format(BODY_LIMIT, report.raw_within))
+    print("  渲染后放得下（带高亮）  {:>4} 篇".format(report.fit_highlight))
+    print("  渲染后放得下（关高亮）  {:>4} 篇".format(report.fit_plain))
+    print("  正文长度中位            带高亮 {} 字符, 关高亮 {} 字符".format(
+        report.median_highlight, report.median_plain))
+    print()
+    print("字数分布:")
+    for name, count in report.buckets.items():
+        print("  {:<12} {:>4} 篇".format(name, count))
+    print()
+    if report.violations:
+        print("HTML 合规问题 {} 篇:".format(len(report.violations)))
+        for slug, problems in report.violations:
+            print("  ! {} -> {}".format(slug, ", ".join(problems)))
+    else:
+        print("HTML 合规: {} 篇全部通过（无 class 属性、无 script/style/iframe、无外链锚点）".format(
+            report.posts))
     return EXIT_OK
 
 
@@ -338,6 +381,9 @@ def build_parser() -> argparse.ArgumentParser:
 
     scan = sub.add_parser("scan", help="盘点文章", parents=[common])
     scan.set_defaults(func=cmd_scan)
+
+    audit = sub.add_parser("audit", help="复算全语料统计", parents=[common])
+    audit.set_defaults(func=cmd_audit)
 
     convert = sub.add_parser("convert", help="转换一篇（不调接口）", parents=[common])
     convert.add_argument("slug", help="文章 slug，例如 database/demo")
