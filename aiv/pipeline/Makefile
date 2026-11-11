@@ -18,7 +18,7 @@ PY := python
 
 STORYBOARD := $(ROOT)/storyboard.json
 SCRIPT := $(ROOT)/字幕-并行解码.md
-NARRATION := $(ROOT)/pa_decode_v2.mp3
+NARRATION := $(ROOT)/narration_pg-parallel-decode.mp3
 CONTRACT := $(ROOT)/contracts/pg-parallel-decode.json
 BUILD := $(ROOT)/build
 OUT := $(ROOT)/out/pg-parallel-decode.mp4

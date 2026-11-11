@@ -19,7 +19,9 @@ from pyv import character, cli, persona
 FIXTURES = Path(__file__).parent / "fixtures"
 OK_SCRIPT = FIXTURES / "persona_script_ok.md"
 BAD_SCRIPT = FIXTURES / "persona_script_bad.md"
-REAL_SCRIPT = FIXTURES / "persona_script_real.md"
+# 真实口播稿不入测试夹具目录：它就是这一期实际在用的稿子（aiv/字幕-并行解码.md），
+# 夹具目录里放的是「测规则的样本」，两者不是一回事。
+REAL_SCRIPT = Path(__file__).resolve().parents[2] / "字幕-并行解码.md"
 
 
 def _load(name: str, relative: str):
