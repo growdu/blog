@@ -2170,3 +2170,64 @@ body.DarkMode #searchResult .search-empty strong { color: #ffb74d; }
     padding: 1px 4px;
     border-radius: 2px;
 }
+
+/* ============================================================
+   Mermaid 图表：控制 SVG 尺寸，避免图变得极长或字变得不可读
+   背景：mermaid 输出的 SVG 只有 width=100% + 内联 max-width，
+        高度完全不受限，深图会按原始像素高度展开；
+        同时深图被硬压到 75vh 后字号只剩 3~6px。
+   解决：layout.ejs 里的 classifyMermaidDiagrams() 统一计算每张图的
+        缩放比，底线 0.7（字号不低于 10.5px），超出视口的图
+        固定像素尺寸并让容器滚动。
+   注意：这里不用 !important，否则 JS 写的 inline 尺寸会被压住。
+   ============================================================ */
+.mermaid {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    text-align: center;
+}
+
+.mermaid svg {
+    width: 100%;
+    max-height: 75vh;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/*
+   超宽 / 超高的图（多为 sequenceDiagram，只能纵向排）：
+   固定为 JS 算出的像素尺寸，容器内双向滚动。
+   字保持 15px 清晰，代价是要滚动。
+*/
+.mermaid.mermaid--scroll {
+    max-height: 75vh;
+    overflow: auto;
+}
+
+.mermaid.mermaid--scroll svg {
+    width: auto;
+    max-width: none;
+    max-height: none;
+    height: auto;
+}
+
+/*
+   mindmap 是横向树，强制铺满宽度会被压成一条（1439x53 -> 742x27，
+   等效字号只剩 7px）。它保持原始尺寸 + 容器横向滚动。
+*/
+.mermaid:has(g[class^="mindmap"]) svg {
+    width: auto !important;
+    max-width: none !important;
+}
+
+/* 窄屏：图更小，文字相对更易读 */
+@media screen and (max-width: 768px) {
+    .mermaid {
+        font-size: 12px;
+    }
+    .mermaid svg {
+        max-height: 70vh;
+    }
+}
