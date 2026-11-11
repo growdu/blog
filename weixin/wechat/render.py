@@ -37,10 +37,10 @@ from .mdparse import (
     ThematicBreak,
 )
 
-__all__ = ["RenderResult", "Resolver", "render", "mermaid_key", "sanitize_html"]
+__all__ = ["RenderResult", "Resolver", "render", "mermaid_key", "sanitize_html", "css"]
 
 
-def _css(*declarations: str) -> str:
+def css(*declarations: str) -> str:
     """Join CSS declarations and drop the optional whitespace.
 
     WeChat counts the ``content`` field in characters, so every space
@@ -52,22 +52,22 @@ def _css(*declarations: str) -> str:
     return text.replace(": ", ":").replace("; ", ";").strip()
 
 
-BODY_FONT = _css("font-size: 15px", "line-height: 1.75", "margin: 0 0 12px")
-H2_STYLE = _css("font-size: 17px", "font-weight: 700", "margin: 24px 0 12px",
-                "border-left: 4px solid #3d7ea6", "padding-left: 10px")
-H3_STYLE = _css("font-size: 16px", "font-weight: 700", "margin: 20px 0 10px")
-H4_STYLE = _css("font-size: 15px", "font-weight: 700", "margin: 18px 0 10px")
-CODE_BLOCK_STYLE = _css("background: #f6f8fa", "padding: 12px", "overflow-x: auto",
-                        "font-size: 13px", "line-height: 1.5")
-INLINE_CODE_STYLE = _css("background: #f6f8fa", "padding: 2px 5px", "border-radius: 3px")
-TABLE_STYLE = _css("border-collapse: collapse", "width: 100%", "font-size: 13px")
-TABLE_CELL_STYLE = _css("border: 1px solid #dfe2e5", "padding: 7px 9px")
-QUOTE_STYLE = _css("border-left: 3px solid #d0d0d0", "padding-left: 12px", "color: #666")
-IMAGE_STYLE = _css("max-width: 100%")
-MUTED_STYLE = _css("color: #888", "font-size: 13px")
-LIST_STYLE = _css("padding-left: 22px")
-HR_STYLE = _css("border: none", "border-top: 1px solid #e5e5e5", "margin: 24px 0")
-CODE_FONT = _css("font-family: Menlo, Consolas, monospace")
+BODY_FONT = css("font-size: 15px", "line-height: 1.75", "margin: 0 0 12px")
+H2_STYLE = css("font-size: 17px", "font-weight: 700", "margin: 24px 0 12px",
+               "border-left: 4px solid #3d7ea6", "padding-left: 10px")
+H3_STYLE = css("font-size: 16px", "font-weight: 700", "margin: 20px 0 10px")
+H4_STYLE = css("font-size: 15px", "font-weight: 700", "margin: 18px 0 10px")
+CODE_BLOCK_STYLE = css("background: #f6f8fa", "padding: 12px", "overflow-x: auto",
+                       "font-size: 13px", "line-height: 1.5")
+INLINE_CODE_STYLE = css("background: #f6f8fa", "padding: 2px 5px", "border-radius: 3px")
+TABLE_STYLE = css("border-collapse: collapse", "width: 100%", "font-size: 13px")
+TABLE_CELL_STYLE = css("border: 1px solid #dfe2e5", "padding: 7px 9px")
+QUOTE_STYLE = css("border-left: 3px solid #d0d0d0", "padding-left: 12px", "color: #666")
+IMAGE_STYLE = css("max-width: 100%")
+MUTED_STYLE = css("color: #888", "font-size: 13px")
+LIST_STYLE = css("padding-left: 22px")
+HR_STYLE = css("border: none", "border-top: 1px solid #e5e5e5", "margin: 24px 0")
+CODE_FONT = css("font-family: Menlo, Consolas, monospace")
 
 _TAG_RE = re.compile(r"<[^>]+>")
 
@@ -314,7 +314,8 @@ class _Renderer:
             tag=tag, style=LIST_STYLE, items="".join(items))
 
 
-def render(blocks: list, *, resolver=None, highlight: bool = True) -> RenderResult:
+def render(blocks: list, *, resolver=None, highlight: bool = True,
+           head_html: str = "", tail_html: str = "") -> RenderResult:
     """Render a block AST into WeChat-ready HTML.
 
     ``highlight=False`` renders code blocks as plain escaped text.  That
@@ -322,9 +323,14 @@ def render(blocks: list, *, resolver=None, highlight: bool = True) -> RenderResu
     20000-character limit: syntax colouring costs one ``<span>`` per
     token, which on a code-heavy article is more than a quarter of the
     budget.
+
+    ``head_html`` and ``tail_html`` are raw HTML fragments placed before
+    and after the article body.  WeChat's article payload has no field
+    for a category or a collection, so a classification line has to
+    live in the body itself.
     """
     renderer = _Renderer(resolver, highlight=highlight)
-    body = "".join(renderer.block(block) for block in blocks)
+    body = head_html + "".join(renderer.block(block) for block in blocks) + tail_html
 
     if renderer.external_links:
         items = "".join(
