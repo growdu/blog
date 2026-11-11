@@ -1,4 +1,7 @@
 """形象接入层测试（pyv/character.py）。"""
+import inspect
+from pathlib import Path
+
 import cairo
 import pytest
 
@@ -8,17 +11,7 @@ from pyv import character
 def test_repo_paths_are_resolved_correctly():
     assert character.AIV_ROOT.name == "aiv"
     assert character.REPO_ROOT == character.AIV_ROOT.parents[2]
-    assert character.LEGACY_IMAGE.name == "growdu.png"
-    assert character.LEGACY_IMAGE.is_relative_to(character.REPO_ROOT)
-
-
-def test_legacy_mascot_asset_lives_in_repo():
-    """旧 2D 形象必须留在仓库里。
-
-    新 3D 形象是媒体产物、不入库，新克隆的机器上只有它，
-    流水线不能因此画不出小象。
-    """
-    assert character.LEGACY_IMAGE.exists(), character.LEGACY_IMAGE
+    assert character.STATIC_IMAGE.is_relative_to(character.AIV_ROOT)
 
 
 def test_avatar_asset_lives_in_repo():
@@ -28,7 +21,33 @@ def test_avatar_asset_lives_in_repo():
 
 
 def test_mascot_mode_is_known():
-    assert character.Mascot().mode in ("static", "parts", "none")
+    assert character.Mascot().mode in ("static", "none")
+
+
+def test_no_2d_mascot_fallback_remains():
+    """2D 形象已整体移除：旧模块、旧素材、旧兜底分支都不能再有。
+
+    2D 那套是颜色连通块切分 + 部件动画，阈值与绝对坐标都为扁平图硬编码；
+    3D 渲染的渐变高光会直接破坏分割。形象一律走静帧 + 位移/缩放/淡入。
+    """
+    package = Path(character.__file__).parent
+    assert not (package / "elephant.py").exists(), "2D 部件切分模块还在"
+    assert not (character.REPO_ROOT / "growdu.png").exists(), "2D 形象素材还在仓库里"
+    assert not hasattr(character, "LEGACY_IMAGE")
+    assert not hasattr(character, "LEGACY_SOURCE_HEIGHT")
+
+
+def test_mascot_draw_has_no_pose_parameter():
+    """静帧形象没有姿势，接口里不能再留 pose。"""
+    assert "pose" not in inspect.signature(character.Mascot.draw).parameters
+
+
+def test_scenes_do_not_pass_pose():
+    """场景里不能再有 pose= 调用——留着就会在渲染时炸掉。"""
+    scenes = Path(character.__file__).parent / "scenes"
+    assert scenes.is_dir()
+    for path in sorted(scenes.glob("s*.py")):
+        assert "pose=" not in path.read_text(encoding="utf-8"), path.name
 
 
 def test_mascot_draws_pixels():

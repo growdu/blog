@@ -14,7 +14,7 @@ from pyv.timeline import Scene, Storyboard
 
 # 只有这些模块会改变画面内容，改动它们才需要重渲染
 RENDER_INPUT_MODULES = (
-    "character.py", "draw.py", "easing.py", "elephant.py", "palette.py",
+    "character.py", "draw.py", "easing.py", "palette.py",
     "subtitle.py", "timeline.py",
 )
 

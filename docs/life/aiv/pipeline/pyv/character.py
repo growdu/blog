@@ -1,21 +1,17 @@
 """小象形象接入（统一入口）。
 
-仓库里有两套形象素材：
+仓库里只有一套形象素材：
 
 | 素材 | 位置 | 是否入库 |
 | --- | --- | --- |
-| 新 3D 卡通形象 | `aiv/character/growdu_character_2k_nobg.png` | 否（媒体产物） |
-| 旧 2D 扁平形象 | 仓库根 `growdu.png` | 是（1220×1289 RGBA） |
+| 3D 卡通形象 | `aiv/character/growdu_character_2k_nobg.png` | 否（媒体产物） |
 
-新 3D 形象是当前的品牌形象（片头/片尾用的就是它），但它不能喂进
-`elephant.py` 的部件切分——连通块阈值与绝对坐标都是为 2D 扁平图硬编码的，
-3D 渲染的渐变高光会直接破坏分割。按《形象与音色规范》§1.5 方案 A：
+形象是 3D 渲染的静态图，**不做部件切分动画**——连通块阈值与绝对坐标都是为
+2D 扁平图硬编码的，3D 渲染的渐变高光会直接破坏分割。按《形象与音色规范》
+§1.6：形象一律走**静帧素材 + 位移 / 缩放 / 淡入**。
 
-- 新形象：静帧素材 + 位移 / 缩放 / 淡入
-- 旧 2D 形象：部件动画（挥手 / 点头）
-
-降级策略：有新形象用新形象，没有则退回旧 2D 形象做动画，两者都没有就完全不画。
-任何情况下都不抛异常——媒体产物不入库，缺素材是常态而不是错误。
+降级策略：有形象就画，没有就完全不画。任何情况下都不抛异常——媒体产物不入库，
+缺素材是常态而不是错误。
 """
 from __future__ import annotations
 
@@ -25,22 +21,15 @@ import cairo
 import numpy as np
 from PIL import Image
 
-from pyv import elephant
-
 # aiv/ 是 pipeline/ 的上一级：pyv/character.py → pyv → pipeline → aiv
 AIV_ROOT = Path(__file__).resolve().parents[2]
 # aiv → life → docs → 仓库根
 REPO_ROOT = AIV_ROOT.parents[2]
 
-# 新 3D 形象（透明底，合成进视频用这个）
+# 3D 形象（透明底，合成进视频用这个）
 STATIC_IMAGE = AIV_ROOT / "character" / "growdu_character_2k_nobg.png"
-# 旧 2D 形象（已入库，兜底）
-LEGACY_IMAGE = REPO_ROOT / "growdu.png"
 # 个人头像（已入库，用于落版；不使用任何公司 Logo）
 AVATAR_IMAGE = REPO_ROOT / "themes" / "matery" / "source" / "medias" / "avatar.jpg"
-
-# 旧 2D 素材的画布高，用来把「目标像素高」换算成 elephant.py 需要的缩放比
-LEGACY_SOURCE_HEIGHT = 1289
 
 
 def pil_to_cairo(image: Image.Image) -> cairo.ImageSurface:
@@ -72,19 +61,17 @@ def subject_box(image: Image.Image) -> tuple[int, int, int, int]:
 class Mascot:
     """按可用素材自动降级的形象绘制器。
 
-    绘制语义与 `elephant.draw_elephant` 一致：dest 是**脚底锚点**，
-    x 为形象中心、y 为脚底，height 为主体像素高。
+    绘制语义：dest 是**脚底锚点**，x 为形象中心、y 为脚底，height 为主体像素高。
     """
 
     def __init__(self) -> None:
         self._mode = ""
         self._surface: cairo.ImageSurface | None = None
         self._box: tuple[int, int, int, int] = (0, 0, 0, 0)
-        self._parts: elephant.Parts | None = None
 
     @property
     def mode(self) -> str:
-        """当前用的是哪套形象：static / parts / none。"""
+        """当前用的是哪套形象：static / none。"""
         self._load()
         return self._mode
 
@@ -96,18 +83,14 @@ class Mascot:
             self._surface = pil_to_cairo(image)
             self._box = subject_box(image)
             self._mode = "static"
-        elif LEGACY_IMAGE.exists():
-            self._parts = elephant.load_parts(LEGACY_IMAGE)
-            self._mode = "parts"
         else:
             self._mode = "none"
 
     def draw(self, ctx: cairo.Context, dest: tuple[float, float], height: float,
-             alpha: float = 1.0, pose: elephant.Pose | None = None,
-             slide: float = 0.0, scale: float = 1.0, bob: float = 0.0) -> None:
+             alpha: float = 1.0, slide: float = 0.0, scale: float = 1.0,
+             bob: float = 0.0) -> None:
         """在 dest 处绘制形象。
 
-        - pose：旧 2D 部件动画的姿势；静帧模式下忽略
         - slide：额外的水平位移（负值 = 从左边滑入）
         - scale：额外的缩放倍数（1.0 → 1.03 即轻微推近）
         - bob：额外的垂直位移（像素），用来做浮动
@@ -115,8 +98,6 @@ class Mascot:
         self._load()
         if self._mode == "static":
             self._draw_static(ctx, dest, height, alpha, slide, scale, bob)
-        elif self._mode == "parts":
-            self._draw_parts(ctx, dest, height, alpha, pose, slide, scale, bob)
 
     def _draw_static(self, ctx: cairo.Context, dest: tuple[float, float],
                      height: float, alpha: float, slide: float, scale: float,
@@ -136,16 +117,6 @@ class Mascot:
         ctx.paint_with_alpha(alpha)
         ctx.restore()
 
-    def _draw_parts(self, ctx: cairo.Context, dest: tuple[float, float],
-                    height: float, alpha: float, pose: elephant.Pose | None,
-                    slide: float, scale: float, bob: float) -> None:
-        assert self._parts is not None
-        k = (height / LEGACY_SOURCE_HEIGHT) * scale
-        elephant.draw_elephant(
-            ctx, self._parts, pose or elephant.Pose(),
-            (dest[0] + slide, dest[1] + bob), k, alpha,
-        )
-
 
 def avatar_path() -> Path | None:
     """个人头像（落版用）。没有就返回 None，调用方跳过整块。"""
@@ -160,7 +131,7 @@ def asset_mtimes() -> list[float]:
     只看 Python 模块的修改时间是发现不了素材换了的。
     """
     times: list[float] = []
-    for path in (STATIC_IMAGE, LEGACY_IMAGE, AVATAR_IMAGE):
+    for path in (STATIC_IMAGE, AVATAR_IMAGE):
         if path.exists():
             times.append(path.stat().st_mtime)
     return times

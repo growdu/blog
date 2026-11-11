@@ -28,12 +28,12 @@ date: 2026-11-09
 
 素材口径同步约束：
 
-- **形象原图唯一来源**：`growdu.png`（项目内路径 `docs/life/aiv/growdu.png`）。
-  小象部件切分、2D 动作、Design 内的 H3 参考图，一律用这一张。
+- **形象唯一来源**：`character/growdu_character_2k_nobg.png`（3D 卡通形象，静帧贴入）。
+  场景画面与 Design 内的 H3 参考图，一律用这一套形象。
 - **不使用** `docs/db/logical_decode/pa_decode/` 目录下的任何图片（`image.png`、`image-1.png` 等），
   也不使用其它历史版本小象图；避免形象在系列内不一致。
-- 落版用个人头像 `growdu.jpg`，**不使用任何公司 Logo**
-- 片头质感镜头、H3 参考图一律以 `growdu.png` 为唯一主体
+- 落版用个人头像 `themes/matery/source/medias/avatar.jpg`，**不使用任何公司 Logo**
+- 片头质感镜头、H3 参考图一律以这一套形象为唯一主体
 
 术语确认：
 

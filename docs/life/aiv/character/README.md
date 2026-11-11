@@ -79,7 +79,7 @@ python3 scripts/stamp_badge.py <png> ...  # 处理指定文件
    同时加了尺寸下限，见 `scripts/stamp_badge.py` 里的
    `MIN_WIDTH_RATIO` / `MIN_HEIGHT_RATIO`。
 
-3. **3D 形象不能喂进 `pipeline/pyv/elephant.py`。** 那个模块的部件切分按颜色
-   连通块做，阈值和绝对坐标都是为 2D 扁平形象 `growdu.png` 硬编码的；3D 渲染的
+3. **3D 形象不做部件切分动画。** 仓库早期版本试过按颜色连通块把形象切成
+   部件再驱动动作，阈值和绝对坐标都是为 2D 扁平图硬编码的，3D 渲染的
    渐变与高光会直接破坏阈值分割。新形象按「静帧素材 + 位移/缩放/淡入」做动效，
    由 `pipeline/pyv/character.py` 统一接入。

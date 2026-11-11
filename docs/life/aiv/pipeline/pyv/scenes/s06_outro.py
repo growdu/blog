@@ -8,7 +8,6 @@ from PIL import Image
 
 from pyv import character, easing
 from pyv.draw import rounded_rect, text
-from pyv.elephant import Pose
 from pyv.palette import COLORS
 
 _mascot = character.Mascot()
@@ -31,8 +30,7 @@ def render(ctx, t: float, w: int, h: int) -> None:
     slide = (1.0 - enter) * -w * 0.06
     bob = math.sin(t * math.pi * 1.8) * h * 0.006
     _mascot.draw(ctx, (w * 0.20, h * 0.92), h * 0.60,
-                 alpha=enter, pose=Pose(nod=easing.clamp01(t * 2.0)),
-                 slide=slide, bob=bob)
+                 alpha=enter, slide=slide, bob=bob)
 
     appear = easing.ease_out_cubic(max(0.0, min(1.0, t * 2.5)))
     text(ctx, "并行解码 · 有序同步", w * 0.40, h * 0.36, 76, COLORS["primary"],

@@ -1,5 +1,9 @@
 # 并行解码讲解片（代码驱动动画）实施计划
 
+> **历史存档（2026-11-09 的实施计划）。** 其中 Task 5 的 2D 形象部件切分与
+> `elephant.py` 已于 2026-11-11 整体移除，形象改走 3D 静帧 + 位移/缩放/淡入，
+> 见《形象与音色规范》§1.6。本文保留当时的计划记录，不再是现行方案。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** 用代码把 11 句旁白渲染成 29.599 秒的「PostgreSQL 18 并行逻辑解码」讲解片，技术图示零模型生成，H3 只用于 3 秒质感片头。

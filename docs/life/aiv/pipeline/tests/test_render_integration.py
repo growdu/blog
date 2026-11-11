@@ -2,6 +2,9 @@ import json
 import os
 import subprocess
 
+import cairo
+import pytest
+
 from pyv import character
 from pyv import render
 from pyv.timeline import Scene
@@ -55,6 +58,26 @@ def test_render_scene_requires_renderer(tmp_path):
         assert "renderer" in str(exc)
     else:
         raise AssertionError("缺少 renderer 时应当报错")
+
+
+@pytest.mark.parametrize("module_name", ["pyv.scenes.s01_intro", "pyv.scenes.s06_outro"])
+def test_mascot_scenes_render_without_pose(module_name):
+    """片头/片尾场景在移除 2D 部件动画后仍要能画出来。
+
+    这两个场景以前靠 `pose=Pose(...)` 让小象挥手/点头。2D 形象与部件切分移除后，
+    形象只剩静帧 + 位移/缩放/淡入——场景里的调用必须同步改掉，
+    否则渲染时直接 TypeError。
+    """
+    import importlib
+
+    scene = importlib.import_module(module_name)
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 320, 180)
+    ctx = cairo.Context(surface)
+    scene.render(ctx, 0.5, 320, 180)
+    data = bytes(surface.get_data())
+    stride = surface.get_stride()
+    painted = any(data[y * stride:(y + 1) * stride][3::4] for y in range(180))
+    assert painted, f"{module_name} 画出来是空画面"
 
 
 def test_clip_is_stale_when_the_character_asset_changes(tmp_path, monkeypatch):
