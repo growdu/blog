@@ -202,6 +202,52 @@ def test_compose_with_bgm_mixes_audio(tmp_path):
     assert float(info["format"]["duration"]) == pytest.approx(1.0, abs=0.05)
 
 
+def test_compose_ducks_the_bgm_before_mixing(tmp_path):
+    """BGM 必须先按旁白包络 duck，再进混音（规范 §5.2）。"""
+    sb = _mini_storyboard(tmp_path, duration=2.0)
+    narration = _make_tone(tmp_path / "tone.wav", 2.0)
+    bgm = _make_tone(tmp_path / "bgm.wav", 2.0)
+    build = tmp_path / "build"
+    out = tmp_path / "out" / "final.mp4"
+
+    compose.compose(sb, build, out, narration=narration, bgm=bgm)
+
+    ducked = build / "_bgm_ducked.wav"
+    assert ducked.exists(), "BGM 没有经过 ducking"
+    # duck 后的文件只覆盖正文区间
+    info = _probe(ducked)
+    assert float(info["format"]["duration"]) == pytest.approx(2.0, abs=0.2)
+
+
+def test_bgm_channel_uses_the_avoidance_chain(tmp_path):
+    """BGM 通道必须走规范里的避让链（高通 + bell + 固定增益）。"""
+    from pyv import bgm
+
+    sb = _mini_storyboard(tmp_path, duration=1.0)
+    cmd = compose._mux_cmd(
+        Path("silent.mp4"), Path("out.mp4"), sb,
+        [(Path("bgm.wav"), 0.0, bgm.bgm_chain())],
+    )
+    joined = " ".join(cmd)
+    assert f"equalizer=f={bgm.EQ_BELL_HZ}" in joined
+    assert f"highpass=f={bgm.HIGHPASS_HZ}" in joined
+    assert f"g={bgm.EQ_BELL_DB}" in joined
+
+
+def test_body_range_covers_only_code_scenes(tmp_path):
+    """BGM 只铺正文：品牌片所占的区间不算进去（规范 §5.5）。"""
+    scenes = [
+        {"id": "brand_intro", "start": 0.0, "end": 1.0, "type": "clip",
+         "clip": "intro.mp4", "audio": "intro.wav", "subtitle": "片头"},
+        {"id": "s01", "start": 1.0, "end": 3.0, "type": "code",
+         "renderer": "blank_scene", "subtitle": "正文第一句"},
+        {"id": "brand_outro", "start": 3.0, "end": 4.0, "type": "clip",
+         "clip": "outro.mp4", "audio": "outro.wav", "subtitle": "片尾"},
+    ]
+    sb = _mini_storyboard(tmp_path, scenes=scenes, duration=4.0)
+    assert compose._body_range(sb) == (1.0, 3.0)
+
+
 def test_compose_reuses_fresh_clips(tmp_path):
     """片段未过期时必须复用，避免 render → compose 重复渲染。"""
     sb = _mini_storyboard(tmp_path, duration=1.0)

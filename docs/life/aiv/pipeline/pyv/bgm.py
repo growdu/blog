@@ -476,7 +476,8 @@ def _write_wav(path: str | Path, samples: np.ndarray, sample_rate: int = 48000) 
 
 def duck_bgm(bgm_path: str | Path, narration_path: str | Path,
              out_path: str | Path, depth_db: float = DUCK_DEPTH_DB,
-             sample_rate: int = 48000) -> Path:
+             sample_rate: int = 48000,
+             duration_s: float | None = None) -> Path:
     """按旁白包络压低 BGM，输出处理后的 wav。
 
     深度是**精确**的：旁白持续段正好压 `depth_db` dB，句间停顿处回到 0 dB。
@@ -493,6 +494,10 @@ def duck_bgm(bgm_path: str | Path, narration_path: str | Path,
     bgm = frames.reshape(-1, 2)
 
     narration = decode_mono(narration_path, sample_rate)
+    if duration_s is not None:
+        limit = int(duration_s * sample_rate)
+        bgm = bgm[:limit]
+        narration = narration[:limit]
     length = min(bgm.shape[0], narration.size)
     bgm = bgm[:length]
     curve = duck_curve(narration[:length], depth_db, sample_rate)
@@ -511,7 +516,7 @@ def eq_filter() -> str:
 def bgm_chain(gain_db: float = BGM_GAIN_DB) -> str:
     """BGM 通道的滤镜链（不含 ducking，ducking 在 numpy 里做掉了）。"""
     return (
-        "aformat=sample_fmts=fltp,pan=stereo|c0=c0|c1=c0,"
+        "aformat=sample_fmts=fltp,pan=stereo\\|c0=c0\\|c1=c0,"
         f"highpass=f={HIGHPASS_HZ},{eq_filter()},"
         f"volume={10 ** (gain_db / 20):.6f}"
     )

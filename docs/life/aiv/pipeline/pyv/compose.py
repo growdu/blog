@@ -8,10 +8,18 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
+from pyv import bgm as bgm_rules  # compose() 的参数叫 bgm，会遮住同名模块
 from pyv import render, subtitle
 from pyv.timeline import Scene, Storyboard
 
-DEFAULT_BGM_GAIN_DB = -18.0
+# BGM 基础增益。默认按《背景音乐规范》§5.1 定的 -15 dB；
+# 契约里的 bgm_gain_db 可以覆盖。
+DEFAULT_BGM_GAIN_DB = bgm_rules.BGM_GAIN_DB
+
+# 旁白与品牌片音轨的通道：上混成立体声，音量不动。
+# pan 而不是 aformat=channel_layouts=stereo：后者把单声道上混时
+# 会按功率衰减 3dB，旁白会比立体声的品牌音轨明显小声一截。
+VOICE_CHAIN = r"aformat=sample_fmts=fltp,pan=stereo\|c0=c0\|c1=c0,volume=1.0"
 
 
 def _run(cmd: list[str]) -> None:
@@ -84,6 +92,17 @@ def _collect_clips(storyboard: Storyboard, build_dir: Path, burner,
     return clips
 
 
+def _body_range(storyboard: Storyboard) -> tuple[float, float]:
+    """正文区间：第一个 code 场景的起点到最后一个 code 场景的终点。
+
+    BGM 只铺正文——片头片尾自带音乐，叠在一起只会糊（规范 §5.5）。
+    """
+    code_scenes = [scene for scene in storyboard.scenes if scene.type == "code"]
+    if not code_scenes:
+        return 0.0, storyboard.duration
+    return code_scenes[0].start, code_scenes[-1].end
+
+
 def _narration_delay(storyboard: Storyboard) -> float:
     """旁白要推迟到正文真正开始的位置（片头品牌片占着前几秒）。"""
     for scene in storyboard.scenes:
@@ -93,12 +112,12 @@ def _narration_delay(storyboard: Storyboard) -> float:
 
 
 def _mux_cmd(silent: Path, out_path: Path, storyboard: Storyboard,
-             sources: list[tuple[Path, float, float]]) -> list[str]:
+             sources: list[tuple[Path, float, str]]) -> list[str]:
     """拼出「视频 + 多路音频」的 ffmpeg 命令。
 
-    sources 每项是 (音频文件, 延迟秒数, 增益)；所有音频都在同一个
-    filter_complex 里用 adelay 对齐后 amix（同一路流不能同时用 -af
-    与 -filter_complex）。
+    sources 每项是 (音频文件, 延迟秒数, 滤波链)；滤波链是这一路的完整
+    音频处理（音量也在里面）。所有音频都在同一个 filter_complex 里用
+    adelay 对齐后 amix（同一路流不能同时用 -af 与 -filter_complex）。
     """
     fps = storyboard.video.fps
     duration = storyboard.duration
@@ -108,14 +127,10 @@ def _mux_cmd(silent: Path, out_path: Path, storyboard: Storyboard,
 
     chains = []
     labels = []
-    for index, (_, delay, gain) in enumerate(sources):
+    for index, (_, delay, chain) in enumerate(sources):
         ms = int(round(delay * 1000))
         chains.append(
-            f"[{index + 1}:a]aresample=48000,"
-            # pan 而不是 aformat=channel_layouts=stereo：后者把单声道上混时
-            # 会按功率衰减 3dB，旁白会比立体声的品牌音轨明显小声一截
-            "aformat=sample_fmts=fltp,pan=stereo\\|c0=c0\\|c1=c0,"
-            f"volume={gain:.6f},adelay={ms}:all=1[a{index}]"
+            f"[{index + 1}:a]aresample=48000,{chain},adelay={ms}:all=1[a{index}]"
         )
         labels.append(f"[a{index}]")
     chains.append(
@@ -195,18 +210,26 @@ def compose(storyboard: Storyboard, build_dir: str | Path, out_path: str | Path,
     if bgm_path is not None and not bgm_path.exists():
         raise FileNotFoundError(f"找不到 BGM：{bgm_path}")
 
-    # 音频源：(文件, 延迟秒数, 增益)
-    sources: list[tuple[Path, float, float]] = []
+    # 音频源：(文件, 延迟秒数, 滤波链)
+    sources: list[tuple[Path, float, str]] = []
     # 旁白对齐到正文起点（前面有品牌片时整体后移）
-    sources.append((narration_path, _narration_delay(storyboard), 1.0))
+    sources.append((narration_path, _narration_delay(storyboard), VOICE_CHAIN))
     for scene in storyboard.scenes:
         if scene.type == "clip":
             sources.append(
-                (_resolve_brand_audio(scene, build_dir), scene.start, 1.0)
+                (_resolve_brand_audio(scene, build_dir), scene.start, VOICE_CHAIN)
             )
     if bgm_path is not None:
+        body_start, body_end = _body_range(storyboard)
+        body_duration = max(0.0, body_end - body_start)
         gain_db = DEFAULT_BGM_GAIN_DB if bgm_gain_db is None else bgm_gain_db
-        sources.append((bgm_path, 0.0, 10 ** (gain_db / 20)))
+        # ducking 按旁白包络算，深度是确定的数（规范 §5.2）；
+        # 避让 EQ 与固定增益走 bgm.bgm_chain()（规范 §5.3、§5.4）。
+        ducked = bgm_rules.duck_bgm(
+            bgm_path, narration_path, build_dir / "_bgm_ducked.wav",
+            duration_s=body_duration,
+        )
+        sources.append((ducked, body_start, bgm_rules.bgm_chain(gain_db)))
 
     _run(_mux_cmd(silent, out_path, storyboard, sources))
     return out_path
