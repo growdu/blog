@@ -1,0 +1,12 @@
+# Generated artifacts: 发布包、渲染 HTML、图片缓存。
+out/
+
+# Local credentials — never commit.
+secrets.json
+.env
+*.secret
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
