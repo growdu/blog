@@ -6,9 +6,9 @@
 
 - 语料：**564 篇**文章、7689 个代码围栏（mermaid 1280）、13512 行表格、568 张图、1208 处站外链接
 - 合规：标题 ≤32 字过 459 → 原始正文 ≤2 万字过 444 → 渲染后 HTML ≤2 万字符过 **357 篇（63.3%）**（其中 18 篇靠关闭代码高亮才放得下）
-- 测试：**229 个**，全绿，不依赖网络
+- 测试：**245 个**，全绿，不依赖网络
 - **发布链路已用真实账号实测**：`stable_token` / `media/uploadimg` /
-  `material/add_material` / `draft/add` 全部通过，草稿已进草稿箱；
+  `material/add_material` / `draft/add` / `draft/update` 全部通过，草稿已进草稿箱；
   `freepublish/submit` 返回 **48001 api unauthorized**——该账号没有发表权限，
   最后「点一下发表」由人完成
 - **分类与合集**：平台没有开放接口（`draft/add` 无 category 字段、`api.weixin.qq.com`
@@ -16,6 +16,9 @@
   后台勾选清单**都能自动生成。合集导览文章已用真实账号建过草稿并回读校验
   （0 个 class、0 个外链锚点、0 个残留占位符）。见
   [docs/04-分类与合集.md](docs/04-分类与合集.md)
+- **批量与自动**：`batch` 把存量文章批量变成草稿（一次约 1009 次接口调用，
+  微信每日上限 2000）；`auto-draft` 是本机定时任务，`docs/` 一变就重新生成
+  并推进草稿箱。见 [docs/05-批量与自动.md](docs/05-批量与自动.md)
 
 ## 实测结论速查
 
@@ -28,6 +31,8 @@
 | 幂等 | 同一篇跑两次复用同一个 `media_id`，不产生第二篇草稿 |
 | 失败行为 | 退出码 3、`publish_id` 不写、错误不吞——不会静默成功 |
 | 分类 / 合集 | **接口层面做不了**：`draft/add` 无 category 字段，`api.weixin.qq.com` 无对应端点，合集后台只收**已发布**文章。工具负责内容与清单，平台上的归属仍需人工勾选 |
+| 草稿内容改了怎么办 | 调 `draft/update` **就地更新**，不是 `draft/add` 新建——否则草稿箱里会留一份旧版本 |
+| 批量重跑贵吗 | **不贵**：内容没变的文章在上传任何一张图之前就被指纹挡掉，第二遍跑接口调用数是 0 |
 
 ## 文档
 
@@ -38,6 +43,7 @@
 | [docs/02-接口与发布.md](docs/02-接口与发布.md) | 6 个微信接口、字段限制、token 选型、publish_status 状态机、三层幂等、错误码 |
 | [docs/03-试点记录.md](docs/03-试点记录.md) | 单篇实测数据、mermaid 成功/失败两条路径、Phase 0 接口实测清单 |
 | [docs/04-分类与合集.md](docs/04-分类与合集.md) | 分类与合集的平台边界（实测探测）、分类标签、合集计划、导览文章、后台勾选清单 |
+| [docs/05-批量与自动.md](docs/05-批量与自动.md) | 批量回填的配额账、自动进草稿的定时任务、幂等的三层、草稿就地更新、与跨平台调度的分工 |
 | [docs/10-设计.md](docs/10-设计.md) | 设计规格（语料盘点 → 模块规格 → 风险） |
 | [docs/11-实施计划.md](docs/11-实施计划.md) | 实施计划 + **试点后的修订记录**（哪些假设被推翻） |
 
@@ -81,6 +87,8 @@ cd weixin && python3 -m wechat.cli convert <slug>
 | `categories [名称]` | 列出分类及文章数，或某一个分类下的文章 |
 | `collections [名称] [--write]` | 列出合集；`--write` 写出导览文章与后台勾选清单 |
 | `publish-collection 名称` | 把合集导览文章推进草稿箱 |
+| `batch` | **批量**把文章推进草稿箱（`--dry-run` / `--new-only` / `--changed-only` / `--limit`） |
+| `auto-draft` | 新文档自动进草稿箱（定时任务用：变了就重新生成，再批量推进） |
 | `status` | 查看所有文章的状态 |
 
 `<slug>` 是文章相对 `source/_posts/` 的路径去掉 `.md`，例如
@@ -165,12 +173,13 @@ export WX_NOTIFY_KEY=SCTxxxxxxxx     # https://sct.ftqq.com 扫码登录即可�
 | mermaid | `mermaid.py` | ✅ 失败显式降级为源码块 |
 | 资产 | `assets.py` | ✅ 压缩到 ≤ 1 MB、封面裁剪框、外链图下载 |
 | 接口 | `publish.py` | ✅ 6 个接口，错误不吞 |
-| 幂等 | `state.py` | ✅ 三层键 |
+| 幂等 | `state.py` | ✅ 三层键（正文指纹含分类标签） |
 | 通知 | `notify.py` | ✅ Server酱 / 企业微信 / 通用 webhook |
 | 分类 / 合集 | `collection.py` | ✅ 分类标签、合集计划、导览文章、勾选清单（**平台上的归属仍是人工**） |
 | 站点复用 | `hexo.py` | ✅ 复用 `sync-hexo.py` 的 slugize，分类归档路径与站点一致 |
+| 批量 / 定时 | `cli.py` | ✅ `batch` 批量建草稿、`auto-draft` 定时自动进草稿（launchd 模板在 `deploy/`） |
 | 审计 | `audit.py` | ✅ 复算全语料统计与 HTML 合规检查 |
-| CLI | `cli.py` | ✅ scan / audit / convert / publish / categories / collections / publish-collection / status |
+| CLI | `cli.py` | ✅ scan / audit / convert / publish / categories / collections / publish-collection / batch / auto-draft / status |
 
 ## 测试
 
@@ -189,3 +198,4 @@ cd /Users/growduduan/code/blog && python3 -m pytest weixin/tests -q
 - **全流程幂等**：正文指纹 / `media_id` / `publish_id` 三层键，重复执行不会发两遍。
 - **38% 的文章渲染后超限**：这是平台的结构性约束（HTML 标签和样式都计入 2 万字符），不是实现缺陷。出路是拆篇，或发摘要版 + 全文放「阅读原文」。
 - **分类与合集只能自动化到内容层**：公众号没有开放的分类 / 合集接口，合集还只收已发布文章。工具生成分类标签、合集计划、导览文章和后台勾选清单；**把文章挂到平台上的合集对象上，仍需在后台人工勾选**。
+- **`out/state.json` 不能删**：它是幂等账本。删掉之后所有文章会被当成没发过，批量重跑会在草稿箱里**再建一整套重复草稿**。清理 `out/` 时用 `git clean -xdf -e weixin/out/state.json`。
