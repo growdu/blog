@@ -175,7 +175,7 @@ flowchart TB
 | **rupt** | 断 | interrupt 打断 / erupt 爆发 / disrupt 扰乱 / corrupt 腐化 | 断裂 |
 | **cred** | 信 | credit 信用 / incredible 难以置信的 / credible 可信的 / accrue 积累 | 相信 |
 | **flu / flux** | 流 | fluent 流利的 / influence 影响 / fluid 流体 / fluctuate 波动 / affluence 富足 | 流动 |
-| **duc / duct** | 引导 | introduce 介绍 / conduct conduct 实施 / produce 生产 / educate 教育 / deduce 推断 | 引导 |
+| **duc / duct** | 引导 | introduce 介绍 / conduct 实施 / produce 生产 / educate 教育 / deduce 推断 | 引导 |
 
 ### 3.3 生命 / 身体 / 疾病
 
@@ -253,7 +253,7 @@ flowchart TB
 | **terr / terra** | 土地 | terrain 地形 / territory 领土 / terrestrial 陆地的 / terrace 阶地 | 土地 |
 | **aer** | 空气 | aerial 航空的 / atmosphere 大气 / aerobic 有氧的 / airport 空港 | 空气 |
 | **therm / thermo** | 热 | thermal 热的 / thermometer 温度计 / global warming 变暖 / thermostat 恒温器 | 热 |
-| **sol** | 太阳、单独 | solar 太阳的 / solitary 孤独的 / console 控制台 / whole 整个 | 太阳 |
+| **sol** | 太阳、单独 | solar 太阳的 / solitary 孤独的 / console 控制台 / solitude 孤独 | 太阳 |
 | **mag**（磁） | 磁 | magnet 磁铁 / magnetic 有磁力的 | 磁 |
 | **mech / mach** | 机械 | mechanism 机制 / machinery 机械 / mechanic 机械师 | 机械 |
 | **lum / luc** | 光 | illuminate 照亮 / luminous 发光的 / lucid 清晰易懂的 / illuminate 启发 | 光 |
@@ -335,7 +335,6 @@ flowchart TB
 | satisfy | satisfaction | satisfactory / satisfied | satisfactorily |
 | qualify | qualification | qualified / qualifying | — |
 | analyse | analysis | analytic(al) | analytically |
-| differ | difference | different | differently |
 | compare | comparison | comparable | comparably |
 | consider | consideration | considerable / considerate | considerably |
 | imagine | imagination | imaginative / imaginary | imaginatively |
@@ -566,7 +565,7 @@ gantt
 
 **打印出来贴在书桌前。**
 
-### 9.1 30 个必背词根
+### 9.1 必背词根速记（正文 64 个中的高频部分）
 
 ```
 看    spect  vis/vid  aud        做   fac/fic  oper  press  tract
@@ -577,7 +576,7 @@ gantt
 质    sim  tot  dur                好坏 bon  mal  virt  just
 ```
 
-### 9.2 20 个必背前缀
+### 9.2 必背前缀（19 个）
 
 ```
 否定  un-  in-/im-  dis-  mis-  non-  anti-  counter-
@@ -586,7 +585,7 @@ gantt
 其他  de-  pro-  ex-
 ```
 
-### 9.3 20 个必背后缀
+### 9.3 必背后缀（21 个）
 
 ```
 名词  -tion/-sion  -ment  -ness  -ity  -ance/-ence  -ship  -ism  -er/-or/-ee
@@ -604,10 +603,10 @@ consider 考虑     considerable 相当多  considerate 体贴
 imagine 想象      imaginative 有想象力的  imaginary 虚构的
 succeed 成功      successful 成功的   successive 连续的
 distinct 明显的   distinguish 区分   distinction 区别
-reliable 可靠的   relief 解脱        relief vs believe 相信
+rely 依赖         reliable 可靠的   reliance 依赖（名词）
 quality 质量      quantity 数量
 conclude 得出结论 conclusive 决定性的 conclusion 结论
-succeed success success 连续 succession 连续 succession
+express 表达      expression 表达（名词） expressive 富有表现力的
 ```
 
 ### 9.5 考场三句话
