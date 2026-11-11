@@ -49,7 +49,7 @@ music/
 ## 查台账
 
 ```bash
-cd docs/life/aiv/pipeline
+cd aiv/pipeline
 python -m pyv.cli bgm library          # 台账自洽性（授权、指纹、角色）
 python -m pyv.cli bgm check --music <文件>   # 判单条曲子合不合格
 ```
@@ -57,7 +57,7 @@ python -m pyv.cli bgm check --music <文件>   # 判单条曲子合不合格
 ## 下载
 
 ```bash
-cd docs/life/aiv/music
+cd aiv/music
 python3 scripts/fetch_music.py --list
 python3 scripts/fetch_music.py --id series-motif-01
 python3 scripts/fetch_music.py --all

@@ -18,7 +18,7 @@
 
 ## 形象原型
 
-唯一来源：`docs/life/aiv/growdu2.jpeg`。**不要**引用仓库其它目录下的任何形象图。
+唯一来源：`aiv/growdu2.jpeg`。**不要**引用仓库其它目录下的任何形象图。
 
 ## 形象设定速记
 
@@ -31,7 +31,7 @@
 ## 重新生成
 
 ```bash
-cd docs/life/aiv/character
+cd aiv/character
 python3 scripts/generate_character.py   # 生成 → 抠透明底 → 姿态表 → 铭牌盖章
 ```
 
@@ -41,7 +41,7 @@ python3 scripts/generate_character.py   # 生成 → 抠透明底 → 姿态表 
 只能以素材为参考图做图生图：
 
 ```bash
-cd docs/life/aiv/character
+cd aiv/character
 python3 scripts/add_glasses.py                        # 批次：4 个素材 → _staging/
 python3 scripts/add_glasses.py --resume              # 断点续跑（跳过已生成的）
 python3 scripts/add_glasses.py --promote              # 目视验收后覆盖正式素材

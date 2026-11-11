@@ -75,7 +75,7 @@ H3 视频生成最短 4 秒，做不出 3 秒以内的片头，所以整条链�
 改旁白要重新合成，音色与参数见《形象与音色规范》§2.2：
 
 ```bash
-cd docs/life/aiv
+cd aiv
 python3 voice/scripts/synthesize_narration.py \
   --text "下次卡住的时候，记得回来。" --out brand/audio/voice_outro.mp3
 ```
@@ -83,7 +83,7 @@ python3 voice/scripts/synthesize_narration.py \
 ## 重新生成
 
 ```bash
-cd docs/life/aiv/brand
+cd aiv/brand
 python3 scripts/make_audio_brand.py   # 从 bgm_*.wav 里挑 3 秒窗口并混音
 python3 scripts/render_brand.py       # 铭牌盖章 + 渲染片头 + 片尾（--intro / --outro 可单渲）
 ```

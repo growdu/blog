@@ -14,7 +14,7 @@
 }
 ```
 
-对标参照：`docs/life/aiv/ddl-voiceover.mp3`。实测基频偏差 **+0.1 半音**、
+对标参照：`aiv/ddl-voiceover.mp3`。实测基频偏差 **+0.1 半音**、
 F2 偏差 +31 Hz、动态跨度 107 Hz vs 参照 102 Hz。
 
 ## 试听样本
@@ -28,7 +28,7 @@ F2 偏差 +31 Hz、动态跨度 107 Hz vs 参照 102 Hz。
 ## 合成
 
 ```bash
-cd docs/life/aiv/voice
+cd aiv/voice
 python3 scripts/synthesize_narration.py --text "大家好，我是growdu。"
 python3 scripts/synthesize_narration.py --script 字幕.md --out narration.mp3
 ```

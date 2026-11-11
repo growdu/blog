@@ -585,7 +585,7 @@ jobs:
 
 ### 6.1 已有的资产（不用重造）
 
-仓库里 [AIV 视频生产线](../aiv/index.html) 已经跑通了整条出片链路，代码在 `docs/life/aiv/pipeline/`：
+仓库里 [AIV 视频生产线](../aiv/index.html) 已经跑通了整条出片链路，代码在 `aiv/pipeline/`：
 
 | 组件 | 位置 | 作用 |
 | --- | --- | --- |
@@ -670,7 +670,7 @@ jobs:
 
 ### 6.4 目录结构与边界
 
-《运营手册》§3.4 已经定过规矩：**个人号的物料单独建仓，不进公司仓库**。这条在这里继续适用——而且现在仓库里的 `docs/life/aiv/` 目录里**躺着一堆公司物料**（`海量数据库DDL同步.mp4`、`海量智库 片头.mp4`、吉祥物图、配色），虽然已经被 `.gitignore` 的 `*.mp4` / `*.mp3` 规则挡住了二进制，但**文案脚本和分镜还在**。
+《运营手册》§3.4 已经定过规矩：**个人号的物料单独建仓，不进公司仓库**。这条在这里继续适用——而且现在仓库里的 `aiv/` 目录里**躺着一堆公司物料**（`海量数据库DDL同步.mp4`、`海量智库 片头.mp4`、吉祥物图、配色），虽然已经被 `.gitignore` 的 `*.mp4` / `*.mp3` 规则挡住了二进制，但**文案脚本和分镜还在**。
 
 **做自动发布之前，先把边界划清楚**：
 
@@ -859,8 +859,8 @@ WX_DRY_RUN=1       只产出 HTML 不调接口
 | 相对链接重写为绝对 permalink | `tools/sync-hexo.py:873` |
 | mermaid 围栏 → `<div class="mermaid">`（客户端渲染） | `scripts/mermaid.js` |
 | 主题客户端调 `mermaid.run()` | `themes/matery/layout/layout.ejs:25` |
-| 出片流水线目标：`test/validate/align/render/compose` | `docs/life/aiv/pipeline/Makefile` |
-| `storyboard.json` 是唯一契约 | `docs/life/aiv/storyboard.json` |
+| 出片流水线目标：`test/validate/align/render/compose` | `aiv/pipeline/Makefile` |
+| `storyboard.json` 是唯一契约 | `aiv/storyboard.json` |
 | 音视频不入库 | `.gitignore`（`*.mp4` / `*.mp3` 等） |
 | `source/` 由 CI 生成，不入库 | `.gitignore`（`/source/`） |
 

@@ -20,6 +20,6 @@ cascade:
 > - `docs/db/{opengauss-csn-total-ordering,opengauss-parallel-decoding-design,linux-shared-memory,logical_decode}` — openGauss / 共享内存 / 早期逻辑解码专题
 > - `docs/pgsql/`、`docs/openguass/` — 旧版分类,保留历史
 > - `docs/db/{mysql,sqlserver,taos,performance,benchmarksql}` — 其他数据库与基准
-> - `docs/life/aiv/` — 视频与自媒体生产线专题（视频物料已从本目录迁出）
+> - `aiv/` — 视频与自媒体生产线专题（视频物料已从本目录迁出；2026-11-11 起整个目录搬到仓库根，与 `weixin/` 同级）
 >
 > 本目录(`docs/db/`)现作为**源码深度拆解的归档**,主入口见上。
