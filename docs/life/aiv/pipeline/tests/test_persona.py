@@ -98,6 +98,22 @@ def test_spec_lists_every_boundary():
     assert not missing, f"规范 §3.3 少了边界：{sorted(missing)}"
 
 
+def test_every_cited_path_exists():
+    """规范里的出处必须真实存在。
+
+    这个规范的全部价值就是「每条结论都带出处」——出处要是假的，
+    整份规范就退回成凭空写的角色设定。
+    """
+    repo_root = character.REPO_ROOT
+    spec = _spec_text()
+    md_paths = sorted(set(re.findall(r"`(docs/[^`]+?\.md)`", spec)))
+    assert md_paths, "规范里没有引用任何文章"
+    for path in md_paths:
+        assert (repo_root / path).exists(), f"规范引用的文章不存在：{path}"
+    for path in sorted(set(re.findall(r"`(docs/[^`]+?/)`", spec))):
+        assert (repo_root / path).exists(), f"规范引用的目录不存在：{path}"
+
+
 def test_spec_has_no_broken_characters():
     """中文文案不能有损坏字符。"""
     assert "�" not in _spec_text()
