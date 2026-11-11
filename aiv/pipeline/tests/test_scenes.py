@@ -13,6 +13,16 @@ SCENE_MODULES = [
 ]
 
 
+def _params_for(module_name: str) -> dict:
+    """这一期的画面内容来自视觉分镜契约，不是场景代码。"""
+    from pyv.contract import load_contract
+
+    for segment in load_contract().segments:
+        if segment.renderer == module_name:
+            return segment.params
+    raise AssertionError(f"契约里没有 {module_name}")
+
+
 @pytest.mark.parametrize("name", SCENE_MODULES)
 def test_scene_module_exposes_render(name):
     module = importlib.import_module(name)
@@ -24,7 +34,7 @@ def test_scene_render_draws_something(name):
     module = importlib.import_module(name)
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 320, 180)
     ctx = cairo.Context(surface)
-    module.render(ctx, 0.5, 320, 180)
+    module.render(ctx, 0.5, 320, 180, _params_for(name))
     data = surface.get_data()
     assert any(byte != 0 for byte in data)
 
@@ -35,24 +45,24 @@ def test_scene_render_handles_endpoints(name):
     for t in (0.0, 1.0):
         surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 320, 180)
         ctx = cairo.Context(surface)
-        module.render(ctx, t, 320, 180)
+        module.render(ctx, t, 320, 180, _params_for(name))
 
 
 def test_s03_highlights_exactly_one_core():
     import pyv.scenes.s03_cores as s03
-    highlighted = s03.highlighted_cores()
+    highlighted = s03.highlighted_cores(_params_for("pyv.scenes.s03_cores"))
     assert len(highlighted) == 1
     assert 0 <= highlighted[0] < 32
 
 
 def test_s04_exposes_four_workers():
     import pyv.scenes.s04_parallel as s04
-    assert s04.worker_count() == 4
+    assert s04.worker_count(_params_for("pyv.scenes.s04_parallel")) == 4
 
 
 def test_s05_outputs_in_ascending_order():
     import pyv.scenes.s05_order as s05
-    assert s05.output_order() == [1, 2, 3, 4]
+    assert s05.output_order(_params_for("pyv.scenes.s05_order")) == [1, 2, 3, 4]
 
 
 def test_s06_uses_personal_avatar_and_no_banned_words():
@@ -107,7 +117,7 @@ def test_every_character_in_scene_source_is_renderable(name, monkeypatch):
     monkeypatch.setattr(module, "text", spy)
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 320, 180)
     ctx = cairo.Context(surface)
-    module.render(ctx, 0.5, 320, 180)
+    module.render(ctx, 0.5, 320, 180, _params_for(name))
 
     assert drawn, "场景应当至少画出一行文字"
     for s in drawn:

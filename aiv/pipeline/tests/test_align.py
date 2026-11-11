@@ -92,13 +92,14 @@ def test_build_storyboard_rejects_mismatched_counts(tmp_path):
 
 
 def test_real_contract_has_matching_counts():
-    """真实契约：口播 10 句、字幕 10 行、segments 期望 10 句。"""
-    from pyv.segments import sentence_count
+    """真实契约：口播 10 句、字幕 10 行、视觉分镜契约也期望 10 句。"""
+    from pyv.contract import load_contract
     if not REAL_MD.exists():
         pytest.skip("口播稿不在仓库中，跳过")
     sentences = align.parse_script(REAL_MD)
     subtitles = align.parse_subtitle_table(REAL_MD)
-    assert len(sentences) == len(subtitles) == sentence_count() == 10
+    contract = load_contract()
+    assert len(sentences) == len(subtitles) == contract.sentence_count == 10
 
 
 def test_real_contract_subtitles_fit_width():

@@ -3,8 +3,12 @@
 流程：
 1. 用 ffmpeg silencedetect 把音频切成有声片段
 2. 与口播稿逐句配对（句数不一致直接报错，不猜）
-3. 按 segments.SEGMENTS 把句子归入 6 个视觉段，段间首尾相接
-4. 写出 storyboard.json：scenes[] 是视觉段，subtitles[] 是逐句字幕
+3. 按视觉分镜契约把句子归入视觉段，段间首尾相接
+4. 写出 storyboard.json：scenes[] 是视觉段（带画面内容 params），
+   subtitles[] 是逐句字幕
+
+**时间轴来自旁白，画面内容来自契约**——两者分开，谁也不绑架谁：
+换旁白只改音频，换文案只改契约。
 """
 from __future__ import annotations
 
@@ -13,7 +17,7 @@ import re
 import subprocess
 from pathlib import Path
 
-from pyv.segments import SEGMENTS, sentence_count
+from pyv.contract import Contract, load_contract
 from pyv.timeline import (
     Audio,
     Scene,
@@ -228,18 +232,24 @@ def parse_subtitle_table(md_path: str | Path) -> list[str]:
 
 def build_storyboard(audio_path: str | Path,
                       script_md: str | Path,
-                      out_path: str | Path) -> Storyboard:
-    """对齐旁白与口播稿，写出 storyboard.json 并返回其内容。"""
+                      out_path: str | Path,
+                      contract_path: str | Path | None = None) -> Storyboard:
+    """对齐旁白与口播稿，写出 storyboard.json 并返回其内容。
+
+    `contract_path` 是视觉分镜契约：句到视觉段的映射 + 画面上的文案。
+    省略时用默认契约（`aiv/contracts/pg-parallel-decode.json`）。
+    """
+    contract = load_contract(contract_path)
     sentences = parse_script(script_md)
     subtitle_texts = parse_subtitle_table(script_md)
     if len(sentences) != len(subtitle_texts):
         raise ValueError(
             f"口播稿 {len(sentences)} 句与字幕表 {len(subtitle_texts)} 行不一致"
         )
-    if len(sentences) != sentence_count():
+    if len(sentences) != contract.sentence_count:
         raise ValueError(
-            f"口播稿 {len(sentences)} 句与 segments.SEGMENTS 期望的 "
-            f"{sentence_count()} 句不一致"
+            f"口播稿 {len(sentences)} 句与契约期望的 "
+            f"{contract.sentence_count} 句不一致"
         )
 
     spans = detect_sentences(audio_path)
@@ -251,12 +261,12 @@ def build_storyboard(audio_path: str | Path,
 
     # 视觉段边界：首段从 0 开始，其余从本段首句的起点开始，末段到音频结尾
     boundaries: list[float] = [0.0]
-    for segment in SEGMENTS[1:]:
+    for segment in contract.segments[1:]:
         boundaries.append(round(pairs[segment.sentences[0]][0], 3))
     boundaries.append(round(duration, 3))
 
     scenes: list[Scene] = []
-    for index, segment in enumerate(SEGMENTS):
+    for index, segment in enumerate(contract.segments):
         start = boundaries[index]
         end = boundaries[index + 1]
         covered = [pairs[i][2] for i in segment.sentences]
@@ -267,7 +277,8 @@ def build_storyboard(audio_path: str | Path,
             type="code",
             subtitle="\n".join(subtitle_texts[i] for i in segment.sentences),
             renderer=segment.renderer,
-            params={"sentences": list(segment.sentences)},
+            params=dict(segment.params),
+            sentences=segment.sentences,
         ))
 
     subtitles = [
@@ -285,7 +296,8 @@ def build_storyboard(audio_path: str | Path,
         "scenes": [
             {
                 "id": s.id, "start": s.start, "end": s.end, "type": s.type,
-                "subtitle": s.subtitle, "renderer": s.renderer, "params": s.params,
+                "subtitle": s.subtitle, "renderer": s.renderer,
+                "params": s.params, "sentences": list(s.sentences),
             }
             for s in scenes
         ],

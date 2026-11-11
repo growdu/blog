@@ -14,6 +14,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from pyv import contract
 from pyv import palette
 from pyv.timeline import Storyboard
 
@@ -43,7 +44,9 @@ def cmd_validate(args: argparse.Namespace) -> int:
 
 def cmd_align(args: argparse.Namespace) -> int:
     from pyv import align
-    storyboard = align.build_storyboard(args.audio, args.script, args.out)
+    storyboard = align.build_storyboard(
+        args.audio, args.script, args.out, contract_path=args.scenes
+    )
     print(
         f"OK {len(storyboard.scenes)} 个视觉段，"
         f"{len(storyboard.subtitle_events())} 条字幕 → {args.out}"
@@ -196,6 +199,8 @@ def main(argv: list[str] | None = None) -> int:
     p_align.add_argument("--audio", required=True)
     p_align.add_argument("--script", required=True)
     p_align.add_argument("--out", required=True)
+    p_align.add_argument("--scenes", default=str(contract.DEFAULT_CONTRACT),
+                         help="视觉分镜契约（本期文案与段落划分）")
     p_align.set_defaults(func=cmd_align)
 
     p_render = sub.add_parser("render")

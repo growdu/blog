@@ -11,6 +11,7 @@
 | 目录 | 内容 |
 | --- | --- |
 | `pipeline/` | 出片流水线：`pyv/` 渲染引擎 + `tests/` + `Makefile` |
+| `contracts/` | 视觉分镜契约：一期视频的段落划分与画面文案 |
 | `character/` | 3D 小象形象：生成、加眼镜、铭牌盖章（`scripts/`） |
 | `brand/` | 品牌片头/片尾：渲染与配乐（`scripts/`） |
 | `voice/` | 旁白音色与合成（`scripts/`） |
@@ -28,6 +29,27 @@
 [brand/README.md](brand/README.md)、[voice/README.md](voice/README.md)、
 [music/README.md](music/README.md)。
 
+## 本期内容进契约，版式常量留代码
+
+一条视频的**画面文案与数字**（标题、副标题、标签、核数、顺序号、性能倍数……）
+全部写在 `contracts/*.json` 的视觉分镜契约里，不写在场景代码里。
+
+| | 放哪 | 谁定 |
+| --- | --- | --- |
+| 文案、数字、标签、枚举 | `contracts/<期>.json` | 每一期 |
+| 位置、尺寸、配色、动效 | `pipeline/pyv/scenes/*.py` | 模板 |
+
+这么分是为了让「换一期」不再等于「改一遍代码」：新一期只写契约，
+场景渲染器一行都不用动。两条硬规矩：
+
+- **参数缺失当场报错**。契约少给一个参数，渲染前就抛 `MissingParam`，
+  绝不悄悄退回硬编码的旧文案——那会让契约与画面的不一致变得无声无息。
+- **文案不许回流到代码**。`pipeline/tests/test_contract.py` 会解析场景源码，
+  只要契约里的文案还以字符串字面量的形式出现在场景里，测试就红。
+
+契约里还规定「哪几句旁白配哪张图」，句子必须**恰好被覆盖一次**：
+漏了、重了都会在 `align` 之前就报错。
+
 ## 跑一遍
 
 ```bash
@@ -37,8 +59,9 @@ make persona     # 按《人格规范》检查口播稿
 make bgm         # 按《背景音乐规范》检查曲库台账
 ```
 
-出片链路（`validate → brand → render → compose`）需要 `storyboard.json` 契约与旁白音频，
-两者都是本机素材，不入库。
+出片链路（`align → validate → brand → render → compose`）还需要
+`storyboard.json`（时间轴，由旁白算出来）和旁白音频，两者都是本机素材，不入库；
+入库的是 `contracts/` 里的视觉分镜契约——它决定**画面上写什么**。
 
 ## 发布到博客的那一份
 

@@ -19,6 +19,7 @@ PY := python
 STORYBOARD := $(ROOT)/storyboard.json
 SCRIPT := $(ROOT)/字幕-并行解码.md
 NARRATION := $(ROOT)/pa_decode_v2.mp3
+CONTRACT := $(ROOT)/contracts/pg-parallel-decode.json
 BUILD := $(ROOT)/build
 OUT := $(ROOT)/out/pg-parallel-decode.mp4
 
@@ -34,7 +35,7 @@ validate:
 
 align:
 	$(PY) -m pyv.cli align --audio $(NARRATION) --script $(SCRIPT) \
-		--out $(STORYBOARD)
+		--scenes $(CONTRACT) --out $(STORYBOARD)
 
 brand:
 	$(PY) -m pyv.cli brand --storyboard $(STORYBOARD) --out $(STORYBOARD) \

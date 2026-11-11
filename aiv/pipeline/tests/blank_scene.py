@@ -2,6 +2,6 @@
 from __future__ import annotations
 
 
-def render(ctx, t: float, w: int, h: int) -> None:
+def render(ctx, t: float, w: int, h: int, params=None) -> None:
     """什么都不画。"""
     return None

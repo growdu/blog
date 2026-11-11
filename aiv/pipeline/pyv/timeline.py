@@ -71,6 +71,9 @@ class Scene:
     subtitle: str
     renderer: str | None = None
     params: dict = field(default_factory=dict)
+    # 这一段覆盖口播稿的第几句（从 0 起）。时间轴与画面内容的对应关系，
+    # 从视觉分镜契约带过来，让 storyboard.json 自己就能读明白。
+    sentences: tuple[int, ...] = ()
     h3: dict | None = None
     clip: str | None = None
     audio: str | None = None
@@ -104,6 +107,7 @@ class Storyboard:
                 subtitle=s.get("subtitle", ""),
                 renderer=s.get("renderer"),
                 params=s.get("params", {}) or {},
+                sentences=tuple(int(i) for i in s.get("sentences", []) or ()),
                 h3=s.get("h3"),
                 clip=s.get("clip"),
                 audio=s.get("audio"),

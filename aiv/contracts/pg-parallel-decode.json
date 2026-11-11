@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "episode": "pg-parallel-decode",
+  "title": "PostgreSQL 18 并行逻辑解码",
+  "segments": [
+    {
+      "id": "s01",
+      "renderer": "pyv.scenes.s01_intro",
+      "sentences": [0, 1],
+      "params": {
+        "title": "PostgreSQL 18",
+        "subtitle": "并行逻辑解码",
+        "tagline": "reader 协调 · 多 worker 并行 · 顺序一致"
+      }
+    },
+    {
+      "id": "s02",
+      "renderer": "pyv.scenes.s02_serial",
+      "sentences": [2, 3],
+      "params": {
+        "title": "发布端只有一个解码线程",
+        "decoder_label": "decoder",
+        "decoder_sub": "单线程",
+        "target_label": "订阅端",
+        "caption": "大事务小事务都得排队，队列越积越长"
+      }
+    },
+    {
+      "id": "s03",
+      "renderer": "pyv.scenes.s03_cores",
+      "sentences": [4, 5],
+      "params": {
+        "title": "32 核机器，解码只占 1 核",
+        "core_count": 32,
+        "core_cols": 8,
+        "highlighted_core": 11,
+        "stat": "只用到 1 核",
+        "big_label": "大事务",
+        "small_label": "小事务高并发",
+        "conclusion": "都跟不上"
+      }
+    },
+    {
+      "id": "s04",
+      "renderer": "pyv.scenes.s04_parallel",
+      "sentences": [6],
+      "params": {
+        "title": "reader 读取与协调",
+        "source_label": "reader",
+        "source_sub": "WALSender",
+        "worker_count": 4,
+        "worker_prefix": "worker",
+        "target_label": "统一输出",
+        "caption": "多个 worker 并行解码，速度显著提升"
+      }
+    },
+    {
+      "id": "s05",
+      "renderer": "pyv.scenes.s05_order",
+      "sentences": [7, 8],
+      "params": {
+        "title": "按事务结束顺序输出",
+        "order": [1, 2, 3, 4],
+        "target_label": "订阅端",
+        "callout": "2–5 倍",
+        "callout_sub": "并行解码整体性能",
+        "caption": "订阅端收到的顺序，和发布端保持一致"
+      }
+    },
+    {
+      "id": "s06",
+      "renderer": "pyv.scenes.s06_outro",
+      "sentences": [9],
+      "params": {
+        "title": "并行解码 · 有序同步",
+        "subtitle": "异构数据同步场景，实用性很高",
+        "badge": "独立开发者 · growdu"
+      }
+    }
+  ]
+}

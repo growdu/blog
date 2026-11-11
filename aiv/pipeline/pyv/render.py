@@ -9,6 +9,7 @@ import cairo
 
 from pyv import character
 from pyv.palette import COLORS, FPS, HEIGHT, WIDTH, hex_to_rgb
+from pyv.params import check_required
 from pyv.timeline import Scene, Storyboard
 
 
@@ -78,6 +79,8 @@ def render_scene(scene: Scene, out_path: str | Path,
     if not scene.renderer:
         raise ValueError(f"场景 {scene.id} 缺少 renderer")
     module = importlib.import_module(scene.renderer)
+    # 场景参数来自契约（本期内容）。缺了就当场报错，不能悄悄退回旧文案。
+    check_required(scene.params, getattr(module, "REQUIRED", ()), scene.id)
     total = max(1, int(round(scene.duration * fps)))
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -100,7 +103,7 @@ def render_scene(scene: Scene, out_path: str | Path,
             ctx = cairo.Context(surface)
             ctx.set_source_rgb(*hex_to_rgb(COLORS["bg"]))
             ctx.paint()
-            module.render(ctx, t, width, height)
+            module.render(ctx, t, width, height, scene.params)
             if burner is not None:
                 # 用真实帧时间定位字幕，避免逐场景取整带来的漂移
                 burner.draw(ctx, scene.start + i / fps, width, height)

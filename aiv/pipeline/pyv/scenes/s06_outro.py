@@ -1,4 +1,7 @@
-"""段 F：异构数据同步价值 + 落版（个人头像，不使用任何公司 Logo）。"""
+"""段 F：价值收束 + 落版（个人头像，不使用任何公司 Logo）。
+
+版式在代码里，**这一期的标题、副标题与落版标签在契约里**（`Scene.params`）。
+"""
 from __future__ import annotations
 
 import math
@@ -9,6 +12,9 @@ from PIL import Image
 from pyv import character, easing
 from pyv.draw import rounded_rect, text
 from pyv.palette import COLORS
+from pyv.params import Params
+
+REQUIRED = ("title", "subtitle", "badge")
 
 _mascot = character.Mascot()
 
@@ -25,7 +31,8 @@ def _draw_avatar(ctx, path, x: float, y: float, size: int, alpha: float) -> None
     ctx.restore()
 
 
-def render(ctx, t: float, w: int, h: int) -> None:
+def render(ctx, t: float, w: int, h: int, params=None) -> None:
+    p = Params(params, "s06")
     enter = easing.ease_out_cubic(t / 0.20)
     slide = (1.0 - enter) * -w * 0.06
     bob = math.sin(t * math.pi * 1.8) * h * 0.006
@@ -33,9 +40,9 @@ def render(ctx, t: float, w: int, h: int) -> None:
                  alpha=enter, slide=slide, bob=bob)
 
     appear = easing.ease_out_cubic(max(0.0, min(1.0, t * 2.5)))
-    text(ctx, "并行解码 · 有序同步", w * 0.40, h * 0.36, 76, COLORS["primary"],
+    text(ctx, p["title"], w * 0.40, h * 0.36, 76, COLORS["primary"],
          bold=True, alpha=appear)
-    text(ctx, "异构数据同步场景，实用性很高", w * 0.40, h * 0.48, 44, COLORS["secondary"],
+    text(ctx, p["subtitle"], w * 0.40, h * 0.48, 44, COLORS["secondary"],
          alpha=appear)
 
     # 落版：个人头像 + 身份标签。头像素材缺失时只留标签，布局不变。
@@ -48,5 +55,5 @@ def render(ctx, t: float, w: int, h: int) -> None:
     label_y = h * 0.72 + size * 0.22
     rounded_rect(ctx, label_x, label_y, w * 0.26, h * 0.075, 12,
                  COLORS["primary"], alpha=appear)
-    text(ctx, "独立开发者 · growdu", label_x + w * 0.13, label_y + h * 0.05, 34,
+    text(ctx, p["badge"], label_x + w * 0.13, label_y + h * 0.05, 34,
          "#FFFFFF", anchor="center", alpha=appear)

@@ -60,6 +60,20 @@ def test_render_scene_requires_renderer(tmp_path):
         raise AssertionError("缺少 renderer 时应当报错")
 
 
+def _contract_params(renderer: str) -> dict:
+    """从视觉分镜契约里取出这一段要用的参数。
+
+    场景的文案与数字全在契约里（见 `pyv/contract.py`），测试也照这个口径取，
+    不要在测试里另抄一份——抄一份就等于又造了个真相来源。
+    """
+    from pyv import contract as contract_mod
+
+    for segment in contract_mod.load_contract().segments:
+        if segment.renderer == renderer:
+            return dict(segment.params)
+    raise AssertionError(f"契约里没有 {renderer} 这一段")
+
+
 @pytest.mark.parametrize("module_name", ["pyv.scenes.s01_intro", "pyv.scenes.s06_outro"])
 def test_mascot_scenes_render_without_pose(module_name):
     """片头/片尾场景在移除 2D 部件动画后仍要能画出来。
@@ -73,7 +87,7 @@ def test_mascot_scenes_render_without_pose(module_name):
     scene = importlib.import_module(module_name)
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 320, 180)
     ctx = cairo.Context(surface)
-    scene.render(ctx, 0.5, 320, 180)
+    scene.render(ctx, 0.5, 320, 180, _contract_params(module_name))
     data = bytes(surface.get_data())
     stride = surface.get_stride()
     painted = any(data[y * stride:(y + 1) * stride][3::4] for y in range(180))
