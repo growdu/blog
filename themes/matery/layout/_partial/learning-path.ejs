@@ -44,8 +44,19 @@
   // Pick the most common category among a lane's posts so the “查看更多”
   // link lands on the right category page (instead of the generic
   // /categories/ that the card previously pointed to).
+  //
+  // The link target comes from the category's own `path`, never from
+  // concatenating the category name: names with spaces would produce an
+  // invalid URL, and cascade categories (e.g. 「社会」 under 「人生」) live
+  // under their parent path.
   function primaryCat(posts) {
     var counts = {};
+    var catByName = {};
+    (site.categories || []).each(function (c) {
+      var cur = catByName[c.name];
+      // 同名分类优先取顶级分类，避免命中 Hexo 层级链里的子分类副本。
+      if (!cur || (cur.parent && !c.parent)) catByName[c.name] = c;
+    });
     posts.forEach(function (p) {
       (p.categories && p.categories.data || []).forEach(function (c) {
         counts[c.name] = (counts[c.name] || 0) + 1;
@@ -55,7 +66,7 @@
     Object.keys(counts).forEach(function (k) {
       if (counts[k] > bestN) { best = k; bestN = counts[k]; }
     });
-    return best;
+    return best && catByName[best] ? catByName[best] : null;
   }
 
   // For each lane, collect ALL matching posts (so primaryCat sees the full
@@ -106,7 +117,7 @@
           <p class="lane-card__empty">该方向持续更新中</p>
         <% } %>
         <% if (lane.primaryCat) { %>
-        <a class="lane-card__more" href="<%- url_for('/categories/' + lane.primaryCat + '/') %>">
+        <a class="lane-card__more" href="<%- url_for(lane.primaryCat.path) %>">
           查看更多 <i class="fas fa-arrow-right"></i>
         </a>
         <% } else { %>

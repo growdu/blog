@@ -71,7 +71,10 @@ pagination_dir: page
 archive_generator:
   per_page: 30
   yearly: true
-  monthly: false
+  # The archive timeline links every month (see themes/matery/layout/
+  # archive.ejs), so the monthly pages have to exist -- otherwise
+  # /archives/2022/11/ 404s from every archive page.
+  monthly: true
 
 # RSS Feed
 feed:

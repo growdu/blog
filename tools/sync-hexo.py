@@ -20,8 +20,8 @@ IMG_EXT = {'.png','.jpg','.jpeg','.gif','.svg','.webp','.bmp','.ico'}
 # Posts to feature in the homepage recommend section (relative to docs/)
 # Higher top value = shown first in the recommend carousel
 FEATURED_POSTS = {
-    '00-intro.md': 100,
-    '01-how_to_learn_program.md': 90,
+    'life/road/00-intro.md': 100,
+    'life/road/01-how_to_learn_program.md': 90,
     'cluster/分布式存储需要解决的问题.md': 85,
     'es/oh-my-search.md': 80,
     'db/logical_decode/逻辑解码DDL-Replay框架设计/index.md': 75,
@@ -47,6 +47,12 @@ FEATURED_POSTS = {
 # table every moved article would be dated with its move commit and jump
 # to the top of "recent posts".  Keyed by docs/-relative path.
 DATE_OVERRIDES = {
+    'life/road/00-intro.md': '2025-04-16 09:20:54',
+    'life/road/01-how_to_learn_program.md': '2025-04-16 09:20:54',
+    'life/road/02-elevate_thinking.md': '2026-09-28 14:48:28',
+    'life/road/左耳朵耗子的话——关于技术的一些思考.md': '2025-04-16 09:20:54',
+    'life/hometown/家中对联.md': '2026-08-06 15:28:11',
+    'life/hometown/家中对联-html.html': '2026-08-11 15:41:57',
     'life/gaokao/math-methods/index.md': '2026-11-06 21:20:33',
     'life/gaokao/math-paper2/index.md': '2026-11-08 11:59:40',
     'life/gaokao/english-roots/index.md': '2026-11-11 12:04:05',
@@ -65,6 +71,12 @@ DATE_OVERRIDES = {
 # without the .md extension for single-file posts), value = the new
 # post path.  write_redirects() emits a redirect page at the old URL.
 REDIRECTS = {
+    '00-intro': 'life/road/00-intro',
+    '01-how_to_learn_program': 'life/road/01-how_to_learn_program',
+    '02-elevate_thinking': 'life/road/02-elevate_thinking',
+    'road/左耳朵耗子的话——关于技术的一些思考': 'life/road/左耳朵耗子的话——关于技术的一些思考',
+    'hometown/家中对联': 'life/hometown/家中对联',
+    'hometown/家中对联-html': 'life/hometown/家中对联-html.html',
     'life/gaokao-math-methods': 'life/gaokao/math-methods',
     'life/gaokao-math-paper2': 'life/gaokao/math-paper2',
     'life/gaokao-english-roots': 'life/gaokao/english-roots',
@@ -78,22 +90,40 @@ REDIRECTS = {
     'life/zhuangxiu': 'life/shehui/zhuangxiu',
 }
 
-REDIRECT_TEMPLATE = """<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
+# Redirect pages are Hexo *pages* with `layout: false`.  Hexo's page
+# generator (hexo/dist/plugins/generator/page.js) emits such pages
+# verbatim -- no theme layout -- so the page keeps its own <head> with the
+# meta refresh and a canonical pointing at the NEW url.  A themed layout
+# would drop the meta refresh (it only works in <head>) and the theme's
+# own canonical would point back at the old URL.
+REDIRECT_PAGE = """---
+title: "{title}"
+layout: false
+sitemap: false
+comments: false
+---
+
 <meta http-equiv="refresh" content="0; url={new_url}">
 <link rel="canonical" href="{new_url}">
 <meta name="robots" content="noindex, follow">
-<title>页面已移动</title>
-</head>
-<body>
-<p>这篇文章已移动到新的目录，点击继续：</p>
-<p><a href="{new_url}">{new_url}</a></p>
+<p>这篇文章已移动到新的目录，点击继续：<a href="{new_url}">{new_url}</a></p>
 <script>location.replace("{new_url}");</script>
-</body>
-</html>
 """
+
+# Category pages whose URL changed when a section gained/lost an _index.md
+# or was nested under a parent category.  Keyed by the OLD category path
+# (as it appeared under /categories/), value = the NEW category path.
+#
+#   成长之路  docs/road/  ->  docs/life/road/     (成长之路 becomes a child of 人生)
+#   随笔      docs/*.md   ->  docs/life/road/     (root docs fell back to 「随笔」)
+#   stock     docs/stock/ ->  title 股票与金融
+#   hometown  docs/hometown/ -> title 家乡 (now a child of 人生)
+CATEGORY_REDIRECTS = {
+    '成长之路': '人生/成长之路',
+    '随笔': '人生/成长之路',
+    'stock': '股票与金融',
+    'hometown': '人生/家乡',
+}
 
 TOPIC_DEFS = [
     # (name, icon, color, blurb)
@@ -193,6 +223,25 @@ TOPIC_RULES = {
 }
 
 TOPIC_NAME_TO_DEF = {name: (icon, color, blurb) for name, icon, color, blurb in TOPIC_DEFS}
+
+
+# Hexo's slugize (hexo-util) — reimplemented so the URLs this script
+# generates match the ones Hexo builds for categories/tags.  A tag named
+# 「MVCC 与事务」 becomes /tags/MVCC-与事务/, NOT /tags/MVCC%20与事务/.
+_R_CONTROL = re.compile(r'[\u0000-\u001f]')
+_R_SPECIAL = re.compile(r'[\s~`!@#$%^&*()\-_+=[\]{}|\\;:"\'<>,.?/]+')
+
+
+def slugize(name, separator='-'):
+    """Mirror hexo-util's slugize() so generated links match Hexo's."""
+    import unicodedata
+    s = unicodedata.normalize('NFKD', name)
+    s = ''.join(c for c in s if not unicodedata.combining(c))
+    s = _R_CONTROL.sub('', s)
+    s = _R_SPECIAL.sub(separator, s)
+    s = re.sub(re.escape(separator) + '{2,}', separator, s)
+    s = re.sub('^' + re.escape(separator) + '+|' + re.escape(separator) + '+$', '', s)
+    return s
 
 
 def infer_topics(rel, title):
@@ -1214,7 +1263,7 @@ def write_redirects():
     """
     written = 0
     for old_path, new_path in REDIRECTS.items():
-        if new_path.endswith('.md'):
+        if new_path.endswith('.md') or new_path.endswith('.html'):
             new_file = os.path.join(DOCS, new_path)
         else:
             new_file = os.path.join(DOCS, new_path, 'index.md')
@@ -1226,15 +1275,45 @@ def write_redirects():
             continue
         date = git_date(new_file)
         stamp = f'{date[:4]}/{date[5:7]}/{date[8:10]}'
+        # The permalink slug drops the source extension (.md / .html).
+        new_slug = new_path
+        for ext in ('.md', '.html'):
+            if new_slug.endswith(ext):
+                new_slug = new_slug[:-len(ext)]
+                break
         old_url = f'/{stamp}/{quote(old_path)}/'
-        new_url = f'/{stamp}/{quote(new_path)}/'
+        new_url = f'/{stamp}/{quote(new_slug)}/'
         out_dir = os.path.join(SRC, old_url.strip('/'))
         os.makedirs(out_dir, exist_ok=True)
-        with open(os.path.join(out_dir, 'index.html'), 'w', encoding='utf-8') as f:
-            f.write(REDIRECT_TEMPLATE.format(
-                old_url=old_url,
+        with open(os.path.join(out_dir, 'index.md'), 'w', encoding='utf-8') as f:
+            f.write(REDIRECT_PAGE.format(
                 new_url=new_url,
                 title=new_path.rsplit('/', 1)[-1],
+            ))
+        written += 1
+    return written
+
+
+def write_category_redirects():
+    """Generate redirect pages for category URLs that changed.
+
+    A category page lives at /categories/<path>/.  When a section gains an
+    _index.md (its category name changes) or is nested under a parent
+    category (its path gains a prefix), the old URL 404s.  We emit a
+    static redirect page there so old links keep working.
+
+    Returns the number of redirect pages written.
+    """
+    written = 0
+    for old_path, new_path in CATEGORY_REDIRECTS.items():
+        new_url = f'/categories/{quote(new_path)}/'
+        old_url = f'/categories/{quote(old_path)}/'
+        out_dir = os.path.join(SRC, 'categories', old_path)
+        os.makedirs(out_dir, exist_ok=True)
+        with open(os.path.join(out_dir, 'index.md'), 'w', encoding='utf-8') as f:
+            f.write(REDIRECT_PAGE.format(
+                new_url=new_url,
+                title=new_path,
             ))
         written += 1
     return written
@@ -1279,8 +1358,16 @@ def main():
 
     n_md = 0
     n_html = 0
-    for root, _, files in os.walk(DOCS):
+    for root, dirs, files in os.walk(DOCS):
+        # Skip hidden directories (.pytest_cache, .venv, .hilo, .git ...).
+        # They are build/tool artefacts that happen to contain .md files;
+        # without this, e.g. docs/life/aiv/pipeline/.pytest_cache/README.md
+        # became a published post ("pytest cache directory #") and got its
+        # own Gitalk issue on the next deploy.
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
         for f in sorted(files):
+            if f.startswith('.'):
+                continue
             ext = os.path.splitext(f)[1].lower()
             fp = os.path.join(root, f)
             try:
@@ -1317,6 +1404,9 @@ def main():
 
     n_redirect = write_redirects()
     print(f'Redirect pages: {n_redirect}')
+
+    n_cat_redirect = write_category_redirects()
+    print(f'Category redirects: {n_cat_redirect}')
 
 
     # robots.txt for SEO
@@ -1596,7 +1686,7 @@ def create_database_landing_page(database_data):
         count = len(group)
         if count == 0:
             continue
-        tag_url = f'/tags/{quote(name)}/'
+        tag_url = f'/tags/{quote(slugize(name))}/'
         topic_index_lines.append(
             f'- <i class="fa-solid {icon}" style="color:{color}"></i> [{name}]({tag_url}) · **{count}** 篇 · {blurb}'
         )
@@ -1617,7 +1707,7 @@ def create_database_landing_page(database_data):
             # Skip empty topics so the grid stays dense.
             continue
         preview = group[:5]
-        tag_slug = quote(name)
+        tag_slug = quote(slugize(name))
         tag_url = f'/tags/{tag_slug}/'
         cards = ''.join(
             f'<li><a href="{_esc(p["url"])}">{_esc(p["title"])}</a></li>'

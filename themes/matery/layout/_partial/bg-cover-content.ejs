@@ -86,15 +86,43 @@
     <div class="hero-stat"><div class="hero-stat-num"><%= site.categories.length %></div><div class="hero-stat-label">分类</div></div>
     <div class="hero-stat"><div class="hero-stat-num"><%= site.tags.length %></div><div class="hero-stat-label">标签</div></div>
 </div>
+<%
+  // 分类徽章：从 site.categories 反查真实分类，用分类自身的 path 拼链接。
+  // 手写 /categories/<名字>/ 会踩三个坑：
+  //   1. 分类名带空格（如「PostgreSQL 源码修炼之路」）拼出来的 URL 是无效的；
+  //   2. 级联分类（如 life/shehui 的「社会」）在 Hexo 里挂在父分类「人生」下，
+  //      真实路径是 categories/人生/社会/，不是 categories/社会/；
+  //   3. 分类改名后手写链接会指向 404 —— 2026-11 之前「哲学 · 人生」和
+  //      「社会观察」就都指向 /categories/成长之路/（只有 1 篇文章）。
+  var heroBadges = [
+    { label: 'PostgreSQL',       icon: 'fas fa-database',   cat: 'PostgreSQL' },
+    { label: 'openGauss',        icon: 'fas fa-database',   cat: 'openGauss' },
+    { label: '分布式系统',        icon: 'fas fa-sitemap',    cat: '集群' },
+    { label: 'DPDK',             icon: 'fas fa-bolt',       cat: 'DPDK' },
+    { label: 'VPP',              icon: 'fas fa-bolt',       cat: 'VPP' },
+    { label: '股票 · 金融',       icon: 'fas fa-chart-line', cat: '股票与金融' },
+    { label: '工具 · 视频 · 培训', icon: 'fas fa-tools',     cat: '工具' },
+    { label: '哲学 · 人生',       icon: 'fas fa-yin-yang',   cat: '人生' },
+    { label: '社会观察',          icon: 'fas fa-city',       cat: '社会' }
+  ];
+  var heroCatIndex = {};
+  (site.categories || []).each(function (c) {
+    var cur = heroCatIndex[c.name];
+    // 同名分类可能既是顶级分类又是别的分类的子分类（Hexo 会把 front matter
+    // 里的分类列表当成一条层级链），优先取顶级的那一个。
+    if (!cur || (cur.parent && !c.parent)) heroCatIndex[c.name] = c;
+  });
+%>
 <div class="hero-tech">
-    <a class="hero-badge" href="<%- url_for('/categories/PostgreSQL/') %>" aria-label="查看 PostgreSQL 文章"><i class="fas fa-database"></i> PostgreSQL</a>
-    <a class="hero-badge" href="<%- url_for('/categories/openGauss/') %>" aria-label="查看 openGauss 文章"><i class="fas fa-database"></i> openGauss</a>
-    <a class="hero-badge" href="<%- url_for('/categories/集群/') %>" aria-label="查看分布式系统文章"><i class="fas fa-sitemap"></i> 分布式系统</a>
-    <a class="hero-badge" href="<%- url_for('/categories/DPDK/') %>" aria-label="查看 DPDK 和 VPP 文章"><i class="fas fa-bolt"></i> DPDK / VPP</a>
-    <a class="hero-badge" href="<%- url_for('/categories/stock/') %>" aria-label="查看股票和金融文章"><i class="fas fa-chart-line"></i> 股票 · 金融</a>
-    <a class="hero-badge" href="<%- url_for('/categories/工具/') %>" aria-label="查看工具、视频和培训文章"><i class="fas fa-tools"></i> 工具 · 视频 · 培训</a>
-    <a class="hero-badge" href="<%- url_for('/categories/成长之路/') %>" aria-label="查看哲学和人生文章"><i class="fas fa-yin-yang"></i> 哲学 · 人生</a>
-    <a class="hero-badge" href="<%- url_for('/categories/成长之路/') %>" aria-label="查看社会观察文章"><i class="fas fa-city"></i> 社会观察</a>
+    <% heroBadges.forEach(function (b) {
+         var c = heroCatIndex[b.cat];
+         if (!c) {
+           console.warn('[hero-tech] 分类不存在，徽章已跳过: ' + b.cat);
+           return;
+         }
+    %>
+    <a class="hero-badge" href="<%- url_for(c.path) %>" aria-label="查看<%= b.label %>分类文章"><i class="<%= b.icon %>"></i> <%= b.label %></a>
+    <% }); %>
 </div>
 <div class="hero-typing" id="typing-text"></div>
 <% } %>

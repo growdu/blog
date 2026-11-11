@@ -2936,9 +2936,13 @@ else:
 # others, twikoo, valine, waline) is dead weight (~2MB).
 # Whitelist is intentionally explicit so a theme update that re-adds a
 # new lib won't accidentally be published without review.
+#
+# `echarts` belongs in the list: the archives page charts (post-charts.ejs,
+# post-calendar.ejs) load /libs/echarts/echarts.min.js and the theme
+# ships no CDN fallback for it.
 THEME_LIBS = os.path.join(theme_dir, 'source', 'libs')
 USED_LIBS = {
-    'animate', 'aos', 'awesome', 'codeBlock', 'instantpage',
+    'animate', 'aos', 'awesome', 'codeBlock', 'echarts', 'instantpage',
     'jqcloud', 'jquery', 'lightGallery', 'materialize', 'minisearch',
     'prism', 'scrollprogress', 'tocbot', 'typed', 'share',
 }
