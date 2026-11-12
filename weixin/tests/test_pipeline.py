@@ -1556,22 +1556,22 @@ def test_every_part_carries_its_own_reference_links(tmp_path, server, monkeypatc
 
 def test_an_unreadable_image_skips_the_article_instead_of_crashing_the_batch(
         tmp_path, server, monkeypatch):
-    """An SVG is in the corpus, and Pillow cannot read one.
+    """A file that is not an image at all cannot be uploaded.
 
     The exception used to travel all the way up and kill the whole
     batch: 200 drafts already created, and the rest of the corpus never
     reached.  Now the article is skipped and the batch carries on.
     """
     posts_dir = tmp_path / "source" / "_posts"
-    target = posts_dir / "database" / "svg.md"
+    target = posts_dir / "database" / "broken.md"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(
-        "---\ntitle: \"带 SVG 的文章\"\ndate: 2026-11-09 15:00:00\nauthor: growdu\n"
-        "categories:\n  - 数据库\n---\n\n正文。\n\n![图](images/icon.svg)\n",
+        "---\ntitle: \"带坏图的文章\"\ndate: 2026-11-09 15:00:00\nauthor: growdu\n"
+        "categories:\n  - 数据库\n---\n\n正文。\n\n![图](images/notes.txt)\n",
         encoding="utf-8")
-    image = posts_dir.parent / "images" / "icon.svg"
+    image = posts_dir.parent / "images" / "notes.txt"
     image.parent.mkdir(parents=True, exist_ok=True)
-    image.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>', encoding="utf-8")
+    image.write_text("这根本不是一张图片。", encoding="utf-8")
 
     monkeypatch.setenv("WX_APPID", "appid")
     monkeypatch.setenv("WX_APPSECRET", "secret")
@@ -1581,6 +1581,37 @@ def test_an_unreadable_image_skips_the_article_instead_of_crashing_the_batch(
     report = json.loads((tmp_path / "out" / "batch-report.json").read_text(encoding="utf-8"))
     assert report["failed"] == 1
     assert "不是有效的图片" in report["failures"][0]["reason"]
+
+
+def test_an_article_with_an_svg_is_drafted(tmp_path, server, monkeypatch):
+    """An SVG is drawn to a PNG, so the article is not lost."""
+    from wechat import svg as svg_module
+
+    if not svg_module._find_chrome():
+        pytest.skip("this machine has no browser to draw the SVG with")
+
+    posts_dir = tmp_path / "source" / "_posts"
+    target = posts_dir / "database" / "svg.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        "---\ntitle: \"带 SVG 的文章\"\ndate: 2026-11-09 15:00:00\nauthor: growdu\n"
+        "categories:\n  - 数据库\n---\n\n正文。\n\n![图](images/icon.svg)\n",
+        encoding="utf-8")
+    image = posts_dir.parent / "images" / "icon.svg"
+    image.parent.mkdir(parents=True, exist_ok=True)
+    image.write_text(
+        '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="50">'
+        '<rect width="100" height="50" fill="#3d7ea6"/></svg>', encoding="utf-8")
+
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["batch"] + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 0
+    # The picture went up as a PNG.
+    assert _Handler.calls.count("/cgi-bin/media/uploadimg") == 1
+    payload = json.loads(_Handler.bodies["/cgi-bin/draft/add"])
+    assert "https://mmbiz.qpic.cn/body/1" in payload["articles"][0]["content"]
 
 
 def test_a_new_pipeline_version_makes_the_draft_look_changed(tmp_path, server, monkeypatch):

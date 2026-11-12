@@ -8,6 +8,10 @@ it is uploaded.
 Images wider than the WeChat body width (1080 logical pixels) are
 scaled down: WeChat would scale them anyway, and downscaling here keeps
 text in screenshots legible.
+
+An SVG is not an image WeChat can take, and Pillow cannot read one
+either.  Those are drawn to a PNG with a headless browser first -- see
+``wechat/svg.py`` -- so that an article carrying one is not lost.
 """
 
 from __future__ import annotations
@@ -20,6 +24,8 @@ from pathlib import Path
 
 from PIL import Image, UnidentifiedImageError
 
+from . import svg as svg_module
+
 __all__ = ["PreparedImage", "prepare_image", "prepare_image_bytes",
            "download_image", "cover_crop_list"]
 
@@ -31,6 +37,9 @@ COVER_RATIOS = ("2.35_1", "1_1")
 # Some hosts reject requests without a browser-ish User-Agent.
 _USER_AGENT = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+
+# Where the drawn SVGs are kept.  ``out/`` is never committed.
+SVG_CACHE_DIR = Path(__file__).resolve().parents[1] / "out" / "svg"
 
 
 @dataclass(frozen=True)
@@ -92,8 +101,13 @@ def _compress(image, stem: str, limit_bytes: int, max_width: int):
 
 
 def prepare_image(path: Path, *, limit_bytes: int = DEFAULT_LIMIT_BYTES,
-                  max_width: int = DEFAULT_MAX_WIDTH) -> PreparedImage:
-    """Read, shrink and compress one image so WeChat accepts it."""
+                  max_width: int = DEFAULT_MAX_WIDTH,
+                  svg_cache_dir: Path | None = None) -> PreparedImage:
+    """Read, shrink and compress one image so WeChat accepts it.
+
+    An SVG is drawn to a PNG first: WeChat takes JPG and PNG only, and
+    an article carrying an SVG would otherwise be skipped.
+    """
     path = Path(path)
     if not path.is_file():
         raise FileNotFoundError("image not found: {}".format(path))
@@ -106,8 +120,15 @@ def prepare_image(path: Path, *, limit_bytes: int = DEFAULT_LIMIT_BYTES,
         # The corpus carries SVG files and the occasional file that is
         # not an image at all.  Pillow cannot read them, and letting
         # that exception out would take the whole batch down.
-        raise ValueError(
-            "不是有效的图片（Pillow 读不了）: {}".format(path)) from error
+        if not _looks_like_svg(path):
+            raise ValueError(
+                "不是有效的图片（Pillow 读不了）: {}".format(path)) from error
+        # It is an SVG: draw it to a PNG.  Why that failed is worth
+        # saying, so the error is not swallowed here.
+        drawn = svg_module.rasterise(path, svg_cache_dir or SVG_CACHE_DIR)
+        with Image.open(drawn) as raw:
+            raw.load()
+            image = raw.copy()
 
     data, content_type, filename, width, height = _compress(
         image, path.stem, limit_bytes, max_width)
@@ -120,6 +141,15 @@ def prepare_image(path: Path, *, limit_bytes: int = DEFAULT_LIMIT_BYTES,
         width=width,
         height=height,
     )
+
+
+def _looks_like_svg(path: Path) -> bool:
+    """True when the file looks like an SVG."""
+    try:
+        head = path.read_bytes()[:512].lstrip()
+    except OSError:
+        return False
+    return head.startswith(b"<svg") or b"<svg" in head
 
 
 def prepare_image_bytes(data: bytes, stem: str = "image", *,
