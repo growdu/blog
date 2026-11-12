@@ -1,4 +1,4 @@
-"""调度层：候选集、选题规则、周键。
+"""调度层：候选集、选题规则、周键、调度状态文件。
 
 这一层是**平台无关**的触发器：它只回答「什么时候发、发什么」，把「怎么发」
 交给平台 adapter（``publish/spec/06-发布计划与调度.md`` §一）。
@@ -6,13 +6,14 @@
 **它不 import 任何平台 adapter 的模块**（§11.1 的接缝原则）：平台怎么发，
 由 ``publish/capabilities/<platform>.toml`` 的 ``[adapter].command`` 决定。
 
-三块东西：
+四块东西：
 
 1. **配置解析**（§5.4）：仓库路径 / 凭据路径 / 状态目录都要能配。
    环境变量给默认值，命令行选项覆盖环境变量（launchd 的
    ``EnvironmentVariables`` 只能给环境变量，所以这两条腿都得有）。
 2. **周键**（§4.3）：ISO-8601 周编号。
 3. **候选集与选题规则**（§3.2、§3.3）：这篇该发不发、该发到哪、什么时候发。
+4. **调度状态文件**（§4.1、§4.2）：``publish/schedule.json``，周键幂等。
 
 **这一期只驱动文档类平台**（能力模型里 ``kind == "document"``）。
 视频平台（``channels`` / ``bilibili``）吃的是视频期号而不是内容单元，
@@ -23,8 +24,9 @@ from __future__ import annotations
 
 import json
 import os
-from dataclasses import dataclass, field
-from datetime import date, timedelta
+import tempfile
+from dataclasses import dataclass, field, replace
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from . import PublishKitError
@@ -41,11 +43,15 @@ __all__ = [
     "ScheduleError",
     "ScheduleIneligibleError",
     "SchedulePublishError",
+    "ScheduleState",
+    "WeeklyResult",
+    "WeekRecord",
     "content_id_for",
     "discover_units",
     "flatten_content_id",
     "load_outbox_index",
     "resolve_config",
+    "run_weekly",
     "select_for_platform",
     "snapshot_name",
     "target_platforms",
@@ -474,3 +480,348 @@ def select_for_platform(units, platform, *, window, outbox=None, exclude=()):
     # 规则 4：最久未发。
     chosen = min(rest, key=lambda unit: (unit.sort_date, unit.content_id))
     return chosen, "最久未发（{}）".format(chosen.sort_date)
+
+
+# --- 调度状态文件（§4.1、§4.2） -------------------------------------------
+
+
+@dataclass(frozen=True)
+class WeekRecord:
+    """一周一条调度记录（§4.2）。
+
+    字段是固定的五个：``content_id`` / ``platforms`` / ``scheduled_at`` /
+    ``trigger`` / ``done``。这个文件是入库的，形状定下来就是对外契约。
+    """
+
+    content_id: str
+    platforms: tuple
+    scheduled_at: str
+    trigger: str
+    done: bool
+
+    def to_dict(self) -> dict:
+        return {
+            "content_id": self.content_id,
+            "platforms": list(self.platforms),
+            "scheduled_at": self.scheduled_at,
+            "trigger": self.trigger,
+            "done": self.done,
+        }
+
+    @classmethod
+    def from_dict(cls, data: object, week: str = "") -> "WeekRecord":
+        """读一条记录，字段不对就报错。
+
+        状态文件是**手也要能改**的东西（人也会去改它），所以字段不对时
+        必须指名道姓地说哪个字段不对，而不是默默跳过那一周——默默跳过
+        意味着「这一周当没发过」，于是同一周发两遍。
+        """
+        where = "{} ".format(week) if week else ""
+        if not isinstance(data, dict):
+            raise ScheduleError(
+                "{}调度记录的顶层必须是映射，实际是 {}".format(
+                    where, type(data).__name__
+                )
+            )
+
+        allowed = ("content_id", "platforms", "scheduled_at", "trigger", "done")
+        for key in data:
+            if key not in allowed:
+                raise ScheduleError("{}调度记录出现未知字段 {}".format(where, key))
+
+        content_id = data.get("content_id")
+        if not isinstance(content_id, str) or not content_id.strip():
+            raise ScheduleError("{}调度记录的 content_id 必须是非空字符串".format(where))
+
+        platforms = data.get("platforms")
+        if not isinstance(platforms, list) or not all(
+            isinstance(item, str) and item.strip() for item in platforms
+        ):
+            raise ScheduleError("{}调度记录的 platforms 必须是字符串数组".format(where))
+
+        scheduled_at = data.get("scheduled_at")
+        if not isinstance(scheduled_at, str):
+            raise ScheduleError("{}调度记录的 scheduled_at 必须是字符串".format(where))
+
+        trigger = data.get("trigger")
+        if not isinstance(trigger, str):
+            raise ScheduleError("{}调度记录的 trigger 必须是字符串".format(where))
+
+        done = data.get("done")
+        if not isinstance(done, bool):
+            raise ScheduleError("{}调度记录的 done 必须是布尔值".format(where))
+
+        return cls(
+            content_id=content_id,
+            platforms=tuple(platforms),
+            scheduled_at=scheduled_at,
+            trigger=trigger,
+            done=done,
+        )
+
+
+class ScheduleState:
+    """``publish/schedule.json``——调度层自己的那层幂等键（§4.1）。
+
+    **写入是原子的**：先写临时文件，再 ``os.replace`` 换名。中途崩了不会
+    留下半个 JSON——半个 JSON 比没有更坏：读不出来的那份会被当成「没发过」，
+    于是同一周发两遍。
+    """
+
+    def __init__(self, path, records=None):
+        self.path = Path(path)
+        self.records = dict(records or {})
+
+    @classmethod
+    def load(cls, path) -> "ScheduleState":
+        """读调度状态。文件不存在 = 还没跑过（不是错误）。"""
+        path = Path(path)
+        if not path.exists():
+            return cls(path, {})
+
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            raise ScheduleError("调度状态文件读不了：{}（{}）".format(path, exc)) from exc
+
+        try:
+            data = json.loads(text)
+        except ValueError as exc:
+            raise ScheduleError(
+                "调度状态文件不是合法 JSON：{}（{}）".format(path, exc)
+            ) from exc
+
+        if not isinstance(data, dict):
+            raise ScheduleError("调度状态文件的顶层必须是映射：{}".format(path))
+
+        records = {}
+        for week, raw in data.items():
+            records[week] = WeekRecord.from_dict(raw, week=week)
+        return cls(path, records)
+
+    def to_dict(self) -> dict:
+        return {week: record.to_dict() for week, record in self.records.items()}
+
+    def get(self, week: str):
+        """某一周的记录；没有就是 ``None``。"""
+        return self.records.get(week)
+
+    def put(self, week: str, record: WeekRecord) -> None:
+        self.records[week] = record
+
+    def unfinished_weeks(self) -> list:
+        """没跑完的周，按周键升序。
+
+        周键是 ``YYYY-Www``，两位周号，所以字典序 = 时间序。
+        """
+        return sorted(
+            week for week, record in self.records.items() if not record.done
+        )
+
+    def save(self) -> None:
+        """原子写盘。"""
+        path = self.path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        text = json.dumps(
+            self.to_dict(), ensure_ascii=False, indent=2, sort_keys=True
+        ) + "\n"
+
+        handle, temporary = tempfile.mkstemp(
+            dir=str(path.parent), prefix=path.name + ".", suffix=".tmp"
+        )
+        try:
+            with os.fdopen(handle, "w", encoding="utf-8") as stream:
+                stream.write(text)
+                stream.flush()
+                os.fsync(stream.fileno())
+            os.replace(temporary, path)
+        except BaseException:
+            # 换名失败：临时文件不能留在状态目录里（它不是合法状态文件，
+            # 下次读的时候只会多一个看不懂的东西）。
+            try:
+                os.unlink(temporary)
+            except OSError:
+                pass
+            raise
+
+
+# --- 定时调度（§3.3 + §4.2 + §7.3） ---------------------------------------
+
+
+@dataclass(frozen=True)
+class WeeklyResult:
+    """跑完一次定时调度之后的结果。"""
+
+    week: str
+    action: str
+    content_id: str | None = None
+    platforms: tuple = ()
+    messages: tuple = ()
+    ok: bool = True
+
+
+def run_weekly(
+    config: ScheduleConfig,
+    *,
+    publisher,
+    platform_filter=None,
+    now=None,
+    dry_run: bool = False,
+) -> WeeklyResult:
+    """跑一次定时调度。
+
+    ``publisher`` 是「把一篇发到某个平台」这个动作，签名
+    ``publisher(content_id, platform) -> bool``（True = 这一篇在这个平台上
+    成功了）。它由 CLI 提供（真的去调 adapter）；这一层只管**策略**：
+    选哪一篇、写不写周键、失败了怎么办。
+
+    几条规则在这里生效：
+
+    - §4.2 规则 1：本周的周键已经存在且 ``done = true`` → **跳过**；
+    - §4.2 规则 2：存在但 ``done = false`` → 继续跑并覆盖该周的记录；
+    - §7.3：有**别的**周没跑完 → **优先重试它**，而不是直接选新的一篇；
+    - §3.4：某个平台失败不阻塞其他平台。
+
+    ``dry_run`` 时**什么都不写**：不写 outbox、不调 adapter、不写周键。
+    """
+    now = now or datetime.now()
+    state = ScheduleState.load(config.schedule_file)
+    week = week_key(now.date())
+    messages = []
+
+    # §7.3：优先重试未完成的周，而不是直接选新的一篇。
+    unfinished = state.unfinished_weeks()
+    if unfinished:
+        outcomes = []
+        for key in unfinished:
+            record = state.get(key)
+            ok, said = _publish_to_platforms(
+                config, record.content_id, record.platforms, publisher, dry_run
+            )
+            messages.extend(said)
+            outcomes.append((key, record, ok))
+            if not dry_run:
+                state.put(
+                    key,
+                    replace(record, done=ok),
+                )
+                state.save()
+        _key, first, _ok = outcomes[0]
+        return WeeklyResult(
+            week=week,
+            action="retry",
+            content_id=first.content_id,
+            platforms=first.platforms,
+            messages=tuple(messages),
+            ok=all(ok for _key, _record, ok in outcomes),
+        )
+
+    # §4.2 规则 1：本周已经跑完 → 跳过。
+    existing = state.get(week)
+    if existing is not None and existing.done:
+        return WeeklyResult(
+            week=week,
+            action="skipped",
+            content_id=existing.content_id,
+            platforms=existing.platforms,
+            messages=(
+                "{} 已经跑完（{}），本次跳过。".format(week, existing.content_id),
+            ),
+            ok=True,
+        )
+
+    units, errors = discover_units(config.posts_dir)
+    for error in errors:
+        messages.append("语料有问题，这一篇没进候选集：" + error)
+
+    index = load_outbox_index(config.outbox_dir)
+    for error in index.errors:
+        messages.append("outbox 有读不动的快照：" + error)
+
+    window = week_window(now.date())
+    capabilities = target_platforms(config, platform_filter)
+    target_ids = [cap.id for cap in capabilities]
+
+    picks = []
+    for capability in capabilities:
+        unit, reason = select_for_platform(
+            units, capability.id, window=window, outbox=index
+        )
+        if unit is None:
+            messages.append("{}：{}".format(capability.id, reason))
+            continue
+        picks.append((capability.id, unit, reason))
+
+    if not picks:
+        # §3.3 规则 5：一个都不剩 → 明确说「本周没有可发的」，不静默成功。
+        return WeeklyResult(
+            week=week,
+            action="nothing",
+            messages=tuple(messages),
+            ok=True,
+        )
+
+    # 一周发一篇（§4.1「同一周被调度两次 → 发两篇」）：取最早的那一篇。
+    _platform_id, unit, reason = min(
+        picks, key=lambda item: (item[1].sort_date, item[1].content_id)
+    )
+    platforms = tuple(pid for pid in target_ids if pid in unit.platforms)
+    messages.append(
+        "{}：选中 {}（{}，{}）".format(week, unit.content_id, reason, unit.title)
+    )
+
+    record = WeekRecord(
+        content_id=unit.content_id,
+        platforms=platforms,
+        scheduled_at=now.strftime("%Y-%m-%d %H:%M:%S"),
+        trigger="weekly",
+        done=False,
+    )
+    if not dry_run:
+        # 先落一条 done = false：中途崩了，下一次跑就知道这周没跑完（§7.3）。
+        state.put(week, record)
+        state.save()
+
+    ok, said = _publish_to_platforms(
+        config, unit.content_id, platforms, publisher, dry_run
+    )
+    messages.extend(said)
+
+    if not dry_run:
+        state.put(week, replace(record, done=ok))
+        state.save()
+
+    return WeeklyResult(
+        week=week,
+        action="published",
+        content_id=unit.content_id,
+        platforms=platforms,
+        messages=tuple(messages),
+        ok=ok,
+    )
+
+
+def _publish_to_platforms(config, content_id, platforms, publisher, dry_run):
+    """把一篇发到几个平台上。返回 ``(是否全部成功, 消息列表)``。
+
+    已经发到过的平台**跳过**——发布层的幂等键（§4.1）：重跑不会重发已成功
+    的部分。某个平台失败**不阻塞**其他平台（§3.4）。
+    """
+    ok = True
+    messages = []
+    for platform in platforms:
+        index = load_outbox_index(config.outbox_dir)
+        if index.is_published(content_id, platform):
+            messages.append("{} 已经发到过 {}，跳过。".format(content_id, platform))
+            continue
+        if dry_run:
+            messages.append("（演练）会把 {} 发到 {}".format(content_id, platform))
+            continue
+
+        published = publisher(content_id, platform)
+        if published:
+            messages.append("{} → {}：成功。".format(content_id, platform))
+        else:
+            ok = False
+            messages.append("{} → {}：失败。".format(content_id, platform))
+    return ok, messages
