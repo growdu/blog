@@ -4,12 +4,14 @@ Bump it whenever a change alters what ends up in the draft: a new
 style, a different split, a different cover.  The drafts in the box
 were made by an older version, and only the ledger knows that -- the
 article itself did not change, so its content hash stayed the same and
-the draft would have been reused as it is.
-
-    PIPELINE_VERSION = 2   # tables are no longer cut row by row
+the draft would have been reused as is.
 
 The ledger stores the version next to the fingerprint, so a bump makes
 every draft look changed and the next run brings them up to date.
+
+    1  the first version
+    2  long titles are shortened, and a part without a picture of its
+       own gets a cover card drawn for it
 """
 
-PIPELINE_VERSION = 1
+PIPELINE_VERSION = 2
