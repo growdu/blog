@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  每周五 09:00 的例行发布（调度层）。
+
+  安装：
+    1. 把本文件复制到 ~/Library/LaunchAgents/com.growdu.publish.schedule.plist
+    2. 把 __REPO__ 换成仓库路径（本机是 /Users/growduduan/code/blog）
+    3. 把 __PYTHON__ 换成跑测试用的那个 python3
+       （`python3 -c "import sys; print(sys.executable)"`）
+    4. launchctl load -w ~/Library/LaunchAgents/com.growdu.publish.schedule.plist
+
+  查看与卸载：
+    launchctl list | grep growdu.publish
+    launchctl unload -w ~/Library/LaunchAgents/com.growdu.publish.schedule.plist
+    tail -f ~/Library/Logs/publish-schedule.log
+
+  跑的是什么：
+    python3 -m publishkit.cli schedule weekly
+    选内容（publish_on 落在本周的优先，否则取最久未发的一篇）
+    → 调平台 adapter 出包或发接口 → 写 outbox 快照 + 写本周的周键
+
+  为什么用 launchd 而不是 cron：
+    这台机器是 Mac，会合盖休眠。launchd 的 StartCalendarInterval 在错过的
+    时间点醒来后会补跑，cron 不会——那样就会「周一才补发周五该发的稿」。
+
+  为什么不用 GitHub Actions：
+    公众号接口要求调用方出口 IP 在后台白名单里，GitHub 托管 runner 的出口
+    IP 是动态的，所有调用都会被挡下。发布动作必须留在固定 IP 的机器上。
+
+  为什么 WorkingDirectory 指向 publish 目录：
+    publishkit 是挂在 publish/ 下面的包（publish/ 本身不是包），
+    `python3 -m publishkit.cli` 要靠 cwd 在 sys.path 里找到它。
+    仓库根路径由 PUBLISH_REPO 给，不靠 cwd 猜。
+
+  说明：XML 注释里不能出现连续两个连字符（那是注释的结束符）。
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.growdu.publish.schedule</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PYTHON__</string>
+        <string>-m</string>
+        <string>publishkit.cli</string>
+        <string>schedule</string>
+        <string>weekly</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__REPO__/publish</string>
+
+    <!-- launchd 的环境变量很少，PATH 要自己给。 -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>LANG</key>
+        <string>zh_CN.UTF-8</string>
+        <key>PYTHONPATH</key>
+        <string>__REPO__/publish</string>
+        <!-- 规格 5.4：仓库路径、凭据路径由环境变量给，不写死在代码里。 -->
+        <key>PUBLISH_REPO</key>
+        <string>__REPO__</string>
+        <key>PUBLISH_SECRETS</key>
+        <string>__REPO__/weixin/secrets.json</string>
+    </dict>
+
+    <!-- 每周五 09:00 一次。Weekday 里 0 和 7 是周日，5 是周五。 -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Weekday</key>
+            <integer>5</integer>
+            <key>Hour</key>
+            <integer>9</integer>
+            <key>Minute</key>
+            <integer>0</integer>
+        </dict>
+    </array>
+
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/publish-schedule.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/publish-schedule.log</string>
+</dict>
+</plist>

@@ -1,0 +1,20 @@
+# 每周五 09:00 的例行发布（服务器版，规格 5.3）。
+#
+# 安装：
+#   crontab -l > /tmp/cur
+#   cat publish/deploy/crontab.template >> /tmp/cur
+#   crontab /tmp/cur
+#
+# 服务器是常开的 CentOS，cron 就够（规格 5.3）：
+#   机器不会合盖休眠，用不上 launchd 的补跑。
+#   本机（Mac）用 publish/deploy/launchd.plist.template 代替这个文件。
+#
+# 三个占位符要换成服务器上的实际路径（规格 5.4）：
+#   __REPO__    仓库根，例如 /var/www/blog/app
+#   __PYTHON__  跑测试用的那个 python3
+#   __LOG__     日志文件路径（cron 不会自己写日志，必须自己重定向）
+#
+# cron 的环境变量极少：PATH、PYTHONPATH、PUBLISH_REPO、PUBLISH_SECRETS 都要自己给。
+# 凭据本身不进这个文件——PUBLISH_SECRETS 指向的 secrets.json 由 .gitignore 挡着。
+
+0 9 * * 5 cd __REPO__/publish && PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin PYTHONPATH=__REPO__/publish PUBLISH_REPO=__REPO__ PUBLISH_SECRETS=__REPO__/weixin/secrets.json __PYTHON__ -m publishkit.cli schedule weekly >> __LOG__ 2>&1

@@ -1,0 +1,36 @@
+# 不推荐。这个模板只作对照，请不要真的用（规格 5.2）。
+#
+# 为什么不行：公众号接口要求调用方的出口 IP 在后台白名单里，
+# GitHub 托管 runner 的出口 IP 是动态的，每次可能不同
+# → 所有接口调用都会被挡下（40164 / 61004）。
+# 发布动作必须留在固定 IP 的机器上。
+#
+# 要发布就用这两个之一：
+#   本机（Mac，会合盖休眠）→ publish/deploy/launchd.plist.template
+#   服务器（常开的 CentOS）  → publish/deploy/crontab.template
+#
+# 下面这份是「如果非要在 CI 里跑」的形状，列出来是为了让「为什么不用它」
+# 有个具体的对照物，不是推荐方案。
+
+name: publish-schedule
+
+on:
+  schedule:
+    # 每周五 09:00 UTC。
+    - cron: "0 9 * * 5"
+  workflow_dispatch:
+
+jobs:
+  schedule:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 排期并发布
+        working-directory: publish
+        env:
+          PUBLISH_REPO: ${{ github.workspace }}
+          PUBLISH_SECRETS: ${{ github.workspace }}/weixin/secrets.json
+          PYTHONPATH: ${{ github.workspace }}/publish
+        run: |
+          python3 -m publishkit.cli schedule weekly
