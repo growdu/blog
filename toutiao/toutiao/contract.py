@@ -27,6 +27,7 @@ _IMAGE_LINE = re.compile(r"^!\[([^\]]*)\]\(([^)]*)\)$")
 _IMAGE_INLINE = re.compile(r"!\[([^\]]*)\]\(([^)]*)\)")
 _IMAGE_TITLE = re.compile(r"""\s+(?:"[^"]*"|'[^']*')\s*$""")
 _LIST = re.compile(r"^(?:[-*+]|\d+\.)\s+(.*)$")
+_LIST_EMPTY = re.compile(r"^(?:[-*+]|\d+\.)\s*$")
 _MARKER = re.compile(r"^【图(\d+)】$")
 _MARKER_IN_TEXT = re.compile(r"【图(\d+)】")
 _HTML_TAG = re.compile(r"</?[A-Za-z][A-Za-z0-9]*(?:\s[^<>]*)?/?>")
@@ -228,6 +229,12 @@ def _scan(body: str) -> tuple[list[str], list[str]]:
                 blocks.append("- " + text)
             continue
 
+        if _LIST_EMPTY.match(stripped):
+            # A list marker with nothing behind it is not a paragraph --
+            # "1. " would otherwise come out as a stray "1." block.
+            flush()
+            continue
+
         paragraph.append(stripped)
 
     flush()
@@ -288,7 +295,7 @@ def slice_post(post: SourcePost, limits: Limits, source_url: str = "https://grow
             # A title of nothing but separators cuts down to nothing --
             # publishing it would be a silent success with no title.
             return SliceResult(reason="标题裁剪后为空")
-        notes.append("标题已裁剪到 {} 字".format(limits.title_chars))
+        notes.append("标题已裁剪到 {} 字（实际 {} 字）".format(limits.title_chars, len(title)))
     else:
         title = post.title
         title_truncated = False

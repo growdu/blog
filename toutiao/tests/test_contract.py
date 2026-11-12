@@ -53,6 +53,22 @@ def test_long_title_without_a_separator_is_cut_to_the_limit():
     assert len(result.article.title) == LIMITS.title_chars
 
 
+def test_title_truncation_note_states_the_actual_length():
+    """裁剪 note 要写清实际长度 —— 断在分隔符时往往远短于上限。"""
+    result = slice_post(_post(title="A" * 20 + "：" + "B" * 40), LIMITS)
+    assert any(
+        "裁剪到 {} 字".format(LIMITS.title_chars) in note and "实际 20 字" in note
+        for note in result.article.notes
+    )
+
+
+def test_truncated_title_does_not_end_with_a_separator():
+    """裁完的标题不能以分隔符结尾。"""
+    result = slice_post(_post(title="甲" * 14 + "，：" + "乙" * 40), LIMITS)
+    assert result.article.title == "甲" * 14
+    assert not result.article.title.endswith(("，", "：", ":", " ", "、", "—", "|"))
+
+
 # ---- 正文筛选 ----
 
 def test_code_fences_are_dropped():
@@ -150,6 +166,25 @@ def test_ordered_lists_are_normalized_to_dashes():
     assert "- 第一条" in result.article.body
     assert "- 第二条" in result.article.body
     assert "1. 第一条" not in result.article.body
+
+
+def test_empty_list_items_are_dropped():
+    """`1. ` 这种没有内容的列表项整行丢掉，不能变成野段落。"""
+    post = _post(body="1. \n- \n\n正文。")
+    result = slice_post(post, LIMITS)
+    assert "1." not in result.article.body
+    assert "正文。" in result.article.body
+
+
+def test_a_number_that_is_not_a_list_item_stays():
+    """`1.5` 这种数字不是列表项：既不当空列表项丢掉，也不当列表项改写。
+
+    列表正则要求标记后面有空白（`\\s+`）——改成 `\\s*` 的话，"1.5" 会被
+    当成「标记 1. + 内容 5」，变成 "- 5"。
+    """
+    result = slice_post(_post(body="1.5"), LIMITS)
+    assert "1.5" in result.article.body
+    assert "- 5" not in result.article.body
 
 
 # ---- 图片 ----
