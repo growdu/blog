@@ -18,7 +18,7 @@ __all__ = [
     "Text", "Bold", "Italic", "InlineCode", "Link", "Image",
     "Heading", "Paragraph", "CodeBlock", "Table", "ListItem", "ListBlock",
     "Quote", "ThematicBreak", "HtmlBlock",
-    "parse", "parse_inline",
+    "parse", "parse_inline", "inline_text", "block_text",
 ]
 
 
@@ -103,6 +103,55 @@ class ThematicBreak:
 @dataclass(frozen=True)
 class HtmlBlock:
     html: str
+
+
+def inline_text(nodes) -> str:
+    """The plain text of an inline node list.
+
+    The markup is dropped, the words are kept: a link is its label, an
+    image is its alt text, bold is its content.  This is what a reader
+    would see if the HTML were rendered and then read back as plain
+    text.
+    """
+    out = []
+    for node in nodes:
+        if isinstance(node, Text):
+            out.append(node.value)
+        elif isinstance(node, InlineCode):
+            out.append(node.value)
+        elif isinstance(node, Image):
+            out.append(node.alt)
+        elif isinstance(node, (Bold, Italic, Link)):
+            out.append(inline_text(node.children))
+    return "".join(out)
+
+
+def block_text(block) -> str:
+    """The plain text of a block.
+
+    A paragraph is its inline text, a quote and a list are the text of
+    the blocks inside them, a table row is the text of its cells.
+    Blocks that carry no words of their own -- code, images, rules --
+    are empty.
+    """
+    if isinstance(block, Paragraph):
+        return inline_text(block.children)
+    if isinstance(block, Heading):
+        return inline_text(block.children)
+    if isinstance(block, Quote):
+        return " ".join(text for text in (block_text(child)
+                                          for child in block.blocks) if text)
+    if isinstance(block, ListBlock):
+        return " ".join(text for text in (block_text(item)
+                                          for item in block.items) if text)
+    if isinstance(block, Table):
+        cells = [inline_text(cell) for cell in block.header]
+        for row in block.rows:
+            cells.extend(inline_text(cell) for cell in row)
+        return " ".join(cell for cell in cells if cell)
+    if isinstance(block, CodeBlock):
+        return block.code
+    return ""
 
 
 _FENCE_RE = re.compile(r"^(\s*)(`{3,}|~{3,})\s*([A-Za-z0-9_+-]*)\s*$")
