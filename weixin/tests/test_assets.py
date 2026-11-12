@@ -185,3 +185,17 @@ def test_prepare_image_bytes_compresses_fetched_data():
 def test_prepare_image_bytes_rejects_data_that_is_not_an_image():
     with pytest.raises(OSError):
         prepare_image_bytes(b"not an image at all")
+
+
+def test_prepare_image_rejects_a_file_that_is_not_an_image(tmp_path):
+    """An SVG cannot be uploaded to WeChat, and Pillow cannot read it.
+
+    The exception has to be one the pipeline understands: an unreadable
+    file must not take the whole batch down.
+    """
+    path = tmp_path / "icon.svg"
+    path.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>', encoding="utf-8")
+
+    with pytest.raises(ValueError) as error:
+        prepare_image(path)
+    assert "不是有效的图片" in str(error.value)

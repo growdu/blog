@@ -282,7 +282,12 @@ def _upload_assets(client, result, args):
         resolved = _resolve_asset(asset_path, args.posts_dir)
         if not resolved.is_file():
             raise AssetNotFound("图片不存在: {} (文章引用 {})".format(resolved, asset_path))
-        prepared = assets_module.prepare_image(resolved)
+        try:
+            prepared = assets_module.prepare_image(resolved)
+        except ValueError as error:
+            # An SVG or a file that is not an image at all: WeChat only
+            # accepts JPG and PNG, so this article cannot be drafted.
+            raise AssetNotFound(str(error)) from error
         urls.append(client.upload_body_image(prepared.data, prepared.filename))
     return urls
 
@@ -338,18 +343,31 @@ def _upload_cover(client, result, args, external_prepared=None):
         resolved = _resolve_asset(args.cover, args.posts_dir)
         if not resolved.is_file():
             raise AssetNotFound("封面图不存在: {}".format(resolved))
-        prepared = assets_module.prepare_image(resolved)
+        prepared = _prepare_cover_image(resolved)
     elif result.assets:
         resolved = _resolve_asset(result.assets[0], args.posts_dir)
         if not resolved.is_file():
             raise AssetNotFound("图片不存在: {}".format(resolved))
-        prepared = assets_module.prepare_image(resolved)
+        prepared = _prepare_cover_image(resolved)
     elif external_prepared is not None:
         prepared = external_prepared
     else:
         prepared = assets_module.prepare_image(DEFAULT_COVER)
     media_id = client.upload_cover(prepared.data, prepared.filename)
     return media_id, assets_module.cover_crop_list(prepared.width, prepared.height)
+
+
+def _prepare_cover_image(resolved: Path):
+    """Read a cover image, or say clearly that it is not one.
+
+    An SVG cannot be uploaded to WeChat -- only JPG and PNG are
+    accepted -- so the article is skipped instead of the whole batch
+    going down with it.
+    """
+    try:
+        return assets_module.prepare_image(resolved)
+    except ValueError as error:
+        raise AssetNotFound(str(error)) from error
 
 
 def _notify(args, title: str, length: int, source_url: str, state, *,
@@ -1184,7 +1202,7 @@ def cmd_publish_collection(args) -> int:
     cover_path = _resolve_asset(_collection_cover(collection, posts, args), args.posts_dir)
     if not cover_path.is_file():
         raise AssetNotFound("封面图不存在: {}".format(cover_path))
-    prepared = assets_module.prepare_image(cover_path)
+    prepared = _prepare_cover_image(cover_path)
     cover_media_id = client.upload_cover(prepared.data, prepared.filename)
 
     article = {

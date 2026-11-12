@@ -1260,3 +1260,32 @@ def test_every_part_carries_its_own_reference_links(tmp_path, server, monkeypatc
                    if "参考链接" in article["content"]]
     assert len(with_links) == 1
     assert "https://example.com/x" in with_links[0]["content"]
+
+
+def test_an_unreadable_image_skips_the_article_instead_of_crashing_the_batch(
+        tmp_path, server, monkeypatch):
+    """An SVG is in the corpus, and Pillow cannot read one.
+
+    The exception used to travel all the way up and kill the whole
+    batch: 200 drafts already created, and the rest of the corpus never
+    reached.  Now the article is skipped and the batch carries on.
+    """
+    posts_dir = tmp_path / "source" / "_posts"
+    target = posts_dir / "database" / "svg.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        "---\ntitle: \"带 SVG 的文章\"\ndate: 2026-11-09 15:00:00\nauthor: growdu\n"
+        "categories:\n  - 数据库\n---\n\n正文。\n\n![图](images/icon.svg)\n",
+        encoding="utf-8")
+    image = posts_dir.parent / "images" / "icon.svg"
+    image.parent.mkdir(parents=True, exist_ok=True)
+    image.write_text('<svg xmlns="http://www.w3.org/2000/svg"></svg>', encoding="utf-8")
+
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    code = main(["batch"] + _args(posts_dir, tmp_path / "out", server=server))
+    assert code == 3
+    report = json.loads((tmp_path / "out" / "batch-report.json").read_text(encoding="utf-8"))
+    assert report["failed"] == 1
+    assert "不是有效的图片" in report["failures"][0]["reason"]

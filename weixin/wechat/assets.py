@@ -18,7 +18,7 @@ import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 __all__ = ["PreparedImage", "prepare_image", "prepare_image_bytes",
            "download_image", "cover_crop_list"]
@@ -98,9 +98,16 @@ def prepare_image(path: Path, *, limit_bytes: int = DEFAULT_LIMIT_BYTES,
     if not path.is_file():
         raise FileNotFoundError("image not found: {}".format(path))
 
-    with Image.open(path) as raw:
-        raw.load()
-        image = raw.copy()
+    try:
+        with Image.open(path) as raw:
+            raw.load()
+            image = raw.copy()
+    except UnidentifiedImageError as error:
+        # The corpus carries SVG files and the occasional file that is
+        # not an image at all.  Pillow cannot read them, and letting
+        # that exception out would take the whole batch down.
+        raise ValueError(
+            "不是有效的图片（Pillow 读不了）: {}".format(path)) from error
 
     data, content_type, filename, width, height = _compress(
         image, path.stem, limit_bytes, max_width)
