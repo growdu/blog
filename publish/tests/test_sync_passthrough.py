@@ -153,6 +153,72 @@ def test_an_inline_platforms_list_is_carried_through_for_the_contract_to_reject(
     assert fields["platforms"] == "[wechat, toutiao]"
 
 
+def test_empty_values_are_dropped(tmp_path):
+    """空值等于「没写」。
+
+    ``platforms:`` 后面没有条目就是空列表（不是候选），``publish_on:`` 后面
+    没有值就是没写。两种都不该在产物里留下一行空壳——留着会让下游以为
+    「写了但值是空的」，那是两回事。
+    """
+    build_corpus(
+        tmp_path,
+        {"blog/empty.md": "---\ntitle: x\nplatforms:\npublish_on:\n---\n\n正文\n"},
+    )
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/empty.md")
+    fields, _ = parse_front_matter(out)
+
+    assert "platforms" not in out
+    assert "publish_on" not in out
+    assert "platforms" not in fields
+    assert "publish_on" not in fields
+
+
+def test_fields_outside_the_passthrough_list_are_not_carried(tmp_path):
+    """白名单透传，不做全文转储——作者写别的字段不会被顺手搬走。
+
+    目前 sync 只搬 platforms 与 publish_on 两个字段（§4.1 白名单里的其余
+    字段留给后续提交），但**搬什么不搬什么**这条规则本身现在就锁住。
+    """
+    build_corpus(
+        tmp_path,
+        {
+            "blog/extra.md": "---\n"
+            'title: x\n'
+            "tldr: 不该被搬走的摘要\n"
+            "description: 不该被搬走的描述\n"
+            "secret: 更不该被搬走\n"
+            "platforms:\n"
+            "  - wechat\n"
+            "---\n\n正文\n"
+        },
+    )
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/extra.md")
+    fields, _ = parse_front_matter(out)
+
+    assert "tldr" not in fields
+    assert "description" not in fields
+    assert "secret" not in fields
+    assert "不该被搬走" not in out
+    assert "更不该被搬走" not in out
+    assert fields["platforms"] == ["wechat"]
+
+
+def test_a_draft_without_front_matter_gets_the_standard_front_matter(tmp_path):
+    build_corpus(tmp_path, {"blog/bare.md": "# 没有 front matter\n\n正文。\n"})
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/bare.md")
+    fields, _ = parse_front_matter(out)
+
+    assert set(fields) == {"title", "date", "author", "categories", "tags"}
+    assert "platforms" not in out
+    assert "publish_on" not in out
+
+
 # --- 没有弄坏别的东西 ----------------------------------------------------
 
 
