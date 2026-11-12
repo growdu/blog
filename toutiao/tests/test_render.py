@@ -18,6 +18,29 @@ _ELEMENTS = frozenset((
     "span", "strong", "style", "table", "td", "tr", "ul",
 ))
 
+# The lines that have broken the emphasis rules in one way or another.
+# Every one of them has to render to well formed markup.
+_NASTY_EMPHASIS = (
+    "a ****b**** c",
+    "****x****",
+    "***x***",
+    "**a *b* c**",
+    "*a **b** c*",
+    "~~a **b** c~~",
+    "**a ~~b** c~~",
+    "*a ~~b* c~~",
+    "**a****b**",
+    "*a**b*c**d*",
+    "****",
+    "**",
+    "*",
+    "_",
+    "__",
+    "~~~~",
+    "****1**收藏**",
+    "a **b** c ****d**** e",
+)
+
 
 def _tags_in(text):
     """The HTML tags in a text -- the real ones, not the placeholders."""
@@ -26,6 +49,35 @@ def _tags_in(text):
         for match in _TAG.finditer(text)
         if match.group(1).lower() in _ELEMENTS
     ]
+
+
+def _wellformed(markup):
+    """The problems in a piece of markup, if its tags do not nest.
+
+    A stack of the tags that are open: a closing tag has to close the
+    one on top of it, and every tag has to be closed.  Returns a list of
+    problems -- empty when the markup is well formed.
+    """
+    problems = []
+    stack = []
+    for match in _TAG.finditer(markup):
+        raw = match.group(0)
+        name = match.group(1).lower()
+        if raw.startswith("</"):
+            if not stack:
+                problems.append("close without open: {}".format(raw))
+            elif stack[-1] != name:
+                problems.append("</{}> closes <{}>".format(name, stack[-1]))
+                stack.pop()
+            else:
+                stack.pop()
+        else:
+            stack.append(name)
+    if stack:
+        problems.append("never closed: {}".format(stack))
+    return problems
+
+
 
 
 def _article(body="段落。", **kwargs):
@@ -150,11 +202,22 @@ def test_a_blank_of_three_underscores_is_not_italic():
 
 
 def test_an_escaped_underscore_is_not_a_delimiter():
-    """`\\__attribute__` 里的反斜杠说明作者要的是字面下划线。"""
+    """`\\__attribute__` 里的反斜杠说明作者要的是字面下划线。
+
+    反斜杠只对「标点」认，认的是一个字符，不是一类：它吃掉自己，
+    后面的下划线就按普通的下划线规则算。博客自己的渲染器（marked）
+    也是这个结果 —— `_<em>attribute</em>_`。
+    """
     result = render(_article(body="用 \\__attribute__((constructor)) 特性。"))
     assert "<strong>" not in result.html
-    assert "<em>" not in result.html
-    assert "__attribute__" in result.html
+    assert "_<em>attribute</em>_" in result.html
+
+
+def test_a_backslash_escapes_any_punctuation():
+    """`\\-` `\\*` `\\[` 跟 `\\=` 是一回事 —— 反斜杠的口径只有一个。"""
+    result = render(_article(body="参数是 \\- \\* \\[ \\= 四种。"))
+    assert "\\" not in result.html
+    assert "参数是 - * [ = 四种。" in result.html
 
 
 def test_strikethrough_keeps_the_words_and_drops_the_markers():
@@ -210,6 +273,33 @@ def test_an_autolink_loses_its_angle_brackets():
     assert "一键直达: https://example.com/a" in result.html
     assert "&lt;https://example.com/a&gt;" not in result.html
     assert "https://example.com/a" in result.text
+
+
+# ---- 强调：定界符与嵌套 ----
+
+def test_the_html_is_well_formed_for_any_emphasis():
+    """标签必须良构嵌套 —— 不管正文写成什么样。
+
+    这是一条通用守卫，不是给某一行写的。任何把强调拆成多遍、或者
+    让一条规则看见另一条规则产出的标签的改法，都会被它抓住：那些
+    标签会交叉，闭标签就对不上开标签。
+    """
+    for body in _NASTY_EMPHASIS:
+        result = render(_article(body=body))
+        assert _wellformed(result.html) == [], (body, result.html)
+
+
+def test_four_stars_do_not_produce_broken_html():
+    """`a ****b**** c` 曾经产出嵌套错乱的标签。
+
+    错乱的写法是 `<strong><em><em>b</em></strong></em>`：闭标签的
+    顺序对不上开标签的顺序。头条版要粘进编辑器，编辑器未必按 HTML5
+    的规则自愈，所以它必须是良构的。
+    """
+    result = render(_article(body="a ****b**** c"))
+    assert _wellformed(result.html) == []
+    assert "<strong>" in result.html
+    assert "b" in result.html
 
 
 # ---- 转义 ----
@@ -486,3 +576,4 @@ def test_the_whole_chain_text_has_no_tags(tmp_path):
 
     assert _tags_in(result.text) == []
     assert "完整版见 growdu.cn" in result.text
+
