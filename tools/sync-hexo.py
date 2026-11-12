@@ -518,6 +518,35 @@ def _fm_scalar(fm, key):
     return None
 
 
+def _fm_indented_scalar(fm, key):
+    """Raw content of the first indented, non-list line under ``key:``.
+
+    作者把列表写成**缩进标量**时（``platforms:`` 下面缩进的 ``wechat``），
+    ``_fm_list`` 认不出列表（没有 ``- `` 前缀），``_fm_scalar`` 又因为这一行
+    尾部是空的而认不到值——两个都返回 ``None``，这个字段就会**静默消失**。
+
+    这一段把它捞回来：内容原样当标量带走，让契约层去报「platforms 必须是
+    列表」——与内联列表走同一条路。在这里悄悄丢掉更糟——丢了等于「这篇不发」，
+    而作者以为自己写了。
+    """
+    if not fm:
+        return None
+    under_key = False
+    for raw in fm.split('\n'):
+        if not raw.strip():
+            continue
+        if raw[:1] in (' ', '\t'):
+            if not under_key:
+                continue
+            stripped = raw.strip()
+            if stripped.startswith('- '):
+                continue  # 列表形态，交给 _fm_list
+            return stripped
+        head, sep, tail = raw.partition(':')
+        under_key = bool(sep) and head.strip() == key and not tail.strip()
+    return None
+
+
 def _fm_list(fm, key):
     """Raw items of a top-level ``key:`` + ``  - item`` block in ``fm``.
 
@@ -561,13 +590,18 @@ def passthrough_block(fm):
             lines.append('{}:'.format(key))
             lines.extend('  - {}'.format(item) for item in items)
         else:
-            # 不是列表形态（内联列表 / 单个标量）：原样带过去，让契约层去报错。
-            # 在这里悄悄丢掉更糟——丢了等于「这篇不发」，而作者以为自己写了。
+            # 不是列表形态（内联列表 / 单个标量 / 缩进标量）：原样带过去，
+            # 让契约层去报错。在这里悄悄丢掉更糟——丢了等于「这篇不发」，
+            # 而作者以为自己写了。
             value = _fm_scalar(fm, key)
+            if value is None:
+                value = _fm_indented_scalar(fm, key)
             if value:
                 lines.append('{}: {}'.format(key, value))
     for key in PASSTHROUGH_SCALAR_FIELDS:
         value = _fm_scalar(fm, key)
+        if value is None:
+            value = _fm_indented_scalar(fm, key)
         if value:
             lines.append('{}: {}'.format(key, value))
     return ''.join(line + '\n' for line in lines)

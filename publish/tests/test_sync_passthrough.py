@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from publishkit.contract import parse_front_matter
+from publishkit.contract import ContractFieldError, contract_from_fields, parse_front_matter
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SYNC_SCRIPT = REPO_ROOT / "tools" / "sync-hexo.py"
@@ -151,6 +151,67 @@ def test_an_inline_platforms_list_is_carried_through_for_the_contract_to_reject(
     fields, _ = parse_front_matter(out)
 
     assert fields["platforms"] == "[wechat, toutiao]"
+
+
+def test_an_indented_scalar_platforms_is_carried_through_for_the_contract_to_reject(tmp_path):
+    """作者把 platforms 写成**缩进标量**时，不能静默丢掉。
+
+    ``platforms:`` 下面缩进的 ``wechat`` 是 YAML 合法、也是作者最自然的写法
+    （§4.2 规定的形态是 ``platforms:`` + ``  - wechat``）。丢掉它等于
+    「这篇不发」，而作者以为自己写了——所以要**原样保留**，
+    让契约层去报「platforms 必须是列表」，与内联列表走同一条路。
+    """
+    build_corpus(
+        tmp_path,
+        {"blog/indented.md": "---\ntitle: x\nplatforms:\n  wechat\n---\n\n正文\n"},
+    )
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/indented.md")
+    fields, _ = parse_front_matter(out)
+
+    # 保留下来了（不是丢掉）
+    assert fields["platforms"] == "wechat"
+
+    # 而且契约层看得见它、报得出错
+    with pytest.raises(ContractFieldError) as excinfo:
+        contract_from_fields(fields)
+    assert "platforms 必须是列表" in str(excinfo.value)
+
+
+def test_an_indented_scalar_publish_on_is_carried_through(tmp_path):
+    """缩进标量的 publish_on 同样不能丢——它的值本身是合法的日期。"""
+    build_corpus(
+        tmp_path,
+        {
+            "blog/indented-date.md": "---\ntitle: x\npublish_on:\n"
+            "  2026-11-13\n---\n\n正文\n"
+        },
+    )
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/indented-date.md")
+    fields, _ = parse_front_matter(out)
+
+    assert fields["publish_on"] == "2026-11-13"
+
+
+def test_an_indented_scalar_is_not_picked_up_from_another_key(tmp_path):
+    """缩进标量只能来自**它自己那个 key** 下面——不能越界去捞别人的值。"""
+    build_corpus(
+        tmp_path,
+        {
+            "blog/neighbour.md": "---\ntitle: x\nplatforms:\n"
+            "publish_on: 2026-11-13\n---\n\n正文\n"
+        },
+    )
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/neighbour.md")
+    fields, _ = parse_front_matter(out)
+
+    assert "platforms" not in fields
+    assert fields["publish_on"] == "2026-11-13"
 
 
 def test_empty_values_are_dropped(tmp_path):
