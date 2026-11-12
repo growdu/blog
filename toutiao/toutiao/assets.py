@@ -32,6 +32,10 @@ __all__ = [
 _QUALITIES = (85, 75, 65, 55)
 _COVER_QUALITY = 88
 
+# The modes that carry an alpha band of their own.  A palette image keeps
+# its transparency in ``info`` instead -- see ``_flatten_on_white()``.
+_ALPHA_MODES = ("RGBA", "LA", "RGBa", "PA")
+
 
 class ImageTooLarge(ValueError):
     """The image cannot be squeezed under the platform limit."""
@@ -110,6 +114,41 @@ def resolve_asset(path: str, posts_dir: Path) -> Path:
     return resolved
 
 
+def _flatten_on_white(image):
+    """Flatten a picture onto a white background.
+
+    ``convert("RGB")`` *throws the alpha away*: a transparent pixel keeps
+    whatever colour it had underneath -- almost black -- so a picture with
+    a transparent margin comes out with a **black** background.  Two of the
+    real pictures are white-background diagrams with transparent margins:
+    dropping the alpha turns their dark labels into unreadable
+    dark-on-dark.
+
+    Composing onto white is the deterministic choice, and it is what the
+    browser shows on the blog page.  Keeping the alpha in the webp would
+    leave the question of how the platform renders transparency to them.
+
+    A picture without an alpha band is left alone -- the white background
+    of an opaque picture is already what it is.
+    """
+    from PIL import Image
+
+    if image.mode in _ALPHA_MODES:
+        rgba = image.convert("RGBA")
+    elif image.mode == "P":
+        # A palette picture keeps its transparency in ``info``, not in a band.
+        rgba = image.convert("RGBA") if "transparency" in image.info else None
+    elif image.mode == "RGB" and "transparency" in image.info:
+        rgba = image.convert("RGBA")
+    else:
+        rgba = None
+
+    if rgba is None:
+        return image.convert("RGB")
+    background = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+    return Image.alpha_composite(background, rgba).convert("RGB")
+
+
 def prepare_image(src: Path, dst: Path, max_bytes: int) -> PreparedImage:
     """Convert an image to webp, shrinking until it fits ``max_bytes``.
 
@@ -118,6 +157,9 @@ def prepare_image(src: Path, dst: Path, max_bytes: int) -> PreparedImage:
     itself.  When neither is enough the picture is refused rather than
     written out over the limit: a package that ships an oversized image is
     a package the platform will reject at upload time.
+
+    A picture with transparency is flattened onto a white background
+    first -- see ``_flatten_on_white()``.
 
     A file Pillow cannot open (an SVG, for one) is refused with
     :class:`UnreadableImage` before any of that: it is not a picture that
@@ -131,7 +173,7 @@ def prepare_image(src: Path, dst: Path, max_bytes: int) -> PreparedImage:
 
     try:
         with Image.open(src) as opened:
-            image = opened.convert("RGB")
+            image = _flatten_on_white(opened)
     except UnidentifiedImageError as error:
         raise UnreadableImage(
             "Pillow 读不了这个文件（可能是 SVG 等格式）：{}".format(src.name)
@@ -232,6 +274,10 @@ def make_cover(src: Path, dst: Path, ratio: str, min_pixels: tuple) -> PreparedI
     The picture handed in is the webp that ``prepare_image()`` produced --
     cropping the original would work on a file the platform never sees,
     and would drop the size cap that file was already squeezed under.
+
+    A picture with transparency is flattened onto a white background
+    first, exactly like ``prepare_image()`` does -- see
+    ``_flatten_on_white()``.
     """
     from PIL import Image
 
@@ -250,8 +296,7 @@ def make_cover(src: Path, dst: Path, ratio: str, min_pixels: tuple) -> PreparedI
         )
 
     with Image.open(src) as opened:
-        image = opened.convert("RGB")
-        cropped = image.crop((left, top, right, bottom))
+        cropped = _flatten_on_white(opened).crop((left, top, right, bottom))
         cropped.save(dst, "WEBP", quality=_COVER_QUALITY, method=6)
 
     return PreparedImage(

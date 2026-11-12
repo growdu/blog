@@ -1,7 +1,7 @@
 import random
 
 import pytest
-from PIL import Image
+from PIL import Image, ImageDraw
 
 from toutiao.assets import (
     AssetNotFound, ImageTooLarge, RemoteAsset, UnreadableImage,
@@ -20,6 +20,20 @@ def _noise(path, size):
     path.parent.mkdir(parents=True, exist_ok=True)
     blob = random.Random(0).randbytes(size[0] * size[1] * 3)
     Image.frombytes("RGB", size, blob).save(path, "PNG")
+    return path
+
+
+def _transparent(path, size=(200, 120)):
+    """An RGBA picture: the top half opaque blue, the bottom half clear.
+
+    The bottom half is what a white-background diagram looks like with the
+    margins knocked out -- in the browser those pixels show as white.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rectangle([0, 0, size[0], size[1] // 2], fill=(10, 20, 200, 255))
+    image.save(path, "PNG")
     return path
 
 
@@ -248,3 +262,46 @@ def test_prepare_image_does_not_call_a_missing_file_an_unreadable_one(tmp_path):
     """文件根本不在，不该被当成「读不了的图」——那是两回事。"""
     with pytest.raises(FileNotFoundError):
         prepare_image(tmp_path / "nope.png", tmp_path / "out" / "01.webp", max_bytes=5242880)
+
+
+# --- 透明像素 ---------------------------------------------------------------
+#
+# ``convert("RGB")`` 是**丢弃** alpha，不是合成到背景：透明像素保留自己那点
+# 几乎全黑的原色，图就变成黑底。真实语料里有两张白底示意图带真透明像素，
+# 丢完 alpha，深色标注变成黑底上的深色，看不清。
+
+
+def test_prepare_image_composes_transparency_onto_white(tmp_path):
+    """透明区域要合成成白底，不是黑底 —— 博客页面上它们本来就是白的。"""
+    src = _transparent(tmp_path / "alpha.png", (200, 120))
+    dst = tmp_path / "out" / "01.webp"
+    prepare_image(src, dst, max_bytes=5242880)
+    with Image.open(dst) as written:
+        assert written.mode == "RGB"
+        # 下半截本来是全透明的：合成后必须是白
+        assert written.getpixel((100, 100)) == (255, 255, 255)
+        # 上半截是不透明的蓝：要原样留下（webp 有损，留一点余量）
+        blue = written.getpixel((100, 10))
+        assert all(abs(a - b) <= 5 for a, b in zip(blue, (10, 20, 200))), blue
+
+
+def test_prepare_image_leaves_a_plain_rgb_picture_alone(tmp_path):
+    """没有 alpha 的图不受影响 —— 合成白底对不透明图是空操作。"""
+    src = _image(tmp_path / "plain.png", (200, 120), (10, 20, 200))
+    dst = tmp_path / "out" / "01.webp"
+    prepare_image(src, dst, max_bytes=5242880)
+    with Image.open(dst) as written:
+        pixel = written.getpixel((100, 60))
+        assert all(abs(a - b) <= 5 for a, b in zip(pixel, (10, 20, 200))), pixel
+
+
+def test_make_cover_composes_transparency_onto_white(tmp_path):
+    """封面走同一套合成 —— 裁完也不能是黑底。"""
+    src = _transparent(tmp_path / "alpha.png", (1200, 900))
+    dst = tmp_path / "out" / "cover.webp"
+    result = make_cover(src, dst, "3:4", (600, 800))
+    with Image.open(dst) as written:
+        assert written.mode == "RGB"
+        # 3:4 的裁切保住整幅高度，透明的下半截仍在下半截
+        bottom = written.getpixel((result.width // 2, result.height - 5))
+        assert all(value >= 250 for value in bottom), bottom
