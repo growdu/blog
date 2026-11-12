@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  把已有草稿刷新到当前的管线版本。
+
+  安装：
+    1. 把这个文件复制到 ~/Library/LaunchAgents/com.growdu.weixin.refresh-drafts.plist
+    2. 把 __PYTHON__ 换成跑测试用的那个 python3
+       （`python3 -c "import sys; print(sys.executable)"`）
+    3. 把 __REPO__ 换成仓库路径（本机是 /Users/growduduan/code/blog）
+    4. 把 __HOME__ 换成用户主目录
+    5. launchctl load -w ~/Library/LaunchAgents/com.growdu.weixin.refresh-drafts.plist
+
+  查看与卸载：
+    launchctl list | grep growdu.weixin
+    launchctl unload -w ~/Library/LaunchAgents/com.growdu.weixin.refresh-drafts.plist
+    tail -f ~/Library/Logs/weixin-refresh-drafts.log
+
+  为什么需要它：
+  2026-11-12 管线版本升到 2（标题按内容裁剪 + 没配图的文章画封面卡）。
+  草稿箱里已有的那些是版本 1 建的：标题还是老样子，549 个没有配图的
+  部分还共用同一张默认封面。版本号一变，它们看起来就都是「内容已变」，
+  下一次跑批量就会就地更新。
+
+  为什么是单独一个任务：
+  com.growdu.weixin.auto-draft 的约定是「只管新增的文档」，不碰存量。
+  这次是一次性的存量刷新，做完就可以把这个任务 unload 掉。
+
+  为什么带 limit：
+  微信的调用上限约 2000 次/天，而两个任务加起来要跑的量不小。
+  limit 把这一轮压在一批里，剩下的交给下一轮。跑不完是正常的，
+  草稿已经建好的部分不会丢，下次接着跑。
+
+  为什么每 6 小时一次：
+  一轮约 100 篇、约 360 次调用，四轮一天约 1450 次，
+  加上另一个任务（新文档）剩下的量，控制在每日上限之内。
+  跑完这一轮（约 553 篇）就可以把这个任务 unload 掉。
+
+  查看与卸载：
+    launchctl list | grep growdu.weixin
+    launchctl unload -w ~/Library/LaunchAgents/com.growdu.weixin.refresh-drafts.plist
+    tail -f ~/Library/Logs/weixin-refresh-drafts.log
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.growdu.weixin.refresh-drafts</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PYTHON__</string>
+        <string>-m</string>
+        <string>wechat.cli</string>
+        <string>batch</string>
+        <string>--limit</string>
+        <string>100</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__REPO__/weixin</string>
+
+    <!-- launchd 的环境变量很少，PATH 要自己给：mermaid 渲染要 npx。 -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        <key>LANG</key>
+        <string>zh_CN.UTF-8</string>
+        <key>PYTHONPATH</key>
+        <string>__REPO__/weixin</string>
+    </dict>
+
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict>
+            <key>Hour</key>
+            <integer>0</integer>
+            <key>Minute</key>
+            <integer>30</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>6</integer>
+            <key>Minute</key>
+            <integer>30</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>12</integer>
+            <key>Minute</key>
+            <integer>30</integer>
+        </dict>
+        <dict>
+            <key>Hour</key>
+            <integer>18</integer>
+            <key>Minute</key>
+            <integer>30</integer>
+        </dict>
+    </array>
+
+    <key>StandardOutPath</key>
+    <string>__HOME__/Library/Logs/weixin-refresh-drafts.log</string>
+    <key>StandardErrorPath</key>
+    <string>__HOME__/Library/Logs/weixin-refresh-drafts.log</string>
+</dict>
+</plist>
