@@ -16,7 +16,12 @@ from pathlib import Path
 
 import pytest
 
-from publishkit.contract import ContractFieldError, contract_from_fields, parse_front_matter
+from publishkit.contract import (
+    ContractFieldError,
+    contract_from_fields,
+    parse_front_matter,
+    validate_fields,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SYNC_SCRIPT = REPO_ROOT / "tools" / "sync-hexo.py"
@@ -239,17 +244,17 @@ def test_empty_values_are_dropped(tmp_path):
 def test_fields_outside_the_passthrough_list_are_not_carried(tmp_path):
     """白名单透传，不做全文转储——作者写别的字段不会被顺手搬走。
 
-    目前 sync 只搬 platforms 与 publish_on 两个字段（§4.1 白名单里的其余
-    字段留给后续提交），但**搬什么不搬什么**这条规则本身现在就锁住。
+    §4.1 白名单里的字段**全部**要搬（平台 id 与发布日期早就通了，展示元数据
+    这一轮接上），白名单外的字段一个都不许搬。
     """
     build_corpus(
         tmp_path,
         {
             "blog/extra.md": "---\n"
             'title: x\n'
-            "tldr: 不该被搬走的摘要\n"
-            "description: 不该被搬走的描述\n"
-            "secret: 更不该被搬走\n"
+            "tldr: 要被搬走的摘要\n"
+            "description: 要被搬走的描述\n"
+            "secret: 不该被搬走\n"
             "platforms:\n"
             "  - wechat\n"
             "---\n\n正文\n"
@@ -260,12 +265,106 @@ def test_fields_outside_the_passthrough_list_are_not_carried(tmp_path):
     out = read_post(tmp_path, "blog/extra.md")
     fields, _ = parse_front_matter(out)
 
-    assert "tldr" not in fields
-    assert "description" not in fields
+    assert fields["tldr"] == "要被搬走的摘要"
+    assert fields["description"] == "要被搬走的描述"
     assert "secret" not in fields
     assert "不该被搬走" not in out
-    assert "更不该被搬走" not in out
     assert fields["platforms"] == ["wechat"]
+
+
+# --- §4.1 的展示元数据通道 ------------------------------------------------
+
+
+SHOWCASE_DRAFT = """\
+---
+title: "带展示元数据的一篇"
+short_title: "短标题"
+tldr: "一句话说清这篇在讲什么。"
+description: "给 OG / Twitter 卡片用的摘要。"
+difficulty: 3
+cover: images/cover.jpg
+reprintPolicy: cc_by_nd
+kind: post
+platforms:
+  - wechat
+publish_on: 2026-11-13
+---
+
+# 带展示元数据的一篇
+
+正文第一段。
+"""
+
+
+def test_every_passthrough_field_of_4_1_reaches_the_product(tmp_path):
+    """§4.1 的透传字段表有 10 个字段，全部要到达产物。
+
+    §12 第 2 行的验收标准写的就是「真文章 → front matter 含
+    tldr/description/difficulty」。
+    """
+    build_corpus(tmp_path, {"blog/showcase.md": SHOWCASE_DRAFT})
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/showcase.md")
+    fields, _ = parse_front_matter(out)
+
+    assert fields["title"] == "带展示元数据的一篇"
+    assert fields["short_title"] == "短标题"
+    assert fields["tldr"] == "一句话说清这篇在讲什么。"
+    assert fields["description"] == "给 OG / Twitter 卡片用的摘要。"
+    assert fields["difficulty"] == "3"
+    assert fields["cover"] == "images/cover.jpg"
+    assert fields["reprintPolicy"] == "cc_by_nd"
+    assert fields["kind"] == "post"
+    assert fields["platforms"] == ["wechat"]
+    assert fields["publish_on"] == "2026-11-13"
+
+
+def test_the_carried_showcase_fields_satisfy_the_content_contract(tmp_path):
+    """搬过去的字段要能被契约层读懂——这不是巧合，是接缝的定义。"""
+    build_corpus(tmp_path, {"blog/showcase.md": SHOWCASE_DRAFT})
+    run_sync(tmp_path)
+
+    fields, _ = parse_front_matter(read_post(tmp_path, "blog/showcase.md"))
+    contract = contract_from_fields(fields)
+
+    assert contract.short_title == "短标题"
+    assert contract.tldr == "一句话说清这篇在讲什么。"
+    assert contract.description == "给 OG / Twitter 卡片用的摘要。"
+    assert contract.difficulty == 3
+    assert contract.cover == "images/cover.jpg"
+    assert contract.reprint_policy == "cc_by_nd"
+
+
+def test_values_outside_their_domain_are_carried_for_the_contract_to_reject(tmp_path):
+    """值不在域内时（difficulty / reprintPolicy）要**原样搬过去**让契约层报错。
+
+    悄悄丢掉更糟——丢了等于「这篇不发」，而作者以为自己写了。
+    """
+    build_corpus(
+        tmp_path,
+        {
+            "blog/bad-values.md": "---\n"
+            'title: x\n'
+            "difficulty: 高\n"
+            "reprintPolicy: 瞎写\n"
+            "---\n\n正文\n"
+        },
+    )
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/bad-values.md")
+    fields, _ = parse_front_matter(out)
+
+    # 原样带过去了（不是丢掉）
+    assert fields["difficulty"] == "高"
+    assert fields["reprintPolicy"] == "瞎写"
+
+    # 契约层看得见，并报得出错
+    violations = validate_fields(fields)
+
+    assert any("difficulty" in v for v in violations)
+    assert any("reprintPolicy" in v for v in violations)
 
 
 def test_a_draft_without_front_matter_gets_the_standard_front_matter(tmp_path):

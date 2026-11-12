@@ -493,11 +493,30 @@ def yaml_escape(s):
     return s.replace('\\','\\\\').replace('"','\\"')
 
 
-# 透传字段：契约层（publish/publishkit/contract.py）要读的那两个。
+# 透传字段（§4.1）：契约层（publish/publishkit/contract.py）要读的那些。
 # sync 只负责**原样搬运**——值的校验归契约层管（publish/spec/00-架构设计.md §4.1）。
-# 平台 id 与发布日期都不参与站点渲染，搬过去不影响现有页面。
+#
+# §4.1 的白名单共 10 个字段：title / short_title / tldr / description /
+# difficulty / cover / reprintPolicy / kind / platforms / publish_on。
+#
+# ``title`` 不在下面两个列表里——它**已经通了**：front matter 模板的第一行
+# ``title: "..."`` 就是从作者的 front matter 取出来的（process() 里的
+# has_fm_title 分支），送到的也是 §4.1 表里写的同一个目标（page.title）。
+# 再搬一遍会产出两个 title 键——重复的 YAML 键是新问题，不是补齐。
+#
+# 平台 id 与发布日期不参与站点渲染，展示元数据（tldr / description /
+# difficulty ...）同理——所以接上这条通道不改动现有页面的渲染结果。
 PASSTHROUGH_LIST_FIELDS = ('platforms',)
-PASSTHROUGH_SCALAR_FIELDS = ('publish_on',)
+PASSTHROUGH_SCALAR_FIELDS = (
+    'short_title',
+    'tldr',
+    'description',
+    'difficulty',
+    'cover',
+    'reprintPolicy',
+    'kind',
+    'publish_on',
+)
 
 
 def _fm_scalar(fm, key):
@@ -576,12 +595,16 @@ def _fm_list(fm, key):
 def passthrough_block(fm):
     """The front-matter lines the publish contract needs, carried verbatim.
 
-    ``platforms`` is a list, ``publish_on`` a scalar.  Both are read from the
-    author's own front matter and written out unchanged -- the contract layer
-    owns their validation, this side only carries them.
+    §4.1 的白名单字段全部原样搬过去——列表字段写回 ``key:`` + ``  - item``
+    的形态，其余写回 ``key: value``。值一个字都不改：校验归契约层管
+    （publish/spec/00-架构设计.md §4.1）。
 
-    A post that declares neither gets no extra lines, so its front matter
-    stays byte-identical to what it was before.
+    值不在域内时（``difficulty: 高`` / ``reprintPolicy: 瞎写``）也照样搬——
+    与内联列表的处理方式一样：原样带过去，让契约层去报错。在这里悄悄丢掉
+    更糟——丢了等于「这篇不发」，而作者以为自己写了。
+
+    A post that declares none of them gets no extra lines, so its front
+    matter stays byte-identical to what it was before.
     """
     lines = []
     for key in PASSTHROUGH_LIST_FIELDS:
