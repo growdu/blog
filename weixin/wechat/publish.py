@@ -20,7 +20,8 @@ import urllib.parse
 import urllib.request
 import uuid
 
-__all__ = ["WeChatClient", "WeChatError", "DEFAULT_BASE_URL", "PUBLISH_STATUS"]
+__all__ = ["WeChatClient", "WeChatError", "DEFAULT_BASE_URL", "PUBLISH_STATUS",
+           "WAF_BLOCKED"]
 
 DEFAULT_BASE_URL = "https://api.weixin.qq.com"
 
@@ -41,6 +42,16 @@ class WeChatError(RuntimeError):
         self.errcode = errcode
         self.errmsg = errmsg
         self.endpoint = endpoint
+
+
+# The API sits behind a WAF that answers with a web page instead of
+# JSON when the request body trips one of its rules.  The rules differ
+# per endpoint: the body of ``draft/update`` is checked for SQL
+# patterns (CREATE TABLE, UNION SELECT, INSERT INTO, ...) that
+# ``draft/add`` lets through.  Code blocks full of DDL are ordinary
+# in this corpus, so this is not an unusual body -- only an unusual
+# endpoint.
+WAF_BLOCKED = -2
 
 
 class WeChatClient:
@@ -88,6 +99,11 @@ class WeChatClient:
         try:
             return json.loads(raw.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as error:
+            if b"waf.tencent.com" in raw[:600]:
+                raise WeChatError(
+                    WAF_BLOCKED,
+                    "WAF 拦截：请求体触发了风控规则，不是接口的错误",
+                    path) from error
             raise WeChatError(-1, "non-JSON response: {}".format(raw[:200]), path) from error
 
     def _post_json(self, path: str, payload: dict, *, with_token: bool = True):

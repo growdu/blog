@@ -518,6 +518,12 @@ def _create_draft(client, store, key: str, fingerprint: str, article: dict,
     create a second copy and leave the old one in the box for the
     reader to trip over.
 
+    One case cannot be updated in place: the WAF behind the API
+    refuses ``draft/update`` when the body carries a SQL pattern such
+    as ``CREATE TABLE`` -- which a code block full of DDL always does.
+    Then the article is added again and the old draft is deleted, and
+    the end state is the same: one draft, the current content.
+
     ``parts`` records how many parts the article was split into, so a
     later run can tell whether every part is really there.
     """
@@ -537,7 +543,30 @@ def _create_draft(client, store, key: str, fingerprint: str, article: dict,
         print("内容未变，复用已有草稿 {}".format(state.media_id))
         return state, DRAFT_REUSED
 
-    client.update_draft(state.media_id, article)
+    try:
+        client.update_draft(state.media_id, article)
+    except publish_module.WeChatError as error:
+        if error.errcode != publish_module.WAF_BLOCKED:
+            raise
+        # The WAF behind the API checks the body of ``draft/update``
+        # for SQL patterns and answers with a web page when it finds
+        # one.  A code block full of DDL is ordinary in this corpus;
+        # ``draft/add`` has looser rules and takes the same body.
+        # Adding the article again and deleting the old draft reaches
+        # the same end state -- one draft, the current content.
+        new_media_id = client.add_draft(article)
+        try:
+            client.delete_draft(state.media_id)
+        except publish_module.WeChatError as delete_error:
+            raise publish_module.WeChatError(
+                delete_error.errcode,
+                "新草稿 {} 已建好，但旧草稿 {} 删不掉：{}。"
+                "草稿箱里现在是两份，下次 reconcile 会清掉多出来的那份".format(
+                    new_media_id, state.media_id, delete_error.errmsg),
+                delete_error.endpoint) from delete_error
+        state.media_id = new_media_id
+        print("  ! 该内容被 WAF 拦下了 draft/update，"
+              "改用新建加删除完成更新 {}".format(new_media_id))
     state.fingerprint = fingerprint
     state.publish_id = None
     state.publish_status = None

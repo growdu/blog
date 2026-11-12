@@ -69,6 +69,10 @@ class _Handler(BaseHTTPRequestHandler):
     # Titles the fake server should reject, so a batch can be tested
     # against an article that fails.
     fail_titles = set()
+    # Titles the fake server should answer to draft/update with a WAF
+    # page, the way the real API does when the body carries a SQL
+    # pattern.
+    waf_titles = set()
 
     def log_message(self, *args):
         pass
@@ -105,6 +109,17 @@ class _Handler(BaseHTTPRequestHandler):
             _Handler.drafts.append(article)
             self._json({"media_id": "DRAFT_ID"})
         elif path.endswith("/draft/update"):
+            article = json.loads(body)["articles"]
+            if article.get("title", "") in _Handler.waf_titles:
+                body = (b'<!DOCTYPE html><html><head><script>window.location.href='
+                        b'"https://waf.tencent.com/501page.html?u="+location.origin;'
+                        b'</script></head></html>')
+                self.send_response(501)
+                self.send_header("Content-Type", "text/html")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+                return
             self._json({"errcode": 0, "errmsg": "ok"})
         elif path.endswith("/draft/delete"):
             _Handler.deleted.append(json.loads(body)["media_id"])
@@ -124,6 +139,7 @@ def server():
     _Handler.drafts = []
     _Handler.deleted = []
     _Handler.fail_titles = set()
+    _Handler.waf_titles = set()
     httpd = HTTPServer(("127.0.0.1", 0), _Handler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
@@ -836,6 +852,66 @@ def test_changing_the_category_tag_updates_the_draft_in_place(sample_post, tmp_p
     assert payload["media_id"] == "DRAFT_ID"
     assert payload["index"] == 0
     assert "分类 ·" not in payload["articles"]["content"]
+
+
+def test_a_draft_the_waf_refuses_is_added_again_and_the_old_one_removed(
+        sample_post, tmp_path, server, monkeypatch):
+    """The WAF behind the API refuses ``draft/update`` for SQL bodies.
+
+    A code block full of ``CREATE TABLE`` is ordinary in this corpus,
+    and the body of ``draft/update`` is checked for SQL patterns while
+    the body of ``draft/add`` is not.  The end state has to be the
+    same: one draft, carrying the current content.
+    """
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    args = _args(posts_dir, tmp_path / "out", server=server)
+    assert main(["publish", slug] + args) == 0
+
+    # Change the article so the second run has to update the draft.
+    target = posts_dir / "database" / "demo.md"
+    target.write_text(target.read_text(encoding="utf-8") + "\n补一段。\n",
+                      encoding="utf-8")
+
+    _Handler.waf_titles = {"演示文章"}
+    _Handler.calls = []
+    assert main(["publish", slug] + args) == 0
+
+    # The update was refused, so the article was added again and the
+    # old draft was deleted.
+    assert _Handler.calls.count("/cgi-bin/draft/update") == 1
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 1
+    assert _Handler.deleted == ["DRAFT_ID"]
+
+    # The ledger points at the draft that is actually there.
+    state = json.loads((tmp_path / "out" / "state.json").read_text(encoding="utf-8"))
+    assert state["posts"][slug]["media_id"] == "DRAFT_ID"
+
+
+def test_a_refused_update_does_not_swallow_other_errors(sample_post, tmp_path, server, monkeypatch):
+    """Only the WAF gets the add-and-delete treatment."""
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    args = _args(posts_dir, tmp_path / "out", server=server)
+    assert main(["publish", slug] + args) == 0
+
+    target = posts_dir / "database" / "demo.md"
+    target.write_text(target.read_text(encoding="utf-8") + "\n补一段。\n",
+                      encoding="utf-8")
+
+    # The add fails; the update would have been tried first, but the
+    # WAF is not what is being tested here.
+    _Handler.waf_titles = {"演示文章"}
+    _Handler.fail_titles = {"演示文章"}
+    _Handler.calls = []
+    code = main(["publish", slug] + args)
+    assert code != 0
+    # The failed add did not delete the draft that is already there.
+    assert _Handler.deleted == []
 
 
 # --- batch -----------------------------------------------------------------
