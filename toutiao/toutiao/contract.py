@@ -13,6 +13,7 @@ constraints, not taste:
 
 from __future__ import annotations
 
+import html
 import re
 from dataclasses import dataclass
 
@@ -28,6 +29,7 @@ _IMAGE_TITLE = re.compile(r"""\s+(?:"[^"]*"|'[^']*')\s*$""")
 _LIST = re.compile(r"^(?:[-*+]|\d+\.)\s+(.*)$")
 _MARKER = re.compile(r"^【图(\d+)】$")
 _MARKER_IN_TEXT = re.compile(r"【图(\d+)】")
+_HTML_TAG = re.compile(r"</?[A-Za-z][A-Za-z0-9]*(?:\s[^<>]*)?/?>")
 _LINK = re.compile(r"(?<!!)\[([^\]]*)\]\([^)]*\)")
 _CJK = re.compile(r"[\u3000-\u9fff\uff00-\uffef]")
 
@@ -116,6 +118,19 @@ def _replace_inline_images(text: str, images: list[str]) -> str:
     return _IMAGE_INLINE.sub(replace, text)
 
 
+def _clean_html(text: str) -> str:
+    """Take the HTML markup out, keep the text it wraps.
+
+    A tag is markup; the words around it are content.  Entities are
+    decoded as well -- but only for the blocks that actually carry a
+    tag, because decoding everywhere would rewrite text that never was
+    HTML in the first place.
+    """
+    if not _HTML_TAG.search(text):
+        return text
+    return html.unescape(_HTML_TAG.sub("", text))
+
+
 def _drop_excess_markers(block: str, keep: int) -> str:
     """Remove the placeholders of the images that did not make the cut."""
     return _MARKER_IN_TEXT.sub(
@@ -141,7 +156,9 @@ def _scan(body: str) -> tuple[list[str], list[str]]:
 
     def flush():
         if paragraph:
-            blocks.append(_replace_inline_images(_join(paragraph), images))
+            text = _clean_html(_replace_inline_images(_join(paragraph), images)).strip()
+            if text:
+                blocks.append(text)
             del paragraph[:]
 
     in_fence = False
@@ -164,7 +181,14 @@ def _scan(body: str) -> tuple[list[str], list[str]]:
             flush()
             continue
 
-        if stripped.startswith("|") or stripped.startswith(">") or stripped.startswith("<"):
+        if stripped.startswith("|") or stripped.startswith(">"):
+            flush()
+            continue
+
+        if _HTML_TAG.search(stripped) and not _HTML_TAG.sub("", stripped).strip():
+            # A line that is nothing but HTML markup goes; a line that
+            # mixes markup with text keeps its text -- the tags are taken
+            # out when the block is finished.
             flush()
             continue
 
@@ -172,7 +196,11 @@ def _scan(body: str) -> tuple[list[str], list[str]]:
         if heading:
             flush()
             if 2 <= len(heading.group(1)) <= 3:
-                blocks.append("## " + _replace_inline_images(heading.group(2).strip(), images))
+                text = _clean_html(
+                    _replace_inline_images(heading.group(2).strip(), images)
+                ).strip()
+                if text:
+                    blocks.append("## " + text)
             continue
 
         image = _IMAGE_LINE.match(stripped)
@@ -185,7 +213,11 @@ def _scan(body: str) -> tuple[list[str], list[str]]:
         item = _LIST.match(stripped)
         if item:
             flush()
-            blocks.append("- " + _replace_inline_images(item.group(1).strip(), images))
+            text = _clean_html(
+                _replace_inline_images(item.group(1).strip(), images)
+            ).strip()
+            if text:
+                blocks.append("- " + text)
             continue
 
         paragraph.append(stripped)

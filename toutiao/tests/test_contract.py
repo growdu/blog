@@ -59,6 +59,41 @@ def test_tables_and_quotes_are_dropped():
     assert "正文。" in result.article.body
 
 
+def test_inline_html_tags_are_stripped_but_the_text_stays():
+    """标签是标记，标签里的文字是内容。"""
+    post = _post(body='看 <font color="red">重要结论</font> 这段。')
+    result = slice_post(post, LIMITS)
+    assert "<font" not in result.article.body
+    assert "重要结论" in result.article.body
+
+
+def test_a_line_of_pure_html_is_dropped():
+    post = _post(body='<div class="note">\n\n正文。')
+    result = slice_post(post, LIMITS)
+    assert "<div" not in result.article.body
+    assert "正文。" in result.article.body
+
+
+def test_a_line_of_pure_html_breaks_the_paragraph():
+    """纯 HTML 行是独立的一块 —— 它断开段落，不跟正文粘在一起。"""
+    post = _post(body='第一段第一行。\n<div class="note">\n第二段第二行。')
+    result = slice_post(post, LIMITS)
+    assert "第一段第一行。\n\n第二段第二行。" in result.article.body
+
+
+def test_html_entities_are_decoded_in_blocks_that_carry_a_tag():
+    post = _post(body="<b>Tom &amp; Jerry</b>")
+    result = slice_post(post, LIMITS)
+    assert "Tom & Jerry" in result.article.body
+
+
+def test_entities_are_not_decoded_in_blocks_without_a_tag():
+    """没有标签的段落不做实体解码 —— 别把不是 HTML 的文本改掉。"""
+    post = _post(body="AT&T 与 &amp; 的写法")
+    result = slice_post(post, LIMITS)
+    assert "&amp;" in result.article.body
+
+
 def test_shallow_headings_are_kept_and_deep_ones_dropped():
     post = _post(body="## 二级\n\n三级\n\n#### 四级\n\n段落。")
     result = slice_post(post, LIMITS)
