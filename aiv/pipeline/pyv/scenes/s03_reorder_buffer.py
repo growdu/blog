@@ -94,4 +94,4 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
         text(ctx, op, x + chip_w / 2, chip_y + chip_h * 0.70, 28, "#FFFFFF",
              anchor="center", bold=True, alpha=appear)
 
-    text(ctx, p["caption"], w * 0.07, h * 0.90, 44, COLORS["primary"])
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])

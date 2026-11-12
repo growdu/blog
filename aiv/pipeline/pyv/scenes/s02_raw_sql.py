@@ -51,4 +51,4 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
     text(ctx, p["wal_label"], w * 0.50, lane_y - h * 0.045, 38, COLORS["accent"],
          anchor="center", bold=True)
 
-    text(ctx, p["caption"], w * 0.07, h * 0.90, 44, COLORS["primary"])
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])

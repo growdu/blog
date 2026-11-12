@@ -74,4 +74,4 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
             text(ctx, notes[index], sx + node_w / 2, sy + node_h + h * 0.045, 30,
                  COLORS["primary"], anchor="center", alpha=appear)
 
-    text(ctx, p["caption"], w * 0.07, h * 0.90, 44, COLORS["primary"])
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])

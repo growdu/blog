@@ -52,5 +52,5 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
 
     # 收束句最后才出，六层亮完再落一句
     closing = easing.ease_out_cubic(max(0.0, min(1.0, (t - 0.80) * 5.0)))
-    text(ctx, p["caption"], w * 0.07, h * 0.91, 44, COLORS["primary"],
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"],
          alpha=closing)

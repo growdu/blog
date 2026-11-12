@@ -97,4 +97,4 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
             arrow(ctx, cx + chip_w / 2, lane_y, cx + step - chip_w / 2, lane_y,
                   COLORS["accent"], 5, 18, alpha=appear)
 
-    text(ctx, p["caption"], w * 0.07, h * 0.90, 44, COLORS["primary"])
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])

@@ -78,4 +78,4 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
     stroke_rect(ctx, queue_x - w * 0.012, queue_y - h * 0.012,
                 queue_w + w * 0.024, h * 0.37, 12, "#DCE1E8", 3, 0.9)
 
-    text(ctx, p["caption"], w * 0.07, h * 0.90, 44, COLORS["primary"])
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])

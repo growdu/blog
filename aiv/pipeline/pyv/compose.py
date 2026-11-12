@@ -16,6 +16,28 @@ from pyv.timeline import Scene, Storyboard
 # 契约里的 bgm_gain_db 可以覆盖。
 DEFAULT_BGM_GAIN_DB = bgm_rules.BGM_GAIN_DB
 
+# 关键帧间隔。B站《文件上传预处理》要求「关键帧至少 10 秒一个」，
+# 也就是间隔 ≤ 10 秒。我们的成片由分段渲染再拼成，段边界会拉长间隔
+# （EP02 实测最大 10.417s，超标），所以在编码参数里把 GOP 定死。
+FPS_BASE = 24
+KEYFRAME_INTERVAL = FPS_BASE * 10   # 240 帧 = 10 秒
+
+
+def encode_args(fps: int) -> list[str]:
+    """视频编码参数。两条编码路径共用它，别各写一份。"""
+    return [
+        "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+        "-pix_fmt", "yuv420p", "-r", str(fps),
+        "-g", str(KEYFRAME_INTERVAL),
+        "-video_track_timescale", str(fps * 1000),
+    ]
+
+
+def concat_encode_args() -> list[str]:
+    """拼接阶段的编码参数。与最终编码保持一致。"""
+    return encode_args(FPS_BASE)
+
+
 # 旁白与品牌片音轨的通道：上混成立体声，音量不动。
 # pan 而不是 aformat=channel_layouts=stereo：后者把单声道上混时
 # 会按功率衰减 3dB，旁白会比立体声的品牌音轨明显小声一截。
@@ -142,9 +164,7 @@ def _mux_cmd(silent: Path, out_path: Path, storyboard: Storyboard,
     cmd += [
         "-filter_complex", ";".join(chains),
         "-map", "0:v:0", "-map", "[mix]",
-        "-c:v", "libx264", "-preset", "medium", "-crf", "18",
-        "-pix_fmt", "yuv420p", "-r", str(fps),
-        "-video_track_timescale", str(fps * 1000),
+        *encode_args(fps),
     ]
     cmd += ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-ac", "2"]
     cmd += ["-t", f"{duration:.3f}", "-movflags", "+faststart", str(out_path)]
@@ -185,9 +205,7 @@ def compose(storyboard: Storyboard, build_dir: str | Path, out_path: str | Path,
     silent = build_dir / "silent.mp4"
     _run([
         "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(list_path),
-        "-c:v", "libx264", "-preset", "medium", "-crf", "18",
-        "-pix_fmt", "yuv420p", "-r", str(storyboard.video.fps),
-        "-video_track_timescale", str(storyboard.video.fps * 1000),
+        *concat_encode_args(),
         "-an", str(silent),
     ])
 

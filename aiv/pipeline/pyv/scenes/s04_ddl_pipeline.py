@@ -63,4 +63,4 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
                   cx + box_w + gap - w * 0.006, box_y + box_h * 0.5,
                   COLORS["accent"], 5, 16, alpha=appear)
 
-    text(ctx, p["caption"], w * 0.07, h * 0.90, 44, COLORS["primary"])
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])

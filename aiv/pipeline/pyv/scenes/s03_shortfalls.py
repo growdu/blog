@@ -57,4 +57,4 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
         text(ctx, desc, cx + card_w / 2, card_y + h * 0.125, 26,
              COLORS["secondary"], anchor="center", alpha=appear)
 
-    text(ctx, p["caption"], w * 0.07, h * 0.90, 44, COLORS["primary"])
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])

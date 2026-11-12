@@ -115,4 +115,4 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
     text(ctx, p["legend_label"], legend_x, legend_y - h * 0.035, 30,
          COLORS["secondary"])
 
-    text(ctx, p["caption"], w * 0.07, h * 0.90, 44, COLORS["primary"])
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])

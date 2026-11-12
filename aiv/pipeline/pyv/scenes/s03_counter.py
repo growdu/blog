@@ -78,4 +78,4 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
         text(ctx, f"{p['csn_prefix']} {value}", w * 0.605, y + h * 0.063, 46,
              COLORS["accent"], bold=True, alpha=appear)
 
-    text(ctx, p["caption"], w * 0.07, h * 0.90, 44, COLORS["primary"])
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])

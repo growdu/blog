@@ -116,4 +116,4 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
     text(ctx, p["emit_label"], (panel_x + panel_w + target_x) / 2,
          lane_y - h * 0.045, 40, COLORS["accent"], anchor="center", bold=True)
 
-    text(ctx, p["caption"], w * 0.07, h * 0.90, 44, COLORS["primary"])
+    text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])
