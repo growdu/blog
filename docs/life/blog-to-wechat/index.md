@@ -533,13 +533,13 @@ jobs:
 **"发布清单"是这个方案的关键产物**。它应该长这样：
 
 ```markdown
-# 待发布：PostgreSQL 18 并行逻辑解码
+# 待发布：openGauss 的并行逻辑解码
 
 - 成片：./out/pg-parallel-decode-9x16.mp4
 - 封面：./out/cover.jpg
-- 标题：PG18 并行逻辑解码，到底并行在哪一层
+- 标题：openGauss 并行解码，并行在哪一层
 - 简介：解码端只有一条流的时候，并行毫无意义。这一期拆开讲。
-- 话题：#PostgreSQL #数据库内核 #逻辑复制
+- 话题：#openGauss #数据库内核 #逻辑复制
 - 母稿：https://growdu.github.io/blog/2026/11/09/db/...
 - [ ] 已上传成片
 - [ ] 已填写标题与简介
