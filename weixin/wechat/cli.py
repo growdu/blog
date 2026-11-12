@@ -571,11 +571,13 @@ def _render_parts(post, args) -> list:
         body = len(result.html) - len(render_module.links_html(result.external_links))
         return body + len(render_module.links_items_html(result.external_links))
 
+    reserve = split_module.framing_reserve(post.title, tag)
     groups = split_module.plan_parts(
         blocks, CONTENT_LIMIT, measure,
-        plain_measure=lambda group: measure(group, highlight=False))
-    total = len(groups)
+        plain_measure=lambda group: measure(group, highlight=False),
+        reserve=reserve)
 
+    total = len(groups)
     parts = []
     for index, (group, use_plain) in enumerate(groups, 1):
         result = build(group, index, total, not use_plain)

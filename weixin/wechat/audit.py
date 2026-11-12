@@ -24,10 +24,11 @@ import statistics
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .collection import render_category_tag
 from .mdparse import parse
 from .posts import BODY_LIMIT, CONTENT_LIMIT, TITLE_LIMIT, discover
 from .render import links_html, links_items_html, render
-from .split import RESERVE, plan_parts
+from .split import framing_reserve, plan_parts
 
 __all__ = [
     "Audit",
@@ -218,15 +219,20 @@ def audit_corpus(posts_dir: Path) -> Audit:
     split_posts = 0
     split_parts = 0
     unsplittable = 0
-    budget = CONTENT_LIMIT - RESERVE
     for post in posts:
         if len(post.title) > TITLE_LIMIT:
             continue
         blocks = parse(post.body)
+        # The same reserve the pipeline uses: every part pays once for
+        # its transition lines, its category tag and its reference-links
+        # wrapper, and that room has to be kept back from the body.
+        reserve = framing_reserve(post.title, render_category_tag(post.categories))
+        budget = CONTENT_LIMIT - reserve
         parts = plan_parts(
             blocks, CONTENT_LIMIT,
             lambda group: _measure(group, True),
-            lambda group: _measure(group, False))
+            lambda group: _measure(group, False),
+            reserve=reserve)
         if any(_measure(group, True) > budget
                and _measure(group, False) > budget for group, _ in parts):
             # One block is too big on its own: there is nowhere left to

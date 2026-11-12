@@ -3,12 +3,14 @@ import json
 import subprocess
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from types import SimpleNamespace
 
 import pytest
 from PIL import Image
 
 from wechat import notify as notify_module
-from wechat.cli import _docs_changed, main
+from wechat.cli import _docs_changed, _render_parts, main
+from wechat.posts import CONTENT_LIMIT, load_post
 
 SAMPLE = """---
 title: "演示文章"
@@ -1162,6 +1164,52 @@ def test_re_running_a_split_article_creates_nothing(tmp_path, server, monkeypatc
     assert main(["batch"] + args) == 0
     assert "/cgi-bin/draft/add" not in _Handler.calls
     assert "/cgi-bin/media/uploadimg" not in _Handler.calls
+
+
+def _render_args(out_dir):
+    """The arguments ``_render_parts`` needs -- no network, no server."""
+    return SimpleNamespace(out_dir=str(out_dir), category_tag="top")
+
+
+def _long_render_post(tmp_path, paragraphs=700, title="很长",
+                      categories=("数据库", "源码", "PostgreSQL")):
+    """A post whose rendered body needs more than one draft.
+
+    Short paragraphs are what make the packing tight: the parts are
+    filled up to the last paragraph, so a part lands right on the
+    limit -- which is exactly where a reserve that is a little too
+    small does its damage.  Several categories make the framing of a
+    part longer, and the framing is what the reserve has to cover.
+    """
+    posts_dir = tmp_path / "source" / "_posts"
+    (posts_dir / "database").mkdir(parents=True, exist_ok=True)
+    target = posts_dir / "database" / "long.md"
+    target.write_text(
+        "---\ntitle: \"{}\"\ndate: 2026-11-05 15:00:00\nauthor: growdu\n"
+        "categories:\n".format(title)
+        + "".join("  - {}\n".format(name) for name in categories)
+        + "---\n\n"
+        + "\n\n".join("短。" for _ in range(paragraphs)) + "\n",
+        encoding="utf-8")
+    return load_post(target, posts_dir)
+
+
+def test_an_article_whose_parts_land_on_the_limit_is_split_not_refused(tmp_path):
+    """An article that is a little too long is split, not refused.
+
+    Every part pays once for its own framing -- the transition lines,
+    the category tag and the reference-links wrapper -- and that room
+    has to be kept back from the body.  When the room kept back was
+    smaller than the framing really was, a part that was a few dozen
+    characters too long took the whole article down with it.
+    """
+    post = _long_render_post(tmp_path)
+
+    parts = _render_parts(post, _render_args(tmp_path / "out"))
+
+    assert len(parts) > 1
+    for part in parts:
+        assert part.result.content_length <= CONTENT_LIMIT
 
 
 def test_new_only_finishes_an_article_whose_parts_are_missing(tmp_path, server, monkeypatch):

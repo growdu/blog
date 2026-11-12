@@ -8,7 +8,8 @@ import pytest
 
 from wechat.mdparse import CodeBlock, Heading, Table, parse
 from wechat.render import render
-from wechat.split import (chinese_number, part_digest, part_title, split_blocks,
+from wechat.split import (LINK_WRAPPER, RESERVE, chinese_number, framing_reserve,
+                          part_digest, part_title, plan_parts, split_blocks,
                           transition_head_html, transition_tail_html)
 
 LIMIT = 20000
@@ -242,3 +243,65 @@ def test_a_cut_code_block_stays_one_block():
         blocks = [block for block in part if isinstance(block, CodeBlock)]
         assert len(blocks) == 1
         assert len(blocks[0].code.split("\n")) > 1
+
+
+# --- the room every part pays for its own framing ---------------------------
+
+
+def test_the_reserve_covers_the_framing_of_every_part():
+    """The reserve has to cover what a part spends on top of its body.
+
+    A part pays once for the reference-links wrapper, once for the
+    category tag and once for the two transition lines.  If the reserve
+    is a little too small the part does not get a little shorter -- it
+    does not fit at all, and the whole article is refused.
+    """
+    title = "一个标题"
+    tag = '<p style="...">分类</p>'
+    reserve = framing_reserve(title, tag)
+    for index in (1, 2, 9, 99):
+        for total in (2, 12, 999):
+            framing = (len(tag) + len(transition_head_html(title, index, total))
+                       + len(transition_tail_html(title, index, total))
+                       + LINK_WRAPPER)
+            assert reserve >= framing
+
+
+def test_the_reserve_grows_with_the_category_tag():
+    assert framing_reserve("标题", "<p>长</p>" * 50) > framing_reserve("标题", "")
+
+
+def test_the_reserve_is_at_least_the_link_wrapper():
+    """The wrapper is paid by every part that has links."""
+    assert RESERVE >= LINK_WRAPPER
+
+
+def test_a_bigger_reserve_leaves_less_room_for_the_body():
+    """The reserve is taken off the limit before the body is packed."""
+    blocks = parse("## 一\n\n{}\n\n## 二\n\n{}".format(
+        _big_section(), _big_section()))
+    few = plan_parts(blocks, LIMIT, _measure, reserve=200)
+    many = plan_parts(blocks, LIMIT, _measure, reserve=2000)
+    assert len(many) >= len(few)
+
+
+def test_plan_parts_cuts_a_part_that_is_still_too_big():
+    """A part that does not fit is cut again, not refused.
+
+    The first split works on an estimate.  When the estimate is off,
+    the group it produced is still too long for one draft, and the
+    article is worth another cut rather than a refusal.
+    """
+    blocks = parse("## 一\n\n{}\n\n## 二\n\n{}".format(
+        _big_section(), _big_section()))
+    reserve = 200
+    budget = LIMIT - reserve
+    parts = plan_parts(blocks, LIMIT, _measure, reserve=reserve)
+    assert len(parts) > 1
+    for group, _ in parts:
+        assert _measure(group) <= budget
+
+
+def test_plan_parts_leaves_a_whole_article_alone():
+    blocks = parse("## 小节\n\n正文。")
+    assert plan_parts(blocks, LIMIT, _measure) == [(blocks, False)]

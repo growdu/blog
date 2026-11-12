@@ -15,9 +15,13 @@ from __future__ import annotations
 from .mdparse import (Bold, CodeBlock, Heading, Image, InlineCode, Italic, Link,
                       ListBlock, Paragraph, Quote, Table, Text)
 from .posts import make_digest
+from .render import links_html, links_items_html
 
 __all__ = [
+    "LINK_WRAPPER",
+    "RESERVE",
     "chinese_number",
+    "framing_reserve",
     "part_digest",
     "part_title",
     "plan_parts",
@@ -28,9 +32,16 @@ __all__ = [
 
 _CN_DIGITS = "零一二三四五六七八九"
 
-# The transition lines and the reference-links wrapper are paid once per
-# part, so the packing keeps this much room for them.
-RESERVE = 400
+# The reference-links wrapper is paid once per part.  Its items are
+# counted apart from it, so the wrapper itself has a fixed length.
+LINK_WRAPPER = len(links_html([("", "")])) - len(links_items_html([("", "")]))
+
+# Every part pays once for its own framing: the reference-links
+# wrapper, the category tag and the two transition lines.  This is the
+# floor of that -- the wrapper plus a margin for the odd character the
+# estimate and the render may disagree about.  :func:`framing_reserve`
+# adds the article-specific part on top.
+RESERVE = LINK_WRAPPER + 50
 
 
 def chinese_number(number: int) -> str:
@@ -116,6 +127,24 @@ def transition_tail_html(title: str, index: int, total: int) -> str:
     else:
         text = "（全文完，共 {} 部分）".format(total)
     return '<p style="{}">{}</p>'.format(_TAIL_STYLE, text)
+
+
+def framing_reserve(title: str, tag_html: str = "") -> int:
+    """The characters one part spends on its own framing.
+
+    The transition lines carry the article title and the part numbers,
+    and the category tag carries the categories, so the length depends
+    on the article.  The numbers are taken at their widest (99 of 999)
+    -- more than any real article needs -- so the reserve covers the
+    framing of every part and not just of the shortest one.
+
+    Getting this wrong is not a rounding error: a reserve that is a
+    few dozen characters short does not make a part shorter, it makes
+    the whole article unpublishable.
+    """
+    head = transition_head_html(title, 99, 999)
+    tail = transition_tail_html(title, 99, 999)
+    return RESERVE + len(tag_html) + len(head) + len(tail)
 
 
 # --- where a split may happen -------------------------------------------
@@ -326,7 +355,34 @@ def split_blocks(blocks: list, limit: int, measure) -> list:
     return parts
 
 
-def plan_parts(blocks: list, limit: int, measure, plain_measure=None) -> list:
+def _fit_group(group: list, budget: int, measure, plain_measure) -> list:
+    """Cut a group down until every piece fits into one draft.
+
+    A group that is still too big after the first split is cut again.
+    The first split works on an estimate, and the estimate can be off
+    by the framing a part pays on top of its body -- losing a whole
+    article to a few dozen characters is not acceptable, so the part
+    is cut finer rather than refused.
+    """
+    if measure(group) <= budget:
+        return [(group, False)]
+    if plain_measure is not None and plain_measure(group) <= budget:
+        return [(group, True)]
+
+    pieces = split_blocks(group, budget, measure)
+    if len(pieces) <= 1:
+        # Nothing left to cut it smaller: one block is too big on its
+        # own, and the caller refuses the article.
+        return [(group, False)]
+
+    parts = []
+    for piece in pieces:
+        parts.extend(_fit_group(piece, budget, measure, plain_measure))
+    return parts
+
+
+def plan_parts(blocks: list, limit: int, measure, plain_measure=None,
+                reserve: int = None) -> list:
     """Decide how many drafts an article becomes.
 
     ``measure(blocks)`` returns the rendered size with syntax
@@ -338,10 +394,12 @@ def plan_parts(blocks: list, limit: int, measure, plain_measure=None) -> list:
     reading order.  ``use_plain`` says whether that part has to drop
     the syntax highlighting to fit.
 
-    ``limit`` is the limit WeChat enforces; the room for the
-    transition lines and the link block is kept back from it.
+    ``limit`` is the limit WeChat enforces; ``reserve`` is the room
+    kept back for the framing every part pays on top of its body --
+    the transition lines, the category tag and the reference-links
+    wrapper.  :func:`framing_reserve` computes it for an article.
     """
-    budget = limit - RESERVE
+    budget = limit - (RESERVE if reserve is None else reserve)
     if measure(blocks) <= budget:
         return [(blocks, False)]
     if plain_measure is not None and plain_measure(blocks) <= budget:
@@ -350,12 +408,5 @@ def plan_parts(blocks: list, limit: int, measure, plain_measure=None) -> list:
     groups = split_blocks(blocks, budget, measure)
     parts = []
     for group in groups:
-        if measure(group) <= budget:
-            parts.append((group, False))
-        elif plain_measure is not None and plain_measure(group) <= budget:
-            parts.append((group, True))
-        else:
-            # Nothing left to cut it smaller: the caller rejects the
-            # article rather than publishing something too long.
-            parts.append((group, False))
+        parts.extend(_fit_group(group, budget, measure, plain_measure))
     return parts
