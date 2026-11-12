@@ -11,7 +11,7 @@ from pyv.palette import COLORS
 from pyv.params import Params
 
 REQUIRED = ("title", "source_label", "source_sub", "worker_count",
-            "worker_prefix", "target_label", "caption")
+            "worker_prefix", "target_label", "target_sub", "caption")
 
 
 def worker_count(params=None) -> int:
@@ -52,6 +52,7 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
 
     # 汇聚方
     rounded_rect(ctx, w * 0.73, h * 0.30, w * 0.19, h * 0.40, 18, "#DCE1E8")
-    text(ctx, p["target_label"], w * 0.825, h * 0.53, 40, COLORS["primary"], anchor="center")
+    text(ctx, p["target_label"], w * 0.825, h * 0.50, 40, COLORS["primary"], anchor="center")
+    text(ctx, p["target_sub"], w * 0.825, h * 0.60, 28, COLORS["secondary"], anchor="center")
 
     text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])

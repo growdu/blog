@@ -36,9 +36,9 @@ def test_wrap_line_splits_at_width_limit():
 
 
 def test_wrap_line_keeps_latin_phrase_together():
-    lines = subtitle.wrap_line("PostgreSQL 18 并行逻辑解码")
+    lines = subtitle.wrap_line("openGauss 并行逻辑解码")
     assert len(lines) == 1
-    assert lines[0] == "PostgreSQL 18 并行逻辑解码"
+    assert lines[0] == "openGauss 并行逻辑解码"
 
 
 def test_build_ass_has_one_dialogue_per_subtitle_event(tmp_path):

@@ -303,4 +303,4 @@ def test_real_storyboard_matches_real_narration():
     assert float(info["format"]["duration"]) == pytest.approx(
         body_duration, abs=0.05
     )
-    assert body_duration == pytest.approx(33.156, abs=0.001)
+    assert body_duration == pytest.approx(32.436, abs=0.001)

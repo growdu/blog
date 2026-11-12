@@ -1,16 +1,16 @@
 {
   "version": 1,
   "episode": "pg-parallel-decode",
-  "title": "PostgreSQL 18 并行逻辑解码",
+  "title": "openGauss 的并行逻辑解码",
   "segments": [
     {
       "id": "s01",
       "renderer": "pyv.scenes.s01_intro",
       "sentences": [0, 1],
       "params": {
-        "title": "PostgreSQL 18",
+        "title": "openGauss",
         "subtitle": "并行逻辑解码",
-        "tagline": "reader 协调 · 多 worker 并行 · 顺序一致"
+        "tagline": "reader 读 WAL · worker 池并行 · walsender 收口"
       }
     },
     {
@@ -43,28 +43,29 @@
     {
       "id": "s04",
       "renderer": "pyv.scenes.s04_parallel",
-      "sentences": [6],
+      "sentences": [6, 7],
       "params": {
-        "title": "reader 读取与协调",
+        "title": "openGauss 的三层线程拓扑",
         "source_label": "reader",
-        "source_sub": "WALSender",
+        "source_sub": "读 WAL",
         "worker_count": 4,
         "worker_prefix": "worker",
-        "target_label": "统一输出",
-        "caption": "多个 worker 并行解码，速度显著提升"
+        "target_label": "walsender",
+        "target_sub": "收口输出",
+        "caption": "reader 只有一个线程，WAL 页缓存不能并发"
       }
     },
     {
       "id": "s05",
-      "renderer": "pyv.scenes.s05_order",
-      "sentences": [7, 8],
+      "renderer": "pyv.scenes.s05_bench",
+      "sentences": [8],
       "params": {
-        "title": "按事务结束顺序输出",
-        "order": [1, 2, 3, 4],
-        "target_label": "订阅端",
+        "title": "openGauss 上本地压测",
+        "serial_label": "串行解码",
+        "parallel_label": "并行解码",
         "callout": "2–5 倍",
-        "callout_sub": "并行解码整体性能",
-        "caption": "订阅端收到的顺序，和发布端保持一致"
+        "callout_sub": "整体性能提升",
+        "caption": "数字来自我自己的本地压测，不是官方基准"
       }
     },
     {
@@ -72,7 +73,7 @@
       "renderer": "pyv.scenes.s06_outro",
       "sentences": [9],
       "params": {
-        "title": "并行解码 · 有序同步",
+        "title": "并行解码 · 多核吞吐",
         "subtitle": "异构数据同步场景，实用性很高",
         "badge": "独立开发者 · growdu"
       }

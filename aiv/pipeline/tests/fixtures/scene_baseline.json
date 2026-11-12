@@ -1,5 +1,5 @@
 {
-  "note": "场景画面的基准指纹（改造前的代码抓的）。**形象一律不画**——3D 形象是媒体产物不入库，基准若带着素材抓，换台机器或换个干净检出就必然对不上，测试就变成「看本机有没有图」。抓取方式：cairo ARGB32 1920×1080，刷 COLORS['bg'] 底色，对整帧字节取 sha256；形象以 character.Mascot._load 强制降级为 none。",
+  "note": "场景画面的基准指纹。**形象一律不画**——3D 形象是媒体产物不入库，基准若带着素材抓，换台机器或换个干净检出就必然对不上，测试就变成「看本机有没有图」。抓取方式：cairo ARGB32 1920×1080，刷 COLORS['bg'] 底色，对整帧字节取 sha256；形象以 character.Mascot._load 强制降级为 none。重抓脚本：pipeline/scripts/capture_scene_baseline.py",
   "capture": {
     "size": "1920x1080",
     "times": [
@@ -8,26 +8,26 @@
       0.9
     ],
     "mascot": "none",
-    "captured_from": "bd22f00（场景文案还写死在代码里时）"
+    "captured_from": "f500e28（重抓于本脚本）"
   },
   "frames": {
     "pyv.scenes.s01_intro@0.0": "598ddbfa658eaf70a2e0c50fa12f914c28a4496bbb150a21d6d77d73b0d8c55d",
-    "pyv.scenes.s01_intro@0.45": "38e1be49662c3b781a6f0a1033183c880bb53e8028c1cd4363f38adbdac1f5da",
-    "pyv.scenes.s01_intro@0.9": "3a457fe853cd124aca7156bc40bf1518a40f29038407aee7b8a75087cf3ea2fb",
+    "pyv.scenes.s01_intro@0.45": "36b6c7b8e30a3564d221c4cc6c17e9dad73c4d32944990144f048e73f700eb06",
+    "pyv.scenes.s01_intro@0.9": "c790d92de1e297d26229bba762bf8f1cce9125e758c2f6c6f9eb2828da19cf2c",
     "pyv.scenes.s02_serial@0.0": "62d9d332d0b72a63402ed0239fa330cbb08c364afbcf7980b61bbd3af3a6ba6e",
     "pyv.scenes.s02_serial@0.45": "3b49ffb041f61c95782b293f324ef37a5918d3e4b6619f2faaa34fc1d92d772f",
     "pyv.scenes.s02_serial@0.9": "a7e60b8d03ef368cdb3048911fc13ed827ecc82b48f79cdb09e30676ad8f39cc",
     "pyv.scenes.s03_cores@0.0": "e1486f97f32053db11641945f56361731d38f91cd71f871dc45cab431349cb34",
     "pyv.scenes.s03_cores@0.45": "7222cb06309a77f19a7b5edea8f85fc623e785767d63b17bce52d85cbf1bce8f",
     "pyv.scenes.s03_cores@0.9": "1ed523a48d7e3c6e0199db111dc8d694ab6ed737b9d79ebdcdb3795a7d0098fb",
-    "pyv.scenes.s04_parallel@0.0": "2278976ec87dcda15a84e3ab401d1793fc9fdc4a31980425ee5e450efe958931",
-    "pyv.scenes.s04_parallel@0.45": "e9dcd453d59c55c06f6b342f07600bf7072908e955a39404fd6248e63242d55b",
-    "pyv.scenes.s04_parallel@0.9": "f522052627417472590d06deccb67349da94854bf3ba4fa12c849e0f8851a0f6",
-    "pyv.scenes.s05_order@0.0": "1ab82bca4cd07bb8351dced7335fbf45cb5f82e2a88c14d3c3e32e047618fb96",
-    "pyv.scenes.s05_order@0.45": "471ad8936ea6e3e31ddc7ce220635176491179a6d15ceee57597d2d65d605ed4",
-    "pyv.scenes.s05_order@0.9": "132aa168c32013490f2d783678c51805ad922124581b1efc6b26342e6929e4d9",
+    "pyv.scenes.s04_parallel@0.0": "5e5651e551b3599d8ebf6241d61a3b061ee6e21e4be30f4d507978c93a9ca839",
+    "pyv.scenes.s04_parallel@0.45": "ef28b34f9e8d17617fc9e993ecc998d20689d892d4ce74320deddc84ea916ecd",
+    "pyv.scenes.s04_parallel@0.9": "d796667f375b1024a1b9f63dfd5e5f86325db739bc4fad9f90a992fc356e70a7",
+    "pyv.scenes.s05_bench@0.0": "e268051e2eed10543db245a2de6b049ac6f93dffe773c035ec9586674b32e9ce",
+    "pyv.scenes.s05_bench@0.45": "689ad5b988e1926278385ffcfc1428b0ff9bf04bdaef1bb71118dda68498c3ac",
+    "pyv.scenes.s05_bench@0.9": "5fef44be0beeb458f98cb176fcc4920a613ee984fab635bffa8e6858255ee2a5",
     "pyv.scenes.s06_outro@0.0": "598ddbfa658eaf70a2e0c50fa12f914c28a4496bbb150a21d6d77d73b0d8c55d",
-    "pyv.scenes.s06_outro@0.45": "fefa144075f6519089d5f6c81e7c97747394c4160d9e07a5cec6ad1775affffa",
-    "pyv.scenes.s06_outro@0.9": "fefa144075f6519089d5f6c81e7c97747394c4160d9e07a5cec6ad1775affffa"
+    "pyv.scenes.s06_outro@0.45": "3feb4c1931d8b55e47150e6dd069036410c734969f171e281a896f4b526cbbec",
+    "pyv.scenes.s06_outro@0.9": "3feb4c1931d8b55e47150e6dd069036410c734969f171e281a896f4b526cbbec"
   }
 }

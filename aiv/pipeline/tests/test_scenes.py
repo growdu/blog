@@ -8,7 +8,7 @@ SCENE_MODULES = [
     "pyv.scenes.s02_serial",
     "pyv.scenes.s03_cores",
     "pyv.scenes.s04_parallel",
-    "pyv.scenes.s05_order",
+    "pyv.scenes.s05_bench",
     "pyv.scenes.s06_outro",
     # EP02（CSN 全序）新增的四个场景
     "pyv.scenes.s02_mixed",
@@ -79,9 +79,34 @@ def test_s04_exposes_four_workers():
     assert s04.worker_count(_params_for("pyv.scenes.s04_parallel")) == 4
 
 
-def test_s05_outputs_in_ascending_order():
-    import pyv.scenes.s05_order as s05
-    assert s05.output_order(_params_for("pyv.scenes.s05_order")) == [1, 2, 3, 4]
+def test_s05_bench_draws_a_range_not_a_single_precise_value():
+    """压测那组数字是区间（2 到 5 倍），画面不能画成一个精确的单值。
+
+    串行条占 1 倍，实测区间从 2 倍起到 5 倍止——条的长度必须与
+    画面上写的那个倍数对得上，否则图和字各说各的。
+    """
+    import pyv.scenes.s05_bench as s05
+
+    params = _params_for("pyv.scenes.s05_bench")
+    marks = s05.scale(1000.0)
+    unit = marks["unit"]
+    assert marks["serial_end"] - marks["x0"] == pytest.approx(unit)
+    assert marks["range_x"] - marks["x0"] == pytest.approx(unit * 2)
+    assert marks["range_end"] - marks["x0"] == pytest.approx(unit * 5)
+    assert marks["range_x"] > marks["serial_end"], "区间必须整体落在串行基线之外"
+    assert params["callout"] == "2–5 倍", "画面上的倍数必须与口播一致"
+
+
+def test_s04_separates_reader_from_walsender():
+    """openGauss 的 reader 是独立线程，walsender 单独收口，不能画成一个。
+
+    上一版把来源方标成 `Reader (WALSender)`，与源码拓扑不符。
+    """
+    params = _params_for("pyv.scenes.s04_parallel")
+    assert params["source_label"] == "reader"
+    assert params["target_label"] == "walsender"
+    assert "WALSender" not in params["source_sub"], \
+        "来源方不是 WALSender——reader 与 walsender 是两个线程"
 
 
 def test_s06_uses_personal_avatar_and_no_banned_words():

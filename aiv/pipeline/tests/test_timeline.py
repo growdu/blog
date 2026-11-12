@@ -73,7 +73,7 @@ def test_overlong_subtitle_line_is_rejected(tmp_path):
 
 def test_latin_subtitle_uses_display_width(tmp_path):
     scenes = _base_scenes()
-    scenes[0]["subtitle"] = "PostgreSQL 18 并行逻辑解码"
+    scenes[0]["subtitle"] = "openGauss 并行逻辑解码"
     sb = timeline.Storyboard.load(_write(tmp_path, _storyboard(scenes)))
     assert sb.validate() == []
 
