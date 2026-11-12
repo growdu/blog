@@ -25,6 +25,7 @@ from publishkit import (
     ContractFileError,
     PublishKitError,
     contract_from_fields,
+    parse_content_date,
     parse_front_matter,
     read_contract,
     validate_fields,
@@ -226,6 +227,81 @@ def test_errors_share_one_base_class(tmp_path):
         read_contract(tmp_path / "nope.md")
     assert issubclass(ContractFieldError, ContractError)
     assert issubclass(ContractFileError, ContractError)
+
+
+# --- date 字段（调度层选题要用） ------------------------------------------
+
+
+def test_read_contract_reads_the_date_field(tmp_path):
+    """``date`` 被读进来——调度层要按它排序（06 规格 §3.3）。"""
+    path = tmp_path / "post.md"
+    path.write_text(
+        "---\ntitle: x\ndate: 2026-07-27 10:40:11\n---\n\n正文\n", encoding="utf-8"
+    )
+
+    contract = read_contract(path)
+
+    assert contract.date == "2026-07-27 10:40:11"
+    assert parse_content_date(contract.date) == date(2026, 7, 27)
+
+
+def test_read_contract_reads_a_date_without_a_time(tmp_path):
+    """纯日期也是合法形态。"""
+    path = tmp_path / "post.md"
+    path.write_text("---\ntitle: x\ndate: 2026-07-27\n---\n\n正文\n", encoding="utf-8")
+
+    contract = read_contract(path)
+
+    assert contract.date == "2026-07-27"
+    assert parse_content_date(contract.date) == date(2026, 7, 27)
+
+
+def test_a_missing_date_is_allowed(tmp_path):
+    """``date`` 不是必填——母稿可以没有日期。"""
+    path = tmp_path / "post.md"
+    path.write_text("---\ntitle: x\n---\n\n正文\n", encoding="utf-8")
+
+    assert read_contract(path).date is None
+
+
+def test_parse_content_date_rejects_a_non_string():
+    with pytest.raises(ContractFieldError):
+        parse_content_date(20260727)
+
+
+def test_parse_content_date_rejects_a_malformed_value():
+    with pytest.raises(ContractFieldError):
+        parse_content_date("2026/07/27")
+
+
+def test_parse_content_date_rejects_an_impossible_date():
+    """不存在的日期必须报错，不能悄悄变成别的日子。"""
+    with pytest.raises(ContractFieldError):
+        parse_content_date("2026-02-30")
+
+
+def test_validate_fields_reports_a_bad_date():
+    assert validate_fields({"date": 20260727}) == ["date 必须是字符串，实际是 int"]
+    assert validate_fields({"date": "2026/07/27"}) == [
+        "date '2026/07/27' 不是 YYYY-MM-DD[ HH:MM:SS] 格式"
+    ]
+    assert validate_fields({"date": "2026-02-30"}) == [
+        "date '2026-02-30' 不是真实存在的日期"
+    ]
+
+
+def test_read_contract_raises_on_a_bad_date(tmp_path):
+    path = tmp_path / "post.md"
+    path.write_text("---\ntitle: x\ndate: 2026-02-30\n---\n\n正文\n", encoding="utf-8")
+
+    with pytest.raises(ContractFieldError):
+        read_contract(path)
+
+
+def test_date_is_not_a_passthrough_field():
+    """``date`` 只被读，不被搬——加进透传白名单会改掉站点的 permalink。"""
+    assert "date" not in PASSTHROUGH_FIELDS
+    assert "publish_on" in PASSTHROUGH_FIELDS
 
 
 # --- 候选集 -------------------------------------------------------------
@@ -455,6 +531,7 @@ def test_undeclared_fields_are_dropped_not_carried():
         "kind",
         "platforms",
         "publish_on",
+        "date",
         "short_title",
         "tldr",
         "description",

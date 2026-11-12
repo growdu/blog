@@ -52,14 +52,23 @@ reprintPolicy str            主题支持的转载枚举
 kind         str             ``post``（默认）/ ``video``
 platforms    list[str]       平台 id 列表
 publish_on   str             ``YYYY-MM-DD``
+date         str             ``YYYY-MM-DD`` 或 ``YYYY-MM-DD HH:MM:SS``
 ===========  ==============  ==========================================
+
+**``date`` 不是作者写的字段，是 sync 写进 ``source/_posts/`` 的那一个。**
+调度层的选题规则要按日期排序（06 规格 §3.3「按 ``publish_on``（缺省用
+``date``）升序」），所以这一层得认它。
+
+但它**不在透传白名单里**：``PASSTHROUGH_FIELDS`` 是 sync 的白名单，
+加进去会改变站点渲染结果（``tools/sync-hexo.py`` 写的 ``date`` 决定
+permalink）。``date`` 只是被**读**，不被**搬**。
 """
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 
 from . import PublishKitError
@@ -74,6 +83,7 @@ __all__ = [
     "ContractFieldError",
     "ContractFileError",
     "contract_from_fields",
+    "parse_content_date",
     "parse_front_matter",
     "read_contract",
     "validate_fields",
@@ -120,6 +130,9 @@ _FIELD_MAX_CHARS = {
 
 _FM_RE = re.compile(r"^---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+#: ``date`` 字段认两种形态：纯日期与带时分秒的日期。后者是
+#: ``tools/sync-hexo.py`` 写进 ``source/_posts/`` 的形状。
+_DATE_FIELD_RE = re.compile(r"^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$")
 _INT_RE = re.compile(r"^-?\d+$")
 
 
@@ -254,6 +267,7 @@ def validate_fields(fields: dict) -> list:
     violations.extend(_validate_reprint_policy(fields))
     violations.extend(_validate_platforms(fields))
     violations.extend(_validate_publish_on(fields))
+    violations.extend(_validate_date(fields))
 
     return violations
 
@@ -324,6 +338,44 @@ def _validate_publish_on(fields: dict) -> list:
     return []
 
 
+def parse_content_date(value: str) -> date:
+    """把 front matter 的 ``date`` 解析成 :class:`datetime.date`。
+
+    认两种形态：``YYYY-MM-DD`` 与 ``YYYY-MM-DD HH:MM:SS``——后者是
+    ``tools/sync-hexo.py`` 写进 ``source/_posts/`` 的形状（它把 git 的
+    时间戳去掉时区偏移后原样写下来）。
+
+    解析不了就抛 :class:`ContractFieldError`：``date`` 是外部输入，
+    坏日期必须**指名道姓**地报出来，不能漏出裸 ``ValueError``。
+    """
+    if not isinstance(value, str):
+        raise ContractFieldError(
+            "date 必须是字符串，实际是 {}".format(type(value).__name__)
+        )
+    text = value.strip()
+    if not _DATE_FIELD_RE.match(text):
+        raise ContractFieldError(
+            "date {!r} 不是 YYYY-MM-DD[ HH:MM:SS] 格式".format(value)
+        )
+    try:
+        return datetime.fromisoformat(text).date()
+    except ValueError as exc:
+        raise ContractFieldError(
+            "date {!r} 不是真实存在的日期".format(value)
+        ) from exc
+
+
+def _validate_date(fields: dict) -> list:
+    value = fields.get("date")
+    if value is None:
+        return []
+    try:
+        parse_content_date(value)
+    except ContractFieldError as exc:
+        return [str(exc)]
+    return []
+
+
 @dataclass(frozen=True)
 class ContentContract:
     """What one master draft says about itself."""
@@ -333,6 +385,7 @@ class ContentContract:
     kind: str
     platforms: tuple
     publish_on: str | None
+    date: str | None
     short_title: str | None
     tldr: str | None
     description: str | None
@@ -371,6 +424,7 @@ def contract_from_fields(fields: dict, *, path=None) -> ContentContract:
         kind=text("kind") or "post",
         platforms=tuple(platforms) if isinstance(platforms, list) else (),
         publish_on=text("publish_on"),
+        date=text("date"),
         short_title=text("short_title"),
         tldr=text("tldr"),
         description=text("description"),
