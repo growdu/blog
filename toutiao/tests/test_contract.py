@@ -95,6 +95,69 @@ def test_inline_html_tags_are_stripped_but_the_text_stays():
     assert "重要结论" in result.article.body
 
 
+def test_div_tags_are_stripped_but_the_text_stays():
+    post = _post(body='<div class="note">内容</div>')
+    result = slice_post(post, LIMITS)
+    assert "<div" not in result.article.body
+    assert "内容" in result.article.body
+
+
+def test_orphan_closing_tags_are_stripped():
+    """闭标签单独出现时也要剥掉 —— 读者看到的是一段乱码。"""
+    post = _post(body="正文，</font>后面还有字。")
+    result = slice_post(post, LIMITS)
+    assert "</font>" not in result.article.body
+    assert "正文，后面还有字。" in result.article.body
+
+
+def test_inline_code_keeps_its_angle_brackets():
+    """行内代码里的 `<...>` 一个字都不许动。"""
+    post = _post(body="路径是 `base/<db_oid>/<relfilenode>`，别改。")
+    result = slice_post(post, LIMITS)
+    assert "`base/<db_oid>/<relfilenode>`" in result.article.body
+
+
+def test_inline_code_keeps_a_real_tag_name_intact():
+    """行内代码里即使写着真标签名，也不许被剥掉。
+
+    这是「保护行内代码」和「白名单」两件事的区别：白名单管的是
+    `<db_oid>` 这种假标签，保护代码管的是 `<div class="mermaid">`
+    这种**写在代码示例里的真标签**。
+    """
+    post = _post(body='主题把围栏换成 `<div class="mermaid">`，这是代码示例。')
+    result = slice_post(post, LIMITS)
+    assert '`<div class="mermaid">`' in result.article.body
+
+
+def test_inline_code_keeps_its_entities():
+    """代码里的实体是字面量，不解码（哪怕同一个块里还有真标签）。"""
+    post = _post(body="标签 <b> 和代码里的 `&amp;` 在同一个块里。")
+    result = slice_post(post, LIMITS)
+    assert "`&amp;`" in result.article.body
+
+
+def test_inline_code_keeps_its_escaped_angle_brackets():
+    post = _post(body="若`local index\\<leader index，则append log`")
+    result = slice_post(post, LIMITS)
+    assert "`local index\\<leader index，则append log`" in result.article.body
+
+
+def test_angle_brackets_outside_the_whitelist_are_kept():
+    """不在白名单里的 `<xxx>` 不是标签，原样保留。"""
+    post = _post(body="占位符 <db_oid> 和 <relfilenode> 要留着。")
+    result = slice_post(post, LIMITS)
+    assert "<db_oid>" in result.article.body
+    assert "<relfilenode>" in result.article.body
+
+
+def test_tag_names_with_underscores_or_capitals_are_not_tags():
+    """标签名带下划线或大写时不当标签。"""
+    post = _post(body="<Db_Oid> 与 <FONT> 都不是这里的标签。")
+    result = slice_post(post, LIMITS)
+    assert "<Db_Oid>" in result.article.body
+    assert "<FONT>" in result.article.body
+
+
 def test_a_line_of_pure_html_is_dropped():
     post = _post(body='<div class="note">\n\n正文。')
     result = slice_post(post, LIMITS)

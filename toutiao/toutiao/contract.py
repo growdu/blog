@@ -30,7 +30,42 @@ _LIST = re.compile(r"^(?:[-*+]|\d+\.)\s+(.*)$")
 _LIST_EMPTY = re.compile(r"^(?:[-*+]|\d+\.)\s*$")
 _MARKER = re.compile(r"^【图(\d+)】$")
 _MARKER_IN_TEXT = re.compile(r"【图(\d+)】")
-_HTML_TAG = re.compile(r"</?[A-Za-z][A-Za-z0-9]*(?:\s[^<>]*)?/?>")
+
+# The HTML elements that may show up in a body.  A ``<name>`` that is not
+# on this list is not markup: ``<db_oid>``, ``<relfilenode>`` and ``<slug>``
+# are placeholders in paths and identifiers, and stripping them would
+# publish a wrong technical fact.
+#
+# Two groups are deliberately left out:
+#   - head-only elements (``title``, ``meta``, ``link``, ``base``, ``html``,
+#     ``head``, ``body``) -- they never carry body prose, and ``<title>`` is
+#     a common path placeholder in these drafts;
+#   - names that read like ordinary words and are used as placeholders
+#     (``slot``, ``data``, ``time``, ``output``, ``summary``, ``param``,
+#     ``source``, ``object``) -- ``<slot_name>``, ``<source_path>`` ...
+_HTML_ELEMENTS = frozenset((
+    "a", "abbr", "address", "area", "article", "aside", "audio", "b", "bdi",
+    "bdo", "big", "blockquote", "br", "button", "canvas", "caption", "center",
+    "cite", "code", "col", "colgroup", "del", "details", "dfn", "dialog",
+    "dir", "div", "dl", "dt", "em", "embed", "fieldset", "figcaption",
+    "figure", "font", "footer", "form", "frame", "frameset", "h1", "h2", "h3",
+    "h4", "h5", "h6", "header", "hgroup", "hr", "i", "iframe", "img", "input",
+    "ins", "kbd", "label", "legend", "li", "main", "map", "mark", "marquee",
+    "menu", "meter", "nav", "nobr", "ol", "optgroup", "option", "p", "picture",
+    "pre", "progress", "q", "rb", "rp", "rt", "rtc", "ruby", "s", "samp",
+    "script", "section", "select", "small", "span", "strike", "strong",
+    "style", "sub", "sup", "table", "tbody", "td", "template", "textarea",
+    "tfoot", "th", "thead", "tr", "track", "tt", "u", "ul", "var", "video",
+    "wbr",
+))
+_HTML_TAG = re.compile(
+    r"</?(?:{})\b(?:[^<>\"']|\"[^\"]*\"|'[^']*')*>".format(
+        "|".join(sorted(_HTML_ELEMENTS, key=lambda n: (-len(n), n)))
+    )
+)
+# Inline code: a backtick-quoted span is literal by definition.
+_INLINE_CODE = re.compile(r"(`+)(.+?)\1", re.DOTALL)
+
 _LINK = re.compile(r"(?<!!)\[([^\]]*)\]\([^)]*\)")
 _LINK_REFERENCE = re.compile(r"(?<!!)\[([^\]]*)\]\[[^\]]*\]")
 _LINK_DEFINITION = re.compile(r"^\[[^\]]+\]:\s*\S+")
@@ -121,17 +156,42 @@ def _replace_inline_images(text: str, images: list[str]) -> str:
     return _IMAGE_INLINE.sub(replace, text)
 
 
+def _split_code(text: str) -> list[tuple[bool, str]]:
+    """Split the text into ``(is_code, chunk)`` pieces on inline code spans."""
+    pieces: list[tuple[bool, str]] = []
+    last = 0
+    for match in _INLINE_CODE.finditer(text):
+        if match.start() > last:
+            pieces.append((False, text[last:match.start()]))
+        pieces.append((True, match.group(0)))
+        last = match.end()
+    if last < len(text):
+        pieces.append((False, text[last:]))
+    return pieces
+
+
 def _clean_html(text: str) -> str:
     """Take the HTML markup out, keep the text it wraps.
 
-    A tag is markup; the words around it are content.  Entities are
-    decoded as well -- but only for the blocks that actually carry a
-    tag, because decoding everywhere would rewrite text that never was
-    HTML in the first place.
+    Inline code is protected: inside backticks every character is literal,
+    so ``base/<db_oid>/<relfilenode>`` is a path, not a tag.  Only the
+    known HTML elements count as tags -- ``<db_oid>`` is not one of them,
+    and stripping it would publish a wrong path.
+
+    Entities are decoded as well, but only for a block that really carries
+    a tag: decoding everywhere would rewrite text that never was HTML.
     """
-    if not _HTML_TAG.search(text):
+    pieces = _split_code(text)
+    if not any(_HTML_TAG.search(chunk) for is_code, chunk in pieces if not is_code):
         return text
-    return html.unescape(_HTML_TAG.sub("", text))
+    out = []
+    for is_code, chunk in pieces:
+        if is_code:
+            out.append(chunk)
+        else:
+            out.append(html.unescape(_HTML_TAG.sub("", chunk)))
+    return "".join(out)
+
 
 
 def _drop_excess_markers(block: str, keep: int) -> str:
