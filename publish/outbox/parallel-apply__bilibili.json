@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "parallel-apply",
+  "kind": "video",
+  "package_dir": "bilibili/out/parallel-apply",
+  "platform": "bilibili",
+  "published_url": null,
+  "reason": "B站 ARC_BASE 权限未开通，已出包待人工上传",
+  "status": "packaged",
+  "title": "并行接收之后，谁先应用：并行 apply 的冲突判据与依赖图调度",
+  "updated_at": "2026-11-12T11:43:03+00:00"
+}

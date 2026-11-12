@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "wal-interleave",
+  "kind": "video",
+  "package_dir": "bilibili/out/wal-interleave",
+  "platform": "bilibili",
+  "published_url": null,
+  "reason": "B站 ARC_BASE 权限未开通，已出包待人工上传",
+  "status": "packaged",
+  "title": "WAL 里的顺序，不等于事务的顺序：6 条记录怎么归并成 3 个事务",
+  "updated_at": "2026-11-12T11:43:02+00:00"
+}

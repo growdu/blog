@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "csn-total-ordering",
+  "kind": "video",
+  "package_dir": "bilibili/out/csn-total-ordering",
+  "platform": "bilibili",
+  "published_url": null,
+  "reason": "B站 ARC_BASE 权限未开通，已出包待人工上传",
+  "status": "packaged",
+  "title": "一个 64 位计数器，决定所有事务的提交顺序",
+  "updated_at": "2026-11-12T11:43:02+00:00"
+}

@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "pg-parallel-decode",
+  "kind": "video",
+  "package_dir": "bilibili/out/pg-parallel-decode",
+  "platform": "bilibili",
+  "published_url": null,
+  "reason": "B站 ARC_BASE 权限未开通，已出包待人工上传",
+  "status": "packaged",
+  "title": "PostgreSQL 18 并行逻辑解码：32 核机器上，解码只占 1 核",
+  "updated_at": "2026-11-12T11:43:01+00:00"
+}

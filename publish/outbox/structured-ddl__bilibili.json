@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "structured-ddl",
+  "kind": "video",
+  "package_dir": "bilibili/out/structured-ddl",
+  "platform": "bilibili",
+  "published_url": null,
+  "reason": "B站 ARC_BASE 权限未开通，已出包待人工上传",
+  "status": "packaged",
+  "title": "为什么 DDL 同步不能直接把 SQL 文本发过去：拆成带语义的结构化对象",
+  "updated_at": "2026-11-12T11:43:03+00:00"
+}
