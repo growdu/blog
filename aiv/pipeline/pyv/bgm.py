@@ -104,6 +104,8 @@ RULE_IDS = (
     "bgm.attribution",
     "bgm.fingerprint",
     "bgm.series-role",
+    # 取用段落的电平（规范 §5.1）：推导把整曲平均当成取用段落的电平
+    "bgm.take-level",
     # 成片级（混完之后）的判据，见规范 §5.7
     "bgm.mix-duck-depth",
     "bgm.mix-voice-to-bgm",
@@ -228,12 +230,21 @@ def probe(path: str | Path) -> tuple[float, int, int]:
     )
 
 
-def measure_loudness(path: str | Path) -> tuple[float, float]:
-    """量整体响度（LUFS）与真峰值（dBTP）。"""
-    stderr = _run([
-        "ffmpeg", "-hide_banner", "-nostats", "-i", str(path),
-        "-af", "ebur128=peak=true", "-f", "null", "-",
-    ]).stderr
+def measure_loudness(path: str | Path,
+                    start_seconds: float | None = None,
+                    duration_s: float | None = None) -> tuple[float, float]:
+    """量整体响度（LUFS）与真峰值（dBTP）。
+
+    给 `start_seconds` / `duration_s` 就只量那一段。
+    """
+    cmd = ["ffmpeg", "-hide_banner", "-nostats"]
+    if start_seconds is not None:
+        cmd += ["-ss", f"{start_seconds:.3f}"]
+    cmd += ["-i", str(path)]
+    if duration_s is not None:
+        cmd += ["-t", f"{duration_s:.3f}"]
+    cmd += ["-af", "ebur128=peak=true", "-f", "null", "-"]
+    stderr = _run(cmd).stderr
     tail = stderr[stderr.rindex("Summary:"):]
     lufs_line = [ln for ln in tail.splitlines() if " I:" in ln]
     peak_line = [ln for ln in tail.splitlines() if "Peak:" in ln]
@@ -327,9 +338,65 @@ def check_track(path: str | Path, required_duration_s: float | None = None) -> l
     """检查一条曲子合不合格。
 
     required_duration_s 给定时，曲子必须够长（短了要循环，
-    循环点找不到就等于没有）。
+    循环点找不到就等于没有），并且**取用段落**（前 required_duration_s 秒）
+    的电平要过 `bgm.take-level`。
     """
-    return check_profile(measure(path), required_duration_s)
+    findings = check_profile(measure(path), required_duration_s)
+    if required_duration_s:
+        findings += check_take_level(path, required_duration_s)
+    return findings
+
+
+# ---------------------------------------------------------------- 取用段落
+
+# 取用段落比整曲响多少算「推导失效」。
+#
+# 规范 §5.1 的电平推导把**整曲平均**当成取用段落的电平：
+# 「母带归一化到 -20 LUFS → compose 基础增益 -15 dB → -35 LUFS」。
+# 实际只用其中一段，这一段不一定等于整曲的平均。
+#
+# 取用段落更安静 → 推导偏保守（实际电平差更大，更安全）；
+# 取用段落更响   → 推导偏乐观（实际电平差更小，可能压过旁白）。
+# 所以上限取 0 dB：**取用段落不得比整曲响**，否则必须重新推导。
+#
+# 实测（2026-11-12）：
+#   series-bed-01 前 33.156 s   -22.90 LUFS vs 整曲 -20.00 → -2.90 dB ✓
+#   series-motif-01 5.900~11.566 s  -24.70 LUFS vs 整曲 -20.00 → -4.70 dB ✓
+#   （旧口径的片头窗口 115.15 s 起   +1.20 dB ✗——顺带说明旧窗口选得也不对）
+TAKE_LEVEL_MAX_DB = 0.0
+
+
+def measure_take_level(path: str | Path, take_seconds: float,
+                        start_seconds: float = 0.0) -> tuple[float, float]:
+    """量「整曲」与「取用段落」的响度（LUFS），返回 (整曲, 取用段落)。
+
+    取用段落就是实际会用到的那一截：
+    正文铺底取母带的前 N 秒（`duck_bgm` 就是这么取的），
+    品牌片头片尾取那两个紧挨着的窗口。
+    """
+    whole, _ = measure_loudness(path)
+    take, _ = measure_loudness(path, start_seconds, take_seconds)
+    return whole, take
+
+
+def check_take_level(path: str | Path, take_seconds: float,
+                     start_seconds: float = 0.0,
+                     target: str = "") -> list[Finding]:
+    """取用段落相对整曲的响度差（规范 §5.1）。"""
+    whole, take = measure_take_level(path, take_seconds, start_seconds)
+    diff = take - whole
+    if diff > TAKE_LEVEL_MAX_DB:
+        return [Finding(
+            "bgm.take-level", ERROR,
+            f"取用段落比整曲响 {diff:+.2f} dB"
+            f"（整曲 {whole:.2f} LUFS / 取用 {take:.2f} LUFS）——"
+            f"规范 §5.1 的推导把整曲平均当成取用段落的电平，"
+            f"这里前提不成立，要按实测值重新推导", target)]
+    return [Finding(
+        "bgm.take-level", WARNING,
+        f"取用段落比整曲安静 {-diff:.2f} dB"
+        f"（整曲 {whole:.2f} LUFS / 取用 {take:.2f} LUFS）——"
+        f"推导值偏保守，实际电平差比设计目标更宽", target)]
 
 
 # ---------------------------------------------------------------- 台账
@@ -960,4 +1027,12 @@ def check_brand_windows(windows: BrandWindows,
     if windows.outro_rms and windows.outro_rms < BRAND_MIN_RMS:
         add("bgm.brand-window", ERROR,
             f"片尾窗口能量只有 {windows.outro_rms:.4f}，低于 {BRAND_MIN_RMS}")
+
+    # ---- 取用段落相对整曲的电平（规范 §5.1）
+    # 品牌片的取用段落是「片尾起点 → 片头终点」这一整截
+    # （两段在原曲里紧挨着，中间不断）。
+    if music_path is not None and Path(music_path).is_file():
+        span = windows.intro_end_s - windows.outro_start_s
+        findings += check_take_level(music_path, span, windows.outro_start_s,
+                                     windows.track_id)
     return findings

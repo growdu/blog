@@ -148,6 +148,7 @@ def test_spec_and_code_agree_on_thresholds():
     assert f"{bgm.EQ_BELL_HZ} Hz" in spec
     assert f"{bgm.EQ_BELL_DB:g} dB" in spec
     assert f"{bgm.HIGHPASS_HZ} Hz" in spec
+    assert f"{bgm.TAKE_LEVEL_MAX_DB:g} dB" in spec
 
 
 def test_spec_lists_every_allowed_license():
@@ -551,3 +552,66 @@ def test_cli_bgm_library_on_empty_library(tmp_path, capsys):
     code = cli.main(["bgm", "library", "--library", str(path)])
     assert code == 0
     assert "0 个问题" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------- 取用段落
+
+
+def _two_level_track(path: Path, seconds: float = 12.0,
+                     sample_rate: int = SR) -> Path:
+    """造一条「前半安静、后半响」的曲子。
+
+    用来量「取用段落相对整曲」的响度差：取前一半偏安静，
+    取后一半偏响。
+    """
+    half = int(seconds / 2)
+    t = np.arange(int(seconds * sample_rate)) / sample_rate
+    quiet = 0.05 * np.sin(2 * np.pi * 220 * t)
+    loud = 0.30 * np.sin(2 * np.pi * 220 * t)
+    samples = np.where(t < seconds / 2, quiet, loud)
+    return _write_wav(path, samples, sample_rate)
+
+
+def test_measure_take_level_separates_the_two_halves(tmp_path):
+    """取用段落的响度要能单独量出来。"""
+    path = _two_level_track(tmp_path / "two.wav")
+    whole, quiet_take = bgm.measure_take_level(path, 6.0)
+    _, loud_take = bgm.measure_take_level(path, 6.0, 6.0)
+    assert quiet_take < whole, "前一半更安静，量出来就该更低"
+    assert loud_take > whole, "后一半更响，量出来就该更高"
+
+
+def test_a_quiet_take_segment_is_only_a_warning(tmp_path):
+    """取用段落更安静 = 推导偏保守，只提示。"""
+    path = _two_level_track(tmp_path / "two.wav")
+    findings = bgm.check_take_level(path, 6.0)
+    assert findings, "应该报出取用段落的电平差"
+    assert findings[0].rule_id == "bgm.take-level"
+    assert findings[0].level == bgm.WARNING
+
+
+def test_a_loud_take_segment_is_an_error(tmp_path):
+    """取用段落更响 = §5.1 的推导前提不成立，硬约束。"""
+    path = _two_level_track(tmp_path / "two.wav")
+    findings = bgm.check_take_level(path, 6.0, 6.0)
+    assert findings
+    assert findings[0].rule_id == "bgm.take-level"
+    assert findings[0].level == bgm.ERROR
+
+
+def test_check_track_only_runs_the_take_level_check_with_a_duration(tmp_path):
+    """不给正文时长就不知道取用哪一段，不该乱报。"""
+    path = _two_level_track(tmp_path / "two.wav")
+    assert bgm.check_track(path) == []
+    findings = bgm.check_track(path, 6.0)
+    assert [f.rule_id for f in findings] == ["bgm.take-level"]
+
+
+def test_shipped_bed_track_take_segment_is_quieter():
+    """在用的正文铺底：取用段落比整曲安静（实测 2.90 dB）。"""
+    bed = bgm.AIV_ROOT / "music" / "tracks" / "series-bed-01.wav"
+    if not bed.is_file():
+        pytest.skip("曲库音频不在仓库中，跳过")
+    findings = bgm.check_take_level(bed, 33.156)
+    assert findings and findings[0].level == bgm.WARNING
+    assert "安静" in str(findings[0])

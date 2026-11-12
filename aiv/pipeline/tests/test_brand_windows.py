@@ -100,6 +100,21 @@ def test_shipped_windows_pass_the_check():
     assert not errors, [str(f) for f in errors]
 
 
+@requires_motif
+def test_brand_windows_report_the_take_level():
+    """品牌片的取用段落（两个窗口合成的那一截）也要量相对整曲的电平。
+
+    旧口径的片头窗口（115.15 s）取用段落比整曲响 1.30 dB ——
+    推导的前提不成立，所以这条判据能顺带把那种窗口挑出来。
+    """
+    windows = bgm.load_brand_windows(WINDOWS_PATH)
+    findings = bgm.check_brand_windows(windows, MOTIF)
+    take = [f for f in findings if f.rule_id == "bgm.take-level"]
+    assert take, "应该报出取用段落的电平差"
+    assert take[0].level == bgm.WARNING
+    assert "安静" in str(take[0])
+
+
 def test_shipped_windows_name_a_registered_motif():
     """窗口记的曲子 id 要在曲库台账里，而且指纹对得上。"""
     windows = bgm.load_brand_windows(WINDOWS_PATH)

@@ -216,8 +216,9 @@ def cmd_bgm(args: argparse.Namespace) -> int:
               f"（{windows.track_id}，起音比 {windows.onset_ratio:.2f}）")
         for finding in findings:
             print(f"{finding.level.upper():7} {finding}")
-        if findings:
-            print(f"FAIL {len(findings)} 个问题", file=sys.stderr)
+        errors = [f for f in findings if f.level == bgm.ERROR]
+        if errors:
+            print(f"FAIL {len(errors)} 个硬约束违规", file=sys.stderr)
             return 1
         print("OK 片头片尾首尾相接")
         return 0
