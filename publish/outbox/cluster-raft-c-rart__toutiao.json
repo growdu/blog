@@ -1,0 +1,11 @@
+{
+  "automation": "manual",
+  "content_id": "cluster/raft/c-rart",
+  "package_dir": "toutiao/out/cluster-raft-c-rart",
+  "platform": "toutiao",
+  "published_url": null,
+  "reason": "manual 档：账号暂无开放平台 API 权限，已出包待人工上传",
+  "status": "packaged",
+  "title": "c-raft",
+  "updated_at": "2026-11-12T18:24:24+08:00"
+}
