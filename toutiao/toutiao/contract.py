@@ -28,7 +28,6 @@ _IMAGE_INLINE = re.compile(r"!\[([^\]]*)\]\(([^)]*)\)")
 _IMAGE_TITLE = re.compile(r"""\s+(?:"[^"]*"|'[^']*')\s*$""")
 _LIST = re.compile(r"^(?:[-*+]|\d+\.)\s+(.*)$")
 _LIST_EMPTY = re.compile(r"^(?:[-*+]|\d+\.)\s*$")
-_MARKER = re.compile(r"^【图(\d+)】$")
 _MARKER_IN_TEXT = re.compile(r"【图(\d+)】")
 
 # The HTML elements that may show up in a body.  A ``<name>`` that is not
@@ -395,8 +394,9 @@ def slice_post(post: SourcePost, limits: Limits, source_url: str = "https://grow
         or _first_paragraph(blocks)
         or title
     )
-    # `title` is non-empty here -- the three branches above guarantee it --
-    # so the digest never is.
+    # `title` is non-empty here -- the three title branches (`short_title`,
+    # `_truncate_title`, plain `post.title`) each guarantee it -- so the
+    # digest never is.
     if len(digest) > limits.digest_chars:
         digest = digest[: limits.digest_chars]
         notes.append("摘要已裁剪到 {} 字".format(limits.digest_chars))
