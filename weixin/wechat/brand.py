@@ -62,7 +62,10 @@ _MIN_NOTE = 12
 # card that runs to five lines is a paragraph again.
 _CARD_LIMIT = 180
 
-_SENTENCE_END = "。！？!?；;"
+# The characters that end a sentence.  A half width semicolon is not
+# one of them: it is used inside abbreviations such as 「TL;DR」, and
+# cutting there cut a title page down to 「TL;」.
+_SENTENCE_END = "。！？!?"
 
 # The signature that closes every part.  It says who wrote it and where
 # the complete version is; the platform's own byline says only the name.

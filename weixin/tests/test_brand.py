@@ -211,3 +211,10 @@ def test_the_signature_carries_no_class_attribute():
 def test_the_signature_points_at_the_read_more_link():
     """The full article lives on the site; the signature says where."""
     assert "阅读原文" in SIGNATURE_TEXT
+
+
+def test_a_quote_with_an_abbreviation_is_not_cut_at_the_abbreviation():
+    """「TL;DR」 is one sentence, not two."""
+    note = series_note_of(_blocks("> **TL;DR**：原文作者的方案是「17 个服务」。\n"))
+
+    assert note.startswith("TL;DR")

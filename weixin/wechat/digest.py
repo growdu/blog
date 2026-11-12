@@ -38,10 +38,25 @@ _SENTENCE_MARKS = ("。", "！", "？", ". ", "! ", "? ")
 _MIN_USEFUL = 30
 
 # The shortest a conclusion may be and still be a conclusion.
-_MIN_CONCLUSION = 12
+_MIN_CONCLUSION = 20
+
+# An opening block that only names the source the article was read
+# against is metadata, not a statement about the article.  It belongs
+# on the card; as a summary it says nothing.
+_METADATA = re.compile(r"^(配套源码|源码版本|文档版本|适配版本|涉及文件|"
+                       r"源码基线|基线|配套|涉及)")
 
 # The headings whose section carries the author's conclusion.
 _CONCLUSION = re.compile(r"(结论|总结|小结|结语|要点|写在最后|核心结论)")
+
+# A purpose that only says how the article was researched -- 「结合
+# PostgreSQL 17 源码」 -- is a method, not a description.  It belongs
+# on the card at the top of the article; as a summary it says nothing
+# about the article itself.
+_METHOD_ONLY = re.compile(r"^(结合|基于|使用)[^，。；、]*$")
+
+# The shortest a purpose may be and still describe an article.
+_MIN_PURPOSE = 20
 
 # A paragraph that ends with a colon is the beginning of a sentence --
 # a lead-in, not a statement.
@@ -156,10 +171,24 @@ def _has_words(block) -> bool:
     return False
 
 
-def _paragraph_texts(blocks: list) -> list:
-    """The text of every paragraph that carries words."""
+def _is_lead_in(text: str) -> bool:
+    """True when a paragraph is the beginning of a sentence."""
+    return text.rstrip().endswith(_LEAD_IN)
+
+
+def _opening_paragraphs(blocks: list) -> list:
+    """The paragraphs of the opening section.
+
+    The section ends at the next heading of the same level, so the
+    digest never mixes what the article says at the start with what
+    it says at the end.
+    """
     out = []
     for block in blocks:
+        if isinstance(block, Heading):
+            if block.level <= 2 and out:
+                break
+            continue
         if not isinstance(block, Paragraph) or not _has_words(block):
             continue
         text = _normalise(inline_text(block.children))
@@ -168,19 +197,28 @@ def _paragraph_texts(blocks: list) -> list:
     return out
 
 
-def _is_lead_in(text: str) -> bool:
-    """True when a paragraph is the beginning of a sentence."""
-    return text.rstrip().endswith(_LEAD_IN)
-
-
 def _paragraph_source(blocks: list) -> str:
-    """The opening of the article: its first paragraph that says something."""
-    texts = [text for text in _paragraph_texts(blocks) if not _is_lead_in(text)]
-    if not texts:
+    """The opening of the article: its first paragraph that says something.
+
+    A paragraph that ends with a colon is the lead-in to something else,
+    so it is only used when there is nothing else -- an empty summary
+    says nothing at all.
+    """
+    texts = _opening_paragraphs(blocks)
+    statements = [text for text in texts if not _is_lead_in(text)]
+    if not statements:
+        statements = texts
+    if not statements:
         return ""
-    if len(texts[0]) < _MIN_USEFUL and len(texts) > 1:
-        return "{} {}".format(texts[0], texts[1])
-    return texts[0]
+    if len(statements[0]) < _MIN_USEFUL and len(statements) > 1:
+        return "{} {}".format(statements[0], statements[1])
+    return statements[0]
+
+
+def _is_statement(text: str) -> bool:
+    """True when a paragraph ends in a sentence and not in the middle of
+    a word."""
+    return any(mark in text for mark in _SENTENCE_MARKS)
 
 
 def _conclusion_source(blocks: list) -> str:
@@ -188,7 +226,8 @@ def _conclusion_source(blocks: list) -> str:
 
     The conclusion is the part of an article that carries the author's
     judgement, so it is worth more than a topic sentence -- but only
-    when it is a statement and not the lead-in to one.
+    when it is a statement and not the lead-in to one, and when it is
+    long enough to say something.
     """
     for index, block in enumerate(blocks):
         if not isinstance(block, Heading):
@@ -203,8 +242,32 @@ def _conclusion_source(blocks: list) -> str:
             text = _normalise(_HTML_TAG.sub("", inline_text(follower.children)))
             if len(text) < _MIN_CONCLUSION or _is_lead_in(text):
                 continue
+            if not _is_statement(text):
+                continue
             return text
     return ""
+
+
+def _purpose_source(blocks: list) -> str:
+    """The description the author wrote for the article.
+
+    The title page is the best material there is, but only when it
+    describes the article: a purpose that merely names the source the
+    article was read against is a method, and the opening of the
+    article says more than that.
+    """
+    purpose = purpose_of(blocks)
+    if len(purpose) < _MIN_PURPOSE or _METHOD_ONLY.match(purpose):
+        return ""
+    return purpose
+
+
+def _series_source(blocks: list) -> str:
+    """The statement the article opens with, if it opens with one."""
+    note = series_note_of(blocks)
+    if not note or _METADATA.match(note):
+        return ""
+    return note
 
 
 def article_digest(blocks: list, limit: int = DIGEST_LIMIT) -> str:
@@ -214,7 +277,7 @@ def article_digest(blocks: list, limit: int = DIGEST_LIMIT) -> str:
     much it says: the title page first, then the opening statement,
     then the conclusion, then the first paragraph.
     """
-    for source in (purpose_of, series_note_of, _conclusion_source,
+    for source in (_purpose_source, _series_source, _conclusion_source,
                    _paragraph_source):
         text = source(blocks)
         if text:

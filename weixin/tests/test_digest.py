@@ -126,9 +126,10 @@ def test_the_conclusion_is_not_taken_from_a_lead_in():
 
 
 def test_the_conclusion_digest_drops_the_raw_html():
-    body = "## 总结\n\n<font color=\"red\">集群元信息采用分布式方式保存。</font>\n"
+    body = ("## 总结\n\n<font color=\"red\">集群元信息采用分布式方式保存，"
+            "每个节点都会保存一份元数据。</font>\n")
 
-    assert article_digest(parse(body)) == "集群元信息采用分布式方式保存。"
+    assert article_digest(parse(body)) == "集群元信息采用分布式方式保存，每个节点都会保存一份元数据。"
 
 
 # --- the digest of one part ----------------------------------------------
@@ -185,3 +186,66 @@ def test_the_markdown_digest_skips_an_image_line():
     body = "![](images/ai.png)\n\n正文一段。\n"
 
     assert make_digest(body) == "正文一段。"
+
+
+def test_a_digest_is_not_empty_when_the_only_paragraph_is_a_lead_in():
+    """Better a lead-in than nothing: an empty summary says nothing at
+    all."""
+    body = "## 第一节\n\n本文要回答 4 个问题：\n"
+
+    assert article_digest(parse(body)) == "本文要回答 4 个问题："
+
+
+def test_the_conclusion_must_be_a_statement():
+    """A paragraph that ends in the middle of a word is a reference, not
+    a conclusion."""
+    body = ("## 第一节\n\n正文一段，讲的是逻辑复制。\n\n"
+            "## 总结\n\n"
+            "[1]: https://wiki.postgresql.org/wiki/Logical_replication_of_DDLs\n")
+
+    assert article_digest(parse(body)) == "正文一段，讲的是逻辑复制。"
+
+
+def test_the_conclusion_must_be_long_enough():
+    """「选择 haproxy 来实现。」 is an answer, not a summary."""
+    body = ("## 第一节\n\n正文一段，讲的是代理怎么做。\n\n"
+            "## 总结\n\n选择 haproxy 来实现。\n")
+
+    assert article_digest(parse(body)) == "正文一段，讲的是代理怎么做。"
+
+
+def test_the_digest_does_not_use_a_purpose_that_only_says_how_it_was_written():
+    """「结合 PostgreSQL 17 源码」 is a method, not a description.
+
+    It is the right thing for the card at the top of the article -- it
+    says which source the article was read against -- but as a summary
+    it tells the reader nothing about the article.
+    """
+    body = ("| 编写人 | 编写内容 | 编写时间 |\n| --- | --- | --- |\n"
+            "| growdu | 结合 PostgreSQL 17 源码 + Babelfish T-SQL 扩展 | 2026-09-29 |\n\n"
+            "PostgreSQL 启动时申请的 shared_buffers 那一大段内存，其实只是冰山一角。\n")
+
+    digest = article_digest(parse(body))
+
+    assert digest.startswith("PostgreSQL 启动时申请的 shared_buffers")
+
+
+def test_a_purpose_that_describes_the_article_is_used_even_with_the_method():
+    body = ("| 编写人 | 编写内容 | 编写时间 |\n| --- | --- | --- |\n"
+            "| growdu | 基于 PostgreSQL 17 源码梳理 schema、search_path、DDL AST 与系统目录归属 | 2026-09-29 |\n\n"
+            "PostgreSQL 启动时申请的 shared_buffers 那一大段内存，其实只是冰山一角。\n")
+
+    digest = article_digest(parse(body))
+
+    assert digest.startswith("基于 PostgreSQL 17 源码梳理 schema")
+
+
+def test_the_digest_does_not_use_an_opening_block_that_is_only_metadata():
+    """「配套源码：…」 tells the reader where the code was read, not
+    what the article says."""
+    body = ("> 配套源码:~/cwork/postgresql/src/backend/replication/logical/snapbuild.c(PG 18 主干)\n\n"
+            "逻辑解码的核心矛盾：我们要在 WAL 记录中还原当时的元组。\n")
+
+    digest = article_digest(parse(body))
+
+    assert digest.startswith("逻辑解码的核心矛盾")
