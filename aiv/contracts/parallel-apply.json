@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "episode": "parallel-apply",
+  "title": "并行接收之后，谁先应用",
+  "segments": [
+    {
+      "id": "s01",
+      "renderer": "pyv.scenes.s01_intro",
+      "sentences": [0],
+      "params": {
+        "title": "并行接收之后",
+        "subtitle": "谁先应用",
+        "tagline": "窗口调度 · 冲突判定 · 依赖图"
+      }
+    },
+    {
+      "id": "s02",
+      "renderer": "pyv.scenes.s02_apply_queue",
+      "sentences": [1, 2],
+      "params": {
+        "title": "订阅端还是一个线程在排队接收",
+        "publisher_label": "发布端",
+        "publisher_sub": "并行解码",
+        "apply_label": "apply worker",
+        "apply_sub": "单线程",
+        "queue_label": "接收队列",
+        "txn_ids": ["T1", "T2", "T3", "T4"],
+        "active_txn": "T1",
+        "caption": "并行的是接收，不是事务之间"
+      }
+    },
+    {
+      "id": "s03",
+      "renderer": "pyv.scenes.s03_conflict_key",
+      "sentences": [3, 4, 5],
+      "params": {
+        "title": "判据：有没有改到同一行",
+        "table_label": "users 表",
+        "row_labels": ["id = 40", "id = 42"],
+        "hot_index": 1,
+        "key_title": "冲突键",
+        "key_parts": ["表", "索引", "键值"],
+        "key_values": ["users", "pkey", "42"],
+        "key_conclusion": "三者一样，就是撞上了",
+        "txn_a": "T1",
+        "txn_b": "T2",
+        "conflict_label": "冲突",
+        "caption": "同一行就得排队，不能一起做"
+      }
+    },
+    {
+      "id": "s04",
+      "renderer": "pyv.scenes.s04_dependency_dag",
+      "sentences": [6, 7],
+      "params": {
+        "title": "把事务之间的依赖画成一张图",
+        "window_label": "窗口",
+        "nodes": ["T1", "T2", "T3", "T4"],
+        "node_notes": ["users 42", "users 42", "orders 7", "orders 7"],
+        "edges": [["T1", "T2"], ["T3", "T4"]],
+        "caption": "有依赖的连一条边"
+      }
+    },
+    {
+      "id": "s05",
+      "renderer": "pyv.scenes.s05_scheduler",
+      "sentences": [8],
+      "params": {
+        "title": "按图的顺序分发，最后统一提交",
+        "worker_count": 2,
+        "worker_prefix": "worker",
+        "dispatch": [["T1", 0], ["T3", 1], ["T2", 0], ["T4", 1]],
+        "commit_label": "统一提交",
+        "commit_order": ["T1", "T3", "T2", "T4"],
+        "caption": "并行的是执行，提交仍然按依赖顺序"
+      }
+    },
+    {
+      "id": "s06",
+      "renderer": "pyv.scenes.s06_outro",
+      "sentences": [9],
+      "params": {
+        "title": "并行的前提，是先判冲突",
+        "subtitle": "我自己的设计方案，尚未合入主线",
+        "badge": "独立开发者 · growdu"
+      }
+    }
+  ]
+}

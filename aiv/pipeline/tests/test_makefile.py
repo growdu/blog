@@ -19,6 +19,9 @@ MAKEFILE = PIPELINE / "Makefile"
 KNOWN_EPS = {
     "pg-parallel-decode": ("字幕-并行解码.md", "pg-parallel-decode.json"),
     "csn-total-ordering": ("字幕-CSN全序.md", "csn-total-ordering.json"),
+    "wal-interleave": ("字幕-WAL顺序.md", "wal-interleave.json"),
+    "parallel-apply": ("字幕-并行apply.md", "parallel-apply.json"),
+    "structured-ddl": ("字幕-结构化DDL.md", "structured-ddl.json"),
 }
 
 

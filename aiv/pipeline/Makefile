@@ -31,6 +31,12 @@ ifeq ($(EP),pg-parallel-decode)
 SCRIPT := $(ROOT)/字幕-并行解码.md
 else ifeq ($(EP),csn-total-ordering)
 SCRIPT := $(ROOT)/字幕-CSN全序.md
+else ifeq ($(EP),wal-interleave)
+SCRIPT := $(ROOT)/字幕-WAL顺序.md
+else ifeq ($(EP),parallel-apply)
+SCRIPT := $(ROOT)/字幕-并行apply.md
+else ifeq ($(EP),structured-ddl)
+SCRIPT := $(ROOT)/字幕-结构化DDL.md
 else
 $(error 未知 EP「$(EP)」：在 Makefile 里登记这一期的口播稿路径)
 endif

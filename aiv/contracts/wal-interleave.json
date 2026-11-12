@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "episode": "wal-interleave",
+  "title": "WAL 里的顺序，不等于事务的顺序",
+  "segments": [
+    {
+      "id": "s01",
+      "renderer": "pyv.scenes.s01_intro",
+      "sentences": [0],
+      "params": {
+        "title": "WAL 里的顺序",
+        "subtitle": "不等于事务的顺序",
+        "tagline": "操作级记录 · 按事务号归并 · 提交才发出"
+      }
+    },
+    {
+      "id": "s02",
+      "renderer": "pyv.scenes.s02_wal_interleave",
+      "sentences": [1, 2, 3],
+      "params": {
+        "title": "WAL 是操作级记录，几个事务交错了",
+        "axis_label": "WAL 位置（LSN）",
+        "txn_ids": ["T1", "T2", "T3"],
+        "records": [
+          ["100", "T1", "INSERT"],
+          ["110", "T2", "INSERT"],
+          ["120", "T1", "UPDATE"],
+          ["130", "T3", "DELETE"],
+          ["140", "T2", "UPDATE"],
+          ["150", "T1", "COMMIT"]
+        ],
+        "legend_label": "颜色 = 事务",
+        "caption": "同一个事务的记录，被别的事务隔开了"
+      }
+    },
+    {
+      "id": "s03",
+      "renderer": "pyv.scenes.s03_reorder_buffer",
+      "sentences": [4, 5, 6],
+      "params": {
+        "title": "按事务号，攒进各自的槽",
+        "buffer_label": "ReorderBuffer",
+        "slot_label": "一个事务一个槽",
+        "txn_ids": ["T1", "T2", "T3"],
+        "txn_xids": ["10", "11", "12"],
+        "xid_prefix": "xid",
+        "records": [
+          ["100", "T1", "INSERT"],
+          ["110", "T2", "INSERT"],
+          ["120", "T1", "UPDATE"],
+          ["130", "T3", "DELETE"],
+          ["140", "T2", "UPDATE"],
+          ["150", "T1", "COMMIT"]
+        ],
+        "caption": "事务号是唯一的归并依据"
+      }
+    },
+    {
+      "id": "s04",
+      "renderer": "pyv.scenes.s04_spill",
+      "sentences": [7],
+      "params": {
+        "title": "槽里攒的太多，会落到磁盘上",
+        "memory_label": "内存",
+        "disk_label": "磁盘",
+        "spill_label": "spill",
+        "chips": ["INSERT", "INSERT", "UPDATE", "UPDATE", "DELETE", "INSERT"],
+        "spill_count": 4,
+        "caption": "落盘了，事务的完整性一样不受影响"
+      }
+    },
+    {
+      "id": "s05",
+      "renderer": "pyv.scenes.s05_emit",
+      "sentences": [8],
+      "params": {
+        "title": "提交记录出现，才整组发出去",
+        "buffer_label": "ReorderBuffer",
+        "emit_label": "整组发出",
+        "target_label": "订阅端",
+        "slots": [
+          ["T1", ["INSERT", "UPDATE", "COMMIT"]],
+          ["T2", ["INSERT", "UPDATE"]],
+          ["T3", ["DELETE"]]
+        ],
+        "emit_txn": "T1",
+        "commit_op": "COMMIT",
+        "caption": "发出去的是提交顺序，不是物理顺序"
+      }
+    },
+    {
+      "id": "s06",
+      "renderer": "pyv.scenes.s06_outro",
+      "sentences": [9],
+      "params": {
+        "title": "一个事务一整组",
+        "subtitle": "CSN 是 openGauss 额外加的",
+        "badge": "独立开发者 · growdu"
+      }
+    }
+  ]
+}

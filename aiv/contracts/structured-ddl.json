@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "episode": "structured-ddl",
+  "title": "为什么 DDL 同步不能直接把 SQL 文本发过去",
+  "segments": [
+    {
+      "id": "s01",
+      "renderer": "pyv.scenes.s01_intro",
+      "sentences": [0],
+      "params": {
+        "title": "结构怎么跟着走",
+        "subtitle": "DDL 同步",
+        "tagline": "不能只发文本 · 要拆成结构 · 按语义执行"
+      }
+    },
+    {
+      "id": "s02",
+      "renderer": "pyv.scenes.s02_raw_sql",
+      "sentences": [1, 2],
+      "params": {
+        "title": "最直觉的做法：原样发一段 SQL",
+        "ddl_text": "ALTER TABLE t ADD COLUMN c int;",
+        "source_label": "发布端",
+        "wal_label": "写进 WAL，原样发过去",
+        "target_label": "订阅端",
+        "caption": "省事是省事，问题也全在这一段文本上"
+      }
+    },
+    {
+      "id": "s03",
+      "renderer": "pyv.scenes.s03_shortfalls",
+      "sentences": [3, 4],
+      "params": {
+        "title": "订阅端只拿到文本，判断不了",
+        "question_label": "这条命令到底做了什么？",
+        "shortfalls": [
+          ["过滤粒度", "难只复制一部分对象"],
+          ["名字映射", "schema 改名难对应"],
+          ["异构兼容", "跨版本更难"],
+          ["执行安全", "像远端执行任意命令"]
+        ],
+        "caption": "社区讨论里，列出来的是这四条短板"
+      }
+    },
+    {
+      "id": "s04",
+      "renderer": "pyv.scenes.s04_ddl_pipeline",
+      "sentences": [5, 6, 7],
+      "params": {
+        "title": "拆成结构化对象，分五步走",
+        "steps": [
+          ["捕获", "写进日志"],
+          ["结构化", "命令 + 对象"],
+          ["deparse", "补全 过滤"],
+          ["专用消息", "写逻辑日志"],
+          ["按语义 apply", "重建并执行"]
+        ],
+        "caption": "中间那一步 deparse，做的事最多"
+      }
+    },
+    {
+      "id": "s05",
+      "renderer": "pyv.scenes.s05_ddl_benefit",
+      "sentences": [8],
+      "params": {
+        "title": "按语义执行，才谈得上这些",
+        "source_label": "发布端",
+        "source_value": "users",
+        "mid_label": "按语义执行",
+        "target_label": "订阅端",
+        "target_value": "app_users",
+        "benefits": ["只复制发布的对象", "schema 改名能对应", "跨版本按目标规则翻译"],
+        "caption": "结构化之后，才有可能做这些"
+      }
+    },
+    {
+      "id": "s06",
+      "renderer": "pyv.scenes.s06_outro",
+      "sentences": [9],
+      "params": {
+        "title": "结构化 DDL · 社区讨论方向",
+        "subtitle": "还没有合入主线的版本",
+        "badge": "独立开发者 · growdu"
+      }
+    }
+  ]
+}

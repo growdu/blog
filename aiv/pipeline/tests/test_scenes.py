@@ -15,6 +15,21 @@ SCENE_MODULES = [
     "pyv.scenes.s03_counter",
     "pyv.scenes.s04_propagate",
     "pyv.scenes.s05_layers",
+    # EP03（WAL 顺序与事务顺序）新增的四个场景
+    "pyv.scenes.s02_wal_interleave",
+    "pyv.scenes.s03_reorder_buffer",
+    "pyv.scenes.s04_spill",
+    "pyv.scenes.s05_emit",
+    # EP04（订阅端并行 apply）新增的四个场景
+    "pyv.scenes.s02_apply_queue",
+    "pyv.scenes.s03_conflict_key",
+    "pyv.scenes.s04_dependency_dag",
+    "pyv.scenes.s05_scheduler",
+    # EP05（结构化 DDL）新增的四个场景
+    "pyv.scenes.s02_raw_sql",
+    "pyv.scenes.s03_shortfalls",
+    "pyv.scenes.s04_ddl_pipeline",
+    "pyv.scenes.s05_ddl_benefit",
 ]
 
 
@@ -247,3 +262,105 @@ def test_s02_and_s03_tell_the_same_story():
     assert [str(x) for x in counter["txn_ids"]] == [
         str(x) for x in mixed["commit_order"]
     ]
+
+
+# ------------------------------------------------------ EP03~EP05 的场景
+
+
+def _ep_params(contract_name: str, renderer: str) -> dict:
+    """某一期契约里某个场景的画面内容。"""
+    from pyv import contract as contract_mod
+
+    path = contract_mod.CONTRACTS_DIR / contract_name
+    for segment in contract_mod.load_contract(path).segments:
+        if segment.renderer == renderer:
+            return segment.params
+    raise AssertionError(f"{contract_name} 契约里没有 {renderer}")
+
+
+def test_ep03_two_scenes_tell_the_same_story():
+    """s02 画的交错与 s03 画的归并必须是同一组 WAL 记录。
+
+    两段画的是同一个举例：s02 里 T1 的记录被别的事务隔开，
+    s03 里就要按同一组记录落进三个槽。换了记录，观众会看到对不上的画面。
+    """
+    interleave = _ep_params("wal-interleave.json", "pyv.scenes.s02_wal_interleave")
+    buffer = _ep_params("wal-interleave.json", "pyv.scenes.s03_reorder_buffer")
+    assert buffer["records"] == interleave["records"]
+    assert buffer["txn_ids"] == interleave["txn_ids"]
+
+
+def test_ep03_every_transaction_ends_with_a_commit():
+    """s05 发出去的那一组，必须以提交记录收尾。
+
+    整组发出的触发条件就是「攒到该事务的提交记录出现」——
+    组里没有提交记录，这张图就在讲一件不存在的事。
+    """
+    import pyv.scenes.s05_emit as s05
+
+    params = _ep_params("wal-interleave.json", "pyv.scenes.s05_emit")
+    ops = s05.emit_slot(params)
+    assert ops, "契约里必须指定要发出去的那一组"
+    assert ops[-1] == params["commit_op"], "整组的最后一块必须是提交记录"
+
+
+def test_ep03_spill_keeps_some_changes_in_memory():
+    """落盘不能把内存清空——画面要看出「一部分落了盘，一部分还在内存」。"""
+    params = _ep_params("wal-interleave.json", "pyv.scenes.s04_spill")
+    assert 0 < int(params["spill_count"]) < len(params["chips"]), \
+        "既要画出搬走的，也要画出留在内存里的"
+
+
+def test_ep04_scheduler_respects_the_dependency_edges():
+    """分发顺序与提交顺序都必须满足依赖图。
+
+    s04 画了 T1 → T2 的依赖，s05 就不能先分发 T2 再分发 T1。
+    顺序错了的图比没有图更糟。
+    """
+    dag = _ep_params("parallel-apply.json", "pyv.scenes.s04_dependency_dag")
+    scheduler = _ep_params("parallel-apply.json", "pyv.scenes.s05_scheduler")
+    edges = [(str(row[0]), str(row[1])) for row in dag["edges"]]
+    dispatch = [str(row[0]) for row in scheduler["dispatch"]]
+    commit = [str(x) for x in scheduler["commit_order"]]
+
+    assert set(dispatch) == set(dag["nodes"]), "分发要覆盖图上的每个节点"
+    assert set(commit) == set(dag["nodes"]), "提交要覆盖图上的每个节点"
+
+    dispatch_pos = {txn: index for index, txn in enumerate(dispatch)}
+    commit_pos = {txn: index for index, txn in enumerate(commit)}
+    for src, dst in edges:
+        assert dispatch_pos[src] < dispatch_pos[dst], \
+            f"{src} 必须排在 {dst} 前面才能分发"
+        assert commit_pos[src] < commit_pos[dst], \
+            f"{src} 必须先提交，{dst} 才能提交"
+
+
+def test_ep04_conflict_key_has_all_three_parts():
+    """冲突判据是三要素：表、索引、键值。少一个就判不准。"""
+    params = _ep_params("parallel-apply.json", "pyv.scenes.s03_conflict_key")
+    assert len(params["key_parts"]) == len(params["key_values"]) == 3
+    assert params["hot_index"] >= 0
+
+
+def test_ep04_conflicting_transactions_share_the_same_row():
+    """画出来的两条事务必须真的改到同一行，否则「冲突」无从谈起。"""
+    dag = _ep_params("parallel-apply.json", "pyv.scenes.s04_dependency_dag")
+    conflict = _ep_params("parallel-apply.json", "pyv.scenes.s03_conflict_key")
+    notes = dict(zip((str(x) for x in dag["nodes"]),
+                     (str(x) for x in dag["node_notes"])))
+    assert notes[str(conflict["txn_a"])] == notes[str(conflict["txn_b"])], \
+        "被画成冲突的两条事务必须指向同一行"
+
+
+def test_ep05_pipeline_has_exactly_five_steps():
+    """结构化 DDL 的五步是社区讨论里的划分，一步都不能多、不能少。"""
+    params = _ep_params("structured-ddl.json", "pyv.scenes.s04_ddl_pipeline")
+    assert len(params["steps"]) == 5
+    for name, desc in params["steps"]:
+        assert name and desc, "每一步都要有名字和说明"
+
+
+def test_ep05_shortfalls_are_four():
+    """「4 条做不到的事」是口播里的数字，画面上就得是四张卡片。"""
+    params = _ep_params("structured-ddl.json", "pyv.scenes.s03_shortfalls")
+    assert len(params["shortfalls"]) == 4
