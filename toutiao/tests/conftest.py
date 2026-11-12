@@ -1,3 +1,4 @@
+import subprocess
 import sys
 from pathlib import Path
 
@@ -14,21 +15,49 @@ CAPABILITIES = REPO_ROOT / "publish" / "capabilities"
 #: they are not told otherwise.  ``publish/outbox/`` holds tracked
 #: snapshots; ``toutiao/out/`` holds the Phase 0 packages the pilot work
 #: depends on.  A test that forgets one of the options writes here.
-WRITABLE_IN_THE_REPOSITORY = (
-    REPO_ROOT / "publish" / "outbox",
-    REPO_ROOT / "toutiao" / "out",
-)
+OUTBOX_DIR = REPO_ROOT / "publish" / "outbox"
+PACKAGES_DIR = REPO_ROOT / "toutiao" / "out"
+WRITABLE_IN_THE_REPOSITORY = (OUTBOX_DIR, PACKAGES_DIR)
+
+
+def _tracked_files(directory: Path):
+    """The names of the files in ``directory`` that git tracks.
+
+    ``None`` when git cannot answer -- the check is then skipped rather
+    than failed, because "git is missing" is not "the repository is dirty".
+    """
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "--", str(directory.relative_to(REPO_ROOT))],
+            cwd=str(REPO_ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            text=True,
+            check=False,
+        )
+    except OSError:
+        return None
+    if result.returncode != 0:
+        return None
+    return {Path(line).name for line in result.stdout.splitlines() if line.strip()}
 
 
 @pytest.fixture(scope="session", autouse=True)
 def the_repository_is_never_written_to():
     """No test may leave anything behind in the repository.
 
-    The comparison is against the snapshot taken at the **start of the
-    session**, not "before and after this test": the second kind cannot
-    see what the previous test left behind, so a test that wrote into
-    ``publish/outbox/`` was followed by a test that compared the
-    repository against itself and reported everything was fine.
+    Two different checks, because they catch different things:
+
+    - the **outbox** may only hold files git tracks.  A snapshot that a
+      test wrote is untracked, and an untracked file there survives the
+      session -- so the next run's "before" snapshot already contains it
+      and a session-scoped comparison would never see it.  Asking git is
+      the only way to notice a leftover from an earlier run.
+    - the **packages directory** is compared against the snapshot taken at
+      the **start of the session**, not "before and after this test": the
+      second kind cannot see what the previous test left behind.  That is
+      how a test wrote a package into ``publish/outbox/`` and the old
+      per-test comparison still reported everything was fine.
     """
     def snapshot():
         seen = {}
@@ -41,6 +70,7 @@ def the_repository_is_never_written_to():
 
     before = snapshot()
     yield
+
     after = snapshot()
     for directory, names in after.items():
         added = names - before[directory]
@@ -48,6 +78,14 @@ def the_repository_is_never_written_to():
             "有测试往仓库的 {} 里写了东西：{}".format(
                 directory.relative_to(REPO_ROOT), "、".join(sorted(added))
             )
+        )
+
+    tracked = _tracked_files(OUTBOX_DIR)
+    if tracked is not None:
+        untracked = sorted(after[OUTBOX_DIR] - tracked)
+        assert not untracked, (
+            "publish/outbox/ 里有没被 git 跟踪的文件：{} —— "
+            "它们是某次测试留下的，删掉它们".format("、".join(untracked))
         )
 
 
