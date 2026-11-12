@@ -15,10 +15,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote
 
+from .digest import DIGEST_LIMIT, make_digest
 from .titles import TITLE_LIMIT
 
 BODY_LIMIT = 20000
-DIGEST_LIMIT = 120
 AUTHOR_LIMIT = 16
 
 # WeChat caps the article body at 20000 characters of the ``content``
@@ -32,18 +32,6 @@ CONTENT_LIMIT = 20000
 CONTENT_BYTES_LIMIT = 1024 * 1024
 
 _FM_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
-_FENCE_RE = re.compile(r"^\s*(```|~~~)")
-_HEADING_RE = re.compile(r"^#{1,6}\s")
-_TABLE_RE = re.compile(r"^\s*\|")
-_LIST_RE = re.compile(r"^\s*([-*+]|\d+\.)\s")
-_QUOTE_RE = re.compile(r"^\s*>")
-_HR_RE = re.compile(r"^\s*(-{3,}|\*{3,}|_{3,})\s*$")
-_INLINE_CODE_RE = re.compile(r"`([^`]+)`")
-_BOLD_RE = re.compile(r"\*\*([^*]+)\*\*")
-_ITALIC_RE = re.compile(r"(?<!\*)\*([^*\n]+)\*(?!\*)")
-_LINK_RE = re.compile(r"\[([^\]]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
-_IMAGE_RE = re.compile(r"!\[([^\]]*)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
-_SENTENCE_MARKS = ("。", "！", "？", ". ", "! ", "? ")
 
 
 @dataclass(frozen=True)
@@ -127,64 +115,6 @@ def parse_front_matter(text: str):
     close_list()
 
     return fields, text[match.end():]
-
-
-def _strip_inline(text: str) -> str:
-    text = _IMAGE_RE.sub(lambda m: m.group(1), text)
-    text = _LINK_RE.sub(lambda m: m.group(1), text)
-    text = _INLINE_CODE_RE.sub(lambda m: m.group(1), text)
-    text = _BOLD_RE.sub(lambda m: m.group(1), text)
-    text = _ITALIC_RE.sub(lambda m: m.group(1), text)
-    return text.strip()
-
-
-def make_digest(body: str, limit: int = DIGEST_LIMIT) -> str:
-    """Build a WeChat digest (<= limit chars) from the first real paragraph.
-
-    Headings, code fences, tables, lists, quotes and images are skipped:
-    none of them reads as a standalone summary.
-    """
-    in_fence = False
-    paragraph = []
-
-    for raw in body.split("\n"):
-        line = raw.rstrip()
-        if _FENCE_RE.match(line):
-            in_fence = not in_fence
-            continue
-        if in_fence:
-            continue
-        if not line.strip():
-            if paragraph:
-                break
-            continue
-        if (_HEADING_RE.match(line) or _TABLE_RE.match(line) or _LIST_RE.match(line)
-                or _QUOTE_RE.match(line) or _HR_RE.match(line)):
-            continue
-        paragraph.append(line.strip())
-
-    if not paragraph:
-        return ""
-
-    text = re.sub(r"\s+", " ", _strip_inline(" ".join(paragraph))).strip()
-    if len(text) <= limit:
-        return text
-
-    clipped = text[:limit]
-    # The limit is a maximum, not a target: a digest that ends on a
-    # sentence boundary is always better than one cut mid-sentence, even
-    # when that leaves it noticeably shorter than the limit.
-    best = -1
-    for mark in _SENTENCE_MARKS:
-        index = clipped.rfind(mark)
-        if index > best:
-            best = index
-    if best >= 0:
-        for mark in _SENTENCE_MARKS:
-            index = clipped.rfind(mark)
-            if index == best:
-                return clipped[:index + len(mark)].strip()
-    return clipped.strip()
 
 
 def build_permalink(slug: str, date: str) -> str:

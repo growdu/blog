@@ -204,8 +204,14 @@ def test_the_split_keeps_every_block():
 
 
 def test_the_digest_is_the_first_paragraph():
+    blocks = parse("## 标题\n\n第一段说明讲的是缓冲池的替换策略，以及时钟轮转的触发条件与代价。\n\n第二段。")
+    assert part_digest(blocks) == "第一段说明讲的是缓冲池的替换策略，以及时钟轮转的触发条件与代价。"
+
+
+def test_a_short_digest_is_completed_by_the_next_paragraph():
+    """Six characters tell the reader nothing about the article."""
     blocks = parse("## 标题\n\n第一段说明。\n\n第二段。")
-    assert part_digest(blocks) == "第一段说明。"
+    assert part_digest(blocks) == "第一段说明。 第二段。"
 
 
 def test_the_digest_skips_a_part_that_starts_with_a_heading():

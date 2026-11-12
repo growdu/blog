@@ -12,9 +12,9 @@ article split into instalments rather than as unrelated posts.
 
 from __future__ import annotations
 
+from .digest import part_digest
 from .mdparse import (Bold, CodeBlock, Heading, Image, InlineCode, Italic, Link,
                       ListBlock, Paragraph, Quote, Table, Text)
-from .posts import make_digest
 from .render import links_html, links_items_html
 
 __all__ = [
@@ -75,24 +75,6 @@ def _inline_text(nodes) -> str:
         elif isinstance(node, (Bold, Italic, Link)):
             out.append(_inline_text(node.children))
     return "".join(out)
-
-
-def part_digest(blocks: list, limit: int = 120) -> str:
-    """The digest of one part: its first paragraph, clipped.
-
-    A part that starts in the middle of an article has to describe
-    itself -- the whole-article digest would put the same text on
-    every part, and the draft box would show a row of identical
-    summaries.
-    """
-    for block in blocks:
-        if not isinstance(block, Paragraph):
-            continue
-        text = _inline_text(block.children).strip()
-        if not text:
-            continue
-        return make_digest(text, limit=limit)
-    return ""
 
 
 _TRANSITION_STYLE = ("margin:0 0 16px;padding:10px 14px;"
