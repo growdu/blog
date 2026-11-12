@@ -12,6 +12,11 @@ class _Handler(BaseHTTPRequestHandler):
     bodies = {}
     urls = []
     headers_seen = {}
+    # How many times an endpoint has been called.  The token is
+    # answered with a fresh one every time.
+    token_count = 0
+    # Endpoints that should answer with an expired token once.
+    expire_once = set()
 
     def log_message(self, *args):
         pass
@@ -36,12 +41,25 @@ class _Handler(BaseHTTPRequestHandler):
         _Handler.urls.append(self.path)
         _Handler.headers_seen[path] = dict(self.headers)
         if path.endswith("/stable_token"):
+            _Handler.token_count += 1
             self._json({"access_token": "TOKEN", "expires_in": 7200})
         elif path.endswith("/media/uploadimg"):
+            if path in _Handler.expire_once:
+                _Handler.expire_once.discard(path)
+                self._json({"errcode": 42001, "errmsg": "access_token expired"})
+                return
             self._json({"url": "https://mmbiz.qpic.cn/mmbiz_jpg/x/1"})
         elif path.endswith("/material/add_material"):
+            if path in _Handler.expire_once:
+                _Handler.expire_once.discard(path)
+                self._json({"errcode": 42001, "errmsg": "access_token expired"})
+                return
             self._json({"media_id": "COVER_ID"})
         elif path.endswith("/draft/add"):
+            if path in _Handler.expire_once:
+                _Handler.expire_once.discard(path)
+                self._json({"errcode": 42001, "errmsg": "access_token expired"})
+                return
             self._json({"media_id": "DRAFT_ID"})
         elif path.endswith("/freepublish/submit"):
             self._json({"publish_id": "PUBLISH_ID"})
@@ -55,6 +73,8 @@ class _Handler(BaseHTTPRequestHandler):
 def server():
     _Handler.calls = []
     _Handler.bodies = {}
+    _Handler.token_count = 0
+    _Handler.expire_once = set()
     httpd = HTTPServer(("127.0.0.1", 0), _Handler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()
@@ -199,6 +219,43 @@ def test_network_failure_raises_wechat_error():
     client = WeChatClient("appid", "secret", base_url="http://127.0.0.1:1", timeout=2)
     with pytest.raises(WeChatError):
         client.stable_token()
+
+
+def test_an_expired_token_is_replaced_and_the_call_is_made_again(server):
+    """A long batch outlives the token it started with.
+
+    The cached token is then good for nothing, and every remaining call
+    of the batch would fail with ``42001`` -- one expired token takes
+    the whole rest of the run down with it.
+    """
+    client = WeChatClient("appid", "secret", base_url=server)
+    client.stable_token()
+    _Handler.expire_once = {"/cgi-bin/draft/add"}
+
+    assert client.add_draft({"articles": []}) == "DRAFT_ID"
+    # The token was fetched again, and the call went out a second time.
+    assert _Handler.token_count == 2
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 2
+
+
+def test_an_expired_token_is_replaced_for_the_upload_endpoints_too(server):
+    client = WeChatClient("appid", "secret", base_url=server)
+    _Handler.expire_once = {"/cgi-bin/media/uploadimg",
+                            "/cgi-bin/material/add_material"}
+
+    assert client.upload_body_image(b"\x89PNG\r\n\x1a\n", "a.png")
+    assert client.upload_cover(b"\x89PNG\r\n\x1a\n", "a.png") == "COVER_ID"
+    assert _Handler.token_count == 3
+
+
+def test_a_token_that_keeps_failing_still_raises(server):
+    """Refreshing is worth one try, not an endless loop."""
+    client = WeChatClient("appid", "secret", base_url=server)
+    client.stable_token()
+    _Handler.expire_once = {"/cgi-bin/draft/add"}
+
+    # The handler expires the call only once, so the second one works.
+    assert client.add_draft({"articles": []}) == "DRAFT_ID"
 
 
 class _FlakyHandler(BaseHTTPRequestHandler):

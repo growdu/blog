@@ -53,6 +53,11 @@ class WeChatError(RuntimeError):
 # endpoint.
 WAF_BLOCKED = -2
 
+# The access token runs out while a long batch is still going.  The
+# cached one is then good for nothing, and every call after that fails
+# with one of these two codes.
+TOKEN_EXPIRED = (40001, 42001)
+
 
 class WeChatClient:
     """Thin, explicit wrapper over the endpoints the pipeline needs."""
@@ -114,9 +119,28 @@ class WeChatClient:
             headers["Authorization"] = "Bearer {}".format(token)
         response = self._request(path, data=body, headers=headers, token=token)
         errcode = response.get("errcode", 0)
+        if errcode in TOKEN_EXPIRED and token:
+            response = self._retry_with_a_new_token(
+                path, body, headers, token)
+            errcode = response.get("errcode", 0)
         if errcode:
             raise WeChatError(errcode, response.get("errmsg", ""), path)
         return response
+
+    def _retry_with_a_new_token(self, path: str, body: bytes, headers: dict,
+                                 token: str, *, params=None) -> dict:
+        """Fetch a fresh token and send the call once more.
+
+        A long batch outlives the access token it started with.  The
+        cached token is then good for nothing, and without this every
+        remaining call of the batch fails with ``42001`` -- one expired
+        token takes the rest of the run down with it.
+        """
+        self._token = None
+        fresh = self.stable_token()
+        headers["Authorization"] = "Bearer {}".format(fresh)
+        return self._request(path, data=body, headers=headers, params=params,
+                              token=fresh)
 
     def _post_multipart(self, path: str, filename: str, data: bytes, *, params=None):
         boundary = "----mavisweixin{}".format(uuid.uuid4().hex)
@@ -136,6 +160,10 @@ class WeChatClient:
         }
         response = self._request(path, data=body, headers=headers, params=params, token=token)
         errcode = response.get("errcode", 0)
+        if errcode in TOKEN_EXPIRED:
+            response = self._retry_with_a_new_token(
+                path, body, headers, token, params=params)
+            errcode = response.get("errcode", 0)
         if errcode:
             raise WeChatError(errcode, response.get("errmsg", ""), path)
         return response
