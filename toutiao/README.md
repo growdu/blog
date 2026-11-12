@@ -14,8 +14,9 @@
   （2026-11-12 实测：后台**连「开放平台」入口都不渲染**，不是灰掉是菜单里没有；
   排查清单见 [docs/02-试点记录.md](docs/02-试点记录.md) §R1）
 - **自动化能到的最远一步（当前）**：产出发布包 + 通知，等人工上传
-- **实现状态**：**待实现**。本目录目前只有契约与骨架，代码由头条号执行者按
-  [docs/00-设计.md](docs/00-设计.md) 写
+- **实现状态**：切片、渲染、出包、幂等状态、通知、命令行**都已实现**
+  （[docs/11-实施计划.md](docs/11-实施计划.md) 的 Task 1~10），321 条测试通过。
+  逐条任务见 [docs/00-设计.md](docs/00-设计.md)
 
 ## 为什么是「裁」而不是「搬」
 
@@ -74,24 +75,34 @@ toutiao/
 └── secrets.example.json  # 凭据模板（入库）
 ```
 
-## 命令（待实现）
+## 命令
 
 ```bash
 # 盘点：哪些文章能发到头条号，为什么
-cd toutiao && python3 -m toutiao.cli scan
+cd "$(git rev-parse --show-toplevel)"/toutiao && python3 -m toutiao.cli scan
 
 # 切片 + 出包（不调接口）
-cd toutiao && python3 -m toutiao.cli convert <slug>
+cd "$(git rev-parse --show-toplevel)"/toutiao && python3 -m toutiao.cli convert <slug>
 
-# 出包 + 上传（API 权限开通后才是真正的「发布」）
-cd toutiao && python3 -m toutiao.cli publish <slug>
+# 出包 + 通知（API 权限开通后才是真正的「发布」）
+cd "$(git rev-parse --show-toplevel)"/toutiao && python3 -m toutiao.cli publish <slug>
 
 # 查看状态
-cd toutiao && python3 -m toutiao.cli status
+cd "$(git rev-parse --show-toplevel)"/toutiao && python3 -m toutiao.cli status
 ```
+
+退出码：`0` 成功 / `1` 参数或配置错误 / `2` 该篇不合格 / `3` 接口或写盘错误。
 
 `<slug>` 是文章相对 `source/_posts/` 的路径去掉 `.md`，
 例如 `db/postgresql/postgresql-logical-replication-add-guc`。
+
+每个命令都能把工作目录指到别处，测试与试用不会写进仓库：
+`--posts-dir` / `--out-dir` / `--outbox-dir` / `--state-file` /
+`--capability`。选项写在命令名前后都行。
+
+**两件事它不会悄悄做**：状态文件损坏会打到 stderr 并让退出码变成 `3`
+（空状态读起来就是「什么都没发过」= 再发一遍的起点）；一篇文章切不出来
+会退出 `2` 并说明原因，不会「成功地什么都没做」。
 
 ## 依赖
 
