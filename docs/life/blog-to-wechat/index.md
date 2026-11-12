@@ -604,22 +604,30 @@ jobs:
 ```json
 {
   "version": 1,
-  "video": { "width": 1920, "height": 1080, "fps": 24, "duration": 29.599 },
-  "audio": { "narration": "pa_decode_v2.mp3", "bgm": null },
+  "video": { "width": 1920, "height": 1080, "fps": 24, "duration": 38.102 },
+  "audio": { "narration": "narration_pg-parallel-decode.mp3", "bgm": null },
   "subtitle_style": { "primary": "#1B2A47", "outline": "#FFFFFF", "position": "bottom-center" },
   "scenes": [
     {
       "id": "s01",
-      "start": 0.0,
-      "end": 5.733,
+      "start": 2.833,
+      "end": 8.654,
       "type": "code",
-      "subtitle": "关注数据库内核的独立开发者\nPostgreSQL 18 并行逻辑解码",
+      "subtitle": "关注数据库内核的独立开发者\nopenGauss 并行逻辑解码",
       "renderer": "pyv.scenes.s01_intro",
-      "params": { "sentences": [0, 1] }
+      "params": {
+        "title": "openGauss",
+        "subtitle": "并行逻辑解码",
+        "tagline": "reader 读 WAL · worker 池并行 · walsender 收口"
+      },
+      "sentences": [0, 1]
     }
   ]
 }
 ```
+
+> 这份节选取自 EP01 当前真实的时间轴文件（2026-11-12）。
+> 早先这里引的是一份更早的样例，旁白文件名与时长都过期了。
 
 **这套契约有一个非常值钱的特点：它是「声明式」的。** 视频长什么样，完全由 `storyboard.json` 决定，渲染引擎只是执行器。
 
