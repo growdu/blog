@@ -26,7 +26,8 @@ def _write_corpus(tmp_path):
         encoding="utf-8")
 
     (posts_dir / "long-title.md").write_text(
-        _post("超长标题" * 9, "正文。\n"), encoding="utf-8")
+        _post("这是一个很长的主标题用来测试裁剪逻辑：" + "副标题" * 15, "正文。\n"),
+        encoding="utf-8")
 
     # Prose that quotes HTML: the ``class=`` is escaped text, not an attribute.
     (posts_dir / "quoted-html.md").write_text(
@@ -106,16 +107,17 @@ def test_audit_corpus_measures_every_gate(tmp_path):
     assert report.posts == 4
     assert report.categories == 1
 
-    # Only the short title fits the 32 character limit.
-    assert report.title_ok == 3
-    assert report.title_over == 1
+    # The title is no longer a gate: it is shortened at a boundary that
+    # keeps the topic, so every post is let through.
+    assert report.title_ok == 4
+    assert report.title_shortened == 1
 
     # The 20000 word body is over the raw limit.
-    assert report.raw_ok == 2
+    assert report.raw_ok == 3
     assert report.raw_over == 1
 
-    # The cascade: 4 -> 3 -> 2 -> 2.
-    assert report.render_ok == 2
+    # The cascade: 4 -> 3 -> 3.
+    assert report.render_ok == 3
     assert report.render_over == 0
 
     # Corpus wide: the raw body of the long post is the only one over.
@@ -128,10 +130,10 @@ def test_audit_corpus_measures_every_gate(tmp_path):
     # cut into parts that fit.  The long post here is a single
     # paragraph of 20000 lines: there is nowhere left to cut it, so it
     # is the one article that cannot be published.
-    assert report.publishable == 2
+    assert report.publishable == 3
     assert report.unsplittable == 1
     assert report.split_posts == 0
-    assert report.split_parts == 2
+    assert report.split_parts == 3
 
 
 def test_audit_counts_an_article_that_is_split(tmp_path):
@@ -198,6 +200,6 @@ def test_cli_audit_prints_the_funnel(tmp_path):
 
     assert result.returncode == 0, result.stderr
     assert "语料: 4 篇" in result.stdout
-    assert "可发布: 2 篇" in result.stdout
+    assert "可发布: 3 篇" in result.stdout
     assert "其中拆不开（单块就超限）: 1 篇" in result.stdout
     assert "HTML 合规: 4 篇全部通过" in result.stdout

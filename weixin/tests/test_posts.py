@@ -8,6 +8,7 @@ from wechat.posts import (
     make_digest,
     parse_front_matter,
 )
+from wechat.titles import effective_title
 
 FM = """---
 title: "在 PostgreSQL 18 逻辑复制中新增 GUC 参数"
@@ -152,19 +153,32 @@ def test_check_eligibility_accepts_an_overlong_body(tmp_path):
     assert result.reasons == ()
 
 
-def test_check_eligibility_rejects_overlong_title(tmp_path):
+def test_check_eligibility_keeps_a_long_title(tmp_path):
+    """A long title is shortened, not a reason to skip the article.
+
+    WeChat takes 85 characters; anything longer is cut at a boundary
+    that keeps the topic, so no title keeps an article out of the
+    draft box.
+    """
     long_title = "标" * (TITLE_LIMIT + 5)
     posts_dir, target = _write(
         tmp_path, "database/titled.md", FM.replace(FM.split('"')[1], long_title))
     post = load_post(target, posts_dir)
     result = check_eligibility(post)
-    assert result.ok is False
-    assert any("标题" in reason for reason in result.reasons)
+    assert result.ok is True
+    assert result.reasons == ()
+    assert len(effective_title(post.title)) <= TITLE_LIMIT
 
 
 def test_check_eligibility_title_boundary(tmp_path):
-    """The official limit is 32 characters, not 64."""
-    assert TITLE_LIMIT == 32
+    """The limit is 64 characters -- the editor's.
+
+    The ``draft/add`` API takes 85, but the editor behind it lets a
+    person type 64, and publishing is a human step.  An earlier
+    reading of the documentation said 32, and the corpus proved it
+    wrong.
+    """
+    assert TITLE_LIMIT == 64
     exact = "标" * TITLE_LIMIT
     posts_dir, target = _write(
         tmp_path, "database/exact.md", FM.replace(FM.split('"')[1], exact))
@@ -175,7 +189,7 @@ def test_check_eligibility_title_boundary(tmp_path):
     posts_dir, target = _write(
         tmp_path, "database/over.md", FM.replace(FM.split('"')[1], over))
     post = load_post(target, posts_dir)
-    assert check_eligibility(post).ok is False
+    assert check_eligibility(post).ok is True
 
 
 def test_check_eligibility_body_limit_boundary(tmp_path):

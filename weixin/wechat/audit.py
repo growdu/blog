@@ -26,9 +26,10 @@ from pathlib import Path
 
 from .collection import render_category_tag
 from .mdparse import parse
-from .posts import BODY_LIMIT, CONTENT_LIMIT, TITLE_LIMIT, discover
+from .posts import BODY_LIMIT, CONTENT_LIMIT, discover
 from .render import links_html, links_items_html, render
 from .split import framing_reserve, plan_parts
+from .titles import TITLE_LIMIT, effective_title
 
 __all__ = [
     "Audit",
@@ -67,6 +68,8 @@ class Audit:
     # Cascade: how many posts each gate lets through, and how many it stops.
     title_ok: int
     title_over: int
+    # Titles that have to be shortened before they reach WeChat.
+    title_shortened: int
     raw_ok: int
     raw_over: int
     render_ok: int
@@ -183,7 +186,12 @@ def audit_corpus(posts_dir: Path) -> Audit:
     """
     posts = discover(Path(posts_dir))
     if not posts:
-        return Audit(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0, 0)
+        return Audit(posts=0, categories=0, title_ok=0, title_over=0,
+                     title_shortened=0, raw_ok=0, raw_over=0, render_ok=0,
+                     render_over=0, raw_within=0, fit_highlight=0, fit_plain=0,
+                     fit_either=0, publishable=0, needs_plain_only=0,
+                     median_highlight=0.0, median_plain=0.0, split_posts=0,
+                     split_parts=0, unsplittable=0)
 
     raw_lengths = [len(re.sub(r"\s", "", post.body)) for post in posts]
     highlighted = []
@@ -196,15 +204,18 @@ def audit_corpus(posts_dir: Path) -> Audit:
         plain.append(render(blocks, highlight=False).content_length)
         rendered.append((post.slug, with_highlight.html))
 
-    # Cascade: each gate counts only the posts the previous one let through.
+    # The title is no longer a gate: it is shortened at a boundary that
+    # keeps the topic, so every title fits.  What the numbers below
+    # report is how many titles have to be shortened, and by how much.
     after_title = []
     after_raw = []
     after_render = []
     needs_plain_only = 0
+    shortened = 0
     for index, post in enumerate(posts):
-        if len(post.title) > TITLE_LIMIT:
-            continue
         after_title.append(index)
+        if len(effective_title(post.title)) < len(post.title):
+            shortened += 1
         if len(re.sub(r"\s", "", post.body)) > BODY_LIMIT:
             continue
         after_raw.append(index)
@@ -220,13 +231,12 @@ def audit_corpus(posts_dir: Path) -> Audit:
     split_parts = 0
     unsplittable = 0
     for post in posts:
-        if len(post.title) > TITLE_LIMIT:
-            continue
         blocks = parse(post.body)
+        title = effective_title(post.title)
         # The same reserve the pipeline uses: every part pays once for
         # its transition lines, its category tag and its reference-links
         # wrapper, and that room has to be kept back from the body.
-        reserve = framing_reserve(post.title, render_category_tag(post.categories))
+        reserve = framing_reserve(title, render_category_tag(post.categories))
         budget = CONTENT_LIMIT - reserve
         parts = plan_parts(
             blocks, CONTENT_LIMIT,
@@ -257,6 +267,7 @@ def audit_corpus(posts_dir: Path) -> Audit:
         categories=len(categories),
         title_ok=len(after_title),
         title_over=len(posts) - len(after_title),
+        title_shortened=shortened,
         raw_ok=len(after_raw),
         raw_over=len(after_title) - len(after_raw),
         render_ok=len(after_render),

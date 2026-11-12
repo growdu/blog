@@ -1,3 +1,4 @@
+import hashlib
 import io
 import json
 import subprocess
@@ -10,7 +11,7 @@ from PIL import Image
 
 from wechat import notify as notify_module
 from wechat import split as split_module
-from wechat.cli import _docs_changed, _render_parts, main
+from wechat.cli import (_docs_changed, _fingerprint, _render_parts, main)
 from wechat.posts import CONTENT_LIMIT, load_post
 
 SAMPLE = """---
@@ -185,16 +186,68 @@ def test_convert_reports_missing_post(sample_post, tmp_path, capsys):
     assert code == 1
 
 
-def test_convert_rejects_ineligible_post(tmp_path, capsys):
+def test_convert_shortens_a_long_title_instead_of_refusing(tmp_path, capsys):
+    """A title that is too long is cut, not a reason to skip.
+
+    The title is the one thing a reader sees first, so it is cut at a
+    boundary that keeps the topic: the part before the colon.
+    """
     posts_dir = tmp_path / "source" / "_posts"
     target = posts_dir / "database" / "bad.md"
     target.parent.mkdir(parents=True)
+    title = "一个很长很长的主标题部分：{}".format("副标题内容" * 10)
     target.write_text(
-        "---\ntitle: \"{}\"\ndate: 2026-11-09 15:00:00\n---\n\n正文。\n".format("标" * 70),
+        "---\ntitle: \"{}\"\ndate: 2026-11-09 15:00:00\n---\n\n正文。\n".format(title),
         encoding="utf-8")
     code = main(["convert", "database/bad"] + _args(posts_dir, tmp_path / "out"))
-    assert code == 2
-    assert "标题" in capsys.readouterr().err
+    assert code == 0
+    out = capsys.readouterr().out
+    assert "一个很长很长的主标题部分" in out
+
+
+def _legacy_fingerprint(post, tag_html):
+    """The fingerprint as it was before the title was shortened.
+
+    The 463 drafts that were already in the box carry this hash, so a
+    draft that has not changed must keep it -- otherwise every one of
+    them would have to be sent again for nothing.
+    """
+    digest = hashlib.sha256()
+    digest.update(post.fingerprint.encode("utf-8"))
+    digest.update(b"\x00")
+    digest.update(post.title.encode("utf-8"))
+    digest.update(b"\x00")
+    digest.update(tag_html.encode("utf-8"))
+    return digest.hexdigest()
+
+
+def _post_with_title(tmp_path, title):
+    posts_dir = tmp_path / "source" / "_posts"
+    target = posts_dir / "database" / "demo.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        "---\ntitle: \"{}\"\ndate: 2026-11-09 15:00:00\n---\n\n正文。\n".format(title),
+        encoding="utf-8")
+    return load_post(target, posts_dir)
+
+
+def test_the_fingerprint_of_an_untouched_article_does_not_move(tmp_path):
+    """Shortening must not invalidate the drafts that are already there.
+
+    Every draft in the box costs one upload and one ``draft/add`` to
+    send.  If the fingerprint of an article whose title did not change
+    moves, all of them are sent again for no reason.
+    """
+    post = _post_with_title(tmp_path, "一个短标题")
+    tag = "<p>分类</p>"
+    assert _fingerprint(post, tag) == _legacy_fingerprint(post, tag)
+
+
+def test_the_fingerprint_moves_when_the_title_is_shortened(tmp_path):
+    """A title that was cut has to reach the drafts that carry it."""
+    post = _post_with_title(tmp_path, "主标题在这里：{}".format("副标题" * 20))
+    tag = "<p>分类</p>"
+    assert _fingerprint(post, tag) != _legacy_fingerprint(post, tag)
 
 
 def test_publish_creates_draft_with_expected_payload(sample_post, tmp_path, server, monkeypatch):

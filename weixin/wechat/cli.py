@@ -30,15 +30,17 @@ from pathlib import Path
 from . import assets as assets_module
 from . import audit as audit_module
 from . import collection as collection_module
+from . import cover as cover_module
 from . import mermaid as mermaid_module
 from . import notify as notify_module
 from . import publish as publish_module
 from . import render as render_module
 from . import split as split_module
+from . import titles as titles_module
 from . import version as version_module
 from .mdparse import parse
 from .posts import (AUTHOR_LIMIT, BODY_LIMIT, CONTENT_BYTES_LIMIT, CONTENT_LIMIT,
-                    TITLE_LIMIT, check_eligibility, discover, load_post)
+                    DIGEST_LIMIT, TITLE_LIMIT, check_eligibility, discover, load_post)
 from .state import PublishState, StateStore, needs_submit
 
 DEFAULT_POSTS_DIR = Path(__file__).resolve().parents[2] / "source" / "_posts"
@@ -109,6 +111,17 @@ def _prepare(post, args, resolver=None, highlight: bool = True):
     return result
 
 
+def _effective_title(post) -> str:
+    """The title the draft will carry.
+
+    The editor takes 64 characters; a split article's parts are titled
+    「标题（一）」, so the title they share leaves room for the suffix.
+    A title that is too long is cut at a boundary that keeps the topic
+    -- see ``wechat/titles``.
+    """
+    return titles_module.effective_title(post.title)
+
+
 def _fingerprint(post, tag_html: str) -> str:
     """Content hash covering everything that ends up in the published body.
 
@@ -119,12 +132,20 @@ def _fingerprint(post, tag_html: str) -> str:
 
     The title counts too -- a split article is published under
     「标题（一）」, so renaming the article has to reach the drafts.
+    The shortened title counts as well, but **only when it differs
+    from the original**: adding it unconditionally would change the
+    hash of every article, and the 463 drafts already in the box would
+    all have to be re-sent for no change in their content.
     """
     digest = hashlib.sha256()
     digest.update(post.fingerprint.encode("utf-8"))
     digest.update(b"\x00")
     digest.update(post.title.encode("utf-8"))
     digest.update(b"\x00")
+    effective = _effective_title(post)
+    if effective != post.title:
+        digest.update(effective.encode("utf-8"))
+        digest.update(b"\x00")
     digest.update(tag_html.encode("utf-8"))
     return digest.hexdigest()
 
@@ -168,8 +189,8 @@ def cmd_audit(args) -> int:
     print("语料: {} 篇, {} 个分类".format(report.posts, report.categories))
     print()
     print("闸门（逐层收紧，每层只数上一层放行的文章）:")
-    print("  标题 <= {} 字符         放行 {:>4}  拦下 {:>4}".format(
-        TITLE_LIMIT, report.title_ok, report.title_over))
+    print("  标题 <= {} 字符         放行 {:>4}  需要裁剪 {:>4}   ← 超长不再拦下，改裁剪".format(
+        TITLE_LIMIT, report.title_ok, report.title_shortened))
     print("  原始正文 <= {} 字       放行 {:>4}  超长 {:>4}   ← 超长不再拦下，改拆分".format(
         BODY_LIMIT, report.raw_ok, report.raw_over))
     print("  渲染后 <= {} 字符       单篇放得下 {:>4}  需要拆 {:>4}".format(
@@ -232,7 +253,12 @@ def cmd_convert(args) -> int:
     failures = [asset for asset in assets.values() if asset.png is None]
 
     print("已转换: {}".format(post.slug))
-    print("  标题: {} ({} 字符)".format(post.title, len(post.title)))
+    title = _effective_title(post)
+    if title != post.title:
+        print("  标题: {} ({} 字符，裁剪自「{}」)".format(
+            title, len(title), post.title))
+    else:
+        print("  标题: {} ({} 字符)".format(title, len(title)))
     print("  摘要: {}".format(post.digest))
     print("  阅读原文: {}{}".format(args.source_url.rstrip("/"), post.permalink))
     print("  HTML: {}".format(
@@ -324,7 +350,7 @@ def _fetch_external_images(client, result):
     return urls, failures, first_prepared
 
 
-def _upload_cover(client, result, args, external_prepared=None):
+def _upload_cover(client, result, args, external_prepared=None, card=None):
     """Upload the cover image and return ``(media_id, crop_percent_list)``.
 
     WeChat requires a cover, so there is always an answer:
@@ -333,12 +359,18 @@ def _upload_cover(client, result, args, external_prepared=None):
     2. the article's first **local** picture
     3. the article's first **external** picture, already re-hosted on
        WeChat -- it was fetched anyway, so it is free to reuse
-    4. the default cover that ships with this tool
+    4. a card drawn for this part -- its topic on a background of its
+       own colour
+    5. the default cover that ships with this tool
 
-    The last two matter more than they look: 380 of the 444 eligible
-    articles have no picture at all, and 39 more have only external
-    ones.  Without a fallback those 419 articles could never become a
+    The last two matter more than they look: 549 of the 765 parts in
+    the box have no picture at all, and 39 more have only external
+    ones.  Without a fallback those articles could never become a
     draft, and a draft with no cover is not something WeChat accepts.
+
+    The card is drawn only when it is going to be used -- an article
+    with a picture of its own keeps that picture -- and a machine that
+    cannot draw one falls through to the cover that ships here.
     """
     if args.cover:
         resolved = _resolve_asset(args.cover, args.posts_dir)
@@ -353,9 +385,32 @@ def _upload_cover(client, result, args, external_prepared=None):
     elif external_prepared is not None:
         prepared = external_prepared
     else:
-        prepared = assets_module.prepare_image(DEFAULT_COVER)
+        prepared = assets_module.prepare_image(card or DEFAULT_COVER)
     media_id = client.upload_cover(prepared.data, prepared.filename)
     return media_id, assets_module.cover_crop_list(prepared.width, prepared.height)
+
+
+def _cover_card(post, part, args):
+    """The cover card of one part, or None when it cannot be drawn.
+
+    The card is drawn lazily: it is only worth the work when the
+    article has no picture to use instead.  It carries the title the
+    parts share, not the numbered title of this part -- the number is
+    added by the card itself.
+    """
+    if getattr(args, "cover", ""):
+        return None
+    categories = [str(name) for name in post.categories if name]
+    category = categories[0] if categories else "技术笔记"
+    try:
+        return cover_module.cover_card(
+            post.slug, _effective_title(post), category, Path(args.out_dir),
+            part_index=part.index, part_total=part.total)
+    except (OSError, RuntimeError) as error:
+        # A machine without a usable font cannot draw a card.  That is
+        # not a reason to lose the article.
+        print("  ! 封面卡画不出来，改用默认封面: {}".format(error), file=sys.stderr)
+        return None
 
 
 def _prepare_cover_image(resolved: Path):
@@ -548,19 +603,22 @@ def _render_parts(post, args) -> list:
     position = getattr(args, "category_tag", "top")
     head = tag if position == "top" else ""
     tail = tag if position == "bottom" else ""
+    # Every part speaks of the article by the title the reader will
+    # see, so the shortened title is the one that goes everywhere.
+    base_title = _effective_title(post)
 
     def build(group, index, total, highlight):
         """Render one part, with its opening and closing lines in place."""
         result = render_module.render(
             group, resolver=resolver, highlight=highlight,
-            head_html=head + split_module.transition_head_html(post.title, index, total),
+            head_html=head + split_module.transition_head_html(base_title, index, total),
             tail_html=tail,
         )
         if total > 1:
             # The line that closes a part comes after the reference
             # links: the links are where the article ends.
             result = replace(result, html=result.html + split_module.transition_tail_html(
-                post.title, index, total))
+                base_title, index, total))
         return result
 
     def save(group, result, index, total):
@@ -600,12 +658,12 @@ def _render_parts(post, args) -> list:
         """
         result = render_module.render(group, resolver=resolver)
         framing = (len(head) + len(tail)
-                   + len(split_module.transition_head_html(post.title, index, total))
-                   + len(split_module.transition_tail_html(post.title, index, total))
+                   + len(split_module.transition_head_html(base_title, index, total))
+                   + len(split_module.transition_tail_html(base_title, index, total))
                    + len(render_module.links_html(result.external_links)))
         return CONTENT_LIMIT - framing
 
-    reserve = split_module.framing_reserve(post.title, tag)
+    reserve = split_module.framing_reserve(base_title, tag)
     groups = split_module.plan_parts(
         blocks, CONTENT_LIMIT, measure,
         plain_measure=lambda group: measure(group, highlight=False),
@@ -658,10 +716,11 @@ def _render_parts(post, args) -> list:
                 "提示：这一部分单独放也放不下，只能人工拆得更细".format(
                     index, result.content_length, CONTENT_LIMIT))
         save(group, result, index, total)
-        title = post.title if total == 1 else split_module.part_title(post.title, index)
+        part_title = (base_title if total == 1
+                      else split_module.part_title(base_title, index))
         key = post.slug if index == 1 else "{}#{}".format(post.slug, index)
         parts.append(Part(index=index, total=total, blocks=group, result=result,
-                           title=title, key=key))
+                           title=part_title, key=key))
     return parts
 
 
@@ -722,11 +781,18 @@ def _draft_part(client, store, post, part, fingerprint, args) -> DraftResult:
         html = result.substitute_external(
             external_urls, fallback=EXTERNAL_IMAGE_FALLBACK, html=html)
 
-    cover_media_id, crop_list = _upload_cover(client, result, args, external_prepared)
+    card = _cover_card(post, part, args)
+    cover_media_id, crop_list = _upload_cover(client, result, args, external_prepared,
+                                               card)
 
     # Every part describes itself: the same summary on every row of the
     # draft box would tell the reader nothing.
     digest = split_module.part_digest(part.blocks) or post.digest
+    if part.title != post.title:
+        # The title was shortened.  The original one goes into the
+        # summary, so the draft box still says what the article is
+        # called on the site.
+        digest = "{}｜{}".format(post.title, digest)[:DIGEST_LIMIT]
     article = {
         "article_type": "news",
         "title": part.title,

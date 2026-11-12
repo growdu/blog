@@ -15,8 +15,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from urllib.parse import quote
 
+from .titles import TITLE_LIMIT
+
 BODY_LIMIT = 20000
-TITLE_LIMIT = 32
 DIGEST_LIMIT = 120
 AUTHOR_LIMIT = 16
 
@@ -240,18 +241,12 @@ def discover(posts_dir: Path) -> list:
 def check_eligibility(post: Post) -> Eligibility:
     """Check the post against WeChat's hard limits.
 
-    An overlong title is reported and the article skipped: a cut-off
-    title means nothing to a reader.
-
-    An overlong *body* is no longer a reason to skip the article.  It
-    is split into several drafts instead, each of which fits -- see
-    ``wechat/split.py``.  The body length is still measured (the
-    ``audit`` command reports it), but it no longer decides whether the
-    article may be published.
+    Neither a long title nor a long body is a reason to skip the
+    article any more.  The title is shortened at a boundary that keeps
+    the topic (``wechat/titles``), and the body is split into several
+    drafts that each fit (``wechat/split.py``).  The lengths are still
+    measured -- the ``audit`` command reports them -- but they no longer
+    decide whether the article may be published.
     """
     reasons = []
-
-    if len(post.title) > TITLE_LIMIT:
-        reasons.append("标题 {} 字符，超过上限 {} 字符".format(len(post.title), TITLE_LIMIT))
-
     return Eligibility(ok=not reasons, reasons=tuple(reasons))
