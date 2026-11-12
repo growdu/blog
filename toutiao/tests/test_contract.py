@@ -164,6 +164,33 @@ def test_digest_prefers_the_first_paragraph_over_the_title():
     assert result.article.digest == "正文第一段。"
 
 
+def test_digest_uses_the_first_list_item_when_the_body_starts_with_a_list():
+    """正文以列表开头时，摘要取第一条列表项的文字（去掉 `- ` 前缀）。
+
+    这是有意为之：跳过列表去找第一段散文，在「整篇只有列表」的母稿上会
+    直接产出空摘要，反而更糟。列表项的文字总比空摘要有信息量。
+    """
+    result = slice_post(
+        _post(title="文章标题", body="- 第一条\n\n这是一段散文。"), LIMITS
+    )
+    assert result.article.digest == "第一条"
+    assert result.article.digest != "这是一段散文。"
+
+
+def test_digest_uses_the_first_list_item_when_the_body_is_only_a_list():
+    """整篇只有列表时，摘要还是第一条列表项的文字，不会空着。"""
+    result = slice_post(_post(title="文章标题", body="- 第一条\n- 第二条"), LIMITS)
+    assert result.article.digest == "第一条"
+
+
+def test_empty_title_and_no_paragraph_is_skipped():
+    """标题也空着、正文又没有段落时，跳过该篇并记下原因。"""
+    result = slice_post(_post(title="", body="## 只有小标题"), LIMITS)
+    assert result.article is None
+    assert result.reason
+    assert "摘要" in result.reason
+
+
 def test_long_digest_is_truncated_and_noted():
     """摘要超长要裁到 `digest_chars`，并且留下记录（不静默截断）。"""
     result = slice_post(_post(body="正文。", description="摘" * 200), LIMITS)
