@@ -7,10 +7,20 @@ is a TOML edit and never a code change.
 The declaration is external input, so every field is validated strictly:
 a malformed value raises ``ValueError`` naming the offending field
 (``limits.title_chars``), never ``TypeError`` and never a silent coercion.
+
+**Unknown top-level keys are rejected.**  That rule exists because of what
+happened without it: a typo (``requires_certificaton``) was swallowed, the
+real key took its default, and the platform's certification requirement
+silently flipped to "not required" -- a gate switched off by a spelling
+mistake.  The vocabulary below is the same one the contract layer uses (it
+reads any platform; this adapter serves one), but the two implementations
+are independent: the contract layer never imports this module, and this
+module never imports the contract layer (the seam rule, spec §11.1).
 """
 
 from __future__ import annotations
 
+import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -21,6 +31,38 @@ __all__ = [
 ]
 
 AUTOMATIONS = ("manual", "api_draft", "api_publish")
+
+#: 这个平台发的是文档还是视频。
+KINDS = ("document", "video")
+
+#: 发布后要不要轮询审核状态。
+REVIEWS = ("none", "platform", "precheck")
+
+#: 顶层全部合法字段。**拒绝未知键**是这个模块的一条硬规则——拼错的键
+#: （``requires_certificaton``）本来会被静默吞掉，真实键落到默认值，
+#: 「该平台需要认证」于是被翻转成「不需要认证」。
+#:
+#: 这套词汇与契约层相同（契约层读任意平台，本 adapter 只服务头条号），
+#: 但两份实现**互相不 import**（§11.1 的接缝原则）：读同一份 TOML，
+#: 各写各的。
+_TOP_KEYS = (
+    "id",
+    "name",
+    "kind",
+    "automation",
+    "review",
+    "adapter",
+    "auth",
+    "ip_allowlist",
+    "limits",
+    "media",
+    "requires_certification",
+    "requires_min_followers",
+    "verified",
+)
+
+#: ``verified`` 的取值域：一次实测的日期；日期未定的那天允许写 XX。
+_VERIFIED_RE = re.compile(r"^\d{4}-\d{2}-(\d{2}|XX)$")
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -135,6 +177,21 @@ def _field(data: object, key: str, parent: str, converter, default=_REQUIRED):
     return _convert(value, _path(parent, key), converter)
 
 
+def _reject_unknown(data: dict, allowed, parent: str = "") -> None:
+    """Refuse a key that is not part of the vocabulary.
+
+    A typo has to be loud.  Without this, ``requires_certificaton`` was
+    swallowed, ``requires_certification`` took its default (``False``), and
+    the platform's certification gate was switched off by a spelling
+    mistake -- the one failure mode that must never be silent.
+    """
+    for key in data:
+        if key not in allowed:
+            raise ValueError(
+                "能力模型出现未知字段 {}".format(_path(parent, key))
+            )
+
+
 def _as_int(value: object) -> int:
     """A TOML integer.  A bool is not an int here, and a float is not truncated."""
     if isinstance(value, bool):
@@ -153,6 +210,39 @@ def _as_str(value: object) -> str:
 def _as_bool(value: object) -> bool:
     if not isinstance(value, bool):
         raise TypeError("不是布尔值")
+    return value
+
+
+def _as_kind(value: object) -> str:
+    """``kind`` 的取值域。域外的值必须拒——「这个平台发什么」不能靠猜。"""
+    if not isinstance(value, str):
+        raise TypeError("不是字符串")
+    if value not in KINDS:
+        raise ValueError(
+            "必须是 {} 之一，实际是 {!r}".format(" / ".join(KINDS), value)
+        )
+    return value
+
+
+def _as_review(value: object) -> str:
+    """``review`` 的取值域。"""
+    if not isinstance(value, str):
+        raise TypeError("不是字符串")
+    if value not in REVIEWS:
+        raise ValueError(
+            "必须是 {} 之一，实际是 {!r}".format(" / ".join(REVIEWS), value)
+        )
+    return value
+
+
+def _as_verified(value: object) -> str:
+    """``verified`` 是一次实测的日期；日期未定的那天允许写 XX。"""
+    if not isinstance(value, str):
+        raise TypeError("不是字符串")
+    if not _VERIFIED_RE.match(value):
+        raise ValueError(
+            "必须是 YYYY-MM-DD（未定的那天可写 XX），实际是 {!r}".format(value)
+        )
     return value
 
 
@@ -178,6 +268,13 @@ def load_capability(path: Path) -> Capability:
     path = Path(path)
     with path.open("rb") as handle:
         data = tomllib.load(handle)
+
+    if not isinstance(data, dict):
+        raise ValueError(
+            "能力模型的顶层必须是表/映射，实际是 {}".format(_type_name(data))
+        )
+
+    _reject_unknown(data, _TOP_KEYS)
 
     automation = data.get("automation", "")
     if automation not in AUTOMATIONS:
@@ -207,19 +304,23 @@ def load_capability(path: Path) -> Capability:
         ),
     )
 
+    name = _field(data, "name", "", _as_str)
+    if not name.strip():
+        raise ValueError("能力模型字段 name 不能为空")
+
     return Capability(
         id=_field(data, "id", "", _as_str),
-        name=_field(data, "name", "", _as_str, default=""),
-        kind=_field(data, "kind", "", _as_str, default="document"),
+        name=name,
+        kind=_field(data, "kind", "", _as_kind),
         automation=automation,
-        review=_field(data, "review", "", _as_str, default="platform"),
+        review=_field(data, "review", "", _as_review),
         requires_certification=_field(
             data, "requires_certification", "", _as_bool, default=False
         ),
         requires_min_followers=_field(
             data, "requires_min_followers", "", _as_int, default=0
         ),
-        verified=_field(data, "verified", "", _as_str, default=None),
+        verified=_field(data, "verified", "", _as_verified, default=None),
         limits=limits,
         adapter_package=_field(adapter_raw, "package", "adapter", _as_str),
         adapter_command=_field(
