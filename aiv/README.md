@@ -49,6 +49,16 @@ make topics       # python -m pyv.cli topics check
 
 选题库里的口播骨架是**草案**，出片前要按实际旁白重新定标语速。
 
+### 第一季进度
+
+| 期 | 主题 | 状态 | 成片规格 |
+| --- | --- | --- | --- |
+| EP01 | PostgreSQL 18 并行逻辑解码 | 已出片 | 正文 33.156 秒 |
+| EP02 | 一个 64 位计数器，决定所有事务的提交顺序 | 已出片 | 正文 35.316 秒 |
+
+两期的成片都是 1920×1080 / 24fps / H.264 yuv420p / AAC 48kHz 立体声，
+外加 2.833 秒品牌片头与片尾。
+
 ## 本期内容进契约，版式常量留代码
 
 一条视频的**画面文案与数字**（标题、副标题、标签、核数、顺序号、性能倍数……）
@@ -90,8 +100,8 @@ make bgm         # 按《背景音乐规范》检查曲库台账
 
 ```bash
 cd aiv/pipeline
-make EP=pg-parallel-decode align    # 按这一期的旁白对齐出时间轴
-make EP=pg-parallel-decode all       # validate → brand → render → compose
+make EP=csn-total-ordering align      # 按这一期的旁白对齐出时间轴
+make EP=csn-total-ordering all         # validate → brand → render → compose
 ```
 
 `EP` 决定这一期的契约、旁白、时间轴、片段目录与成片的文件名；

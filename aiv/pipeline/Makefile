@@ -29,6 +29,8 @@ EP ?= pg-parallel-decode
 
 ifeq ($(EP),pg-parallel-decode)
 SCRIPT := $(ROOT)/字幕-并行解码.md
+else ifeq ($(EP),csn-total-ordering)
+SCRIPT := $(ROOT)/字幕-CSN全序.md
 else
 $(error 未知 EP「$(EP)」：在 Makefile 里登记这一期的口播稿路径)
 endif

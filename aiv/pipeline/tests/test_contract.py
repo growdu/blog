@@ -27,6 +27,11 @@ from pyv.params import MissingParam, Params
 FIXTURES = Path(__file__).parent / "fixtures"
 BASELINE = FIXTURES / "scene_baseline.json"
 
+# 仓库里每一期的契约。结构与文案守卫生效在**每一期**上，
+# 逐像素基准只对默认那一期（基准指纹是按它抓的）。
+ALL_CONTRACT_PATHS = sorted(contract_mod.CONTRACTS_DIR.glob("*.json"))
+EPISODES = [path.stem for path in ALL_CONTRACT_PATHS]
+
 # 短于 3 个字符的文案不判：两个汉字的词（"输出"、"并行"）到处都是，
 # 拿它当判据只会天天误报。3 个字起才算「一句具体的文案」。
 MIN_COPY_LENGTH = 3
@@ -37,17 +42,28 @@ def contract():
     return contract_mod.load_contract()
 
 
+@pytest.fixture(scope="module")
+def all_contracts():
+    """每一期的契约，按期号索引。"""
+    return {path.stem: contract_mod.load_contract(path)
+            for path in ALL_CONTRACT_PATHS}
+
+
 # ---------------------------------------------------------------- 契约完整性
 
 
-def test_contract_loads_and_has_segments(contract):
+@pytest.mark.parametrize("episode", EPISODES)
+def test_contract_loads_and_has_segments(all_contracts, episode):
+    contract = all_contracts[episode]
     assert contract.version == 1
     assert contract.episode
     assert contract.title
     assert len(contract.segments) == 6
 
 
-def test_contract_covers_every_sentence_exactly_once(contract):
+@pytest.mark.parametrize("episode", EPISODES)
+def test_contract_covers_every_sentence_exactly_once(all_contracts, episode):
+    contract = all_contracts[episode]
     seen: list[int] = []
     for segment in contract.segments:
         seen.extend(segment.sentences)
@@ -55,15 +71,17 @@ def test_contract_covers_every_sentence_exactly_once(contract):
     assert contract.sentence_count == 10
 
 
-def test_every_segment_renderer_exists(contract):
-    for segment in contract.segments:
+@pytest.mark.parametrize("episode", EPISODES)
+def test_every_segment_renderer_exists(all_contracts, episode):
+    for segment in all_contracts[episode].segments:
         module = importlib.import_module(segment.renderer)
         assert callable(module.render), segment.renderer
 
 
-def test_every_segment_has_all_required_params(contract):
+@pytest.mark.parametrize("episode", EPISODES)
+def test_every_segment_has_all_required_params(all_contracts, episode):
     """场景声明了必填参数，契约必须一个不缺地给出来。"""
-    for segment in contract.segments:
+    for segment in all_contracts[episode].segments:
         module = importlib.import_module(segment.renderer)
         required = getattr(module, "REQUIRED", ())
         assert required, f"{segment.renderer} 没有声明 REQUIRED"
@@ -71,9 +89,10 @@ def test_every_segment_has_all_required_params(contract):
         assert not missing, f"{segment.id} 缺参数：{missing}"
 
 
-def test_contract_params_are_not_empty_strings(contract):
+@pytest.mark.parametrize("episode", EPISODES)
+def test_contract_params_are_not_empty_strings(all_contracts, episode):
     """画面上不能出现空文案——那通常是漏填。"""
-    for segment in contract.segments:
+    for segment in all_contracts[episode].segments:
         for key, value in segment.params.items():
             if isinstance(value, str):
                 assert value.strip(), f"{segment.id} 的 {key} 是空串"
@@ -127,7 +146,8 @@ def _copy_leaks(literals: list[str], params: dict, keys: set[str]) -> list[tuple
     return leaks
 
 
-def test_scene_source_contains_no_episode_copy(contract):
+@pytest.mark.parametrize("episode", EPISODES)
+def test_scene_source_contains_no_episode_copy(all_contracts, episode):
     """契约里的文案不得出现在场景源码里。
 
     文案写在代码里，就等于又回到了「改一句话要改代码」的老路。
@@ -135,6 +155,7 @@ def test_scene_source_contains_no_episode_copy(contract):
     判定规则：把场景源码解析成 AST，取出所有字符串字面量，
     凡是**包含**契约里那句文案的字面量都算回流——除了参数键本身。
     """
+    contract = all_contracts[episode]
     keys = _param_keys(contract)
     for segment in contract.segments:
         literals = _scene_literals(segment.renderer)
@@ -157,6 +178,17 @@ def test_copy_guard_actually_catches_a_leak(contract):
     value = segment.params["title"]
     leaks = _copy_leaks([f"text(ctx, {value!r})"], segment.params, keys)
     assert leaks, "守卫没抓到硬编码文案，它已经失效了"
+
+
+@pytest.mark.parametrize("episode", EPISODES)
+def test_copy_guard_works_for_every_episode(all_contracts, episode):
+    """守卫对每一期都要有效，不只是默认那一期。"""
+    contract = all_contracts[episode]
+    keys = _param_keys(contract)
+    segment = contract.segments[0]
+    value = segment.params["title"]
+    leaks = _copy_leaks([f"text(ctx, {value!r})"], segment.params, keys)
+    assert leaks, f"{episode} 的文案回流守卫没生效"
 
 
 # ------------------------------------------------------------ 缺参数要报错

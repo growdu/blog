@@ -18,6 +18,7 @@ MAKEFILE = PIPELINE / "Makefile"
 # 这张表都得跟着改——两边的漂移由下面两条测试抓住。
 KNOWN_EPS = {
     "pg-parallel-decode": ("字幕-并行解码.md", "pg-parallel-decode.json"),
+    "csn-total-ordering": ("字幕-CSN全序.md", "csn-total-ordering.json"),
 }
 
 

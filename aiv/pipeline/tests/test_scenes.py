@@ -10,16 +10,35 @@ SCENE_MODULES = [
     "pyv.scenes.s04_parallel",
     "pyv.scenes.s05_order",
     "pyv.scenes.s06_outro",
+    # EP02（CSN 全序）新增的四个场景
+    "pyv.scenes.s02_mixed",
+    "pyv.scenes.s03_counter",
+    "pyv.scenes.s04_propagate",
+    "pyv.scenes.s05_layers",
 ]
 
 
-def _params_for(module_name: str) -> dict:
-    """这一期的画面内容来自视觉分镜契约，不是场景代码。"""
-    from pyv.contract import load_contract
+def _all_contracts():
+    """仓库里每一期的契约，默认那一期排在最前面。"""
+    from pyv import contract as contract_mod
 
-    for segment in load_contract().segments:
-        if segment.renderer == module_name:
-            return segment.params
+    paths = [contract_mod.DEFAULT_CONTRACT]
+    paths.extend(
+        p for p in sorted(contract_mod.CONTRACTS_DIR.glob("*.json"))
+        if p != contract_mod.DEFAULT_CONTRACT
+    )
+    return [contract_mod.load_contract(p) for p in paths]
+
+
+def _params_for(module_name: str) -> dict:
+    """这一期的画面内容来自视觉分镜契约，不是场景代码。
+
+    一个场景可能被多期复用（片头片尾就是），取第一个用到它的契约即可。
+    """
+    for contract in _all_contracts():
+        for segment in contract.segments:
+            if segment.renderer == module_name:
+                return segment.params
     raise AssertionError(f"契约里没有 {module_name}")
 
 
@@ -127,3 +146,79 @@ def test_every_character_in_scene_source_is_renderable(name, monkeypatch):
             assert not _is_missing_glyph(ch), (
                 f"{name} 画的字符 {ch!r} 不在 PingFang SC 里，会渲染成豆腐块"
             )
+
+
+# ------------------------------------------------------ EP02 · CSN 全序的场景
+
+
+def _ep02_params(renderer: str) -> dict:
+    """EP02 契约里某个场景的画面内容。"""
+    from pyv import contract as contract_mod
+
+    path = contract_mod.CONTRACTS_DIR / "csn-total-ordering.json"
+    for segment in contract_mod.load_contract(path).segments:
+        if segment.renderer == renderer:
+            return segment.params
+    raise AssertionError(f"EP02 契约里没有 {renderer}")
+
+
+def test_s02_mixed_ranks_follow_the_commit_order():
+    """时间轴上的名次由契约里的提交顺序决定，不由编号决定。"""
+    import pyv.scenes.s02_mixed as s02
+
+    params = _ep02_params("pyv.scenes.s02_mixed")
+    ranks = s02.commit_ranks(params)
+    ids = [str(x) for x in params["txn_ids"]]
+    order = [str(x) for x in params["commit_order"]]
+    assert sorted(ranks) == list(range(len(ids)))
+    for index, txn_id in enumerate(ids):
+        assert ranks[index] == order.index(txn_id)
+
+
+def test_s02_mixed_commit_order_is_not_the_id_order():
+    """这期讲的就是「先后是乱的」——提交顺序必须真的和编号顺序不同。"""
+    params = _ep02_params("pyv.scenes.s02_mixed")
+    assert [str(x) for x in params["commit_order"]] != [
+        str(x) for x in params["txn_ids"]
+    ]
+
+
+def test_s03_counter_numbers_strictly_increase():
+    import pyv.scenes.s03_counter as s03
+
+    params = _ep02_params("pyv.scenes.s03_counter")
+    values = [int(v) for v in s03.csn_sequence(params)]
+    assert values == sorted(values)
+    assert len(set(values)) == len(values)
+
+
+def test_s03_counter_reading_starts_before_the_first_number():
+    """计数器先显示起始值，发一个号才跳一次。"""
+    import pyv.scenes.s03_counter as s03
+
+    params = _ep02_params("pyv.scenes.s03_counter")
+    readings = s03.counter_reading(params)
+    assert readings[0] == str(params["counter_value"])
+    assert readings[1:] == [str(v) for v in params["csn_values"]]
+
+
+def test_s05_layers_has_six_layers():
+    import pyv.scenes.s05_layers as s05
+
+    params = _ep02_params("pyv.scenes.s05_layers")
+    assert s05.layer_count(params) == 6
+    assert len(params["layer_ids"]) == len(params["layer_names"]) \
+        == len(params["layer_roles"]) == 6
+
+
+def test_s02_and_s03_tell_the_same_story():
+    """s02 说「谁先 commit 是乱的」，s03 必须按同一个领取顺序发号。
+
+    两段画面用的是同一组事务：如果 s03 的发号顺序跟 s02 的提交顺序对不上，
+    观众会看到「最后 commit 的事务拿到了最小的号」这种自相矛盾的画面。
+    """
+    mixed = _ep02_params("pyv.scenes.s02_mixed")
+    counter = _ep02_params("pyv.scenes.s03_counter")
+    assert [str(x) for x in counter["txn_ids"]] == [
+        str(x) for x in mixed["commit_order"]
+    ]
