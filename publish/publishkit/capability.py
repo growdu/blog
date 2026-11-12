@@ -20,36 +20,49 @@
 
 **这一层是唯一的闸门。** §11.1 的流程是「契约层先读 ``capabilities/*.toml``
 → 校验 → 再按 ``[adapter].command`` 调 adapter」，所以一份坏 TOML 在**派发
-之前**就被这一层拦住了。adapter 自己那份 loader（``toutiao/toutiao/capability.py``）
-更宽松，那条宽松路径只有在有人**直接跑 adapter CLI、绕过这一层**时才会生效
-（§12 第 13 行的调度器若忘了先加载能力模型，也会踩到）。
+之前**就被这一层拦住了。
 
 **两边的解读严格度不一样，逐条列在这里**（同一份 TOML 喂两边的结论；adapter
 那一列依据的是 ``feat/toutiao-adapter`` 分支上的
-``toutiao/toutiao/capability.py``）：
+``toutiao/toutiao/capability.py``，截至 ``bee4dfc``）：
 
 =====================================  ==========  =====================
 TOML 写法                                 契约层      toutiao adapter
 =====================================  ==========  =====================
-顶层未知键（``automaion =``）             REJECT      ACCEPT
-``kind = "article"``（值域外）            REJECT      ACCEPT
-``review = "human"``（值域外）            REJECT      ACCEPT
-``verified = "last tuesday"``（非日期）   REJECT      ACCEPT
-``requires_certificaton =``（拼错）      REJECT      ACCEPT → 门槛翻成 False
-顶层缺 ``name``                          REJECT      ACCEPT（默认 ""）
-顶层缺 ``review``                        REJECT      ACCEPT（默认 "platform"）
-``kinds =``（拼错）                      REJECT      ACCEPT → kind 落到默认值
+顶层未知键（``automaion =``）             REJECT      REJECT
+``kind = "article"``（值域外）            REJECT      REJECT
+``review = "human"``（值域外）            REJECT      REJECT
+``verified = "last tuesday"``（非日期）   REJECT      REJECT
+``requires_certificaton =``（拼错）      REJECT      REJECT
+顶层缺 ``name``                          REJECT      REJECT
+顶层缺 ``review``                        REJECT      REJECT
+``kinds =``（拼错）                      REJECT      REJECT
 ``automation = "api"``（值域外）         REJECT      REJECT
+``id`` 与文件名不一致                     REJECT      ACCEPT
+``[adapter]`` 多一个键                   REJECT      ACCEPT
+``[limits]`` 里的键拼错                   ACCEPT      REJECT
 =====================================  ==========  =====================
 
-最刺眼的一条是 ``requires_certificaton``（拼错）：adapter 接受它，并据此得出
-「该平台不需要认证」——一个门槛开关被拼写错误静默翻成了 False。契约层拒绝
-这种 TOML，所以只要走 §11.1 的流程就不会咬人。
+**上面九行两边已经一致。** 修之前 adapter 那一列全是 ACCEPT——最刺眼的一条是
+``requires_certificaton``（拼错）：它被接受，而真实的
+``requires_certification`` 取默认值 False，于是「该平台不需要认证」——
+**一个门槛开关被拼写错误静默翻掉了**。adapter 侧已补齐（拒绝未知顶层键、
+顶层必填化、加值域校验），修完之后两边的结论逐条对齐。
 
-**本轮不去改 adapter 那份 loader**：那要动 ``toutiao/``，越过 §11.1 的接缝，
-也不在这一轮的范围内。要让两边对齐，正确的方向是在 adapter 侧对它**自己会
-读到的字段**（kind / review / automation / verified / requires_certification）
-也做值域校验——那是 toutiao 分支的事。契约层**不许**反过来 import adapter。
+**剩下三行，每一处都是「一边更严」，而且更严的那一边能抓住问题**：
+
+- ``id`` 与文件名不一致 → **契约层**更严。它多一道「这个平台到底是哪个」
+  的核对（文件名是注册表的名字）。adapter 不做这道核对。
+- ``[adapter]`` 多一个键 → **契约层**更严。
+- ``[limits]`` 里的键拼错 → **adapter** 更严。方向相反是有原因的：契约层把
+  ``limits`` 当成**不透明**的平台自有键集合原样保留——它不读这些限额，
+  猜不出哪个是拼错的；adapter 读，所以能猜。
+
+这三处不必对齐：对同一份坏 TOML，**只要有一个读者拒绝就够了**——发布流水线
+走的是契约层（§11.1 的唯一闸门）。adapter 那条宽松路径只有在有人**直接跑
+adapter CLI、绕过这一层**时才会生效（§12 第 13 行的调度器若忘了先加载能力
+模型，也会踩到）。两边**互不 import**：契约层不 import 平台内部模块，平台
+也不 import 契约层。它们认的是**同一份 TOML 文件**，不是同一份代码。
 """
 
 from __future__ import annotations
