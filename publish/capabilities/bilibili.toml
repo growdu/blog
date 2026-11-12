@@ -1,0 +1,42 @@
+# B站平台能力声明。
+#
+# 数值来源：B站开放平台《视频稿件提交》《封面上传》《文件上传预处理》三篇接口文档。
+#
+# 关于「小于 N」的换算：平台写「标题长度小于 80」就是最多 79 个字，
+# 所以上限取 79 而不是 80——差一个字符就会在真实投稿时被拒。
+#
+# ⚠️ 待实测：分区 tid（分区体系正在灰测 tid_v2，规格 §6.4）。
+id = "bilibili"
+name = "哔哩哔哩"
+kind = "video"
+# 开放平台应用：client_id（Access Key）+ app_secret，access_token 由 OAuth2 用户授权取得。
+auth = "appid_secret"
+# manual = 出包 + 人工上传；ARC_BASE 权限开通后改成 api_publish（规格 §6.5.3）。
+automation = "manual"
+review = "platform"
+requires_certification = false
+requires_min_followers = 0
+verified = "2026-11-12"
+
+[limits]
+title_chars = 79
+description_chars = 249
+tags_chars = 199
+tag_chars = 20
+
+[media]
+max_width = 4096
+max_height = 4096
+max_fps = 120
+require_pix_fmt = "yuv420p"
+max_duration_s = 18000
+max_bytes = 4294967296
+max_audio_bitrate = 320000
+max_audio_channels = 2
+max_sample_rate = 48000
+# 《文件上传预处理》：「视频关键帧至少 10 秒一个」→ 间隔 ≤ 10 秒。
+max_keyframe_gap_s = 10
+
+[adapter]
+package = "bilibili"
+command = ["python3", "-m", "bilibili.cli"]

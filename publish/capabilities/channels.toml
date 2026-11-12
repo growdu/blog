@@ -1,0 +1,40 @@
+# 微信视频号平台能力声明。
+#
+# 这是契约层与视频号 adapter 之间的接缝：限额与自动化档位都是**数据**，
+# 平台规则变了改这里，不改 Python。
+#
+# 数值来源：
+# - 标题 ≤ 22 字：公开口径有 20 / 22 / 34 三种说法（规格 §十四 待验证项 1），
+#   本期取仓库既有的保守值 22，以视频号助手实测提示为准。
+# - 简介 ≤ 1000 字、话题 ≤ 5 个：视频号发布页规则。
+# - 媒体规格：视频号后台与《内容技术规范》。
+#
+# ⚠️ 待实测：封面比例的真实行为（规格 §十四 待验证项 2）。
+id = "channels"
+name = "微信视频号"
+kind = "video"
+# 视频号没有面向普通创作者的公开发布接口，不需要任何凭据。
+auth = "none"
+# manual = 出包 + 人工点发布；这条改不动，除非平台开放了正式接口。
+automation = "manual"
+review = "platform"
+requires_certification = false
+verified = "2026-11-12"
+
+[limits]
+title_chars = 22
+description_chars = 1000
+topics_max = 5
+topic_chars = 15
+
+[media]
+min_width = 1280
+min_height = 720
+max_fps = 60
+require_pix_fmt = "yuv420p"
+max_duration_s = 3600
+max_bytes = 2147483648
+
+[adapter]
+package = "channels"
+command = ["python3", "-m", "channels.cli"]
