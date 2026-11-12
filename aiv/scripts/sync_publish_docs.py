@@ -7,7 +7,7 @@
 
 这里是「哪些文档要发布」的唯一真相：
 
-- 三篇规范 + 各模块 README：面向读者的内容，继续发
+- 专题页 + 三篇规范 + 各模块 README：面向读者的内容，继续发
 - 不含 `pipeline/` 下的内部设计、实施计划与测试夹具：
   那是工程内部产物，不是文章。尤其是 `persona_script_bad.md`
   ——它是故意写坏的测试样本，绝不能发到公网上。
@@ -30,6 +30,7 @@ PUBLISH_DIR = REPO_ROOT / "docs" / "life" / "aiv"
 
 # 要在 docs/life/aiv/ 留一份的文档（相对 aiv/）
 PUBLISH_DOCS = (
+    "index.md",
     "人格规范.md",
     "形象与音色规范.md",
     "背景音乐规范.md",

@@ -268,7 +268,7 @@ mindmap
 
 - [DDL 同步架构](../db/ddl%E5%90%8C%E6%AD%A5%E6%9E%B6%E6%9E%84/index.html) — 内核原生支持 DDL 同步的设计文档
 - [DDL 同步架构(美化版)](../db/ddl%E5%90%8C%E6%AD%A5%E6%9E%B6%E6%9E%84-html/index.html) — HTML 渲染版
-- [营销物料(aiv)](../db/aiv/index.html) — 海报 / 视频脚本 / 短视频分镜
+- [AIV 视频生产线](../life/aiv/index.html) — 从口播稿到成片的九个环节、唯一契约与入库边界
 
 ---
 
