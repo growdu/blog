@@ -98,8 +98,17 @@ def test_unknown_status_is_rejected():
 
 
 def test_unknown_backend_is_rejected():
-    with pytest.raises(ValueError):
+    """未知通道必须被本模块自己拒掉，不能让别人替我们报错。
+
+    两条断言都要有牙：urllib 的 ``ValueError("unknown url type:
+    'smoke-signal'")`` 里**也**有 ``smoke-signal``，所以只断言名字的话，
+    把越界防护去掉、让它回落到默认通道之后，这条用例仍然绿——类型对，
+    但不是本模块的拒绝。
+    """
+    with pytest.raises(ValueError) as excinfo:
         send("smoke-signal", "key", "主题", "正文")
+    assert "smoke-signal" in str(excinfo.value)
+    assert "未知通知通道" in str(excinfo.value)
 
 
 def test_serverchan_posts_a_form(monkeypatch):
