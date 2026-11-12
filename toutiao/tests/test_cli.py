@@ -16,10 +16,13 @@ directory, and the notification is replaced by a recorder.
 
 import json
 
+import pytest
 from PIL import Image
 
 from toutiao import cli
+from toutiao import state as state_module
 from toutiao.cli import EXIT_ERROR, EXIT_INELIGIBLE, EXIT_OK, EXIT_USAGE, main
+from toutiao.state import PublishState, StateStore
 
 
 def _site(tmp_path):
@@ -302,6 +305,40 @@ def test_a_corrupt_state_file_is_reported_loudly(tmp_path, capsys):
     assert code != EXIT_OK
     # 证据留着，不删。
     assert (tmp_path / "out" / "state.json.corrupt").is_file()
+
+
+# --- the state file the commands rely on --------------------------------
+#
+# 这两条守的是「状态文件写成原子的」那件事。它们住在 test_cli.py 而不是
+# test_state.py：本次只允许新增一个测试文件，而命令依赖的正是这个写。
+
+
+def test_a_failed_write_leaves_the_previous_state_file_intact(tmp_path, monkeypatch):
+    """状态文件必须原子替换：写坏了也不能把上一份记录截断。
+
+    截断与写完之间进程被杀，状态就归零了——发过的文章会被再发一遍。
+    """
+    path = tmp_path / "state.json"
+    store = StateStore(path)
+    store.save("db/one", PublishState(fingerprint="fp1", status="packaged"))
+    original = path.read_text(encoding="utf-8")
+
+    def boom(*args, **kwargs):
+        raise OSError("磁盘满了")
+
+    monkeypatch.setattr(state_module.os, "replace", boom)
+    with pytest.raises(OSError):
+        store.save("db/two", PublishState(fingerprint="fp2", status="packaged"))
+
+    assert path.read_text(encoding="utf-8") == original
+    assert StateStore(path).get("db/one").fingerprint == "fp1"
+
+
+def test_no_temporary_file_is_left_behind(tmp_path):
+    """临时文件用完要清掉：状态目录里只该有状态文件本身。"""
+    path = tmp_path / "state.json"
+    StateStore(path).save("db/one", PublishState(fingerprint="fp", status="packaged"))
+    assert [p.name for p in tmp_path.iterdir()] == ["state.json"]
 
 
 # --- the command line itself --------------------------------------------

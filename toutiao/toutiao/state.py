@@ -28,12 +28,22 @@ A corrupt state file is never swallowed.  It is renamed to
 remembers where it went in ``quarantined`` so the caller can report it
 loudly.  Reading a broken file as "nothing was ever published" would
 republish everything, and publishing twice is much worse than being slow.
+
+The file itself is written atomically.  A plain overwrite truncates the
+target first and fills it afterwards, and a process killed between the
+two leaves half a file behind: the next run quarantines it (the evidence
+survives) and starts from an empty state -- which means every article
+that was already published gets published again.  Writing a temporary
+file and moving it into place means a reader sees the old file or the
+new one, never a half-written one.
 """
 
 from __future__ import annotations
 
 import hashlib
 import json
+import os
+import tempfile
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -65,6 +75,33 @@ def fingerprint(body: str) -> str:
     source post -- see the module docstring.
     """
     return hashlib.sha256(body.encode("utf-8")).hexdigest()
+
+
+def _write_atomic(path: Path, text: str) -> None:
+    """Write ``text`` to ``path`` without ever leaving a half-written file.
+
+    The text goes into a temporary file next to the target and is moved
+    into place with ``os.replace()``, which is atomic on one filesystem:
+    a reader sees the old file or the new one, never a truncated one.
+
+    The temporary file is removed on the failure path as well: a failed
+    write must not leave half a file lying next to the state file.
+    """
+    handle, temp_name = tempfile.mkstemp(
+        dir=str(path.parent), prefix=path.name + ".", suffix=".tmp"
+    )
+    temp_path = Path(temp_name)
+    try:
+        with os.fdopen(handle, "w", encoding="utf-8") as stream:
+            stream.write(text)
+            stream.flush()
+            # 先落到盘上，再改名：改名之前数据已经在盘上了。
+            os.fsync(stream.fileno())
+        os.replace(temp_path, path)
+    finally:
+        # 成功之后临时文件已经不在了（``missing_ok`` 让这一句不必判断）；
+        # 失败之后它还在，这一句把它清掉。
+        temp_path.unlink(missing_ok=True)
 
 
 class StateStore:
@@ -155,17 +192,19 @@ class StateStore:
         the object it was handed makes the caller's ``updated_at`` mean
         "somebody wrote this somewhere" instead of "this was stored".
         The timestamp therefore goes onto a copy.
+
+        The file is replaced atomically -- see ``_write_atomic()``: a
+        half-written state file would read as an empty state, and an
+        empty state republishes everything.
         """
         articles = self._load_all()
         stamp = datetime.now(timezone.utc).isoformat(timespec="seconds")
         articles[content_id] = asdict(replace(state, updated_at=stamp))
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
-            json.dumps(
-                {"articles": articles}, ensure_ascii=False, indent=2, sort_keys=True
-            ) + "\n",
-            encoding="utf-8",
-        )
+        payload = json.dumps(
+            {"articles": articles}, ensure_ascii=False, indent=2, sort_keys=True
+        ) + "\n"
+        _write_atomic(self.path, payload)
 
 
 def needs_publish(fp: str, state: PublishState) -> bool:
