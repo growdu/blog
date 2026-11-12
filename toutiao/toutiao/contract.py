@@ -31,6 +31,8 @@ _MARKER = re.compile(r"^【图(\d+)】$")
 _MARKER_IN_TEXT = re.compile(r"【图(\d+)】")
 _HTML_TAG = re.compile(r"</?[A-Za-z][A-Za-z0-9]*(?:\s[^<>]*)?/?>")
 _LINK = re.compile(r"(?<!!)\[([^\]]*)\]\([^)]*\)")
+_LINK_REFERENCE = re.compile(r"(?<!!)\[([^\]]*)\]\[[^\]]*\]")
+_LINK_DEFINITION = re.compile(r"^\[[^\]]+\]:\s*\S+")
 _CJK = re.compile(r"[\u3000-\u9fff\uff00-\uffef]")
 
 
@@ -185,6 +187,12 @@ def _scan(body: str) -> tuple[list[str], list[str]]:
             flush()
             continue
 
+        if _LINK_DEFINITION.match(stripped):
+            # A reference definition is a link definition, not prose --
+            # keeping it would leak the URL it points at.
+            flush()
+            continue
+
         if _HTML_TAG.search(stripped) and not _HTML_TAG.sub("", stripped).strip():
             # A line that is nothing but HTML markup goes; a line that
             # mixes markup with text keeps its text -- the tags are taken
@@ -227,7 +235,11 @@ def _scan(body: str) -> tuple[list[str], list[str]]:
 
 
 def _strip_links(text: str) -> tuple[str, int]:
-    """Turn every markdown link into plain text; count what was removed."""
+    """Turn every markdown link into plain text; count what was removed.
+
+    Both shapes count: the inline one (``[text](url)``) and the
+    reference one (``[text][1]``).  Both are links, so both are counted.
+    """
     count = 0
 
     def replace(match):
@@ -235,7 +247,8 @@ def _strip_links(text: str) -> tuple[str, int]:
         count += 1
         return match.group(1)
 
-    return _LINK.sub(replace, text), count
+    text = _LINK.sub(replace, text)
+    return _LINK_REFERENCE.sub(replace, text), count
 
 
 def _first_paragraph(blocks: list[str]) -> str:

@@ -213,6 +213,23 @@ def test_links_become_plain_text():
     assert result.article.dropped_links == 1
 
 
+def test_reference_links_become_plain_text():
+    """`[文字][1]` 也是链接：降级成文字，并计入 `dropped_links`。"""
+    post = _post(body="看 [wiki.postgresql.org][1] 的说明。")
+    result = slice_post(post, LIMITS)
+    assert "[wiki.postgresql.org][1]" not in result.article.body
+    assert "wiki.postgresql.org" in result.article.body
+    assert result.article.dropped_links == 1
+
+
+def test_reference_definitions_are_dropped():
+    """引用定义行是链接定义不是正文 —— 整行丢掉，别把 URL 漏出去。"""
+    post = _post(body="正文一段。\n\n[1]: https://example.com/a")
+    result = slice_post(post, LIMITS)
+    assert "[1]" not in result.article.body
+    assert "https://example.com/a" not in result.article.body
+
+
 def test_bare_urls_stay_in_the_body():
     """裸 URL 原样留着 —— 平台禁的是外链跳转代码，不是 URL 这个字符串。
 
