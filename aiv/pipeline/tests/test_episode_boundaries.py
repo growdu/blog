@@ -31,6 +31,7 @@ EPISODES = {
     "ep03": ("字幕-WAL顺序.md", "wal-interleave.json"),
     "ep04": ("字幕-并行apply.md", "parallel-apply.json"),
     "ep05": ("字幕-结构化DDL.md", "structured-ddl.json"),
+    "ep06": ("字幕-行锁.md", "row-lock.json"),
 }
 
 
@@ -188,10 +189,54 @@ def test_ep05_keeps_proposed_record_names_off_screen():
             f"拟议或内部的记录名 {name} 不该出现在口播或画面里"
 
 
-# ---------------------------------------------------------------- 三期共同
+# ---------------------------------------------------------------- EP06
 
 
-@pytest.mark.parametrize("episode", ["ep03", "ep04", "ep05"])
+def test_ep06_says_it_is_an_upstream_mechanism():
+    """这期讲的是上游 PostgreSQL 的公开机制，这句话必须说在口播里。"""
+    sentences = _sentences("ep06")
+    assert any("上游" in s and "公开机制" in s for s in sentences), \
+        "EP06 必须说清这是上游的公开机制"
+    assert any("私有扩展" in s for s in sentences), \
+        "还要说清它不是哪一家的私有能力"
+
+
+def test_ep06_marks_postgresql_18_as_the_source_version():
+    """口播里的「PostgreSQL 18」是出处文章的源码版本，不是版本特性声明。
+
+    行锁不是 PG 18 新增的能力。版本号出现在这里，只是在说
+    「我读的是哪个版本的源码」，所以同一句里必须有「源码」二字。
+    """
+    sentences = _sentences("ep06")
+    hits = [s for s in sentences if "PostgreSQL 18" in s]
+    assert hits, "EP06 的源码出处应该讲出来"
+    for sentence in hits:
+        assert "源码" in sentence, \
+            "提到 PostgreSQL 18 必须同时说明那指的是源码版本"
+
+
+def test_ep06_does_not_claim_row_lock_is_new_in_18():
+    """行锁不是 PostgreSQL 18 新增的能力。"""
+    for phrase in ("18 新增", "18 才", "18 才有", "18 引入", "新增了行锁"):
+        assert phrase not in _video_text("ep06"), \
+            f"不能把行锁说成 PostgreSQL 18 的新能力（命中 {phrase}）"
+
+
+def test_ep06_marks_the_bit_values_as_source_definitions():
+    """画面上的位定义是源码里的定义，不是实测数据。"""
+    topic = _topic("ep06")
+    hits = [row for row in topic.evidence if "0x" in row[0] or "位定义" in row[0]]
+    assert hits, "EP06 的数字与出处表里应当有那组位定义"
+    for _, _, caliber in hits:
+        assert "源码" in caliber, "位定义必须标明是源码里的定义"
+        assert "不是实测" in caliber or "非实测" in caliber, \
+            "源码里的定义必须说清不是实测数据"
+
+
+# ---------------------------------------------------------------- 跨期共同
+
+
+@pytest.mark.parametrize("episode", ["ep03", "ep04", "ep05", "ep06"])
 def test_new_episodes_do_not_reuse_the_ep01_benchmark(episode):
     """第一季只有 EP01 有那组压测数字，其余各期不许挪用。"""
     for number in ("2 到 5 倍", "2–5 倍"):

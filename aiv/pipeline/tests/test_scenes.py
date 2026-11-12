@@ -30,6 +30,11 @@ SCENE_MODULES = [
     "pyv.scenes.s03_shortfalls",
     "pyv.scenes.s04_ddl_pipeline",
     "pyv.scenes.s05_ddl_benefit",
+    # EP06（行锁）新增的四个场景
+    "pyv.scenes.s02_write_conflict",
+    "pyv.scenes.s03_lock_modes",
+    "pyv.scenes.s04_lock_matrix",
+    "pyv.scenes.s05_tuple_lock",
 ]
 
 

@@ -37,6 +37,8 @@ else ifeq ($(EP),parallel-apply)
 SCRIPT := $(ROOT)/字幕-并行apply.md
 else ifeq ($(EP),structured-ddl)
 SCRIPT := $(ROOT)/字幕-结构化DDL.md
+else ifeq ($(EP),row-lock)
+SCRIPT := $(ROOT)/字幕-行锁.md
 else
 $(error 未知 EP「$(EP)」：在 Makefile 里登记这一期的口播稿路径)
 endif

@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "episode": "row-lock",
+  "title": "两个事务改同一行，谁先谁后",
+  "segments": [
+    {
+      "id": "s01",
+      "renderer": "pyv.scenes.s01_intro",
+      "sentences": [0],
+      "params": {
+        "title": "两个事务改同一行",
+        "subtitle": "谁先谁后",
+        "tagline": "MVCC 管读和写 · 行锁管写和写 · 四种模式一张矩阵"
+      }
+    },
+    {
+      "id": "s02",
+      "renderer": "pyv.scenes.s02_write_conflict",
+      "sentences": [1, 2],
+      "params": {
+        "title": "两个事务改同一行",
+        "table_label": "users",
+        "row_label": "id = 1",
+        "txn_a": "T1",
+        "txn_b": "T2",
+        "write_a": "name = 'X'",
+        "write_b": "name = 'Y'",
+        "conclusion": "两边都看不见对方，后写的覆盖先写的",
+        "caption": "读互不打扰，写却会互相覆盖"
+      }
+    },
+    {
+      "id": "s03",
+      "renderer": "pyv.scenes.s03_lock_modes",
+      "sentences": [3, 4],
+      "params": {
+        "title": "MVCC 之上，加了一层行锁",
+        "left_label": "MVCC",
+        "left_note": "读和写",
+        "right_label": "行锁",
+        "right_note": "写和写",
+        "modes": [
+          ["KEY SHARE", "FOR KEY SHARE"],
+          ["SHARE", "FOR SHARE"],
+          ["NO KEY UPDATE", "FOR NO KEY UPDATE"],
+          ["EXCLUSIVE", "FOR UPDATE"]
+        ],
+        "weak_label": "最弱",
+        "strong_label": "最强",
+        "caption": "四种模式，从最弱排到最强"
+      }
+    },
+    {
+      "id": "s04",
+      "renderer": "pyv.scenes.s04_lock_matrix",
+      "sentences": [5, 6],
+      "params": {
+        "title": "冲不冲突，看一张矩阵",
+        "row_axis_label": "已经持有",
+        "col_axis_label": "我要申请",
+        "mode_labels": [
+          ["KEY", "SHARE"],
+          ["SHARE"],
+          ["NO KEY", "UPDATE"],
+          ["EXCLUSIVE"]
+        ],
+        "matrix": [
+          [true, true, true, false],
+          [true, true, false, false],
+          [true, false, false, false],
+          [false, false, false, false]
+        ],
+        "compatible_label": "兼容",
+        "conflict_label": "冲突",
+        "legend_label": "颜色 = 冲不冲突",
+        "caption": "最弱那一行，除了最强者谁都挡不住"
+      }
+    },
+    {
+      "id": "s05",
+      "renderer": "pyv.scenes.s05_tuple_lock",
+      "sentences": [7, 8],
+      "params": {
+        "title": "锁不另起结构，就存在元组头里",
+        "tuple_label": "元组头",
+        "field_labels": ["t_xmin", "t_xmax", "t_infomask"],
+        "bit_labels": [
+          ["HEAP_XMAX_KEYSHR_LOCK", "0x0010"],
+          ["HEAP_XMAX_EXCL_LOCK", "0x0040"],
+          ["HEAP_XMAX_LOCK_ONLY", "0x0080"],
+          ["HEAP_XMAX_IS_MULTI", "0x1000"]
+        ],
+        "lock_only_label": "只是锁住了，行没删",
+        "deleted_label": "行真的被改了",
+        "multixact_label": "MultiXact",
+        "multixact_note": "多个事务锁同一行",
+        "caption": "xmax 只装得下一个事务，装不下就换它"
+      }
+    },
+    {
+      "id": "s06",
+      "renderer": "pyv.scenes.s06_outro",
+      "sentences": [9],
+      "params": {
+        "title": "写与写之间",
+        "subtitle": "上游 PostgreSQL 的公开机制",
+        "badge": "独立开发者 · growdu"
+      }
+    }
+  ]
+}

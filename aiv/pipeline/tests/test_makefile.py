@@ -22,6 +22,7 @@ KNOWN_EPS = {
     "wal-interleave": ("字幕-WAL顺序.md", "wal-interleave.json"),
     "parallel-apply": ("字幕-并行apply.md", "parallel-apply.json"),
     "structured-ddl": ("字幕-结构化DDL.md", "structured-ddl.json"),
+    "row-lock": ("字幕-行锁.md", "row-lock.json"),
 }
 
 

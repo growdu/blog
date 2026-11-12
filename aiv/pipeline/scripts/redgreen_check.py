@@ -91,6 +91,55 @@ CASES: list[dict] = [
         "new": '"xid_prefix": "xid",\n        "records": [\n          ["100", "T1", "INSERT"],\n          ["110", "T2", "INSERT"],\n          ["120", "T1", "UPDATE"],\n          ["130", "T3", "DELETE"],\n          ["140", "T2", "UPDATE"],\n          ["151", "T1", "COMMIT"]\n        ],',
         "test": "tests/test_scenes.py::test_ep03_two_scenes_tell_the_same_story",
     },
+    {
+        "name": "EP06 去掉「上游的公开机制」",
+        "file": "字幕-行锁.md",
+        "old": "这是上游的公开机制，别把它当成谁家的私有扩展。",
+        "new": "这是每家都能自己加的能力，别把它当成谁家的私有扩展。",
+        "test": "tests/test_episode_boundaries.py::test_ep06_says_it_is_an_upstream_mechanism",
+    },
+    {
+        "name": "EP06 提到 PostgreSQL 18 却不说那指的是源码版本",
+        "file": "字幕-行锁.md",
+        "old": "PostgreSQL 18 源码里，锁藏在元组的 t_infomask 和 xmax 里。",
+        "new": "PostgreSQL 18 里，锁藏在元组的 t_infomask 和 xmax 里。",
+        "test": "tests/test_episode_boundaries.py::test_ep06_marks_postgresql_18_as_the_source_version",
+    },
+    {
+        "name": "EP06 说行锁是 PostgreSQL 18 新增的",
+        "file": "字幕-行锁.md",
+        "old": "PostgreSQL 在 MVCC 之上加了行锁，一共 4 种模式。",
+        "new": "PostgreSQL 18 新增的行锁，一共 4 种模式。",
+        "test": "tests/test_episode_boundaries.py::test_ep06_does_not_claim_row_lock_is_new_in_18",
+    },
+    {
+        "name": "EP06 选题库把源码里的位定义说成实测",
+        "file": "选题库.md",
+        "old": "**源码里的位定义**，不是实测数据",
+        "new": "**本机实测值**",
+        "test": "tests/test_episode_boundaries.py::test_ep06_marks_the_bit_values_as_source_definitions",
+    },
+    {
+        "name": "EP06 矩阵抄错一格（不再对称）",
+        "file": "contracts/row-lock.json",
+        "old": "[true, true, true, false],",
+        "new": "[true, true, false, false],",
+        "test": "tests/test_row_lock_matrix.py::test_the_matrix_is_symmetric",
+    },
+    {
+        "name": "EP06 矩阵把最弱那一行改错",
+        "file": "contracts/row-lock.json",
+        "old": "[true, true, true, false],",
+        "new": "[false, true, true, false],",
+        "test": "tests/test_row_lock_matrix.py::test_the_weakest_mode_only_conflicts_with_the_strongest",
+    },
+    {
+        "name": "EP06 挪用 EP01 的压测数字",
+        "file": "字幕-行锁.md",
+        "old": "PostgreSQL 在 MVCC 之上加了行锁，一共 4 种模式。",
+        "new": "PostgreSQL 在 MVCC 之上加了行锁，性能提升 2 到 5 倍。",
+        "test": "tests/test_episode_boundaries.py::test_new_episodes_do_not_reuse_the_ep01_benchmark[ep06]",
+    },
 ]
 
 
