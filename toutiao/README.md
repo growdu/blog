@@ -107,7 +107,7 @@ cd toutiao && python3 -m toutiao.cli status
 ## 测试
 
 ```bash
-cd /Users/growduduan/code/blog && python3 -m pytest toutiao/tests -q
+cd "$(git rev-parse --show-toplevel)" && python3 -m pytest toutiao/tests -q
 ```
 
 测试不依赖网络：头条接口用本地假 HTTP server 模拟（绑定 `127.0.0.1`），
