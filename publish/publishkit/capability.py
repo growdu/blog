@@ -31,6 +31,7 @@ from . import PublishKitError
 __all__ = [
     "AUTOMATIONS",
     "KINDS",
+    "PLATFORM_ID_RE",
     "REVIEWS",
     "Capability",
     "CapabilityError",
@@ -73,7 +74,8 @@ _TOP_KEYS = _REQUIRED_TOP_KEYS + (
 _VERIFIED_RE = re.compile(r"^\d{4}-\d{2}-(\d{2}|XX)$")
 
 #: 平台 id 的取值域：小写字母开头，可含数字与下划线。
-_ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
+#: 内容契约的 ``platforms`` 字段用的是同一套词汇——一份词汇只在一个地方定义。
+PLATFORM_ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 class CapabilityError(PublishKitError):
@@ -346,7 +348,7 @@ def load_capability_file(path) -> Capability:
     _reject_unknown(data, _TOP_KEYS, "")
 
     platform_id = _required(data, "id", "", _as_str)
-    if not _ID_RE.match(platform_id):
+    if not PLATFORM_ID_RE.match(platform_id):
         raise CapabilityFieldError(
             "能力模型字段 id 不合法：{!r}（应为小写字母开头的标识符）".format(
                 platform_id
@@ -433,7 +435,7 @@ def load_capability_file(path) -> Capability:
 
 def load_capability(platform_id: str, *, capabilities_dir=None) -> Capability:
     """Load the capability declaration of one platform, by its id."""
-    if not isinstance(platform_id, str) or not _ID_RE.match(platform_id):
+    if not isinstance(platform_id, str) or not PLATFORM_ID_RE.match(platform_id):
         raise CapabilityFieldError(
             "平台 id 不合法：{!r}（应为小写字母开头的标识符）".format(platform_id)
         )

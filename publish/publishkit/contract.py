@@ -1,0 +1,351 @@
+"""内容契约：母稿自己说了什么。
+
+母稿（``docs/`` 下的 md）是唯一真相（``publish/spec/00-架构设计.md`` §三
+不变量一）。内容契约规定母稿的 front matter 能写什么、怎么写、写到哪。
+
+格式规则（§4.2）：只允许扁平的 ``key: value`` 与单层的 ``key:`` +
+``  - item`` 列表，嵌套仅 ``cascade:`` 允许，多行值不支持。
+这一套格式不是新发明——``weixin/wechat/posts.py`` 的 ``parse_front_matter()``
+实现的正是同一套（``key: value`` 标量 + ``  - item`` 列表），规格 §4.2 明确要求
+「契约与它逐条对齐，不是各写各的」。
+
+所以这里的解析器与它**语义逐条一致**，但**代码是独立的**：契约层不 import
+平台 adapter 的任何模块（§11.1 的接缝原则）。想锁住两边不漂移，靠的是
+§5.3 那条兼容性测试，不是靠 import。
+
+字段白名单（§4.1）与约束：
+
+===========  ==============  ==========================================
+字段          类型             约束
+===========  ==============  ==========================================
+title        str             ≤ 80 字
+short_title  str             ≤ 32 字
+tldr         str             ≤ 120 字
+description  str             ≤ 150 字
+difficulty   int             1–5
+cover        str             相对文章目录
+reprintPolicy str            主题支持的转载枚举
+kind         str             ``post``（默认）/ ``video``
+platforms    list[str]       平台 id 列表
+publish_on   str             ``YYYY-MM-DD``
+===========  ==============  ==========================================
+"""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from datetime import date
+from pathlib import Path
+
+from . import PublishKitError
+from .capability import PLATFORM_ID_RE
+
+__all__ = [
+    "CONTENT_KINDS",
+    "PASSTHROUGH_FIELDS",
+    "REPRINT_POLICIES",
+    "ContentContract",
+    "ContractError",
+    "ContractFieldError",
+    "ContractFileError",
+    "contract_from_fields",
+    "parse_front_matter",
+    "read_contract",
+    "validate_fields",
+]
+
+#: 内容单元类型（§4.1）。注意与能力模型的 ``kind``（document / video）
+#: 不是同一套取值：这里说的是「这篇是什么」，那边说的是「这个平台发什么」。
+CONTENT_KINDS = ("post", "video")
+
+#: 主题（matery）支持的转载声明取值（``themes/matery/_config.yml``）。
+REPRINT_POLICIES = (
+    "cc_by",
+    "cc_by_nd",
+    "cc_by_sa",
+    "cc_by_nc",
+    "cc_by_nc_nd",
+    "cc_by_nc_sa",
+    "cc0",
+    "noreprint",
+    "pay",
+)
+
+#: 透传白名单（§4.1）。未声明的顶层字段一律丢弃——白名单透传，不做全文转储。
+PASSTHROUGH_FIELDS = (
+    "title",
+    "short_title",
+    "tldr",
+    "description",
+    "difficulty",
+    "cover",
+    "reprintPolicy",
+    "kind",
+    "platforms",
+    "publish_on",
+)
+
+#: 长度约束（§4.1）。
+_FIELD_MAX_CHARS = {
+    "title": 80,
+    "short_title": 32,
+    "tldr": 120,
+    "description": 150,
+}
+
+_FM_RE = re.compile(r"^---\r?\n(.*?)\r?\n---\r?\n", re.DOTALL)
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_INT_RE = re.compile(r"^-?\d+$")
+
+
+class ContractError(PublishKitError):
+    """内容契约读不了，或内容不合法。"""
+
+
+class ContractFileError(ContractError):
+    """母稿文件不存在或读不了。"""
+
+
+class ContractFieldError(ContractError):
+    """某个字段缺失、类型不对，或取值不在域内。"""
+
+
+def _unquote(value: str) -> str:
+    """Strip one layer of matching quotes."""
+    value = value.strip()
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+        return value[1:-1]
+    return value
+
+
+def parse_front_matter(text: str) -> tuple:
+    """Split YAML-ish front-matter from the body.
+
+    ``tools/sync-hexo.py`` generates the front-matter itself, so the shape is
+    known and fixed: ``key: value`` scalars plus ``key:`` followed by
+    ``  - item`` lists.  A tiny hand-written parser avoids adding a YAML
+    dependency for a format we control.
+
+    Returns ``(fields, body)``.  A list field maps to a list of strings;
+    a single-item list is kept as a one-element list so callers do not have
+    to guess the shape.  A ``key:`` with no items below it is an empty list
+    (``cover:`` → ``[]``)——this matches ``weixin/wechat/posts.py`` field for
+    field, so the two never disagree about what a draft said.
+
+    语义与 ``weixin/wechat/posts.py:82`` 的 ``parse_front_matter()`` 逐条对齐，
+    但代码独立：契约层不 import 平台 adapter 的任何模块。
+    """
+    if not isinstance(text, str):
+        raise ContractFieldError(
+            "母稿内容必须是字符串，实际是 {}".format(type(text).__name__)
+        )
+
+    match = _FM_RE.match(text)
+    if not match:
+        return {}, text
+
+    fields = {}
+    list_key = None
+    list_items = []
+
+    def close_list():
+        nonlocal list_key, list_items
+        if list_key is not None:
+            fields[list_key] = list(list_items)
+        list_key = None
+        list_items = []
+
+    for raw in match.group(1).split("\n"):
+        if not raw.strip():
+            continue
+        stripped = raw.lstrip()
+        if stripped.startswith("- "):
+            if list_key is not None:
+                list_items.append(_unquote(stripped[2:]))
+            continue
+        if ":" in raw:
+            key, _, value = raw.partition(":")
+            key = key.strip()
+            value = value.strip()
+            close_list()
+            if value:
+                fields[key] = _unquote(value)
+            else:
+                list_key = key
+    close_list()
+
+    return fields, text[match.end():]
+
+
+def validate_fields(fields: dict) -> list:
+    """Check front-matter fields against the content contract.
+
+    Returns **all** violations (never raises) so the linter can report them
+    in one pass; :func:`read_contract` turns a non-empty list into an error.
+    """
+    if not isinstance(fields, dict):
+        raise ContractFieldError(
+            "front matter 必须是映射，实际是 {}".format(type(fields).__name__)
+        )
+
+    violations = []
+
+    for field, limit in _FIELD_MAX_CHARS.items():
+        value = fields.get(field)
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            violations.append("{} 必须是字符串".format(field))
+        elif len(value) > limit:
+            violations.append(
+                "{} {} 字，超过上限 {} 字".format(field, len(value), limit)
+            )
+
+    violations.extend(_validate_difficulty(fields))
+    violations.extend(_validate_kind(fields))
+    violations.extend(_validate_reprint_policy(fields))
+    violations.extend(_validate_platforms(fields))
+    violations.extend(_validate_publish_on(fields))
+
+    return violations
+
+
+def _validate_difficulty(fields: dict) -> list:
+    value = fields.get("difficulty")
+    if value is None:
+        return []
+    if not isinstance(value, str) or not _INT_RE.match(value.strip()):
+        return ["difficulty 必须是 1–5 的整数，实际是 {!r}".format(value)]
+    number = int(value.strip())
+    if not 1 <= number <= 5:
+        return ["difficulty {} 超出 1–5".format(number)]
+    return []
+
+
+def _validate_kind(fields: dict) -> list:
+    value = fields.get("kind")
+    if value is None:
+        return []
+    if not isinstance(value, str):
+        return ["kind 必须是字符串"]
+    if value not in CONTENT_KINDS:
+        return [
+            "kind 必须是 {} 之一，实际是 {!r}".format(" / ".join(CONTENT_KINDS), value)
+        ]
+    return []
+
+
+def _validate_reprint_policy(fields: dict) -> list:
+    value = fields.get("reprintPolicy")
+    if value is None:
+        return []
+    if not isinstance(value, str):
+        return ["reprintPolicy 必须是字符串"]
+    if value not in REPRINT_POLICIES:
+        return ["reprintPolicy {!r} 不在主题支持的枚举里".format(value)]
+    return []
+
+
+def _validate_platforms(fields: dict) -> list:
+    value = fields.get("platforms")
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        return ["platforms 必须是列表"]
+    violations = []
+    for item in value:
+        if not isinstance(item, str) or not item.strip():
+            violations.append("platforms 的元素必须是非空字符串")
+        elif not PLATFORM_ID_RE.match(item):
+            violations.append("platforms 里的平台 id {!r} 不合法".format(item))
+    return violations
+
+
+def _validate_publish_on(fields: dict) -> list:
+    value = fields.get("publish_on")
+    if value is None:
+        return []
+    if not isinstance(value, str):
+        return ["publish_on 必须是字符串"]
+    if not _DATE_RE.match(value.strip()):
+        return ["publish_on {!r} 不是 YYYY-MM-DD 格式".format(value)]
+    try:
+        date.fromisoformat(value.strip())
+    except ValueError:
+        return ["publish_on {!r} 不是真实存在的日期".format(value)]
+    return []
+
+
+@dataclass(frozen=True)
+class ContentContract:
+    """What one master draft says about itself."""
+
+    path: Path | None
+    title: str
+    kind: str
+    platforms: tuple
+    publish_on: str | None
+    short_title: str | None
+    tldr: str | None
+    description: str | None
+    difficulty: int | None
+    cover: str | None
+    reprint_policy: str | None
+
+    @property
+    def is_publish_candidate(self) -> bool:
+        """``platforms`` 非空即进入发布候选集（06 规格 §3.2）。"""
+        return bool(self.platforms)
+
+
+def contract_from_fields(fields: dict, *, path=None) -> ContentContract:
+    """Build a :class:`ContentContract` from parsed front-matter fields.
+
+    Raises :class:`ContractFieldError` when the fields violate the contract.
+    """
+    violations = validate_fields(fields)
+    if violations:
+        where = "{} ".format(path) if path is not None else ""
+        raise ContractFieldError(
+            "{}不满足内容契约：{}".format(where, "；".join(violations))
+        )
+
+    def text(field):
+        value = fields.get(field)
+        return value if isinstance(value, str) else None
+
+    platforms = fields.get("platforms")
+    difficulty = fields.get("difficulty")
+
+    return ContentContract(
+        path=Path(path) if path is not None else None,
+        title=text("title") or "",
+        kind=text("kind") or "post",
+        platforms=tuple(platforms) if isinstance(platforms, list) else (),
+        publish_on=text("publish_on"),
+        short_title=text("short_title"),
+        tldr=text("tldr"),
+        description=text("description"),
+        difficulty=int(difficulty.strip()) if isinstance(difficulty, str) else None,
+        cover=text("cover"),
+        reprint_policy=text("reprintPolicy"),
+    )
+
+
+def read_contract(path) -> ContentContract:
+    """Read one master draft and return its content contract.
+
+    母稿可以是 ``docs/`` 下的原稿，也可以是 ``source/_posts/`` 下的内容单元
+    ——两者的 front matter 是同一套。
+    """
+    path = Path(path)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise ContractFileError("母稿文件不存在：{}".format(path)) from exc
+    except OSError as exc:
+        raise ContractFileError("母稿文件读不了：{}（{}）".format(path, exc)) from exc
+
+    fields, _body = parse_front_matter(text)
+    return contract_from_fields(fields, path=path)
