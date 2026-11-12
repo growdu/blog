@@ -27,18 +27,48 @@ ERROR = "error"
 WARNING = "warning"
 
 # 每个平台：必填字段、文本限额在 TOML 里的键名、列表限额、整数字段
+#
+# **列表限额的总限额怎么量，两个平台不一样**，所以口径写在这里而不是靠键名猜：
+#
+# - 视频号 `topics_max`：话题**个数**的上限（5 个）。
+# - B站 `tags_chars`：标签**英文逗号分隔后的总字符数**上限（199 字）。
+#
+# 搞混的后果是方向相反的：视频号会把 5 个超长话题放过（真正该拦的是字数），
+# B站会把 199 个标签放过（真正该拦的是总长）。规格 §4.3 有各自的定义。
 PLATFORM_SPECS = {
     "channels": {
         "required": ("title", "description", "topics"),
         "text_limits": {"title": "title_chars", "description": "description_chars"},
-        "list_limits": {"topics": ("topics_max", "topic_chars")},
+        "list_limits": {
+            "topics": {
+                "total": "topics_max",
+                "item": "topic_chars",
+                "measure": "count",
+            },
+        },
         "int_fields": (),
+        # 整数字段的取值域。平台只认这几个值，写别的平台会拒。
+        "int_domains": {},
+        # 条件必填：字段取到某个值时，另一个字段必须给。
+        "required_when": {},
     },
     "bilibili": {
         "required": ("title", "description", "tags", "tid", "copyright", "no_reprint"),
         "text_limits": {"title": "title_chars", "description": "description_chars"},
-        "list_limits": {"tags": ("tags_chars", "tag_chars")},
+        "list_limits": {
+            "tags": {
+                "total": "tags_chars",
+                "item": "tag_chars",
+                "measure": "joined",
+                # B站的 tag 字段是英文逗号分隔的一串（不是 # 井号）。
+                "separator": ",",
+            },
+        },
         "int_fields": ("tid", "copyright", "no_reprint"),
+        # copyright：1 = 原创，2 = 转载；no_reprint：0 = 允许转载，1 = 不允许。
+        "int_domains": {"copyright": (1, 2), "no_reprint": (0, 1)},
+        # 转载必须给来源地址——平台会拒没有来源的转载（规格 §4.3）。
+        "required_when": {"copyright": {2: ("source",)}},
     },
 }
 
@@ -89,15 +119,25 @@ def load_meta(episode: str, root: Path | None = None) -> EpisodeMeta:
     path = meta_path(episode, root)
     if not path.is_file():
         raise MetaError(f"发布元数据不存在：{path}")
-    raw = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as error:
+        raise MetaError(f"发布元数据不是合法 JSON：{path}（{error}）") from error
     if not isinstance(raw, dict):
         raise MetaError(f"发布元数据必须是对象：{path}")
     channels = raw.get("channels")
     bilibili = raw.get("bilibili")
+    # cover_at 写成非数字时要说人话——`float("x")` 抛的裸 ValueError
+    # 会被 CLI 漏出去变成 traceback，而 CLI 只认 MetaError。
+    try:
+        cover_at = float(raw.get("cover_at", -1.0))
+    except (TypeError, ValueError) as error:
+        raise MetaError(
+            f"cover_at 必须是数字，实际 {raw.get('cover_at')!r}：{path}") from error
     return EpisodeMeta(
         episode=str(raw.get("episode", "")),
         title=str(raw.get("title", "")),
-        cover_at=float(raw.get("cover_at", -1.0)),
+        cover_at=cover_at,
         url=str(raw.get("url", "")),
         channels=channels if isinstance(channels, dict) else None,
         bilibili=bilibili if isinstance(bilibili, dict) else None,
@@ -184,13 +224,14 @@ def _check_platform(platform, section, spec, limits_loader, target):
                 f"{platform} 的 {field_name} 有 {len(value)} 字，超过上限 {limit}",
                 target))
 
-    for field_name, (total_key, item_key) in spec["list_limits"].items():
-        total_limit = limits.get(total_key)
-        item_limit = limits.get(item_key)
+    for field_name, list_spec in spec["list_limits"].items():
+        total_limit = limits.get(list_spec["total"])
+        item_limit = limits.get(list_spec["item"])
         if total_limit is None or item_limit is None:
             findings.append(Finding(
                 "epmeta.limits", ERROR,
-                f"{platform} 的能力声明缺少 {total_key} / {item_key}", target))
+                f"{platform} 的能力声明缺少 {list_spec['total']} / {list_spec['item']}",
+                target))
             continue
         items = section.get(field_name) or []
         if not isinstance(items, list):
@@ -198,10 +239,18 @@ def _check_platform(platform, section, spec, limits_loader, target):
                 "epmeta.platform-required", ERROR,
                 f"{platform} 的 {field_name} 必须是列表", target))
             continue
-        if len(items) > total_limit:
+        # 总限额怎么量，两个平台不一样（见 PLATFORM_SPECS 的说明）。
+        if list_spec["measure"] == "count":
+            total = len(items)
+            total_text = f"{total} 项"
+        else:
+            joined = list_spec["separator"].join(str(item) for item in items)
+            total = len(joined)
+            total_text = f"{total} 字（逗号分隔后）"
+        if total > total_limit:
             findings.append(Finding(
                 "epmeta.list-limit", ERROR,
-                f"{platform} 的 {field_name} 有 {len(items)} 项，超过上限 {total_limit}",
+                f"{platform} 的 {field_name} 共 {total_text}，超过上限 {total_limit}",
                 target))
         for item in items:
             if len(str(item)) > item_limit:
@@ -216,4 +265,24 @@ def _check_platform(platform, section, spec, limits_loader, target):
             findings.append(Finding(
                 "epmeta.int-field", ERROR,
                 f"{platform} 的 {field_name} 必须是整数，实际 {value!r}", target))
+            continue
+        allowed = spec["int_domains"].get(field_name)
+        if allowed is not None and value not in allowed:
+            findings.append(Finding(
+                "epmeta.int-domain", ERROR,
+                f"{platform} 的 {field_name} 只能是 {list(allowed)} 之一，"
+                f"实际 {value!r}", target))
+
+    # 条件必填：B站转载（copyright = 2）必须给 source。
+    for field_name, mapping in spec["required_when"].items():
+        value = section.get(field_name)
+        for needed_value, other_fields in mapping.items():
+            if value != needed_value:
+                continue
+            for other in other_fields:
+                if not str(section.get(other) or "").strip():
+                    findings.append(Finding(
+                        "epmeta.conditional-required", ERROR,
+                        f"{platform} 的 {field_name} = {needed_value} 时必须给 "
+                        f"{other}（平台会拒没有来源的转载）", target))
     return findings
