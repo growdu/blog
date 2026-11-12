@@ -105,7 +105,7 @@ python -m pyv.cli bgm verify \
     --video ../out/pg-parallel-decode.mp4 \
     --narration ../narration_pg-parallel-decode.mp3 \
     --music ../music/tracks/series-bed-01.wav \
-    --storyboard ../storyboard.json
+    --storyboard ../storyboard_pg-parallel-decode.json
 ```
 
 量四件事：稳态 duck 深度、旁白活跃段与 BGM 的电平差、成片真峰值、
