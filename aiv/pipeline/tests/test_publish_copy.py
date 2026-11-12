@@ -7,12 +7,16 @@
 构建照常通过，测试照常全绿，只有读者看到的是旧版本。
 """
 import importlib.util
+import re
 from pathlib import Path
 
 from pyv import character
 
 SCRIPT = character.AIV_ROOT / "scripts" / "sync_publish_docs.py"
 PUBLISH_ROOT = character.REPO_ROOT / "docs" / "life" / "aiv"
+
+# `sync-hexo.py` 重写站内相对链接用的正则（那边一个字都不能改，只能守自己）
+LINK_RE = re.compile(r"(?<!!)\[([^\]]*)\]\(([^)]+)\)")
 
 
 def _module():
@@ -55,3 +59,31 @@ def test_publish_dir_contains_only_whitelisted_docs():
             continue
         rel = path.relative_to(PUBLISH_ROOT).as_posix()
         assert rel in allowed, f"{rel} 不该出现在发布目录里"
+
+
+def test_published_docs_have_no_cross_paragraph_link_matches():
+    """正文里不许出现会被链接重写误匹配的方括号。
+
+    `sync-hexo.py` 用 `(?<!!)\\[([^\\]]*)\\]\\(([^)]+)\\)` 重写相对链接，
+    它不认代码块：正文里任何**不成对的 `[`**（比如数学区间写法
+    `` `[s, s+D)` ``）都会让它一路吃到后面某个 `](...)`，
+    把中间整段包成一个链接——markdown 源码看着没变，渲染出来却是
+    上千字的巨型蓝色链接。
+
+    这条规则盯的是发布目录里的 AIV 文档：它们会被 `sync-hexo.py`
+    重写链接，所以踩到就会直接出现在线上。
+    """
+    offenders = []
+    for path in sorted(PUBLISH_ROOT.rglob("*.md")):
+        content = path.read_text(encoding="utf-8")
+        for match in LINK_RE.finditer(content):
+            text = match.group(1)
+            if "\n" in text:
+                line = content[: match.start()].count("\n") + 1
+                offenders.append(
+                    f"{path.relative_to(PUBLISH_ROOT).as_posix()}:{line} "
+                    f"吞掉 {len(text)} 字 → {match.group(2)}"
+                )
+    assert not offenders, "以下位置有跨段误匹配（把方括号区间写法改掉）：\n" + \
+        "\n".join(offenders)
+
