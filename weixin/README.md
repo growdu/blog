@@ -173,14 +173,15 @@ export WX_NOTIFY_KEY=SCTxxxxxxxx     # https://sct.ftqq.com 扫码登录即可�
 | 高亮 | `highlight.py` | ✅ Pygments，nowrap + noclasses |
 | mermaid | `mermaid.py` | ✅ 失败显式降级为源码块 |
 | 资产 | `assets.py` | ✅ 压缩到 ≤ 1 MB、封面裁剪框、外链图下载 |
-| 接口 | `publish.py` | ✅ 6 个接口，错误不吞 |
+| 接口 | `publish.py` | ✅ 7 个接口，错误不吞 |
 | 幂等 | `state.py` | ✅ 三层键（正文指纹含分类标签） |
 | 通知 | `notify.py` | ✅ Server酱 / 企业微信 / 通用 webhook |
 | 分类 / 合集 | `collection.py` | ✅ 分类标签、合集计划、导览文章、勾选清单（**平台上的归属仍是人工**） |
 | 站点复用 | `hexo.py` | ✅ 复用 `sync-hexo.py` 的 slugize，分类归档路径与站点一致 |
 | 批量 / 定时 | `cli.py` | ✅ `batch` 批量建草稿、`auto-draft` 定时自动进草稿（launchd 模板在 `deploy/`） |
+| 拆分 | `split.py` | ✅ 超 2 万字符的文章按标题边界拆成多篇，编号 + 衔接 |
 | 审计 | `audit.py` | ✅ 复算全语料统计与 HTML 合规检查 |
-| CLI | `cli.py` | ✅ scan / audit / convert / publish / categories / collections / publish-collection / batch / auto-draft / status |
+| CLI | `cli.py` | ✅ scan / audit / convert / publish / categories / collections / publish-collection / batch / auto-draft / reconcile / status |
 
 ## 测试
 
