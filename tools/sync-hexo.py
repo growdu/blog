@@ -27,6 +27,38 @@ POSTS = os.path.join(SRC, '_posts')
 IMGS = os.path.join(SRC, 'images')
 IMG_EXT = {'.png','.jpg','.jpeg','.gif','.svg','.webp','.bmp','.ico'}
 
+# 内部工程目录（§4.3 的路径排除规则）：路径中任意一级目录名命中即排除，
+# 大小写不敏感。
+#
+# **只排除目录，不排除任何文件名**——初版排除 README.md，实测误伤
+# aiv/voice/README.md 等 5 个内容资产（那是音色规范，不是垃圾）。
+#
+# 这条规则是**防回归守卫**，不是修复手段：真正的解法是「想清楚哪些内容该
+# 发布，然后让发布路径与工程路径物理分离」（AIV 把工程目录迁出 docs/ 就是
+# 那么做的）。它防的是「将来有人在 docs/ 下建了 tests/、pipeline/ 这类工程
+# 目录，构建期把它们当成文章发布」。
+#
+# 与 main() 里的隐藏目录守卫**并列**，不是替换它。
+EXCLUDED_DIR_NAMES = frozenset({
+    'tests', 'test', 'fixtures', 'plans', 'pipeline', 'build', 'out',
+    '_staging', 'frames',
+})
+
+
+def is_excluded_dir(name):
+    """Whether a directory name is an internal engineering directory (§4.3)."""
+    return name.lower() in EXCLUDED_DIR_NAMES
+
+
+def prune_excluded_dirs(dirs):
+    """Drop excluded directories from an ``os.walk`` ``dirs`` list, in place.
+
+    剪掉目录（而不是跳过文件）是对的：被排除的目录**整棵**不进产物——
+    文章、分类、图都不进。
+    """
+    dirs[:] = [d for d in dirs if not is_excluded_dir(d)]
+    return dirs
+
 # Posts to feature in the homepage recommend section (relative to docs/)
 # Higher top value = shown first in the recommend carousel
 FEATURED_POSTS = {
@@ -299,6 +331,7 @@ def read_cascade_categories():
     """
     cascades = {}
     for root, dirs, files in os.walk(DOCS):
+        prune_excluded_dirs(dirs)
         if '_index.md' not in files:
             continue
         idx = os.path.join(root, '_index.md')
@@ -353,7 +386,8 @@ def categories_yaml(cats):
 def collect_database_posts(section_titles, cascades):
     """Collect database posts and their generated permalinks for the landing page."""
     posts = []
-    for root, _, files in os.walk(DOCS):
+    for root, dirs, files in os.walk(DOCS):
+        prune_excluded_dirs(dirs)
         for filename in sorted(files):
             ext = os.path.splitext(filename)[1].lower()
             if ext not in ('.md', '.html', '.htm') or filename == '_index.md':
@@ -1212,7 +1246,8 @@ def rewrite_links(content, rel):
 
 
 def copy_images():
-    for root, _, files in os.walk(DOCS):
+    for root, dirs, files in os.walk(DOCS):
+        prune_excluded_dirs(dirs)
         for f in files:
             if os.path.splitext(f)[1].lower() in IMG_EXT:
                 src = os.path.join(root, f)
@@ -1527,6 +1562,9 @@ def main():
         # became a published post ("pytest cache directory #") and got its
         # own Gitalk issue on the next deploy.
         dirs[:] = [d for d in dirs if not d.startswith('.')]
+        # §4.3 的路径排除规则：内部工程目录整棵不进产物。
+        # 与上面那条隐藏目录守卫并列，不是替换它。
+        prune_excluded_dirs(dirs)
         for f in sorted(files):
             if f.startswith('.'):
                 continue
