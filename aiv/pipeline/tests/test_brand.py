@@ -119,6 +119,33 @@ def test_resolve_clip_returns_none_when_no_asset(tmp_path, monkeypatch):
     assert brand.prepare_clips(tmp_path / "build") == {}
 
 
+def test_audio_source_prefers_the_finished_mix(tmp_path, monkeypatch):
+    """成品音轨是正本：mp4 里烘焙的音轨只作兜底。
+
+    2026-11-12 踩过：motif 的成品音轨做出来了，却没接进成片——
+    当时从 mp4 抽音轨，嵌进去的还是切换前的旧 AI 配乐。
+    """
+    clip = tmp_path / "intro.mp4"
+    clip.write_bytes(b"x")
+    audio_dir = tmp_path / "audio"
+    audio_dir.mkdir()
+    mix = audio_dir / "intro_mix.wav"
+    mix.write_bytes(b"x")
+    monkeypatch.setattr(brand, "BRAND_ROOT", tmp_path)
+
+    assert brand._resolve_audio_source("intro", clip) == mix
+
+
+def test_audio_source_falls_back_to_the_clip(tmp_path, monkeypatch):
+    """没有成品音轨时用 mp4 里的音轨顶上，流水线不至于断。"""
+    clip = tmp_path / "intro.mp4"
+    clip.write_bytes(b"x")
+    (tmp_path / "audio").mkdir()
+    monkeypatch.setattr(brand, "BRAND_ROOT", tmp_path)
+
+    assert brand._resolve_audio_source("intro", clip) == clip
+
+
 def test_prepare_clips_reuses_fresh_outputs(tmp_path, monkeypatch):
     """产物比源文件新时不该重复转码。"""
     source = _make_brand_clip(tmp_path / "src" / "intro.mp4")

@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "rule": "片尾接回片头：outro_start + duration == intro_start",
+  "duration_s": 2.833,
+  "intro_start_s": 8.733,
+  "outro_start_s": 5.9,
+  "track_id": "series-motif-01",
+  "track_sha256": "994ef3acf4d8ba7fb38e27336d3ef694424f47aa6279ef580d2b4bbadbb72888",
+  "onset_ratio": 13.712,
+  "intro_rms": 0.058671,
+  "outro_rms": 0.05467
+}

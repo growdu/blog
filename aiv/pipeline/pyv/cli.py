@@ -197,6 +197,31 @@ def cmd_bgm(args: argparse.Namespace) -> int:
         print(f"台账 {len(entries)} 首，{len(findings)} 个问题")
         return 1 if any(f.level == bgm.ERROR for f in findings) else 0
 
+    if args.bgm_command == "windows":
+        return _cmd_bgm_windows(args)
+
+    if args.bgm_command == "brand-check":
+        windows = bgm.load_brand_windows(args.windows)
+        music = args.music
+        if music is None:
+            entries = bgm.load_library()
+            motif = next((e for e in entries if e.series_role == "motif"), None)
+            if motif is None:
+                print("台账里没有 series_role=motif 的曲子", file=sys.stderr)
+                return 1
+            music = str(bgm.AIV_ROOT / motif.local_path)
+        findings = bgm.check_brand_windows(windows, music)
+        print(f"片头 {windows.intro_start_s:.3f}~{windows.intro_end_s:.3f}s / "
+              f"片尾 {windows.outro_start_s:.3f}~{windows.outro_end_s:.3f}s"
+              f"（{windows.track_id}，起音比 {windows.onset_ratio:.2f}）")
+        for finding in findings:
+            print(f"{finding.level.upper():7} {finding}")
+        if findings:
+            print(f"FAIL {len(findings)} 个问题", file=sys.stderr)
+            return 1
+        print("OK 片头片尾首尾相接")
+        return 0
+
     # check
     profile = bgm.measure(args.music)
     print(f"{Path(args.music).name}  {profile.duration_s:.1f}s / "
@@ -215,6 +240,47 @@ def cmd_bgm(args: argparse.Namespace) -> int:
         return 1
     print("OK 通过（只有倾向类提示）")
     return 0
+
+
+def _cmd_bgm_windows(args: argparse.Namespace) -> int:
+    """挑（或重挑）系列片头片尾的配乐窗口。
+
+    窗口是**决策**，所以入库；音频才是产物。
+    """
+    from pyv import bgm
+
+    music = args.music
+    track_id = ""
+    track_sha = ""
+    if music is None:
+        entries = bgm.load_library()
+        motif = next((e for e in entries if e.series_role == "motif"), None)
+        if motif is None:
+            print("台账里没有 series_role=motif 的曲子", file=sys.stderr)
+            return 1
+        music = str(bgm.AIV_ROOT / motif.local_path)
+        track_id = motif.id
+        track_sha = motif.sha256
+    else:
+        entries = bgm.load_library()
+        for entry in entries:
+            if entry.local_path and str(bgm.AIV_ROOT / entry.local_path) == str(
+                    Path(music).resolve()):
+                track_id = entry.id
+                track_sha = entry.sha256
+                break
+
+    windows = bgm.pick_brand_windows(
+        music, track_id=track_id, track_sha256=track_sha)
+    target = bgm.save_brand_windows(windows, args.out)
+    print(f"片头 {windows.intro_start_s:.3f}~{windows.intro_end_s:.3f}s / "
+          f"片尾 {windows.outro_start_s:.3f}~{windows.outro_end_s:.3f}s"
+          f"（起音比 {windows.onset_ratio:.2f}）")
+    print(f"→ {target}")
+    findings = bgm.check_brand_windows(windows, music)
+    for finding in findings:
+        print(f"{finding.level.upper():7} {finding}")
+    return 1 if any(f.level == bgm.ERROR for f in findings) else 0
 
 
 def _mix_body_range(args: argparse.Namespace) -> tuple[float, float]:
@@ -309,6 +375,21 @@ def main(argv: list[str] | None = None) -> int:
     p_bgm_verify.add_argument("--body-start", type=float, default=None)
     p_bgm_verify.add_argument("--body-end", type=float, default=None)
     p_bgm_verify.set_defaults(func=cmd_bgm)
+
+    # 系列片头片尾的配乐窗口：挑窗口 / 查窗口
+    p_bgm_windows = bgm_sub.add_parser("windows")
+    p_bgm_windows.add_argument("--music", default=None,
+                               help="motif 音频，默认取台账里 series_role=motif 的那条")
+    p_bgm_windows.add_argument("--out", default=None,
+                               help="窗口文件，默认 brand/brand_windows.json")
+    p_bgm_windows.set_defaults(func=cmd_bgm)
+
+    p_bgm_brand = bgm_sub.add_parser("brand-check")
+    p_bgm_brand.add_argument("--windows", default=None,
+                             help="窗口文件，默认 brand/brand_windows.json")
+    p_bgm_brand.add_argument("--music", default=None,
+                             help="motif 音频，默认取台账里 series_role=motif 的那条")
+    p_bgm_brand.set_defaults(func=cmd_bgm)
 
     args = parser.parse_args(argv)
     return args.func(args)

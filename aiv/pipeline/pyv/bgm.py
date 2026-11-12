@@ -23,7 +23,7 @@ import re
 import subprocess
 import tempfile
 import wave
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 import numpy as np
@@ -109,6 +109,10 @@ RULE_IDS = (
     "bgm.mix-voice-to-bgm",
     "bgm.mix-true-peak",
     "bgm.mix-voice-gain",
+    # 系列片头片尾的配乐窗口（见规范 §6 末条、§7）
+    "bgm.brand-loop",
+    "bgm.brand-track",
+    "bgm.brand-window",
 )
 
 ERROR = "error"
@@ -765,4 +769,195 @@ def check_mix(report: MixReport) -> list[Finding]:
             f"旁白在成片里的增益偏离 {report.voice_gain_db:+.2f} dB，"
             f"应在 ±{MIX_VOICE_GAIN_TOLERANCE_DB} dB 内",
         ))
+    return findings
+
+
+# ---------------------------------------------------------------- 品牌片窗口
+
+# 系列片头片尾的配乐窗口。规范 §6 末条：每期开头与结尾的 motif 片段要
+# **首尾相接（片尾接回片头）**，形成闭环。
+#
+# 口径（2026-11-12 定）：片头取 [s, s+D)，片尾取 [s-D, s)——
+# 两段拼起来是同一段连续音乐，片尾结束时正好落在片头的起音点上。
+#
+# 早先的做法是片头片尾**各按能量评分各挑各的**窗口，intro 与 outro
+# 互不相干：本期 intro 在 115.15 s、outro 在 31.80 s，实测两段的
+# 相关系数只有 0.009，听上去基本是两首不同的音乐——这就是「结尾和片头
+# 对不上」的原因。
+
+BRAND_WINDOW_SECONDS = 2.833      # 与 render_brand.py 的帧数一致
+BRAND_WINDOWS_PATH = AIV_ROOT / "brand" / "brand_windows.json"
+
+# 起音比 = 窗口开头 50 ms 的能量 ÷ 紧邻之前 200 ms 的能量。
+# 比值大 = 那里有个清楚的起音，片头才「起」得起来。
+BRAND_ONSET_RATIO_MIN = 4.0
+# 两段各自的能量下限（别挑到曲子头尾的静音）
+BRAND_MIN_RMS = 0.02
+# 峰值上限（削顶的窗口直接跳过）
+BRAND_PEAK_MAX = 0.98
+
+
+@dataclass(frozen=True)
+class BrandWindows:
+    """系列片头片尾的配乐窗口。
+
+    两段取自同一条 motif，且首尾相接：`outro_start + duration == intro_start`。
+    """
+
+    duration_s: float
+    intro_start_s: float
+    outro_start_s: float
+    track_id: str = ""
+    track_sha256: str = ""
+    onset_ratio: float = 0.0
+    intro_rms: float = 0.0
+    outro_rms: float = 0.0
+
+    @property
+    def intro_end_s(self) -> float:
+        return self.intro_start_s + self.duration_s
+
+    @property
+    def outro_end_s(self) -> float:
+        return self.outro_start_s + self.duration_s
+
+    def as_dict(self) -> dict:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, raw: dict) -> "BrandWindows":
+        known = {f for f in cls.__dataclass_fields__}  # type: ignore[attr-defined]
+        missing = {"duration_s", "intro_start_s", "outro_start_s"} - known
+        if missing:
+            raise ValueError(f"品牌片窗口缺字段：{sorted(missing)}")
+        return cls(**{k: v for k, v in raw.items() if k in known})
+
+
+def _rms(samples: np.ndarray) -> float:
+    if samples.size == 0:
+        return 0.0
+    return float(np.sqrt(np.mean(samples ** 2)))
+
+
+def pick_brand_windows(music_path: str | Path,
+                       duration_s: float = BRAND_WINDOW_SECONDS,
+                       track_id: str = "",
+                       track_sha256: str = "") -> BrandWindows:
+    """挑片头与片尾的配乐窗口，两段首尾相接。
+
+    片头 = [s, s+D)，片尾 = [s-D, s)。候选点 s 要同时满足：
+
+    - 起音明显（开头 50 ms 比之前 200 ms 明显更响）
+    - 两段的能量都不低（不能挑到静音）
+    - 两段都不削顶
+
+    评分用起音比：起音越明显，片头越「起」得住。
+    """
+    samples = _to_mono(_decode_stereo(music_path))
+    sr = 48000
+    win = int(duration_s * sr)
+    step = int(0.05 * sr)
+    head_n = int(0.05 * sr)
+    pre_n = int(0.20 * sr)
+
+    best: tuple | None = None
+    for i in range(win, samples.size - win, step):
+        pre = samples[i - win:i]
+        post = samples[i:i + win]
+        if float(np.abs(pre).max()) > BRAND_PEAK_MAX:
+            continue
+        if float(np.abs(post).max()) > BRAND_PEAK_MAX:
+            continue
+        r_pre = _rms(pre)
+        r_post = _rms(post)
+        if r_pre < BRAND_MIN_RMS or r_post < BRAND_MIN_RMS:
+            continue
+        onset = _rms(post[:head_n]) / (_rms(samples[i - pre_n:i]) + 1e-9)
+        if onset < BRAND_ONSET_RATIO_MIN:
+            continue
+        if best is None or onset > best[0]:
+            best = (onset, i / sr, r_pre, r_post)
+
+    if best is None:
+        raise ValueError(
+            f"{Path(music_path).name} 里找不到合格的起音点"
+            f"（起音比 ≥ {BRAND_ONSET_RATIO_MIN}、两段能量 ≥ {BRAND_MIN_RMS}、"
+            f"峰值 ≤ {BRAND_PEAK_MAX}）"
+        )
+    onset, start, r_pre, r_post = best
+    return BrandWindows(
+        duration_s=duration_s,
+        intro_start_s=round(start, 3),
+        outro_start_s=round(start - duration_s, 3),
+        track_id=track_id,
+        track_sha256=track_sha256,
+        onset_ratio=round(onset, 3),
+        intro_rms=round(r_post, 6),
+        outro_rms=round(r_pre, 6),
+    )
+
+
+def save_brand_windows(windows: BrandWindows,
+                       path: str | Path | None = None) -> Path:
+    """把选定的窗口写下来（入库：这是决策，不是产物）。"""
+    target = Path(path) if path else BRAND_WINDOWS_PATH
+    target.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "version": 1,
+        "rule": "片尾接回片头：outro_start + duration == intro_start",
+        **windows.as_dict(),
+    }
+    target.write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    return target
+
+
+def load_brand_windows(path: str | Path | None = None) -> BrandWindows:
+    target = Path(path) if path else BRAND_WINDOWS_PATH
+    if not target.is_file():
+        raise FileNotFoundError(f"品牌片窗口文件不存在：{target}")
+    return BrandWindows.from_dict(
+        json.loads(target.read_text(encoding="utf-8"))
+    )
+
+
+def check_brand_windows(windows: BrandWindows,
+                        music_path: str | Path | None = None) -> list[Finding]:
+    """品牌片窗口是否满足规范 §6 末条。"""
+    findings: list[Finding] = []
+
+    def add(rule_id: str, level: str, message: str) -> None:
+        findings.append(Finding(rule_id, level, message, windows.track_id))
+
+    # ---- 首尾相接：片尾的结束点必须正好落在片头的起点
+    gap = abs(windows.outro_end_s - windows.intro_start_s)
+    if gap > 0.01:
+        add("bgm.brand-loop", ERROR,
+            f"片尾结束在 {windows.outro_end_s:.3f}s，片头起于 "
+            f"{windows.intro_start_s:.3f}s，两者没有相接（差 {gap:.3f}s）——"
+            f"规范 §6 要求「片尾接回片头」形成闭环")
+
+    # ---- 两段必须取自同一条登记过的 motif
+    if not windows.track_id:
+        add("bgm.brand-track", ERROR, "窗口没记 motif 的 id")
+    if music_path is not None:
+        local = Path(music_path)
+        if not local.is_file():
+            add("bgm.brand-track", ERROR, f"配乐文件不存在：{local}")
+        elif windows.track_sha256 and sha256_of(local) != windows.track_sha256:
+            add("bgm.brand-track", ERROR,
+                f"配乐指纹与窗口记录的不一致（{windows.track_sha256[:12]}…）——"
+                f"换过曲子就要重挑窗口")
+
+    if windows.onset_ratio and windows.onset_ratio < BRAND_ONSET_RATIO_MIN:
+        add("bgm.brand-window", WARNING,
+            f"片头起音比只有 {windows.onset_ratio:.2f}，"
+            f"低于 {BRAND_ONSET_RATIO_MIN}——开场可能起不来")
+    if windows.intro_rms and windows.intro_rms < BRAND_MIN_RMS:
+        add("bgm.brand-window", ERROR,
+            f"片头窗口能量只有 {windows.intro_rms:.4f}，低于 {BRAND_MIN_RMS}")
+    if windows.outro_rms and windows.outro_rms < BRAND_MIN_RMS:
+        add("bgm.brand-window", ERROR,
+            f"片尾窗口能量只有 {windows.outro_rms:.4f}，低于 {BRAND_MIN_RMS}")
     return findings

@@ -19,8 +19,8 @@ brand/
 │   └── growdu_pose_wave_nobg.png      小象 · 挥手姿态（2048²，透明底，戴方框眼镜）
 ├── audio/
 │   ├── voice_intro.mp3 / voice_outro.mp3   旁白（定稿音色）
-│   ├── bgm_intro.wav / bgm_outro.wav       配乐原曲（60~75 秒）
 │   └── intro_mix.wav / outro_mix.wav       成品音轨（旁白 + 配乐，2.833s）
+├── brand_windows.json                      片头片尾的配乐窗口决定（**入库**）
 └── scripts/
     ├── render_brand.py              渲染两支片（当前唯一入口）
     ├── generate_poses.py            生成点赞 / 挥手姿态素材（可复现）
@@ -31,6 +31,29 @@ brand/
 ```
 
 媒体产物（`clips/`、`assets/`、`audio/`）**不入库**，本机保留；脚本与说明入库。
+
+`brand_windows.json` 是**入库**的：它记的是「片头片尾取曲子的哪一段」这个决定
+（决策入库，音频不入库）。换曲子时重挑一次即可，不用改任何脚本。
+
+## 片头片尾的配乐：片尾接回片头
+
+两段配乐取自同一条 `motif`，而且**在原曲里紧挨着**：片头取 `[s, s+D)`，
+片尾取 `[s-D, s)`，于是 `outro_start + D == intro_start`，片尾结束时正好落在
+片头的起音点上——两段拼起来是同一段连续音乐，形成闭环。
+
+口径与判据见《背景音乐规范》§6 末条与 §7 的 `bgm.brand-*` 三条规则。
+挑窗口：
+
+```bash
+cd aiv/pipeline
+python -m pyv.cli bgm windows       # 重挑并写进 brand/brand_windows.json
+python -m pyv.cli bgm brand-check   # 校验：首尾相接 / 曲子指纹 / 能量
+```
+
+**别用相关系数判断两段是否相接**——有瞬态的音乐上这个指标没有意义
+（旧口径 +0.0543、新口径 -0.0655，两个数都说明不了问题）。
+真判据是「两段在原曲里紧挨着」：逐样本验证
+`原曲[outro_start, intro_start+D)` 的前半等于片尾窗口、后半等于片头窗口。
 
 ## 技术路线
 
@@ -83,10 +106,15 @@ python3 voice/scripts/synthesize_narration.py \
 ## 重新生成
 
 ```bash
-cd aiv/brand
-python3 scripts/make_audio_brand.py   # 从 bgm_*.wav 里挑 3 秒窗口并混音
-python3 scripts/render_brand.py       # 铭牌盖章 + 渲染片头 + 片尾（--intro / --outro 可单渲）
+cd aiv/pipeline
+python -m pyv.cli bgm windows          # 挑片头片尾的配乐窗口（写进 brand/brand_windows.json）
+cd ../brand
+python3 scripts/make_audio_brand.py    # 按窗口从曲库取 motif，混出成品音轨
+python3 scripts/render_brand.py        # 铭牌盖章 + 渲染片头 + 片尾（--intro / --outro 可单渲）
 ```
+
+`make_audio_brand.py` 会核对 `brand_windows.json` 里的曲子 id 与 sha256，
+并检查两段窗口首尾相接——不相接就拒产，不让错口径流到成片。
 
 渲染完会自动核对帧数（`verify_frames`）：帧数不对直接报错，不让问题流到成片。
 片头/片尾时长改 `scripts/render_brand.py` 顶部的 `DURATION` 与 `FRAMES`。
@@ -104,6 +132,14 @@ python3 scripts/render_brand.py       # 铭牌盖章 + 渲染片头 + 片尾（-
 - **姿态素材戴眼镜要走两步。** 模型给镜框贴白色小铭牌是固定毛病，
   `character/scripts/add_glasses.py` 因此在图生图之后额外做一次局部修补。
   姿态素材本身的生成入口是 `scripts/generate_poses.py`。
+- **成品音轨必须接进成片，不能只做好放在那儿。** 2026-11-12 踩过：
+  motif 的成品音轨（`intro_mix.wav`）做出来了，却没接进成片——
+  `brand.py` 当时从品牌片 mp4 里抽音轨，嵌进去的还是切换前的旧 AI 配乐。
+  现在 `pyv/brand.py` 的 `_resolve_audio_source()` 优先取
+  `brand/audio/*_mix.wav`，mp4 音轨只作兜底，换配乐不必重渲 3D 形象。
+- **淡出要短。** 片尾的音乐是片头那段的前一截，末尾淡出 0.3 秒会把刚接上的
+  闭环淡没。现在片头淡入 0.08 秒、淡出 0.08 秒，片尾不淡入（它的窗口是曲子
+  中段的接缝，淡入像另起一段），成品混音再收 0.05 秒。
 
 ## 在 aiv 流水线里的用法
 
@@ -124,6 +160,8 @@ make compose   # 拼接 + 混音（品牌片音轨自动对位）出片
   完全一致，concat 才不会漂时长。
 - 品牌片自带人声 + 配乐，`compose` 会把每段品牌音轨按场景起点 `adelay` 对位后
   与正文旁白 `amix`；正文旁白自动推迟到第一个 `code` 场景的起点。
+- 品牌音轨取的是 `brand/audio/*_mix.wav`（成品音轨），不是品牌片 mp4 里烘焙的那条；
+  详见上面的「踩过的坑」。
 - `make brand` 可重复执行：旧的 `brand_*` 场景会被移除、正文位移会被撤销后重算。
 - 媒体文件不入库，所以新克隆的机器上**一张品牌片都没有**——`brand.py` 会安静跳过，
   流水线照常出片，只是不带片头片尾。

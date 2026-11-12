@@ -89,6 +89,21 @@ def _extract_audio(source: Path, target: Path) -> None:
     ])
 
 
+def _resolve_audio_source(name: str, clip: Path) -> Path:
+    """片头片尾的音轨来源：优先用混好的成品音轨，mp4 只作兜底。
+
+    mp4 里也烘焙了一份音轨，但那是渲染那一刻的版本——换了配乐又没重渲
+    3D 形象的话，片头片尾就会用回旧音乐（2026-11-12 就踩过：motif 的
+    成品音轨做出来了，却没接进成片，片头片尾用的还是旧 AI 配乐）。
+
+    `make_audio_brand.py` 产出的 `{intro,outro}_mix.wav` 才是音轨的正本。
+    """
+    mix = BRAND_ROOT / "audio" / f"{name}_mix.wav"
+    if mix.is_file():
+        return mix
+    return clip
+
+
 def resolve_clip(name: str) -> Path | None:
     """按优先级挑一张存在的品牌片。
 
@@ -131,8 +146,10 @@ def prepare_clips(build_dir: str | Path, fps: int = 24,
         audio = out_dir / f"{name}.wav"
         if not _is_fresh(clip, source):
             _transcode(source, clip, fps, width, height)
-        if not _is_fresh(audio, source):
-            _extract_audio(source, audio)
+        # 音轨以成品混音为准：换音乐不必重渲 3D 形象
+        audio_source = _resolve_audio_source(name, source)
+        if not _is_fresh(audio, audio_source):
+            _extract_audio(audio_source, audio)
         prepared[name] = {
             "clip": clip,
             "audio": audio,
