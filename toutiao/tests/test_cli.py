@@ -138,6 +138,60 @@ def test_convert_writes_the_snapshot(tmp_path):
     assert data["content_id"] == "db/demo"
 
 
+# --- where the snapshot goes --------------------------------------------
+#
+# The snapshot **is** the publish layer's idempotency key.  The scheduling
+# layer may put its state directory somewhere else than the repository
+# default, and it tells the adapter through PUBLISH_OUTBOX_DIR.  If the
+# adapter ignored that, the scheduler would look for the key where it is
+# not, report "success", and have no record that the article was already
+# sent -- so the next weekly run would send it again.  Silent, and the
+# worst kind of wrong.
+
+
+def test_the_outbox_dir_can_come_from_the_environment(tmp_path, monkeypatch):
+    """PUBLISH_OUTBOX_DIR decides where the snapshot goes."""
+    _site(tmp_path)
+    elsewhere = tmp_path / "elsewhere"
+    monkeypatch.setenv("PUBLISH_OUTBOX_DIR", str(elsewhere))
+
+    argv = _args(tmp_path, "convert", "db/demo")
+    # Take the option away so the environment variable gets a say.
+    index = argv.index("--outbox-dir")
+    del argv[index:index + 2]
+
+    assert main(argv) == EXIT_OK
+    assert (elsewhere / "db-demo__toutiao.json").is_file()
+    assert not (tmp_path / "outbox").exists()
+
+
+def test_the_option_wins_over_the_environment(tmp_path, monkeypatch):
+    """命令行选项优先于环境变量。"""
+    _site(tmp_path)
+    elsewhere = tmp_path / "elsewhere"
+    monkeypatch.setenv("PUBLISH_OUTBOX_DIR", str(elsewhere))
+
+    assert main(_args(tmp_path, "convert", "db/demo")) == EXIT_OK
+    assert (tmp_path / "outbox" / "db-demo__toutiao.json").is_file()
+    assert not elsewhere.exists()
+
+
+def test_an_empty_environment_variable_falls_back_to_the_default(tmp_path, monkeypatch):
+    """空字符串不是「指到空目录」，是「没指」。
+
+    这里直接测解析函数，不跑命令：命令的默认 outbox 是仓库里的
+    ``publish/outbox/``，跑一次就会把测试产物写进仓库。
+    """
+    monkeypatch.setenv("PUBLISH_OUTBOX_DIR", "   ")
+    assert cli._default_outbox_dir() == cli.DEFAULT_OUTBOX_DIR
+
+    monkeypatch.setenv("PUBLISH_OUTBOX_DIR", "")
+    assert cli._default_outbox_dir() == cli.DEFAULT_OUTBOX_DIR
+
+    monkeypatch.delenv("PUBLISH_OUTBOX_DIR")
+    assert cli._default_outbox_dir() == cli.DEFAULT_OUTBOX_DIR
+
+
 def test_convert_twice_is_idempotent(tmp_path, capsys):
     _site(tmp_path)
     assert main(_args(tmp_path, "convert", "db/demo")) == EXIT_OK

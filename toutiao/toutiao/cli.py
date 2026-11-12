@@ -22,6 +22,7 @@ Two things this module refuses to do quietly:
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
 
@@ -68,6 +69,29 @@ _DEFAULTS = {
     "notify": "",
     "notify_key": "",
 }
+
+#: Where the scheduler says the snapshot belongs.  The scheduling layer
+#: (spec 06 §5.4) may put its state directory somewhere else than the
+#: repository default, and it tells the adapter through this variable.
+OUTBOX_DIR_ENV = "PUBLISH_OUTBOX_DIR"
+
+
+def _default_outbox_dir() -> Path:
+    """Where the snapshot goes when ``--outbox-dir`` was not given.
+
+    ``PUBLISH_OUTBOX_DIR`` wins over the repository default; the command
+    line option wins over both.
+
+    Why the adapter has to honour it: the snapshot **is** the publish
+    layer's idempotency key.  If the scheduler points its state directory
+    somewhere else and the adapter keeps writing to the repository
+    default, the scheduler looks for the key where it is not, reports
+    "success", and has no record that this article was already sent --
+    so the next weekly run sends it again.  The failure is silent, which
+    is the worst kind: sending twice is worse than sending late.
+    """
+    value = os.environ.get(OUTBOX_DIR_ENV, "").strip()
+    return Path(value) if value else DEFAULT_OUTBOX_DIR
 
 #: What each recorded status means.  ``drafted`` is the one that gets
 #: misread: it means a draft exists on the platform and a human still has
@@ -365,9 +389,14 @@ def _common_parser() -> argparse.ArgumentParser:
 
 def _fill_defaults(namespace: argparse.Namespace) -> None:
     """Put the default value in for every shared option that was not given."""
+    given_outbox_dir = hasattr(namespace, "outbox_dir")
     for name, value in _DEFAULTS.items():
         if not hasattr(namespace, name):
             setattr(namespace, name, value)
+    if not given_outbox_dir:
+        # The command line option wins over the environment variable, which
+        # wins over the repository default.
+        namespace.outbox_dir = _default_outbox_dir()
 
 
 def main(argv=None) -> int:
