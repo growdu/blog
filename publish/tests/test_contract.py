@@ -1,8 +1,10 @@
 """内容契约：front matter 解析、字段校验、候选集判定。
 
 这一层的测试盯三件事：
-1. 解析语义与 ``weixin/wechat/posts.py`` 的 ``parse_front_matter()`` 逐条一致
-   （规格 §4.2 明文要求）；
+1. 解析语义在 **LF 输入下**与 ``weixin/wechat/posts.py`` 的
+   ``parse_front_matter()`` 逐条一致（规格 §4.2 明文要求）；CRLF 输入下
+   契约层更宽松（weixin 那份不认 CRLF）——这条差异是钉死的有意为之，
+   由下面那条用例显式断言；
 2. 坏字段必须以 ``ContractFieldError`` 明确失败，不漏出裸 KeyError / TypeError；
 3. ``platforms`` 非空即进入发布候选集（06 规格 §3.2）。
 """
@@ -418,8 +420,10 @@ def test_contract_reads_a_real_calendar_date():
 #
 # 规格 §4.2：「这套格式不是新发明……契约与它逐条对齐，不是各写各的。」
 # 这里的对照表是 weixin/wechat/posts.py 的 parse_front_matter()——两份实现
-# 必须对同一段 front matter 给出同一个答案。这条测试**只读** weixin/，
-# 不改它一个字节；weixin 那边挪了目录或改了导入路径时，本条自动 skip。
+# 在 **LF 输入下**必须对同一段 front matter 给出同一个答案。这条测试**只读**
+# weixin/，不改它一个字节；weixin 那边挪了目录或改了导入路径时，本条自动 skip。
+#
+# **CRLF 是唯一被允许的分歧**（契约层更宽松），由下面那条用例显式钉住。
 
 WEIXIN_DIR = Path(__file__).resolve().parents[2] / "weixin"
 
@@ -459,3 +463,27 @@ def test_parser_matches_the_weixin_parser_on_the_real_corpus():
             mismatched.append(str(path))
 
     assert not mismatched, "解析结果与 wechat.posts 不一致：{}".format(mismatched)
+
+
+def test_crlf_is_the_one_deliberate_divergence_from_the_weixin_parser():
+    """CRLF 下两边给出不同答案——这是钉死的有意为之，不是漏网。
+
+    契约层认 CRLF（``^---\\r?\\n``），weixin 那份只认 LF（``^---\\n``），
+    所以同一段 CRLF 文本，契约层解析出字段、weixin 那份解析出空。
+
+    为什么保留这个分歧：契约层的读者不止 weixin 一个（还有未来的 B站 /
+    视频号 / 头条），对母稿格式更宽容是实质性的健壮性；而「与 weixin 一致」
+    这个承诺不该把两边互相绑定（§11.1「各改各的」）。代价是两边对同一段
+    CRLF 文本给出不同答案——所以那句话不能说「逐条一致」，钉在这里。
+    """
+    weixin_parser = _weixin_parser()
+    if weixin_parser is None:
+        pytest.skip("weixin/ 不可用，跳过与 wechat.posts 的对照")
+
+    text = "---\r\ntitle: x\r\nplatforms:\r\n  - wechat\r\n---\r\n\r\n正文\r\n"
+
+    mine_fields, _ = parse_front_matter(text)
+    their_fields, _ = weixin_parser(text)
+
+    assert mine_fields == {"title": "x", "platforms": ["wechat"]}
+    assert their_fields == {}

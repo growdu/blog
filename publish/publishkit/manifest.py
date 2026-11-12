@@ -170,13 +170,13 @@ class Manifest:
 
         limits = getattr(capability, "limits", None) or {}
 
-        title_limit = limits.get("title_chars")
+        title_limit = _limit(limits, "title_chars")
         if isinstance(title_limit, int) and len(self.title) > title_limit:
             violations.append(
                 "标题 {} 字，超过平台上限 {} 字".format(len(self.title), title_limit)
             )
 
-        digest_limit = limits.get("digest_chars")
+        digest_limit = _limit(limits, "digest_chars")
         if isinstance(digest_limit, int) and len(self.digest) > digest_limit:
             violations.append(
                 "摘要 {} 字，超过平台上限 {} 字".format(
@@ -184,7 +184,7 @@ class Manifest:
                 )
             )
 
-        body_limit = limits.get("body_chars")
+        body_limit = _limit(limits, "body_chars")
         if isinstance(body_limit, int) and len(self.body_html) > body_limit:
             violations.append(
                 "正文 {} 字，超过平台上限 {} 字".format(
@@ -192,7 +192,7 @@ class Manifest:
                 )
             )
 
-        max_images = limits.get("max_body_images")
+        max_images = _limit(limits, "max_body_images")
         if isinstance(max_images, int) and len(self.assets) > max_images:
             violations.append(
                 "附图 {} 张，超过平台上限 {} 张".format(len(self.assets), max_images)
@@ -208,6 +208,22 @@ class Manifest:
 def validate_manifest(manifest: Manifest, capability) -> list:
     """Functional spelling of :meth:`Manifest.validate`."""
     return manifest.validate(capability)
+
+
+def _limit(limits, name):
+    """Read one limit from either shape of ``limits``.
+
+    契约层自己的 capability 用 **dict**（``Capability.limits``），平台 adapter
+    自己的 capability 用 **dataclass**（``toutiao/toutiao/capability.py`` 的
+    ``Limits``）。``validate()`` 的签名是鸭子类型——「拿任何一层的 capability
+    都能校验」正是它存在的理由，所以两种形态都要能读。
+
+    而这一层只抛 ``PublishKitError`` 这一族（见 ``publishkit/__init__.py``）：
+    直接把 dataclass 当 dict 用会漏出裸 ``AttributeError``。
+    """
+    if isinstance(limits, dict):
+        return limits.get(name)
+    return getattr(limits, name, None)
 
 
 def _as_str(value: object, key: str) -> str:

@@ -5,6 +5,7 @@
 """
 
 import json
+from dataclasses import dataclass
 
 import pytest
 
@@ -275,3 +276,64 @@ def test_a_capability_without_limits_is_tolerated():
     manifest = make_manifest(title="标" * 200)
 
     assert manifest.validate(FakeCapability(limits=None)) == []
+
+
+# --- 两种 limits 形态 ----------------------------------------------------
+#
+# 契约层自己的 capability 用 dict，平台 adapter 自己的 capability 用 dataclass
+# （toutiao/toutiao/capability.py 的 Limits）。validate() 的签名是鸭子类型，
+# 两种形态都要能校验——而且这一层只抛 PublishKitError 这一族，裸 AttributeError
+# 不许漏出去。
+
+
+@dataclass(frozen=True)
+class AdapterLimits:
+    """The shape a platform adapter uses for its own limits."""
+
+    title_chars: int = 32
+    digest_chars: int = 120
+    body_chars: int = 20000
+    max_body_images: int = 20
+
+
+class AdapterCapability:
+    """A capability in the shape a platform adapter hands out."""
+
+    def __init__(self, limits=None, kind="document"):
+        self.id = "toutiao"
+        self.kind = kind
+        self.limits = limits if limits is not None else AdapterLimits()
+
+
+def test_validate_reads_limits_from_a_dataclass():
+    """adapter 形态的 capability（dataclass 的 limits）也能校验。"""
+    manifest = make_manifest(title="短标题", digest="短摘要")
+
+    assert manifest.validate(AdapterCapability()) == []
+    assert manifest.is_eligible(AdapterCapability())
+
+
+def test_validate_reports_the_limits_of_a_dataclass():
+    """dataclass 形态的 limits 要真的参与判定，不是被跳过。"""
+    manifest = make_manifest(title="标" * 33)
+    cap = AdapterCapability(AdapterLimits(title_chars=32))
+
+    violations = manifest.validate(cap)
+
+    assert len(violations) == 1
+    assert "标题" in violations[0]
+    assert "32" in violations[0]
+
+
+def test_validate_does_not_leak_a_bare_attribute_error():
+    """裸 AttributeError 违反「这一层只抛 PublishKitError 这一族」的规矩。"""
+    manifest = make_manifest(title="标" * 200)
+
+    try:
+        manifest.validate(AdapterCapability())
+    except PublishKitError:
+        pass
+    except AttributeError as exc:  # pragma: no cover - 变异会被这里抓住
+        raise AssertionError("漏出了裸 AttributeError：{}".format(exc))
+    except Exception as exc:  # pragma: no cover
+        raise AssertionError("漏出了 PublishKitError 之外的异常：{}".format(exc))

@@ -9,9 +9,20 @@
 实现的正是同一套（``key: value`` 标量 + ``  - item`` 列表），规格 §4.2 明确要求
 「契约与它逐条对齐，不是各写各的」。
 
-所以这里的解析器与它**语义逐条一致**，但**代码是独立的**：契约层不 import
-平台 adapter 的任何模块（§11.1 的接缝原则）。想锁住两边不漂移，靠的是
-§5.3 那条兼容性测试，不是靠 import。
+所以这里的解析器与它在 **LF 输入下语义逐条一致**，但**代码是独立的**：契约层
+不 import 平台 adapter 的任何模块（§11.1 的接缝原则）。想锁住两边不漂移，
+靠的是 §5.3 那条兼容性测试，不是靠 import。
+
+**唯一的口径差异是 CRLF，而且是有意为之。** 本层的 front matter 正则认
+``\r\n``（``^---\r?\n(.*?)\r?\n---\r?\n``），weixin 那份只认 ``\n``
+（``^---\n(.*?)\n---\n``）。同一段 CRLF 文本，契约层解析出
+``{title, platforms}``，weixin 那份解析出 ``{}``。
+
+为什么不对称：契约层的读者不止 weixin 一个（还有未来的 B站 / 视频号 / 头条），
+对母稿格式更宽容是实质性的健壮性；而「与 weixin 一致」这个承诺不该把两边
+互相绑定（§11.1 的「各改各的」）。代价是两边对同一段 CRLF 文本给出不同
+答案——所以那句话不能说「逐条一致」，这条差异由
+``publish/tests/test_contract.py`` 里的一条用例**显式钉住**，不靠默契。
 
 字段白名单（§4.1）与约束：
 
@@ -131,10 +142,13 @@ def parse_front_matter(text: str) -> tuple:
     a single-item list is kept as a one-element list so callers do not have
     to guess the shape.  A ``key:`` with no items below it is an empty list
     (``cover:`` → ``[]``)——this matches ``weixin/wechat/posts.py`` field for
-    field, so the two never disagree about what a draft said.
+    field, so the two never disagree about what a draft said（LF 输入下；
+    CRLF 下本层更宽松，见模块 docstring）。
 
-    语义与 ``weixin/wechat/posts.py:82`` 的 ``parse_front_matter()`` 逐条对齐，
-    但代码独立：契约层不 import 平台 adapter 的任何模块。
+    在 **LF 输入下**与 ``weixin/wechat/posts.py:82`` 的 ``parse_front_matter()``
+    逐条对齐；CRLF 输入下本层认 ``\r\n`` 而 weixin 那份不认——这条差异是
+    有意为之，见模块 docstring。代码独立：契约层不 import 平台 adapter 的
+    任何模块。
     """
     if not isinstance(text, str):
         raise ContractFieldError(

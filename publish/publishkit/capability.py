@@ -17,6 +17,39 @@
 声明是外部输入，所以每个字段都严格校验：必填字段缺失、类型不对、
 取值不在域内，一律抛 :class:`CapabilityFieldError` 并在消息里点名字段，
 绝不漏出裸 KeyError / TypeError，也不与内建 ValueError 混用。
+
+**这一层是唯一的闸门。** §11.1 的流程是「契约层先读 ``capabilities/*.toml``
+→ 校验 → 再按 ``[adapter].command`` 调 adapter」，所以一份坏 TOML 在**派发
+之前**就被这一层拦住了。adapter 自己那份 loader（``toutiao/toutiao/capability.py``）
+更宽松，那条宽松路径只有在有人**直接跑 adapter CLI、绕过这一层**时才会生效
+（§12 第 13 行的调度器若忘了先加载能力模型，也会踩到）。
+
+**两边的解读严格度不一样，逐条列在这里**（同一份 TOML 喂两边的结论；adapter
+那一列依据的是 ``feat/toutiao-adapter`` 分支上的
+``toutiao/toutiao/capability.py``）：
+
+=====================================  ==========  =====================
+TOML 写法                                 契约层      toutiao adapter
+=====================================  ==========  =====================
+顶层未知键（``automaion =``）             REJECT      ACCEPT
+``kind = "article"``（值域外）            REJECT      ACCEPT
+``review = "human"``（值域外）            REJECT      ACCEPT
+``verified = "last tuesday"``（非日期）   REJECT      ACCEPT
+``requires_certificaton =``（拼错）      REJECT      ACCEPT → 门槛翻成 False
+顶层缺 ``name``                          REJECT      ACCEPT（默认 ""）
+顶层缺 ``review``                        REJECT      ACCEPT（默认 "platform"）
+``kinds =``（拼错）                      REJECT      ACCEPT → kind 落到默认值
+``automation = "api"``（值域外）         REJECT      REJECT
+=====================================  ==========  =====================
+
+最刺眼的一条是 ``requires_certificaton``（拼错）：adapter 接受它，并据此得出
+「该平台不需要认证」——一个门槛开关被拼写错误静默翻成了 False。契约层拒绝
+这种 TOML，所以只要走 §11.1 的流程就不会咬人。
+
+**本轮不去改 adapter 那份 loader**：那要动 ``toutiao/``，越过 §11.1 的接缝，
+也不在这一轮的范围内。要让两边对齐，正确的方向是在 adapter 侧对它**自己会
+读到的字段**（kind / review / automation / verified / requires_certification）
+也做值域校验——那是 toutiao 分支的事。契约层**不许**反过来 import adapter。
 """
 
 from __future__ import annotations
