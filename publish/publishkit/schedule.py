@@ -83,6 +83,9 @@ class SchedulePublishError(ScheduleError):
 #: 而每周被选上一次，轮转队列卡死在一篇上。
 PUBLISHED_STATUSES = ("published", "reviewing", "drafted", "packaged")
 
+#: 自动重试的次数上限（§7.2「超过上限（比如 3 次）转人工」）。
+MAX_RETRY_ATTEMPTS = 3
+
 
 # --- 配置（§5.4） --------------------------------------------------------
 
@@ -317,6 +320,28 @@ class OutboxIndex:
         record = self.get(content_id, platform)
         return record is not None and record.status in PUBLISHED_STATUSES
 
+    def is_blocked(self, content_id: str, platform: str) -> bool:
+        """这篇在这个平台上是不是**不该再被自动选中**。
+
+        四种情况：
+
+        - 已经发过的（成功态）→ 不再发；
+        - 结果未知（超时，§7.1 第三条）→ **不能自动重发**，可能已经发出去了；
+        - 失败且不自动重试的（这一篇不合格 / 平台审核不通过）→ 转人工，
+          而且它不该继续霸占「最久未发」的位置（§7.4）；
+        - 失败但可重试的 → 不在这里挡（它由重试那一路处理）。
+        """
+        record = self.get(content_id, platform)
+        if record is None:
+            return False
+        if record.status in PUBLISHED_STATUSES:
+            return True
+        if record.status == "unknown":
+            return True
+        if record.status == "failed" and record.data.get("retryable") is False:
+            return True
+        return False
+
     def for_platform(self, platform: str) -> list:
         """某个平台的全部快照，按 content_id 排序。"""
         return sorted(
@@ -454,7 +479,7 @@ def select_for_platform(units, platform, *, window, outbox=None, exclude=()):
     index = outbox if outbox is not None else OutboxIndex()
     candidates = [unit for unit in units if platform in unit.platforms]
     if not candidates:
-        return None, "候选集是空的：没有内容单元声明 platform 包含 {!r}".format(platform)
+        return None, "候选集是空的：没有内容单元的 platforms 里包含 {!r}".format(platform)
 
     # 规则 2：publish_on 落在本周的优先（作者有最终控制权）。
     monday, sunday = window
@@ -467,12 +492,12 @@ def select_for_platform(units, platform, *, window, outbox=None, exclude=()):
         chosen = min(this_week, key=lambda unit: (unit.publish_on, unit.content_id))
         return chosen, "publish_on {} 落在本周".format(chosen.publish_on)
 
-    # 规则 3：剔除已发过的。
+    # 规则 3：剔除已发过的（也剔除结果未知的、转人工的）。
     rest = [
         unit
         for unit in candidates
         if unit.content_id not in exclude
-        and not index.is_published(unit.content_id, platform)
+        and not index.is_blocked(unit.content_id, platform)
     ]
     if not rest:
         return None, "本周没有可发的：候选集里的内容都已经发到过 {}".format(platform)
@@ -660,6 +685,50 @@ class WeeklyResult:
     ok: bool = True
 
 
+def retry_failed(
+    config: ScheduleConfig,
+    publisher,
+    *,
+    dry_run: bool = False,
+    skip=(),
+    max_attempts: int = MAX_RETRY_ATTEMPTS,
+):
+    """把 outbox 里「失败且可重试」的记录重试一次（§7.2）。
+
+    - ``status = "failed"`` 且 ``retryable`` 不是 False 的记录：重试一次；
+    - ``retryable = False`` 的（这一篇不合格 / 平台审核不通过）：
+      **永不自动重试**；
+    - 已经试够 ``max_attempts`` 次的：转人工，不再自动重试。
+
+    返回 ``(消息列表, 本次处理过的 (content_id, platform))``。
+    """
+    index = load_outbox_index(config.outbox_dir)
+    messages = []
+    handled = set()
+    for record in sorted(index.records.values(), key=lambda r: (r.content_id, r.platform)):
+        if record.status != "failed":
+            continue
+        if record.data.get("retryable") is False:
+            continue
+        attempts = record.data.get("attempts")
+        if isinstance(attempts, int) and attempts >= max_attempts:
+            continue
+        key = (record.content_id, record.platform)
+        if key in skip:
+            continue
+        handled.add(key)
+        if dry_run:
+            messages.append(
+                "（演练）会重试 {} → {}".format(record.content_id, record.platform)
+            )
+            continue
+        if publisher(record.content_id, record.platform):
+            messages.append("重试 {} → {}：成功。".format(record.content_id, record.platform))
+        else:
+            messages.append("重试 {} → {}：还是失败。".format(record.content_id, record.platform))
+    return messages, handled
+
+
 def run_weekly(
     config: ScheduleConfig,
     *,
@@ -688,6 +757,7 @@ def run_weekly(
     state = ScheduleState.load(config.schedule_file)
     week = week_key(now.date())
     messages = []
+    handled = set()
 
     # §7.3：优先重试未完成的周，而不是直接选新的一篇。
     unfinished = state.unfinished_weeks()
@@ -696,8 +766,14 @@ def run_weekly(
         for key in unfinished:
             record = state.get(key)
             ok, said = _publish_to_platforms(
-                config, record.content_id, record.platforms, publisher, dry_run
+                config,
+                record.content_id,
+                record.platforms,
+                publisher,
+                dry_run,
+                skip=handled,
             )
+            handled |= {(record.content_id, pid) for pid in record.platforms}
             messages.extend(said)
             outcomes.append((key, record, ok))
             if not dry_run:
@@ -706,6 +782,10 @@ def run_weekly(
                     replace(record, done=ok),
                 )
                 state.save()
+        said, retried = retry_failed(
+            config, publisher, dry_run=dry_run, skip=handled
+        )
+        messages.extend(said)
         _key, first, _ok = outcomes[0]
         return WeeklyResult(
             week=week,
@@ -715,6 +795,11 @@ def run_weekly(
             messages=tuple(messages),
             ok=all(ok for _key, _record, ok in outcomes),
         )
+
+    # §7.2：定时任务跑的时候，把「失败且可重试」的记录重试一次。
+    said, retried = retry_failed(config, publisher, dry_run=dry_run, skip=handled)
+    messages.extend(said)
+    handled |= retried
 
     # §4.2 规则 1：本周已经跑完 → 跳过。
     existing = state.get(week)
@@ -745,7 +830,11 @@ def run_weekly(
     picks = []
     for capability in capabilities:
         unit, reason = select_for_platform(
-            units, capability.id, window=window, outbox=index
+            units,
+            capability.id,
+            window=window,
+            outbox=index,
+            exclude={content_id for content_id, _pid in handled},
         )
         if unit is None:
             messages.append("{}：{}".format(capability.id, reason))
@@ -783,7 +872,7 @@ def run_weekly(
         state.save()
 
     ok, said = _publish_to_platforms(
-        config, unit.content_id, platforms, publisher, dry_run
+        config, unit.content_id, platforms, publisher, dry_run, skip=handled
     )
     messages.extend(said)
 
@@ -801,16 +890,40 @@ def run_weekly(
     )
 
 
-def _publish_to_platforms(config, content_id, platforms, publisher, dry_run):
+def _publish_to_platforms(config, content_id, platforms, publisher, dry_run, skip=()):
     """把一篇发到几个平台上。返回 ``(是否全部成功, 消息列表)``。
 
     已经发到过的平台**跳过**——发布层的幂等键（§4.1）：重跑不会重发已成功
     的部分。某个平台失败**不阻塞**其他平台（§3.4）。
+    ``skip`` 里是本次运行已经处理过的 ``(content_id, platform)``——同一轮里
+    不重复动手。
     """
     ok = True
     messages = []
     for platform in platforms:
+        if (content_id, platform) in skip:
+            messages.append(
+                "{} → {}：本次已经处理过，跳过。".format(content_id, platform)
+            )
+            continue
         index = load_outbox_index(config.outbox_dir)
+        record = index.get(content_id, platform)
+        if record is not None and record.status == "unknown":
+            # 结果未知（超时）：不能自动重发——可能已经发出去了（§7.1 第三条）。
+            messages.append(
+                "{} → {}：结果未知，不自动重发，跳过。".format(content_id, platform)
+            )
+            continue
+        if (
+            record is not None
+            and record.status == "failed"
+            and record.data.get("retryable") is False
+        ):
+            # 不合格 / 审核不通过：转人工，不自动重试（§7.1）。
+            messages.append(
+                "{} → {}：转人工（不自动重试），跳过。".format(content_id, platform)
+            )
+            continue
         if index.is_published(content_id, platform):
             messages.append("{} 已经发到过 {}，跳过。".format(content_id, platform))
             continue

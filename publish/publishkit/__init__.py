@@ -55,6 +55,7 @@ from .manifest import (  # noqa: E402
     validate_manifest,
 )
 from .schedule import (  # noqa: E402
+    MAX_RETRY_ATTEMPTS,
     PUBLISHED_STATUSES,
     ContentUnit,
     OutboxIndex,
@@ -72,6 +73,7 @@ from .schedule import (  # noqa: E402
     flatten_content_id,
     load_outbox_index,
     resolve_config,
+    retry_failed,
     run_weekly,
     select_for_platform,
     snapshot_name,
@@ -80,10 +82,16 @@ from .schedule import (  # noqa: E402
     week_window,
 )
 
+# **不 import .cli**：``python3 -m publishkit.cli`` 走的是 runpy，它先把父包
+# ``publishkit`` import 进来；父包在这里再 import 一次 ``publishkit.cli``，
+# runpy 就会警告「模块在 import 之后才被执行」，而且那个模块会被跑两遍。
+# CLI 的入口是 ``publishkit.cli:main``（它自己的 ``__all__`` 里也有）。
+
 __all__ = [
     "AUTOMATIONS",
     "CONTENT_KINDS",
     "KINDS",
+    "MAX_RETRY_ATTEMPTS",
     "PASSTHROUGH_FIELDS",
     "PLATFORM_ID_RE",
     "PUBLISHED_STATUSES",
@@ -126,6 +134,7 @@ __all__ = [
     "parse_front_matter",
     "read_contract",
     "resolve_config",
+    "retry_failed",
     "run_weekly",
     "select_for_platform",
     "snapshot_name",
