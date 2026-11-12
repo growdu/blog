@@ -149,6 +149,37 @@ def _flatten_on_white(image):
     return Image.alpha_composite(background, rgba).convert("RGB")
 
 
+def _load_picture(src):
+    """Read a picture, flattened onto a white background.
+
+    One place reads pictures, so one place decides what an unreadable
+    file looks like: :class:`UnreadableImage`, never Pillow's own
+    ``UnidentifiedImageError``.  A caller must not have to know whether
+    the picture it asked about went through ``prepare_image()`` or
+    straight into a cover.
+    """
+    from PIL import Image, UnidentifiedImageError
+
+    src = Path(src)
+    try:
+        with Image.open(src) as opened:
+            return _flatten_on_white(opened)
+    except UnidentifiedImageError as error:
+        raise UnreadableImage(
+            "Pillow 读不了这个文件（可能是 SVG 等格式）：{}".format(src.name)
+        ) from error
+    except (FileNotFoundError, PermissionError):
+        # The file is not there, or not ours to read -- that is not an
+        # unreadable picture, and the caller has to see it as it is.
+        raise
+    except OSError as error:
+        # The format is one Pillow knows, but the file does not decode (a
+        # truncated picture, for one).  Also a job for a human.
+        raise UnreadableImage(
+            "Pillow 解不开这个文件（可能已截断）：{}".format(src.name)
+        ) from error
+
+
 def prepare_image(src: Path, dst: Path, max_bytes: int) -> PreparedImage:
     """Convert an image to webp, shrinking until it fits ``max_bytes``.
 
@@ -165,29 +196,11 @@ def prepare_image(src: Path, dst: Path, max_bytes: int) -> PreparedImage:
     :class:`UnreadableImage` before any of that: it is not a picture that
     is too big, it is a file that needs a human.
     """
-    from PIL import Image, UnidentifiedImageError
-
     src = Path(src)
     dst = Path(dst)
     dst.parent.mkdir(parents=True, exist_ok=True)
 
-    try:
-        with Image.open(src) as opened:
-            image = _flatten_on_white(opened)
-    except UnidentifiedImageError as error:
-        raise UnreadableImage(
-            "Pillow 读不了这个文件（可能是 SVG 等格式）：{}".format(src.name)
-        ) from error
-    except (FileNotFoundError, PermissionError):
-        # The file is not there, or not ours to read -- that is not an
-        # unreadable picture, and the caller has to see it as it is.
-        raise
-    except OSError as error:
-        # The format is one Pillow knows, but the file does not decode (a
-        # truncated picture, for one).  Also a job for a human.
-        raise UnreadableImage(
-            "Pillow 解不开这个文件（可能已截断）：{}".format(src.name)
-        ) from error
+    image = _load_picture(src)
 
     for quality in _QUALITIES:
         image.save(dst, "WEBP", quality=quality, method=6)
@@ -241,8 +254,8 @@ def _cover_box(width: int, height: int, target_width: int, target_height: int) -
     return (left, top, left + crop_width, top + crop_height)
 
 
-def _cover_plan(src: Path, ratio: str, min_pixels: tuple) -> tuple:
-    """The crop box for the cover of ``src`` -- the one ruler.
+def _cover_plan(size, ratio: str) -> tuple:
+    """The crop box for a picture of ``size`` cut to ``ratio`` -- the one ruler.
 
     ``can_make_cover()`` and ``make_cover()`` both go through this, so the
     two can never disagree about whether a picture can be a cover: the
@@ -250,17 +263,19 @@ def _cover_plan(src: Path, ratio: str, min_pixels: tuple) -> tuple:
     part of its width and the leftover can fall under the platform
     minimum even when the source cleared it.
     """
-    from PIL import Image
-
     target_width, target_height = _parse_ratio(ratio)
-    with Image.open(src) as image:
-        width, height = image.size
-    return _cover_box(width, height, target_width, target_height)
+    return _cover_box(size[0], size[1], target_width, target_height)
 
 
 def can_make_cover(src: Path, ratio: str, min_pixels: tuple) -> bool:
-    """Whether this image can produce a valid cover of ``ratio``."""
-    left, top, right, bottom = _cover_plan(Path(src), ratio, min_pixels)
+    """Whether this image can produce a valid cover of ``ratio``.
+
+    A file that is not a picture at all is refused with
+    :class:`UnreadableImage` -- the same way ``prepare_image()`` refuses
+    it.
+    """
+    image = _load_picture(src)
+    left, top, right, bottom = _cover_plan(image.size, ratio)
     min_width, min_height = min_pixels
     return right - left >= min_width and bottom - top >= min_height
 
@@ -279,13 +294,12 @@ def make_cover(src: Path, dst: Path, ratio: str, min_pixels: tuple) -> PreparedI
     first, exactly like ``prepare_image()`` does -- see
     ``_flatten_on_white()``.
     """
-    from PIL import Image
-
     src = Path(src)
     dst = Path(dst)
     dst.parent.mkdir(parents=True, exist_ok=True)
 
-    left, top, right, bottom = _cover_plan(src, ratio, min_pixels)
+    image = _load_picture(src)
+    left, top, right, bottom = _cover_plan(image.size, ratio)
     min_width, min_height = min_pixels
     crop_width, crop_height = right - left, bottom - top
     if crop_width < min_width or crop_height < min_height:
@@ -295,9 +309,8 @@ def make_cover(src: Path, dst: Path, ratio: str, min_pixels: tuple) -> PreparedI
             )
         )
 
-    with Image.open(src) as opened:
-        cropped = _flatten_on_white(opened).crop((left, top, right, bottom))
-        cropped.save(dst, "WEBP", quality=_COVER_QUALITY, method=6)
+    cropped = image.crop((left, top, right, bottom))
+    cropped.save(dst, "WEBP", quality=_COVER_QUALITY, method=6)
 
     return PreparedImage(
         source=str(src),

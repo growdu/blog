@@ -305,3 +305,27 @@ def test_make_cover_composes_transparency_onto_white(tmp_path):
         # 3:4 的裁切保住整幅高度，透明的下半截仍在下半截
         bottom = written.getpixel((result.width // 2, result.height - 5))
         assert all(value >= 250 for value in bottom), bottom
+
+
+def test_the_cover_functions_refuse_a_file_that_is_not_an_image(tmp_path):
+    """与 prepare_image 同一个异常口径 —— 不漏出裸的 UnidentifiedImageError。"""
+    src = tmp_path / "logo.svg"
+    src.write_text("<svg></svg>", encoding="utf-8")
+    with pytest.raises(UnreadableImage):
+        can_make_cover(src, "3:4", (600, 800))
+    with pytest.raises(UnreadableImage):
+        make_cover(src, tmp_path / "out" / "cover.webp", "3:4", (600, 800))
+
+
+def test_the_cover_decision_follows_the_shrunk_webp(tmp_path):
+    """压不进上限时 prepare_image 把图缩一半 —— 裁切判定必须跟着 webp 走。
+
+    原图 1200×900 裁 3:4 是 675×900（合规）；缩半后 600×450 裁 3:4 是
+    336×448（不合规）。「原图能裁」不等于「webp 能裁」——这条锁住
+    这个前提，Task 6 的判定才必须拿 webp 判。
+    """
+    src = _image(tmp_path / "wide.png", (1200, 900))
+    dst = tmp_path / "out" / "01.webp"
+    result = prepare_image(src, dst, max_bytes=800)
+    assert can_make_cover(src, "3:4", (600, 800)) is True
+    assert can_make_cover(result.path, "3:4", (600, 800)) is False
