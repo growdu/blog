@@ -255,6 +255,23 @@ def test_package_readme_lists_the_manual_steps(tmp_path):
     assert "发表" in readme
 
 
+def test_the_checklist_says_the_footer_must_stay_plain_text(tmp_path):
+    """清单末尾那一行要提醒上传者：末尾是纯文本的「完整版见」，不是超链接。
+
+    这一行是清单里唯一防「末尾变成超链接」的提示。删了它，上传者就会
+    把末尾那句「完整版见 growdu.cn」当成普通链接贴出去。
+    """
+    site, posts = _site(tmp_path)
+    result = write_package(_article(), CAP, tmp_path / "out", posts, "https://growdu.cn")
+    lines = [
+        line for line in _readme(result).splitlines()
+        if line.startswith("- [ ] 检查正文末尾")
+    ]
+    assert len(lines) == 1, lines
+    assert "完整版见 growdu.cn" in lines[0]
+    assert "不是超链接" in lines[0]
+
+
 def test_write_package_refuses_a_tier_it_does_not_serve(tmp_path):
     """档位不是 manual —— 出包这一步不接，得当场拒绝。
 
@@ -281,7 +298,7 @@ def test_write_package_refuses_a_tier_it_does_not_serve(tmp_path):
 def test_package_without_a_cover_still_produces_a_package(tmp_path):
     """没有正文图照样出包 —— 头条有无图模式。
 
-    硬失败会让 469/542 篇（86.5%）可发布文章出不了包；
+    硬失败会让 470/542 篇（86.7%）可发布文章出不了包；
     清单里那一行要明写「按无图模式发布」。
     """
     site, posts = _site(tmp_path)
@@ -499,6 +516,42 @@ def test_every_placeholder_in_the_body_has_a_file_or_an_explanation(tmp_path):
     assert _image_names(result) == ["04.webp"]
 
 
+def test_every_placeholder_without_a_file_is_explained_on_its_own_line(tmp_path):
+    """没有文件的占位符，清单里要有它自己那一行解释。
+
+    光写一句「见下面几行」不够：下面那几行必须真的写着这张图的路径
+    或 URL，否则上传者不知道要处理哪一张。占位符符号本身出现在清单里
+    是不够的 —— 它总是出现在「图片」那一行，哪张图缺文件并不能看出来。
+    """
+    site, posts = _site(tmp_path)
+    svg = site / "images" / "logo.svg"
+    svg.write_text("<svg></svg>", encoding="utf-8")
+    article = _article(
+        body="【图1】\n\n【图2】\n\n【图3】\n\n【图4】\n\n段落。",
+        images=(
+            "https://example.com/a.png",
+            "images/gone.png",
+            "images/logo.svg",
+            "images/demo.png",
+        ),
+    )
+    result = write_package(article, CAP, tmp_path / "out", posts, "https://growdu.cn")
+    lines = _readme(result).splitlines()
+
+    picture_line = next(line for line in lines if line.startswith("- [ ] 图片："))
+    assert "（没有文件的占位符见下面几行）" in picture_line
+
+    for relative, tag in (
+        ("https://example.com/a.png", "- [ ] 远程图"),
+        ("images/gone.png", "- [ ] 缺图"),
+        ("images/logo.svg", "- [ ] 读不了的图"),
+    ):
+        # 这个路径/URL 只出现在解释它的那一行里
+        explaining = [line for line in lines if relative in line]
+        assert len(explaining) == 1, (relative, explaining)
+        assert explaining[0].startswith(tag), (relative, explaining[0])
+
+
 # ---- 封面 ---------------------------------------------------------------
 
 
@@ -544,7 +597,7 @@ def test_the_three_reasons_for_no_cover_are_worded_differently(tmp_path):
     """零封面有三种原因，要分开说。
 
     ① 正文没有图；② 正文图全是外链（出包不下载，没有本地文件可裁）；
-    ③ 有本地图但都裁不出合规封面。真实语料里 ② 有 47 篇、③ 有 15 篇 ——
+    ③ 有本地图但都裁不出合规封面。真实语料里 ② 有 46 篇、③ 有 15 篇 ——
     把 ② 说成 ③ 是错的：它们不是「裁不出」，是「没有文件可裁」。
     """
     site, posts = _site(tmp_path)
@@ -676,6 +729,20 @@ def test_write_snapshot_writes_public_json(tmp_path):
     assert "/Users/" not in text
     assert "secret" not in text.lower()
     assert "token" not in text.lower()
+
+
+def test_the_snapshot_timestamp_carries_a_timezone_offset(tmp_path):
+    """``updated_at`` 要带时区偏移 —— §6.5 的例子是 ``2026-11-13T09:00:03+08:00``。
+
+    不带偏移的时间戳，同一个瞬间在别的机器上读出来是几点全看读它的人
+    在哪。站点索引要拿它排序，光有「本地时间」是不够的。
+    """
+    site, posts = _site(tmp_path)
+    article = _article(body="【图1】\n\n段落。", images=("images/demo.png",))
+    result = write_package(article, CAP, tmp_path / "out", posts, "https://growdu.cn")
+    path = write_snapshot(result, tmp_path / "outbox")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    assert re.search(r"[+-]\d{2}:\d{2}$", data["updated_at"])
 
 
 def test_the_snapshot_package_dir_is_relative_to_the_repository(tmp_path, monkeypatch):

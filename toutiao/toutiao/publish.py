@@ -227,9 +227,12 @@ def write_package(
     """Write the manual publish package for one article.
 
     A post without a body picture still gets a package: Toutiao has a
-    no-picture mode, and 469 of the 542 publishable posts have no picture
+    no-picture mode, and 470 of the 542 publishable posts have no picture
     at all.  The checklist says so in as many words instead of pretending
-    there is a cover.
+    there is a cover.  (470 rather than 469: the count follows the
+    placeholders in the body, so the one post whose body was cut by the
+    character cap lost its only picture and moved from "all remote" to
+    "no picture at all".)
 
     The pictures that need a human -- remote, missing, unreadable or too
     big -- never break the package.  They are listed in the checklist
