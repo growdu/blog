@@ -524,6 +524,11 @@ def _fits(result) -> bool:
             and len(result.html.encode("utf-8")) < CONTENT_BYTES_LIMIT)
 
 
+# How often a part that does not fit may be cut again.  Each pass
+# renders the whole article, so the number is kept small.
+MAX_SPLIT_PASSES = 3
+
+
 def _render_parts(post, args) -> list:
     """Render one post into the drafts it needs.
 
@@ -571,16 +576,68 @@ def _render_parts(post, args) -> list:
         body = len(result.html) - len(render_module.links_html(result.external_links))
         return body + len(render_module.links_items_html(result.external_links))
 
+    def room_for(group, index, total):
+        """The room the body of a part may take.
+
+        The framing is measured, not estimated: the transition lines,
+        the category tag and the reference-links wrapper are what the
+        body has to fit between, and a part that ignores them does not
+        fit.
+        """
+        result = render_module.render(group, resolver=resolver)
+        framing = (len(head) + len(tail)
+                   + len(split_module.transition_head_html(post.title, index, total))
+                   + len(split_module.transition_tail_html(post.title, index, total))
+                   + len(render_module.links_html(result.external_links)))
+        return CONTENT_LIMIT - framing
+
     reserve = split_module.framing_reserve(post.title, tag)
     groups = split_module.plan_parts(
         blocks, CONTENT_LIMIT, measure,
         plain_measure=lambda group: measure(group, highlight=False),
         reserve=reserve)
 
+    # The plan is an estimate; the render is the truth.  A part that
+    # still does not fit is cut once more instead of taking the whole
+    # article down with it -- an article that is a few dozen
+    # characters too long is a split, not a refusal.
+    #
+    # The cut is driven by the measured overflow rather than by the
+    # estimate: the room the part needs is known once it is rendered,
+    # and a reserve that was too small is exactly what the overflow
+    # says.
+    rendered = []
+    for attempt in range(MAX_SPLIT_PASSES):
+        total = len(groups)
+        rendered = [(build(group, index, total, not use_plain), group, use_plain)
+                    for index, (group, use_plain) in enumerate(groups, 1)]
+        overflow = {index: max(result.content_length - CONTENT_LIMIT, 1)
+                    for index, (result, _, _) in enumerate(rendered)
+                    if not _fits(result)}
+        if not overflow or attempt == MAX_SPLIT_PASSES - 1:
+            break
+        rebuilt = []
+        broken = False
+        for index, (group, use_plain) in enumerate(groups):
+            over = overflow.get(index)
+            if over is not None:
+                room = room_for(group, index, total) - over
+                if room > 0:
+                    pieces = split_module.split_blocks(group, room, measure)
+                    if len(pieces) > 1:
+                        rebuilt.extend(
+                            (piece, use_plain or measure(piece) > room)
+                            for piece in pieces)
+                        broken = True
+                        continue
+            rebuilt.append((group, use_plain))
+        groups = rebuilt
+        if not broken:
+            break
+
     total = len(groups)
     parts = []
-    for index, (group, use_plain) in enumerate(groups, 1):
-        result = build(group, index, total, not use_plain)
+    for index, (result, group, _use_plain) in enumerate(rendered, 1):
         if not _fits(result):
             raise RejectedPost(
                 "第 {} 部分渲染后正文 {} 字符，超过上限 {} 字符，已拒绝发布\n"

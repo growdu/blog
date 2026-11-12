@@ -9,6 +9,7 @@ import pytest
 from PIL import Image
 
 from wechat import notify as notify_module
+from wechat import split as split_module
 from wechat.cli import _docs_changed, _render_parts, main
 from wechat.posts import CONTENT_LIMIT, load_post
 
@@ -1203,6 +1204,25 @@ def test_an_article_whose_parts_land_on_the_limit_is_split_not_refused(tmp_path)
     smaller than the framing really was, a part that was a few dozen
     characters too long took the whole article down with it.
     """
+    post = _long_render_post(tmp_path)
+
+    parts = _render_parts(post, _render_args(tmp_path / "out"))
+
+    assert len(parts) > 1
+    for part in parts:
+        assert part.result.content_length <= CONTENT_LIMIT
+
+
+def test_a_part_that_still_does_not_fit_is_cut_again(tmp_path, monkeypatch):
+    """The pipeline does not trust its own estimate.
+
+    The reserve is what keeps a part's framing out of the body's way.
+    If it is too small the part does not get shorter -- it does not
+    fit, and the article is refused.  So a part that is still too long
+    after rendering is measured and cut once more.
+    """
+    monkeypatch.setattr(split_module, "framing_reserve",
+                        lambda title, tag_html="": 0)
     post = _long_render_post(tmp_path)
 
     parts = _render_parts(post, _render_args(tmp_path / "out"))
