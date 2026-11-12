@@ -266,6 +266,30 @@ def _fit_pieces(blocks: list, limit: int, measure, level: int = 0,
     return pieces
 
 
+def _merge_blocks(current: list, body: list) -> list:
+    """Join two pieces that came out of the same block.
+
+    A table cut between its rows and a code block cut between its
+    lines would otherwise show up as two blocks: the header would be
+    repeated for every single row, and one code block would break into
+    a dozen pieces.
+    """
+    last = current[-1] if current else None
+    first = body[0] if body else None
+    if isinstance(last, Table) and isinstance(first, Table):
+        if last.header == first.header and last.align == first.align:
+            current[-1] = Table(header=last.header,
+                                rows=list(last.rows) + list(first.rows),
+                                align=last.align)
+            return body[1:]
+    if isinstance(last, CodeBlock) and isinstance(first, CodeBlock):
+        if last.lang == first.lang:
+            current[-1] = CodeBlock(lang=last.lang,
+                                     code=last.code + "\n" + first.code)
+            return body[1:]
+    return body
+
+
 def split_blocks(blocks: list, limit: int, measure) -> list:
     """Split a block list into parts that each fit under ``limit``.
 
@@ -293,6 +317,7 @@ def split_blocks(blocks: list, limit: int, measure) -> list:
             # The part opens the section the piece belongs to.
             current.extend(context)
             cost += measure(list(context))
+        body = _merge_blocks(current, body)
         current.extend(body)
         cost += piece_cost
         opened = heading

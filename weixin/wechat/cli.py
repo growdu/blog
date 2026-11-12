@@ -35,6 +35,7 @@ from . import notify as notify_module
 from . import publish as publish_module
 from . import render as render_module
 from . import split as split_module
+from . import version as version_module
 from .mdparse import parse
 from .posts import (AUTHOR_LIMIT, BODY_LIMIT, CONTENT_BYTES_LIMIT, CONTENT_LIMIT,
                     TITLE_LIMIT, check_eligibility, discover, load_post)
@@ -471,10 +472,12 @@ def _create_draft(client, store, key: str, fingerprint: str, article: dict,
         state.publish_id = None
         state.publish_status = None
         state.parts = parts
+        state.pipeline = version_module.PIPELINE_VERSION
         store.save(key, state)
         return state, DRAFT_CREATED
 
-    if state.fingerprint == fingerprint:
+    if (state.fingerprint == fingerprint
+            and state.pipeline == version_module.PIPELINE_VERSION):
         print("内容未变，复用已有草稿 {}".format(state.media_id))
         return state, DRAFT_REUSED
 
@@ -483,6 +486,7 @@ def _create_draft(client, store, key: str, fingerprint: str, article: dict,
     state.publish_id = None
     state.publish_status = None
     state.parts = parts
+    state.pipeline = version_module.PIPELINE_VERSION
     store.save(key, state)
     print("内容已变，草稿就地更新 {}".format(state.media_id))
     return state, DRAFT_UPDATED
@@ -616,6 +620,7 @@ def _draft_parts(client, store, post, args) -> list:
 
     state = store.get(post.slug)
     if (state.media_id and state.fingerprint == fingerprint
+            and state.pipeline == version_module.PIPELINE_VERSION
             and _parts_present(store, post.slug, state.parts or 1)):
         print("内容未变，复用已有草稿 {}".format(state.media_id))
         return [DraftResult(state=store.get(key), action=DRAFT_REUSED, key=key)
@@ -875,7 +880,8 @@ def cmd_batch(args) -> int:
         # A split article has several drafts; the article counts as done
         # only when every one of them is there.
         complete = drafted and _parts_present(store, post.slug, state.parts or 1)
-        same = complete and state.fingerprint == fingerprint
+        same = (complete and state.fingerprint == fingerprint
+                and state.pipeline == version_module.PIPELINE_VERSION)
         if args.new_only and complete:
             continue
         if args.changed_only and (not complete or same):

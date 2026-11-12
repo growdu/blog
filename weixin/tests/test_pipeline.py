@@ -1289,3 +1289,30 @@ def test_an_unreadable_image_skips_the_article_instead_of_crashing_the_batch(
     report = json.loads((tmp_path / "out" / "batch-report.json").read_text(encoding="utf-8"))
     assert report["failed"] == 1
     assert "不是有效的图片" in report["failures"][0]["reason"]
+
+
+def test_a_new_pipeline_version_makes_the_draft_look_changed(tmp_path, server, monkeypatch):
+    """The article did not change, but the rules that turn it into a draft did.
+
+    A draft made by an older pipeline has to be brought up to date: the
+    fingerprint only covers the article, so without the version the
+    stale draft would be reused as it is.
+    """
+    posts_dir = _batch_posts(tmp_path, count=1)
+    out_dir = tmp_path / "out"
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+    args = _args(posts_dir, out_dir, server=server)
+
+    assert main(["batch"] + args) == 0
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 1
+
+    path = out_dir / "state.json"
+    state = json.loads(path.read_text(encoding="utf-8"))
+    state["posts"]["database/post0"]["pipeline"] = 0
+    path.write_text(json.dumps(state, ensure_ascii=False), encoding="utf-8")
+
+    _Handler.calls = []
+    assert main(["batch"] + args) == 0
+    assert _Handler.calls.count("/cgi-bin/draft/update") == 1
+    assert "/cgi-bin/draft/add" not in _Handler.calls

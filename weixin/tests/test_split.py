@@ -6,7 +6,7 @@ than as unrelated posts.
 """
 import pytest
 
-from wechat.mdparse import Heading, parse
+from wechat.mdparse import CodeBlock, Heading, Table, parse
 from wechat.render import render
 from wechat.split import (chinese_number, part_digest, part_title, split_blocks,
                           transition_head_html, transition_tail_html)
@@ -219,3 +219,26 @@ def test_the_digest_is_empty_without_a_paragraph():
 def test_the_digest_is_capped():
     blocks = parse("正文。" * 200)
     assert len(part_digest(blocks)) <= 120
+
+
+def test_a_cut_table_keeps_one_header():
+    """A table cut between its rows must not repeat the header per row."""
+    table = ("| 列一 | 列二 |\n| --- | --- |\n"
+             + "\n".join("| 值{} | 内容{} |".format(i, i) for i in range(400)))
+    parts = split_blocks(parse("## 表格\n\n" + table), LIMIT, _measure)
+    assert len(parts) > 1
+    for part in parts:
+        tables = [block for block in part if isinstance(block, Table)]
+        assert len(tables) == 1
+        assert len(tables[0].rows) > 1
+
+
+def test_a_cut_code_block_stays_one_block():
+    """A code block cut between its lines must not break into pieces."""
+    code = "\n".join("行 {}".format(index) for index in range(2000))
+    parts = split_blocks(parse("## 代码\n\n```python\n" + code + "\n```"), LIMIT, _measure)
+    assert len(parts) > 1
+    for part in parts:
+        blocks = [block for block in part if isinstance(block, CodeBlock)]
+        assert len(blocks) == 1
+        assert len(blocks[0].code.split("\n")) > 1

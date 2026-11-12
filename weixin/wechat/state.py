@@ -33,6 +33,10 @@ class PublishState:
     # How many parts the article was split into.  One for an article
     # that fits into a single draft.
     parts: int = 1
+    # Which version of the pipeline produced this draft.  The article
+    # may not have changed, but the rules that turn it into a draft
+    # may have.
+    pipeline: int = 1
 
 
 class StateStore:
