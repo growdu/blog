@@ -42,6 +42,25 @@ PINNED = {
                  "tags_chars": 199, "tag_chars": 20},
 }
 
+# [media] 段核过的数值。这些是成片的技术门槛，来源见规格 §5.2。
+MEDIA_PINNED = {
+    "channels": {
+        "min_width": 1280, "min_height": 720, "max_fps": 60,
+        "require_pix_fmt": "yuv420p", "require_video_codec": "h264",
+        "max_duration_s": 3600, "max_bytes": 2147483648,
+        "max_audio_channels": 2, "max_sample_rate": 48000,
+        "require_faststart": True,
+    },
+    "bilibili": {
+        "max_width": 4096, "max_height": 4096, "max_fps": 120,
+        "require_pix_fmt": "yuv420p", "require_video_codec": "h264",
+        "max_duration_s": 17999, "max_bytes": 4294967296,
+        "max_audio_bitrate": 320000, "max_audio_channels": 2,
+        "max_sample_rate": 48000, "max_video_bitrate": 60000000,
+        "max_keyframe_gap_s": 10,
+    },
+}
+
 
 def _load(platform: str) -> dict:
     path = CAPABILITIES / f"{platform}.toml"
@@ -89,6 +108,30 @@ def test_the_pinned_numbers_still_hold(platform):
             f"{platform}.toml 的 limits.{key} 变成了 {limits[key]}，"
             f"当初核过的是 {value}"
         )
+
+
+@pytest.mark.parametrize("platform", PLATFORMS)
+def test_the_pinned_media_numbers_still_hold(platform):
+    """[media] 段的关键数值也钉住。
+
+    「键在不在」只是一半——键在但数值被人改掉，闸还在，只是判的是另一个标准。
+    变异测试证明过这一点：把 max_duration_s 改回 18000、把 require_faststart 改 false、
+    把 max_video_bitrate 改大，整套测试照样全绿。
+    """
+    media = _load(platform)["media"]
+    for key, value in MEDIA_PINNED[platform].items():
+        assert media[key] == value, (
+            f"{platform}.toml 的 media.{key} 变成了 {media[key]}，"
+            f"当初核过的是 {value}"
+        )
+
+
+@pytest.mark.parametrize("platform", PLATFORMS)
+def test_the_pinned_switches_still_hold(platform):
+    """顶层那两个开关也钉住：认证要求与粉丝数门槛。"""
+    data = _load(platform)
+    assert data["requires_certification"] is False
+    assert data["requires_min_followers"] == 0
 
 
 @pytest.mark.parametrize("platform", PLATFORMS)
