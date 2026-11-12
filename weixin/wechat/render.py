@@ -37,7 +37,8 @@ from .mdparse import (
     ThematicBreak,
 )
 
-__all__ = ["RenderResult", "Resolver", "render", "mermaid_key", "sanitize_html", "css"]
+__all__ = ["RenderResult", "Resolver", "render", "mermaid_key", "sanitize_html", "css",
+           "links_html", "links_items_html"]
 
 
 def css(*declarations: str) -> str:
@@ -314,6 +315,34 @@ class _Renderer:
             tag=tag, style=LIST_STYLE, items="".join(items))
 
 
+def links_items_html(external_links) -> str:
+    """The list items of the reference-links block, without its wrapper.
+
+    Splitting a long article needs the size of the links a block
+    contributes, and the wrapper is paid once per part rather than
+    once per block -- so the two are counted apart.
+    """
+    return "".join(
+        "<li>%s：%s</li>" % (_escape(text), _escape(url))
+        for text, url in external_links
+    )
+
+
+def links_html(external_links) -> str:
+    """The reference-links block appended to the end of an article.
+
+    WeChat blocks outbound H5 links inside the body, so an external
+    link loses its anchor there and shows up here instead -- as plain
+    text, which is still readable and still copyable.
+    """
+    if not external_links:
+        return ""
+    return (
+        "<section style=\"margin:24px 0 0;padding-top:12px;border-top:1px solid #e5e5e5;\">"
+        "<p style=\"%s\">参考链接</p><ul style=\"padding-left:22px;\">%s</ul></section>"
+    ) % (MUTED_STYLE, links_items_html(external_links))
+
+
 def render(blocks: list, *, resolver=None, highlight: bool = True,
            head_html: str = "", tail_html: str = "") -> RenderResult:
     """Render a block AST into WeChat-ready HTML.
@@ -331,16 +360,7 @@ def render(blocks: list, *, resolver=None, highlight: bool = True,
     """
     renderer = _Renderer(resolver, highlight=highlight)
     body = head_html + "".join(renderer.block(block) for block in blocks) + tail_html
-
-    if renderer.external_links:
-        items = "".join(
-            "<li>%s：%s</li>" % (_escape(text), _escape(url))
-            for text, url in renderer.external_links
-        )
-        body += (
-            "<section style=\"margin:24px 0 0;padding-top:12px;border-top:1px solid #e5e5e5;\">"
-            "<p style=\"%s\">参考链接</p><ul style=\"padding-left:22px;\">%s</ul></section>"
-        ) % (MUTED_STYLE, items)
+    body += links_html(renderer.external_links)
 
     return RenderResult(
         html=body,

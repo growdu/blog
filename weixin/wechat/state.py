@@ -30,6 +30,9 @@ class PublishState:
     publish_id: str | None = None
     publish_status: int | None = None
     updated_at: str | None = None
+    # How many parts the article was split into.  One for an article
+    # that fits into a single draft.
+    parts: int = 1
 
 
 class StateStore:
@@ -57,7 +60,12 @@ class StateStore:
         entry = self._load_all().get(slug)
         if not isinstance(entry, dict):
             return PublishState()
-        known = {name: entry.get(name) for name in PublishState.__dataclass_fields__}
+        known = {}
+        for name, spec in PublishState.__dataclass_fields__.items():
+            # A field that the file does not carry falls back to its
+            # default, so an entry written by an older version of this
+            # tool is still read correctly.
+            known[name] = entry.get(name, spec.default)
         return PublishState(**known)
 
     def save(self, slug: str, state: PublishState) -> None:
@@ -87,6 +95,22 @@ class StateStore:
         entry["fingerprint"] = None
         entry["updated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
         posts[slug] = entry
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        self.path.write_text(
+            json.dumps({"posts": posts}, ensure_ascii=False, indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+
+    def remove(self, slug: str) -> None:
+        """Drop one entry entirely.
+
+        Used when a draft was deleted because the part it belonged to
+        no longer exists: there is nothing left to remember.
+        """
+        posts = self._load_all()
+        if slug not in posts:
+            return
+        del posts[slug]
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self.path.write_text(
             json.dumps({"posts": posts}, ensure_ascii=False, indent=2, sort_keys=True),

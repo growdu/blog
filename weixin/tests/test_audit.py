@@ -124,8 +124,29 @@ def test_audit_corpus_measures_every_gate(tmp_path):
     # The quoted-HTML article renders to escaped text, so it is compliant.
     assert report.violations == []
 
-    # The overlong body does not fit in 20000 characters either way.
+    # An article is publishable as soon as its title fits and it can be
+    # cut into parts that fit.  The long post here is a single
+    # paragraph of 20000 lines: there is nowhere left to cut it, so it
+    # is the one article that cannot be published.
     assert report.publishable == 2
+    assert report.unsplittable == 1
+    assert report.split_posts == 0
+    assert report.split_parts == 2
+
+
+def test_audit_counts_an_article_that_is_split(tmp_path):
+    """An article made of many paragraphs is cut into several drafts."""
+    posts_dir = tmp_path / "source" / "_posts"
+    posts_dir.mkdir(parents=True)
+    body = "\n\n".join("第 {} 段。".format(index) for index in range(400))
+    (posts_dir / "long.md").write_text(
+        _post("很长的文章", "## 第一节\n\n" + body), encoding="utf-8")
+
+    report = audit_corpus(posts_dir)
+    assert report.publishable == 1
+    assert report.unsplittable == 0
+    assert report.split_posts == 1
+    assert report.split_parts == 2
 
 
 def test_audit_corpus_reports_no_violation_for_sanitised_raw_html(tmp_path):
@@ -178,4 +199,5 @@ def test_cli_audit_prints_the_funnel(tmp_path):
     assert result.returncode == 0, result.stderr
     assert "语料: 4 篇" in result.stdout
     assert "可发布: 2 篇" in result.stdout
+    assert "其中拆不开（单块就超限）: 1 篇" in result.stdout
     assert "HTML 合规: 4 篇全部通过" in result.stdout

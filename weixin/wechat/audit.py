@@ -26,7 +26,8 @@ from pathlib import Path
 
 from .mdparse import parse
 from .posts import BODY_LIMIT, CONTENT_LIMIT, TITLE_LIMIT, discover
-from .render import render
+from .render import links_html, links_items_html, render
+from .split import RESERVE, plan_parts
 
 __all__ = [
     "Audit",
@@ -53,6 +54,11 @@ class Audit:
     them answer a different question -- how the whole corpus measures on
     each criterion regardless of the others -- and are therefore counted
     over every post.
+
+    An article that does not fit into one draft is not lost: it is split
+    into several.  ``split_posts`` counts the articles that need more
+    than one draft and ``split_parts`` is how many drafts the corpus
+    turns into.
     """
 
     posts: int
@@ -73,6 +79,10 @@ class Audit:
     needs_plain_only: int
     median_highlight: float
     median_plain: float
+    # The split dimension.
+    split_posts: int
+    split_parts: int
+    unsplittable: int
     buckets: dict = field(default_factory=dict)
     violations: list = field(default_factory=list)
 
@@ -147,17 +157,32 @@ def word_buckets(lengths, limit: int = BODY_LIMIT) -> dict:
     return buckets
 
 
+def _measure(blocks, highlight: bool = True) -> int:
+    """The size a group of blocks contributes to a draft.
+
+    The reference links are counted apart from the body: their wrapper
+    is paid once per draft, not once per block.
+    """
+    result = render(blocks, highlight=highlight)
+    body = len(result.html) - len(links_html(result.external_links))
+    return body + len(links_items_html(result.external_links))
+
+
 def audit_corpus(posts_dir: Path) -> Audit:
     """Measure the corpus in ``posts_dir`` against the publishing limits.
 
     Both rendering modes are measured, because the pipeline falls back to
     plain code blocks when the highlighted version does not fit.  A post
-    counts as publishable when it passes the raw pre-check *and* fits in
-    at least one of the two modes.
+    that fits in neither mode is not lost: it is split into several
+    drafts, which is what ``split_posts`` and ``split_parts`` report.
+
+    The measurement is a conservative one: no mermaid resolver is used
+    here, so a diagram counts as its own source code -- which is longer
+    than the picture it becomes in the real pipeline.
     """
     posts = discover(Path(posts_dir))
     if not posts:
-        return Audit(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0)
+        return Audit(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.0, 0.0, 0, 0, 0)
 
     raw_lengths = [len(re.sub(r"\s", "", post.body)) for post in posts]
     highlighted = []
@@ -188,6 +213,30 @@ def audit_corpus(posts_dir: Path) -> Audit:
         if highlighted[index] > CONTENT_LIMIT:
             needs_plain_only += 1
 
+    # How many drafts the corpus turns into once the long articles are
+    # split -- and how many articles cannot be split at all.
+    split_posts = 0
+    split_parts = 0
+    unsplittable = 0
+    budget = CONTENT_LIMIT - RESERVE
+    for post in posts:
+        if len(post.title) > TITLE_LIMIT:
+            continue
+        blocks = parse(post.body)
+        parts = plan_parts(
+            blocks, CONTENT_LIMIT,
+            lambda group: _measure(group, True),
+            lambda group: _measure(group, False))
+        if any(_measure(group, True) > budget
+               and _measure(group, False) > budget for group, _ in parts):
+            # One block is too big on its own: there is nowhere left to
+            # cut it, so the article cannot be published at all.
+            unsplittable += 1
+            continue
+        split_parts += len(parts)
+        if len(parts) > 1:
+            split_posts += 1
+
     # Corpus wide: how every post measures on each criterion on its own.
     raw_within = sum(1 for length in raw_lengths if length <= BODY_LIMIT)
     fit_highlight = sum(1 for length in highlighted if length <= CONTENT_LIMIT)
@@ -210,10 +259,16 @@ def audit_corpus(posts_dir: Path) -> Audit:
         fit_highlight=fit_highlight,
         fit_plain=fit_plain,
         fit_either=fit_either,
-        publishable=len(after_render),
+        # An article is publishable as soon as its title fits and it
+        # can be cut into parts that fit: a long body is split, not
+        # refused -- unless there is nowhere left to cut it.
+        publishable=len(after_title) - unsplittable,
         needs_plain_only=needs_plain_only,
         median_highlight=statistics.median(highlighted),
         median_plain=statistics.median(plain),
+        split_posts=split_posts,
+        split_parts=split_parts,
+        unsplittable=unsplittable,
         buckets=word_buckets(raw_lengths),
         violations=html_violations_from_htmls(rendered),
     )

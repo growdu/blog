@@ -24,7 +24,7 @@ import subprocess
 import sys
 import time
 import unicodedata
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from . import assets as assets_module
@@ -34,6 +34,7 @@ from . import mermaid as mermaid_module
 from . import notify as notify_module
 from . import publish as publish_module
 from . import render as render_module
+from . import split as split_module
 from .mdparse import parse
 from .posts import (AUTHOR_LIMIT, BODY_LIMIT, CONTENT_BYTES_LIMIT, CONTENT_LIMIT,
                     TITLE_LIMIT, check_eligibility, discover, load_post)
@@ -114,9 +115,14 @@ def _fingerprint(post, tag_html: str) -> str:
     the content WeChat stores, so a changed tag has to invalidate the
     draft.  Otherwise the draft would be reused and the change would
     silently never reach the reader.
+
+    The title counts too -- a split article is published under
+    「标题（一）」, so renaming the article has to reach the drafts.
     """
     digest = hashlib.sha256()
     digest.update(post.fingerprint.encode("utf-8"))
+    digest.update(b"\x00")
+    digest.update(post.title.encode("utf-8"))
     digest.update(b"\x00")
     digest.update(tag_html.encode("utf-8"))
     return digest.hexdigest()
@@ -160,17 +166,18 @@ def cmd_audit(args) -> int:
 
     print("语料: {} 篇, {} 个分类".format(report.posts, report.categories))
     print()
-    print("三层闸门（逐层收紧，每层只数上一层放行的文章）:")
+    print("闸门（逐层收紧，每层只数上一层放行的文章）:")
     print("  标题 <= {} 字符         放行 {:>4}  拦下 {:>4}".format(
         TITLE_LIMIT, report.title_ok, report.title_over))
-    print("  原始正文 <= {} 字       放行 {:>4}  拦下 {:>4}".format(
+    print("  原始正文 <= {} 字       放行 {:>4}  超长 {:>4}   ← 超长不再拦下，改拆分".format(
         BODY_LIMIT, report.raw_ok, report.raw_over))
-    print("  渲染后 <= {} 字符       放行 {:>4}  拦下 {:>4}".format(
+    print("  渲染后 <= {} 字符       单篇放得下 {:>4}  需要拆 {:>4}".format(
         CONTENT_LIMIT, report.render_ok, report.render_over))
     print()
-    print("可发布: {} 篇 ({:.1f}%)，跳过 {} 篇".format(
-        report.publishable, report.publishable_ratio,
-        report.posts - report.publishable))
+    print("可发布: {} 篇 ({:.1f}%)，草稿总数 {} 篇".format(
+        report.publishable, report.publishable_ratio, report.split_parts))
+    print("  其中需要拆成多篇: {} 篇".format(report.split_posts))
+    print("  其中拆不开（单块就超限）: {} 篇".format(report.unsplittable))
     print("  其中只有关掉代码高亮才放得下: {} 篇".format(report.needs_plain_only))
     print()
     print("全语料口径:")
@@ -179,6 +186,8 @@ def cmd_audit(args) -> int:
     print("  渲染后放得下（关高亮）  {:>4} 篇".format(report.fit_plain))
     print("  正文长度中位            带高亮 {} 字符, 关高亮 {} 字符".format(
         report.median_highlight, report.median_plain))
+    print()
+    print("（拆分数字按「无 mermaid 渲染器」估算：图按源码算，比真实流水线偏大）")
     print()
     print("字数分布:")
     for name, count in report.buckets.items():
@@ -414,6 +423,7 @@ class DraftResult:
     content_length: int = 0
     external_total: int = 0
     external_failures: list = field(default_factory=list)
+    key: str = ""
 
 
 DRAFT_CREATED = "created"
@@ -421,7 +431,8 @@ DRAFT_REUSED = "reused"
 DRAFT_UPDATED = "updated"
 
 
-def _create_draft(client, store, key: str, fingerprint: str, article: dict):
+def _create_draft(client, store, key: str, fingerprint: str, article: dict,
+                   parts: int = 1):
     """Put an article into the draft box, creating or updating as needed.
 
     Returns ``(state, action)``.  ``action`` is ``created`` for a new
@@ -431,6 +442,9 @@ def _create_draft(client, store, key: str, fingerprint: str, article: dict):
     A changed article is **updated in place**: ``draft/add`` would
     create a second copy and leave the old one in the box for the
     reader to trip over.
+
+    ``parts`` records how many parts the article was split into, so a
+    later run can tell whether every part is really there.
     """
     state = store.get(key)
     if not state.media_id:
@@ -438,6 +452,7 @@ def _create_draft(client, store, key: str, fingerprint: str, article: dict):
         state.fingerprint = fingerprint
         state.publish_id = None
         state.publish_status = None
+        state.parts = parts
         store.save(key, state)
         return state, DRAFT_CREATED
 
@@ -449,6 +464,7 @@ def _create_draft(client, store, key: str, fingerprint: str, article: dict):
     state.fingerprint = fingerprint
     state.publish_id = None
     state.publish_status = None
+    state.parts = parts
     store.save(key, state)
     print("内容已变，草稿就地更新 {}".format(state.media_id))
     return state, DRAFT_UPDATED
@@ -463,38 +479,114 @@ def _submit(client, store, key: str, state, publish: bool) -> bool:
     return True
 
 
-def _render_for_wechat(post, args):
-    """Render a post and make sure it fits WeChat's limits.
+@dataclass
+class Part:
+    """One draft's worth of an article.
 
-    Raises :class:`RejectedPost` when the article is too long to be
-    published -- the article is then skipped, never truncated.
+    Most articles are a single part.  An article whose rendered body
+    does not fit WeChat's limit becomes several, each with its own
+    title, its own transitions and its own reference links.
     """
+
+    index: int
+    total: int
+    blocks: list
+    result: render_module.RenderResult
+    title: str
+    key: str
+
+
+def _fits(result) -> bool:
+    """True when WeChat would accept this content as it is."""
+    return (result.content_length <= CONTENT_LIMIT
+            and len(result.html.encode("utf-8")) < CONTENT_BYTES_LIMIT)
+
+
+def _render_parts(post, args) -> list:
+    """Render one post into the drafts it needs.
+
+    Most articles fit into a single draft.  One that does not is split
+    into several -- at heading boundaries where possible -- and every
+    part becomes a draft of its own, numbered and connected so that
+    the reader can follow the thread.
+
+    Raises :class:`RejectedPost` when a part cannot be brought under
+    the limit even on its own; the article is then skipped, never
+    truncated.
+    """
+    blocks = parse(post.body)
     assets = _mermaid_assets(post, args)
-    result = _prepare(post, args, resolver=_Resolver(assets))
+    resolver = _Resolver(assets)
+    tag = _category_tag(post, args)
+    position = getattr(args, "category_tag", "top")
+    head = tag if position == "top" else ""
+    tail = tag if position == "bottom" else ""
 
-    # The raw-body check is only a pre-gate: the length WeChat
-    # enforces is the length of the rendered content, which is larger
-    # than the markdown because every element carries inline styles.
-    if result.content_length > CONTENT_LIMIT:
-        plain = _prepare(post, args, resolver=_Resolver(assets), highlight=False)
-        if plain.content_length < result.content_length:
-            result = plain
+    def build(group, index, total, highlight):
+        """Render one part, with its opening and closing lines in place."""
+        result = render_module.render(
+            group, resolver=resolver, highlight=highlight,
+            head_html=head + split_module.transition_head_html(post.title, index, total),
+            tail_html=tail,
+        )
+        if total > 1:
+            # The line that closes a part comes after the reference
+            # links: the links are where the article ends.
+            result = replace(result, html=result.html + split_module.transition_tail_html(
+                post.title, index, total))
+        return result
 
-    if result.content_length > CONTENT_LIMIT:
-        raise RejectedPost(
-            "渲染后正文 {} 字符，超过上限 {} 字符，已拒绝发布\n"
-            "提示：这类文章需要拆成多篇，或在公众号发摘要版并把全文放在阅读原文".format(
-                result.content_length, CONTENT_LIMIT))
+    def save(group, result, index, total):
+        """Keep the rendered HTML on disk, one file per part."""
+        target_dir = Path(args.out_dir) / post.slug
+        target_dir.mkdir(parents=True, exist_ok=True)
+        name = "article.html" if total == 1 else "part-{}.html".format(index)
+        (target_dir / name).write_text(result.html, encoding="utf-8")
 
-    if len(result.html.encode("utf-8")) >= CONTENT_BYTES_LIMIT:
-        raise RejectedPost("渲染后正文 {} 字节，超过上限 {} 字节，已拒绝发布".format(
-            len(result.html.encode("utf-8")), CONTENT_BYTES_LIMIT))
+    def measure(group, highlight=True):
+        """The size a group contributes: its body plus the links it brings."""
+        result = render_module.render(group, resolver=resolver, highlight=highlight)
+        body = len(result.html) - len(render_module.links_html(result.external_links))
+        return body + len(render_module.links_items_html(result.external_links))
 
-    return result
+    groups = split_module.plan_parts(
+        blocks, CONTENT_LIMIT, measure,
+        plain_measure=lambda group: measure(group, highlight=False))
+    total = len(groups)
+
+    parts = []
+    for index, (group, use_plain) in enumerate(groups, 1):
+        result = build(group, index, total, not use_plain)
+        if not _fits(result):
+            raise RejectedPost(
+                "第 {} 部分渲染后正文 {} 字符，超过上限 {} 字符，已拒绝发布\n"
+                "提示：这一部分单独放也放不下，只能人工拆得更细".format(
+                    index, result.content_length, CONTENT_LIMIT))
+        save(group, result, index, total)
+        title = post.title if total == 1 else split_module.part_title(post.title, index)
+        key = post.slug if index == 1 else "{}#{}".format(post.slug, index)
+        parts.append(Part(index=index, total=total, blocks=group, result=result,
+                           title=title, key=key))
+    return parts
 
 
-def _draft_one(client, store, post, args) -> DraftResult:
-    """Put one post into the draft box.
+def _part_keys(slug: str, count: int) -> list:
+    """The ledger keys of an article's parts.
+
+    The first part keeps the plain slug, so an article that was never
+    split keeps the entry it always had.  The rest are numbered.
+    """
+    return [slug if index == 1 else "{}#{}".format(slug, index)
+            for index in range(1, count + 1)]
+
+
+def _parts_present(store, slug: str, count: int) -> bool:
+    """True when every part of the article has a draft."""
+    return all(store.get(key).media_id for key in _part_keys(slug, count))
+
+
+def _draft_parts(client, store, post, args) -> list:
+    """Put one post into the draft box -- one draft per part.
 
     The uploads only happen when the content actually changed: an
     unchanged article is recognised by its fingerprint before a single
@@ -505,11 +597,23 @@ def _draft_one(client, store, post, args) -> DraftResult:
     fingerprint = _fingerprint(post, tag)
 
     state = store.get(post.slug)
-    if state.media_id and state.fingerprint == fingerprint:
+    if (state.media_id and state.fingerprint == fingerprint
+            and _parts_present(store, post.slug, state.parts or 1)):
         print("内容未变，复用已有草稿 {}".format(state.media_id))
-        return DraftResult(state=state, action=DRAFT_REUSED)
+        return [DraftResult(state=store.get(key), action=DRAFT_REUSED, key=key)
+                for key in _part_keys(post.slug, state.parts or 1)]
 
-    result = _render_for_wechat(post, args)
+    parts = _render_parts(post, args)
+    results = []
+    for part in parts:
+        results.append(_draft_part(client, store, post, part, fingerprint, args))
+    _drop_extra_parts(client, store, post, len(parts))
+    return results
+
+
+def _draft_part(client, store, post, part, fingerprint, args) -> DraftResult:
+    """Put one part of an article into the draft box."""
+    result = part.result
 
     urls = _upload_assets(client, result, args)
     html = result.substitute(urls)
@@ -524,11 +628,14 @@ def _draft_one(client, store, post, args) -> DraftResult:
 
     cover_media_id, crop_list = _upload_cover(client, result, args, external_prepared)
 
+    # Every part describes itself: the same summary on every row of the
+    # draft box would tell the reader nothing.
+    digest = split_module.part_digest(part.blocks) or post.digest
     article = {
         "article_type": "news",
-        "title": post.title,
+        "title": part.title,
         "author": args.author,
-        "digest": post.digest,
+        "digest": digest,
         "content": html,
         "content_source_url": args.source_url.rstrip("/") + post.permalink,
         "thumb_media_id": cover_media_id,
@@ -537,14 +644,40 @@ def _draft_one(client, store, post, args) -> DraftResult:
         "cover_info": {"crop_percent_list": crop_list},
     }
 
-    state, action = _create_draft(client, store, post.slug, fingerprint, article)
+    state, action = _create_draft(client, store, part.key, fingerprint, article,
+                                   parts=part.total)
     return DraftResult(
         state=state,
         action=action,
         content_length=result.content_length,
         external_total=len(result.external_images),
         external_failures=external_failures,
+        key=part.key,
     )
+
+
+def _drop_extra_parts(client, store, post, count: int) -> None:
+    """Delete the drafts of parts that no longer exist.
+
+    An article that got shorter may need fewer parts than it did
+    before.  The drafts of the parts that are gone would stay in the
+    box looking like current content, so they are removed.
+    """
+    prefix = post.slug + "#"
+    for key in list(store.all()):
+        if not key.startswith(prefix):
+            continue
+        suffix = key[len(prefix):]
+        if not suffix.isdigit() or int(suffix) <= count:
+            continue
+        state = store.get(key)
+        if state.media_id:
+            try:
+                client.delete_draft(state.media_id)
+                print("  已删除多余草稿 {} ({})".format(post.slug, suffix))
+            except publish_module.WeChatError as error:
+                print("  ! 删除多余草稿失败: {}".format(error), file=sys.stderr)
+        store.remove(key)
 
 
 def cmd_publish(args) -> int:
@@ -571,30 +704,44 @@ def cmd_publish(args) -> int:
     store = StateStore(Path(args.out_dir) / "state.json")
 
     try:
-        draft = _draft_one(client, store, post, args)
+        drafts = _draft_parts(client, store, post, args)
     except RejectedPost as error:
         print(str(error), file=sys.stderr)
         return EXIT_REJECTED
 
-    published = _submit(client, store, post.slug, draft.state, args.publish)
+    published = False
+    for draft in drafts:
+        published = _submit(client, store, draft.key, draft.state, args.publish) or published
 
-    print("已建草稿: {}".format(post.slug))
-    print("  media_id: {}".format(draft.state.media_id))
-    print("  正文长度: {} 字符".format(draft.content_length))
-    print("  阅读原文: {}{}".format(args.source_url.rstrip("/"), post.permalink))
-    if draft.external_total:
-        fetched = draft.external_total - len(draft.external_failures)
-        print("  外链图转存: {} / {} 张".format(fetched, draft.external_total))
-    for url, error in draft.external_failures:
-        print("    ! 原图未能转存: {} -> {}".format(url, error))
-    _notify(args, post.title, draft.content_length,
-            args.source_url.rstrip("/") + post.permalink, draft.state,
-            action=draft.action, published=published)
-    if draft.state.publish_id:
-        print("  publish_id: {}".format(draft.state.publish_id))
-    else:
-        print("  未提交发表（如需自动发表请加 --publish）")
+    for draft in drafts:
+        print("已建草稿: {}".format(draft.key))
+        print("  media_id: {}".format(draft.state.media_id))
+        print("  正文长度: {} 字符".format(draft.content_length))
+        print("  阅读原文: {}{}".format(args.source_url.rstrip("/"), post.permalink))
+        if draft.external_total:
+            fetched = draft.external_total - len(draft.external_failures)
+            print("  外链图转存: {} / {} 张".format(fetched, draft.external_total))
+        for url, error in draft.external_failures:
+            print("    ! 原图未能转存: {} -> {}".format(url, error))
+        if draft.state.publish_id:
+            print("  publish_id: {}".format(draft.state.publish_id))
+        else:
+            print("  未提交发表（如需自动发表请加 --publish）")
+
+    _notify(args, post.title, sum(draft.content_length for draft in drafts),
+            args.source_url.rstrip("/") + post.permalink, drafts[0].state,
+            action=_overall_action(drafts), published=published)
     return EXIT_OK
+
+
+def _overall_action(drafts) -> str:
+    """The action that describes a whole article, not just one part."""
+    actions = {draft.action for draft in drafts}
+    if DRAFT_CREATED in actions:
+        return DRAFT_CREATED
+    if DRAFT_UPDATED in actions:
+        return DRAFT_UPDATED
+    return DRAFT_REUSED
 
 
 def _git(*args, cwd: Path):
@@ -707,10 +854,13 @@ def cmd_batch(args) -> int:
         fingerprint = _fingerprint(post, _category_tag(post, args))
         state = store.get(post.slug)
         drafted = bool(state.media_id)
-        same = drafted and state.fingerprint == fingerprint
-        if args.new_only and drafted:
+        # A split article has several drafts; the article counts as done
+        # only when every one of them is there.
+        complete = drafted and _parts_present(store, post.slug, state.parts or 1)
+        same = complete and state.fingerprint == fingerprint
+        if args.new_only and complete:
             continue
-        if args.changed_only and (not drafted or same):
+        if args.changed_only and (not complete or same):
             continue
         if same:
             unchanged += 1
@@ -753,7 +903,7 @@ def cmd_batch(args) -> int:
     for index, post in enumerate(selected, 1):
         print("[{}/{}] {} ({})".format(index, len(selected), post.title, post.slug))
         try:
-            draft = _draft_one(client, store, post, args)
+            drafts = _draft_parts(client, store, post, args)
         except RejectedPost as error:
             rejected += 1
             reason = str(error).splitlines()[0]
@@ -779,10 +929,11 @@ def cmd_batch(args) -> int:
                 break
             continue
 
-        if draft.action == DRAFT_CREATED:
-            created += 1
-        elif draft.action == DRAFT_UPDATED:
-            updated += 1
+        for draft in drafts:
+            if draft.action == DRAFT_CREATED:
+                created += 1
+            elif draft.action == DRAFT_UPDATED:
+                updated += 1
 
         if args.delay and index < len(selected):
             time.sleep(args.delay)

@@ -57,6 +57,10 @@ def _write_png(path):
 class _Handler(BaseHTTPRequestHandler):
     calls = []
     bodies = {}
+    # Every article that was sent to draft/add, in order.
+    drafts = []
+    # Drafts that were deleted again.
+    deleted = []
     # Titles the fake server should reject, so a batch can be tested
     # against an article that fails.
     fail_titles = set()
@@ -88,12 +92,17 @@ class _Handler(BaseHTTPRequestHandler):
         elif path.endswith("/material/add_material"):
             self._json({"media_id": "COVER_ID"})
         elif path.endswith("/draft/add"):
-            title = json.loads(body)["articles"][0].get("title", "")
+            article = json.loads(body)["articles"][0]
+            title = article.get("title", "")
             if title in _Handler.fail_titles:
                 self._json({"errcode": 40007, "errmsg": "invalid media_id"})
                 return
+            _Handler.drafts.append(article)
             self._json({"media_id": "DRAFT_ID"})
         elif path.endswith("/draft/update"):
+            self._json({"errcode": 0, "errmsg": "ok"})
+        elif path.endswith("/draft/delete"):
+            _Handler.deleted.append(json.loads(body)["media_id"])
             self._json({"errcode": 0, "errmsg": "ok"})
         elif path.endswith("/freepublish/submit"):
             self._json({"publish_id": "PUBLISH_ID"})
@@ -107,6 +116,8 @@ class _Handler(BaseHTTPRequestHandler):
 def server():
     _Handler.calls = []
     _Handler.bodies = {}
+    _Handler.drafts = []
+    _Handler.deleted = []
     _Handler.fail_titles = set()
     httpd = HTTPServer(("127.0.0.1", 0), _Handler)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
@@ -890,13 +901,13 @@ def test_batch_records_what_it_did(tmp_path, server, monkeypatch):
     assert report["failed"] == 0
 
 
-def test_batch_skips_an_article_that_is_too_long(tmp_path, server, monkeypatch, capsys):
-    """Over the limit is a skip, not a failure: the rest still get drafted.
+def test_batch_splits_an_article_that_is_too_long(tmp_path, server, monkeypatch, capsys):
+    """An article that does not fit becomes several drafts.
 
     400 short paragraphs are 800 characters of markdown but 26000 of
     rendered HTML -- every paragraph carries its own inline style.  That
-    is the shape of the articles that do not fit, and one of them must
-    not take the rest of the batch down with it.
+    is the shape of the articles that do not fit, and instead of being
+    skipped they are cut into parts at the paragraph boundaries.
     """
     posts_dir = _batch_posts(tmp_path, count=1)
     (posts_dir / "database" / "huge.md").write_text(
@@ -909,8 +920,15 @@ def test_batch_skips_an_article_that_is_too_long(tmp_path, server, monkeypatch, 
     code = main(["batch"] + _args(posts_dir, tmp_path / "out", server=server))
     out = capsys.readouterr()
     assert code == 0
-    assert "跳过 1 篇" in out.out
-    assert _Handler.calls.count("/cgi-bin/draft/add") == 1
+    # Two parts of the long article, plus the short one next to it.
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 3
+
+    titles = [article["title"] for article in _Handler.drafts
+              if article["title"].startswith("太长")]
+    assert titles == ["太长（一）", "太长（二）"]
+    # The parts are connected, so the reader knows how they fit together.
+    assert "未完待续" in _Handler.drafts[0]["content"]
+    assert "接上文" in _Handler.drafts[1]["content"]
 
 
 def test_the_report_tells_skips_and_failures_apart(tmp_path, server, monkeypatch):
@@ -922,9 +940,11 @@ def test_the_report_tells_skips_and_failures_apart(tmp_path, server, monkeypatch
     not.
     """
     posts_dir = _batch_posts(tmp_path, count=2)
-    (posts_dir / "database" / "huge.md").write_text(
-        "---\ntitle: \"太长\"\ndate: 2026-11-05 15:00:00\nauthor: growdu\n"
-        "categories:\n  - 数据库\n---\n\n" + ("\n\n".join("短。" for _ in range(400))) + "\n",
+    # One paragraph of 30000 characters cannot be cut anywhere: it is
+    # too long on its own and it is one block.
+    (posts_dir / "database" / "giant.md").write_text(
+        "---\ntitle: \"一整段\"\ndate: 2026-11-05 15:00:00\nauthor: growdu\n"
+        "categories:\n  - 数据库\n---\n\n" + "字" * 30000 + "\n",
         encoding="utf-8")
     monkeypatch.setenv("WX_APPID", "appid")
     monkeypatch.setenv("WX_APPSECRET", "secret")
@@ -1099,3 +1119,144 @@ def test_an_external_picture_can_serve_as_the_cover(tmp_path, server, monkeypatc
     # body, once as the cover.
     assert _Handler.calls.count("/cgi-bin/media/uploadimg") == 1
     assert _Handler.calls.count("/cgi-bin/material/add_material") == 1
+
+
+# --- split articles -------------------------------------------------------
+
+
+def _long_post(posts_dir, paragraphs=400, title="很长"):
+    """A post whose rendered body does not fit into one draft."""
+    target = posts_dir / "database" / "long.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    body = "\n\n".join("第 {} 段。".format(index) for index in range(paragraphs))
+    target.write_text(
+        "---\ntitle: \"{}\"\ndate: 2026-11-05 15:00:00\nauthor: growdu\n"
+        "categories:\n  - 数据库\n---\n\n".format(title) + body + "\n",
+        encoding="utf-8")
+    return target
+
+
+def test_a_split_article_gets_one_ledger_entry_per_part(tmp_path, server, monkeypatch):
+    posts_dir = tmp_path / "source" / "_posts"
+    _long_post(posts_dir)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    assert main(["batch"] + _args(posts_dir, tmp_path / "out", server=server)) == 0
+
+    state = json.loads((tmp_path / "out" / "state.json").read_text(encoding="utf-8"))["posts"]
+    assert "database/long" in state
+    assert "database/long#2" in state
+    assert state["database/long"]["parts"] == 2
+
+
+def test_re_running_a_split_article_creates_nothing(tmp_path, server, monkeypatch):
+    posts_dir = tmp_path / "source" / "_posts"
+    _long_post(posts_dir)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+    args = _args(posts_dir, tmp_path / "out", server=server)
+
+    assert main(["batch"] + args) == 0
+    _Handler.calls = []
+    assert main(["batch"] + args) == 0
+    assert "/cgi-bin/draft/add" not in _Handler.calls
+    assert "/cgi-bin/media/uploadimg" not in _Handler.calls
+
+
+def test_new_only_finishes_an_article_whose_parts_are_missing(tmp_path, server, monkeypatch):
+    """A run that stopped halfway must not leave the article half-drafted.
+
+    The scheduled job only drafts articles that never had a draft, so
+    an article whose first part exists but whose second does not would
+    otherwise stay incomplete forever.
+    """
+    posts_dir = tmp_path / "source" / "_posts"
+    _long_post(posts_dir)
+    out_dir = tmp_path / "out"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "state.json").write_text(json.dumps({"posts": {
+        "database/long": {"fingerprint": "旧", "media_id": "DRAFT_ID", "parts": 2},
+    }}, ensure_ascii=False), encoding="utf-8")
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    assert main(["batch", "--new-only"] + _args(posts_dir, out_dir, server=server)) == 0
+    # The first part is brought up to date, the second one is created.
+    assert _Handler.calls.count("/cgi-bin/draft/update") == 1
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 1
+
+
+def test_a_shorter_article_deletes_the_parts_it_no_longer_needs(tmp_path, server, monkeypatch):
+    posts_dir = tmp_path / "source" / "_posts"
+    target = _long_post(posts_dir)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+    args = _args(posts_dir, tmp_path / "out", server=server)
+
+    assert main(["batch"] + args) == 0
+    assert len(_Handler.drafts) == 2
+
+    # The article is shortened until it fits into one draft again.
+    target.write_text(
+        "---\ntitle: \"很长\"\ndate: 2026-11-05 15:00:00\nauthor: growdu\n"
+        "categories:\n  - 数据库\n---\n\n短了。\n", encoding="utf-8")
+    _Handler.calls = []
+    assert main(["batch"] + args) == 0
+    assert _Handler.calls.count("/cgi-bin/draft/delete") == 1
+
+    state = json.loads((tmp_path / "out" / "state.json").read_text(encoding="utf-8"))["posts"]
+    assert "database/long#2" not in state
+    assert state["database/long"]["parts"] == 1
+
+
+def test_every_part_gets_its_own_digest(tmp_path, server, monkeypatch):
+    """The same summary on every row of the draft box tells the reader nothing."""
+    posts_dir = tmp_path / "source" / "_posts"
+    _long_post(posts_dir)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    assert main(["batch"] + _args(posts_dir, tmp_path / "out", server=server)) == 0
+
+    digests = [article["digest"] for article in _Handler.drafts]
+    assert len(digests) == 2
+    assert len(set(digests)) == 2
+    assert all(digest for digest in digests)
+
+
+def test_the_parts_are_numbered_in_their_titles(tmp_path, server, monkeypatch):
+    posts_dir = tmp_path / "source" / "_posts"
+    _long_post(posts_dir)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    assert main(["batch"] + _args(posts_dir, tmp_path / "out", server=server)) == 0
+
+    titles = [article["title"] for article in _Handler.drafts]
+    assert titles == ["很长（一）", "很长（二）"]
+    # The first part points at the second, the second points back.
+    assert "很长（二）" in _Handler.drafts[0]["content"]
+    assert "很长（一）" in _Handler.drafts[1]["content"]
+
+
+def test_every_part_carries_its_own_reference_links(tmp_path, server, monkeypatch):
+    """A part that was cut out of an article keeps the links it uses.
+
+    The links are collected per part, not per whole article: a reader
+    who only opens the second part still finds the sources it cites.
+    """
+    posts_dir = tmp_path / "source" / "_posts"
+    target = _long_post(posts_dir)
+    body = target.read_text(encoding="utf-8")
+    target.write_text(body + "\n\n参考 [外部](https://example.com/x) 链接。\n",
+                      encoding="utf-8")
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    assert main(["batch"] + _args(posts_dir, tmp_path / "out", server=server)) == 0
+
+    with_links = [article for article in _Handler.drafts
+                   if "参考链接" in article["content"]]
+    assert len(with_links) == 1
+    assert "https://example.com/x" in with_links[0]["content"]

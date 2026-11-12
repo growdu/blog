@@ -138,12 +138,18 @@ def test_check_eligibility_accepts_valid_post(tmp_path):
     assert check_eligibility(post).reasons == ()
 
 
-def test_check_eligibility_rejects_overlong_body(tmp_path):
+def test_check_eligibility_accepts_an_overlong_body(tmp_path):
+    """A long body is split into several drafts, not skipped.
+
+    WeChat's limit is per draft, so an article that does not fit
+    becomes several -- the body length no longer decides whether the
+    article may be published at all.
+    """
     posts_dir, target = _write(tmp_path, "database/long.md", FM + "很长的一段内容。" * 3000)
     post = load_post(target, posts_dir)
     result = check_eligibility(post)
-    assert result.ok is False
-    assert any("正文" in reason for reason in result.reasons)
+    assert result.ok is True
+    assert result.reasons == ()
 
 
 def test_check_eligibility_rejects_overlong_title(tmp_path):
@@ -173,7 +179,12 @@ def test_check_eligibility_title_boundary(tmp_path):
 
 
 def test_check_eligibility_body_limit_boundary(tmp_path):
+    """The body limit is a measurement now, not a gate.
+
+    ``BODY_LIMIT`` still tells the audit how long the articles are; it
+    no longer keeps them out of the draft box.
+    """
     body = "文" * (BODY_LIMIT + 1)
     posts_dir, target = _write(tmp_path, "database/edge.md", FM + body)
     post = load_post(target, posts_dir)
-    assert check_eligibility(post).ok is False
+    assert check_eligibility(post).ok is True

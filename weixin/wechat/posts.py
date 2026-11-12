@@ -240,15 +240,16 @@ def discover(posts_dir: Path) -> list:
 def check_eligibility(post: Post) -> Eligibility:
     """Check the post against WeChat's hard limits.
 
-    Overlong posts are reported, never silently truncated: a truncated
-    deep-dive article is worse than no article at all.  The same goes
-    for an overlong title -- a cut-off title means nothing to a reader.
+    An overlong title is reported and the article skipped: a cut-off
+    title means nothing to a reader.
+
+    An overlong *body* is no longer a reason to skip the article.  It
+    is split into several drafts instead, each of which fits -- see
+    ``wechat/split.py``.  The body length is still measured (the
+    ``audit`` command reports it), but it no longer decides whether the
+    article may be published.
     """
     reasons = []
-
-    body_length = len(re.sub(r"\s", "", post.body))
-    if body_length > BODY_LIMIT:
-        reasons.append("正文 {} 字，超过上限 {} 字".format(body_length, BODY_LIMIT))
 
     if len(post.title) > TITLE_LIMIT:
         reasons.append("标题 {} 字符，超过上限 {} 字符".format(len(post.title), TITLE_LIMIT))

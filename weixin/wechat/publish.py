@@ -219,6 +219,15 @@ class WeChatClient:
             "articles": article,
         })
 
+    def delete_draft(self, media_id: str) -> None:
+        """Remove a draft from the box.
+
+        Used when an article needs fewer parts than it did before: the
+        drafts of the parts that are gone would otherwise sit in the
+        box looking like current content.
+        """
+        self._post_json("/cgi-bin/draft/delete", {"media_id": media_id})
+
     def freepublish_submit(self, media_id: str) -> str:
         """Submit a draft for publishing; returns the asynchronous publish_id."""
         response = self._post_json("/cgi-bin/freepublish/submit", {"media_id": media_id})
