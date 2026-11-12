@@ -41,6 +41,18 @@ def test_long_title_is_truncated_and_marked():
     assert any("裁剪" in note for note in result.article.notes)
 
 
+def test_long_title_without_a_separator_is_cut_to_the_limit():
+    """标题里没有分隔符时走的是硬上限那一刀 —— 正好裁到上限。
+
+    用带分隔符的标题测不到这一刀：`_truncate_title` 会在分隔符处提前返回，
+    `title[:limit]` 那一步根本没被执行，断言就成了恒真。
+    """
+    post = _post(title="甲" * 45)
+    result = slice_post(post, LIMITS)
+    assert result.article.title == "甲" * LIMITS.title_chars
+    assert len(result.article.title) == LIMITS.title_chars
+
+
 # ---- 正文筛选 ----
 
 def test_code_fences_are_dropped():
@@ -117,6 +129,20 @@ def test_lists_are_kept():
     assert "- 第一条" in result.article.body
 
 
+def test_wrapped_chinese_lines_are_joined_without_a_space():
+    """中文软换行合并后中间不留空格。"""
+    post = _post(body="这是一段\n中文正文。")
+    result = slice_post(post, LIMITS)
+    assert "这是一段中文正文。" in result.article.body
+
+
+def test_wrapped_english_lines_are_joined_with_a_space():
+    """非中文的软换行合并后留一个空格。"""
+    post = _post(body="this is a\nwrapped line")
+    result = slice_post(post, LIMITS)
+    assert "this is a wrapped line" in result.article.body
+
+
 def test_ordered_lists_are_normalized_to_dashes():
     """有序列表项统一输出成 `- `。"""
     post = _post(body="1. 第一条\n2. 第二条\n\n段落。")
@@ -190,6 +216,7 @@ def test_only_the_first_three_images_are_kept():
     body = "\n\n".join("![图{}](images/{}.png)".format(i, i) for i in range(1, 6))
     result = slice_post(_post(body=body), LIMITS)
     assert len(result.article.images) == 3
+    assert "【图1】" in result.article.body
     assert "【图4】" not in result.article.body
     assert any("只保留" in note for note in result.article.notes)
 
@@ -331,6 +358,13 @@ def test_body_fits_the_limit():
     result = slice_post(post, LIMITS)
     assert len(result.article.body) <= LIMITS.body_chars
     assert result.article.body_truncated is True
+
+
+def test_long_body_is_truncated_and_noted():
+    """正文超限要截断，并且留下记录（不静默截断）。"""
+    result = slice_post(_post(body="段落内容。" * 2000), LIMITS)
+    assert result.article.body_truncated is True
+    assert any("正文" in note and "截断" in note for note in result.article.notes)
 
 
 def test_body_ends_with_the_plain_site_mention():
