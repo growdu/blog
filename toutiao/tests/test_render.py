@@ -1,8 +1,12 @@
 import re
+from html import unescape
+from pathlib import Path
+
+import pytest
 
 from toutiao.capability import default_capability_path, load_capability
 from toutiao.contract import ToutiaoArticle, slice_post
-from toutiao.mdparse import load_post
+from toutiao.mdparse import discover, load_post
 from toutiao.render import render
 
 LIMITS = load_capability(default_capability_path()).limits
@@ -17,6 +21,12 @@ _ELEMENTS = frozenset((
     "h3", "h4", "h5", "h6", "i", "img", "li", "ol", "p", "pre", "script",
     "span", "strong", "style", "table", "td", "tr", "ul",
 ))
+
+# The corpus the review ran over.  It is not in the repository --
+# ``source/_posts`` is ignored -- so the corpus level test below skips
+# itself when the checkout has no corpus.
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_POSTS = _REPO_ROOT / "source" / "_posts"
 
 # The lines that have broken the emphasis rules in one way or another.
 # Every one of them has to render to well formed markup.
@@ -77,6 +87,31 @@ def _wellformed(markup):
         problems.append("never closed: {}".format(stack))
     return problems
 
+
+def _reader_sees(markup):
+    """What a reader sees in a piece of markup: no tags, entities read back."""
+    return unescape(_TAG.sub("", markup))
+
+
+def _visible(text):
+    """The characters that carry content: letters, digits, CJK."""
+    return "".join(char for char in text if char.isalnum())
+
+
+def _flat_lines(body):
+    """The lines of a sliced body, the way its plain text should have them."""
+    lines = []
+    for block in body.split("\n\n"):
+        for raw in block.split("\n"):
+            line = raw.strip()
+            if not line:
+                continue
+            if line.startswith("## "):
+                line = line[3:].strip()
+            elif line.startswith("- "):
+                line = "• " + line[2:].strip()
+            lines.append(line)
+    return lines
 
 
 
@@ -300,6 +335,75 @@ def test_four_stars_do_not_produce_broken_html():
     assert _wellformed(result.html) == []
     assert "<strong>" in result.html
     assert "b" in result.html
+
+
+def test_a_bold_after_a_chinese_bracket_is_not_a_bold():
+    """`叫**「AI 认知三角」** 。` 里的星号不是定界符。
+
+    收尾的 `**` 前面是 `」`（标点），后面是空格 —— 它既不能收尾，
+    也不能开头。博客自己的渲染器（marked）也把这句原样留着。
+    """
+    result = render(_article(body="叫**「AI 认知三角」** 。"))
+    assert "<strong>" not in result.html
+    assert "叫**「AI 认知三角」** 。" in result.html
+
+
+def test_a_bold_next_to_a_code_span_is_not_a_bold():
+    """`**系统表 `pg_publication`**` 里的星号不是定界符。
+
+    收尾的 `**` 前面是反引号 —— 反引号是标点，所以它不能收尾。
+    博客自己的渲染器（marked）也把这句原样留着。
+    """
+    result = render(_article(body="是**系统表 `pg_publication`**直接挂上权限"))
+    assert "<strong>" not in result.html
+    assert "是**系统表 <code" in result.html
+
+
+def test_an_underscore_between_chinese_words_is_not_italic():
+    """`_好看的登录界面_` 夹在汉字之间 —— 汉字是词，不是标点。
+
+    词与词之间的下划线是标识符的一部分，不是强调。博客自己的渲染器
+    （marked）也把这句原样留着。
+    """
+    result = render(_article(body="模板_好看的登录界面_王同学"))
+    assert "<em>" not in result.html
+    assert "模板_好看的登录界面_王同学" in result.html
+
+
+def test_a_bold_that_starts_with_a_space_stays_literal():
+    """`** 需要注意的是…**` 里的星号不是定界符。
+
+    开头的 `**` 后面是空格 —— 定界符不能跟着空格走。博客自己的渲染器
+    （marked）也把这句原样留着；把它变成斜体等于多说了一句原文
+    没有的话。
+    """
+    result = render(_article(body="** 需要注意的是前后一致。**"))
+    assert "<em>" not in result.html
+    assert "<strong>" not in result.html
+    assert "** 需要注意的是前后一致。**" in result.html
+
+
+def test_an_autolink_that_is_not_one_says_the_same_in_both_artefacts():
+    """`<https://x/a<b>` 不是一个自动链接 —— 两份产物不许各说各话。
+
+    URL 里不许有 `<`，所以这一段整体是正文。HTML 要把它转义，纯文本
+    要把它原样留着 —— 但两份产物说的必须是同一件事。
+    """
+    result = render(_article(body="链接 <https://x/a<b> 结束"))
+    assert "<https://x/a<b>" in result.text
+    assert _reader_sees(result.html) == result.text
+
+
+def test_a_code_span_with_more_backticks_loses_its_spaces():
+    """多反引号的代码跨度按 CommonMark 裁掉首尾的空格。
+
+    ```` ```mermaid ```` 的内容是 ` ```mermaid ` —— 两头各有一个空格，
+    而内容不全空格，所以各去掉一个。博客自己的渲染器（marked）也是
+    这个结果。
+    """
+    result = render(_article(body="把 ```` ```mermaid ```` 围栏换成"))
+    assert "```mermaid</code>" in result.html
+    assert result.text == "把 ```mermaid 围栏换成"
 
 
 # ---- 转义 ----
@@ -577,3 +681,54 @@ def test_the_whole_chain_text_has_no_tags(tmp_path):
     assert _tags_in(result.text) == []
     assert "完整版见 growdu.cn" in result.text
 
+
+# ---- 语料级回归 ----
+
+@pytest.mark.skipif(
+    not _POSTS.is_dir() or not any(_POSTS.glob("**/*.md")),
+    reason="语料不在检出里：source/_posts 不入库，干净检出没有它",
+)
+def test_the_corpus_keeps_every_character():
+    """语料级回归：每篇文章的可见字符一个都不能少。
+
+    母稿只有一篇手写的小文章，它护不住的是「几百篇真文章」这一层。
+    这里的口径跟评审用的一样：正文与纯文本各自摊平成行，逐行比对
+    可见字符（字母、数字、汉字）的多重集。
+    """
+    checked = 0
+    for post in discover(_POSTS):
+        sliced = slice_post(post, LIMITS)
+        if sliced.article is None:
+            continue
+        result = render(sliced.article)
+        expected = _flat_lines(sliced.article.body)
+        actual = []
+        for group in result.text.split("\n\n"):
+            actual.extend(group.split("\n"))
+
+        assert len(expected) == len(actual), post.slug
+        for want, got in zip(expected, actual):
+            assert _visible(want) == _visible(got), (post.slug, want, got)
+        checked += 1
+    assert checked > 0, "语料里一篇可发布的文章都没有 —— 口径本身坏了"
+
+
+@pytest.mark.skipif(
+    not _POSTS.is_dir() or not any(_POSTS.glob("**/*.md")),
+    reason="语料不在检出里：source/_posts 不入库，干净检出没有它",
+)
+def test_the_corpus_produces_well_formed_html():
+    """语料级回归：每一篇文章的 HTML 都必须良构嵌套。
+
+    单条用例只能钉住一行正文；这一条钉住几百篇 —— 强调规则只要在
+    某一篇上套出交叉的标签，这里就会红。
+    """
+    checked = 0
+    for post in discover(_POSTS):
+        sliced = slice_post(post, LIMITS)
+        if sliced.article is None:
+            continue
+        result = render(sliced.article)
+        assert _wellformed(result.html) == [], post.slug
+        checked += 1
+    assert checked > 0, "语料里一篇可发布的文章都没有 —— 口径本身坏了"
