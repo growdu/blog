@@ -438,6 +438,36 @@ def publish_one(
         ]
 
     if result.code == 0:
+        # 「成功」必须**确认过**，不能假设。快照是发布层的幂等键：
+        # 它没落到调度器看的那份 outbox 里，这一篇下周会被再发一遍，
+        # 而调度器刚才还报「成功」——发重了比发慢了糟糕得多。
+        landed = load_outbox_index(config.outbox_dir).get(content_id, platform)
+        wrote = landed is not None and (
+            before is None or landed.mtime_ns != before.mtime_ns
+        )
+        if not wrote:
+            # 结果未知：adapter 说成功了，但幂等键没落盘。它可能真的发出去
+            # 了（只是快照写去了别处），也可能没发——我们分不清。
+            # 当成「失败可重试」就会自动重试，于是可能发两遍（§7.1 第三条）。
+            path = write_snapshot(
+                config,
+                content_id,
+                platform,
+                status="unknown",
+                reason=(
+                    "adapter 报成功，但快照没落到 {}：幂等键没落盘，"
+                    "结果未知，不自动重发，待人工核对".format(config.outbox_dir)
+                ),
+                title=title,
+                automation=capability.automation,
+                retryable=False,
+            )
+            return EXIT_ERROR, [
+                "{} → {}：adapter 报成功但快照没落到 {} —— 幂等键没落盘，"
+                "结果未知（已记进 {}），待人工核对。".format(
+                    content_id, platform, config.outbox_dir, path.name
+                )
+            ]
         return EXIT_OK, ["{} → {}：成功。".format(content_id, platform)]
 
     # adapter 自己写没写快照：它写了就以它的为准（它是平台那一侧的事实），

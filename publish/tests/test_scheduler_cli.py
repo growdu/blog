@@ -81,6 +81,12 @@ def main(argv):
                 "reason": "假 adapter 出的包",
             }, ensure_ascii=False, indent=2, sort_keys=True))
 
+    if mode == "ok_without_snapshot":
+        # 报告成功，但快照没落到调度器指的地方——模拟 adapter 不认
+        # PUBLISH_OUTBOX_DIR 的那种分叉。
+        print("发好了：{}".format(content_id))
+        return 0
+
     if mode == "usage":
         print("参数错了", file=sys.stderr)
         return 1
@@ -253,6 +259,43 @@ def test_the_adapter_is_called_with_the_documented_contract(workspace):
     assert call["argv"][0] == "publish"
     assert call["argv"][1] == call["content_id"]
     assert call["cwd"] == str(workspace.root / "fakeadapter")
+
+
+def test_a_success_without_a_snapshot_is_not_reported_as_a_success(workspace, capsys):
+    """「成功」必须确认过，不能假设。
+
+    快照是发布层的幂等键。adapter 报成功但快照没落到调度器看的那份
+    outbox 里，这一篇下周会被再发一遍——而调度器刚才还报「成功」。
+    发重了比发慢了糟糕得多。
+    """
+    workspace.set_mode("db/demo", "ok_without_snapshot")
+    workspace.set_mode("db/other", "ok_without_snapshot")
+
+    code = main(workspace.argv("schedule", "weekly"))
+
+    assert code == EXIT_ERROR
+    assert "幂等键没落盘" in capsys.readouterr().out
+
+    # 结果未知，不是「失败可重试」：当成可重试的话，下周会再发一遍。
+    content_id = workspace.calls()[0]["content_id"]
+    record = _snapshot(workspace, content_id)
+    assert record["status"] == "unknown"
+    assert record["retryable"] is False
+
+
+def test_a_success_without_a_snapshot_is_not_retried_next_week(workspace, capsys):
+    """记成 unknown 之后，下一次跑不得自动重发它。"""
+    workspace.set_mode("db/demo", "ok_without_snapshot")
+    workspace.set_mode("db/other", "ok_without_snapshot")
+
+    main(workspace.argv("schedule", "weekly"))
+    before = len(workspace.calls())
+    capsys.readouterr()
+
+    main(workspace.argv("schedule", "weekly"))
+
+    assert len(workspace.calls()) == before, "结果未知的那一篇被自动重发了"
+    assert "不自动重发" in capsys.readouterr().out
 
 
 def test_the_second_weekly_run_in_the_same_week_is_skipped(workspace):
