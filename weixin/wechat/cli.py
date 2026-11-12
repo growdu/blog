@@ -30,8 +30,10 @@ from pathlib import Path
 
 from . import assets as assets_module
 from . import audit as audit_module
+from . import brand as brand_module
 from . import collection as collection_module
 from . import cover as cover_module
+from . import digest as digest_module
 from . import mermaid as mermaid_module
 from . import notify as notify_module
 from . import publish as publish_module
@@ -96,16 +98,48 @@ def _category_tag(post, args) -> str:
     return collection_module.render_category_tag(post.categories)
 
 
+@dataclass
+class Branding:
+    """The parts of a draft that say who wrote it.
+
+    The title page the author wrote is lifted out of the body and
+    becomes a card; the summary is taken from what the author wrote
+    about the article; every part ends with a signature.  The preview
+    and the drafts are made from the same one, so the two never
+    disagree.
+    """
+
+    blocks: list
+    card: str
+    signature: str
+    summary: str
+
+
+def _branding(post, args) -> Branding:
+    """The body of an article and the brand elements that go with it."""
+    blocks = parse(post.body)
+    byline = brand_module.title_page_of(blocks)
+    summary = digest_module.article_digest(blocks)
+    blocks = brand_module.strip_title_page(blocks)
+    return Branding(
+        blocks=blocks,
+        card=brand_module.byline_html(byline),
+        signature=brand_module.signature_html(args.author),
+        summary=summary,
+    )
+
+
 def _prepare(post, args, resolver=None, highlight: bool = True):
     """Render one post and return the render result."""
-    blocks = parse(post.body)
+    branding = _branding(post, args)
     tag = _category_tag(post, args)
     position = getattr(args, "category_tag", "top")
     result = render_module.render(
-        blocks, resolver=resolver, highlight=highlight,
-        head_html=tag if position == "top" else "",
+        branding.blocks, resolver=resolver, highlight=highlight,
+        head_html=branding.card + (tag if position == "top" else ""),
         tail_html=tag if position == "bottom" else "",
     )
+    result = replace(result, html=result.html + branding.signature)
     target_dir = Path(args.out_dir) / post.slug
     target_dir.mkdir(parents=True, exist_ok=True)
     (target_dir / "article.html").write_text(result.html, encoding="utf-8")
@@ -260,7 +294,7 @@ def cmd_convert(args) -> int:
             title, len(title), post.title))
     else:
         print("  标题: {} ({} 字符)".format(title, len(title)))
-    print("  摘要: {}".format(post.digest))
+    print("  摘要: {}".format(_branding(post, args).summary or post.digest))
     print("  阅读原文: {}{}".format(args.source_url.rstrip("/"), post.permalink))
     print("  HTML: {}".format(
         (Path(args.out_dir) / post.slug / "article.html").as_posix()))
@@ -601,6 +635,7 @@ class Part:
     result: render_module.RenderResult
     title: str
     key: str
+    digest: str = ""
 
 
 def _fits(result) -> bool:
@@ -626,7 +661,11 @@ def _render_parts(post, args) -> list:
     the limit even on its own; the article is then skipped, never
     truncated.
     """
-    blocks = parse(post.body)
+    branding = _branding(post, args)
+    blocks = branding.blocks
+    card = branding.card
+    signature = branding.signature
+    summary = branding.summary
     assets = _mermaid_assets(post, args)
     resolver = _Resolver(assets)
     tag = _category_tag(post, args)
@@ -637,18 +676,29 @@ def _render_parts(post, args) -> list:
     # see, so the shortened title is the one that goes everywhere.
     base_title = _effective_title(post)
 
+    def part_head(index: int, total: int) -> str:
+        """The lines that open a part.
+
+        The card belongs to the first part only: it is the article's
+        title page, and the later parts continue the text, not the
+        introduction.
+        """
+        return (card if index == 1 else "") + head + \
+            split_module.transition_head_html(base_title, index, total)
+
     def build(group, index, total, highlight):
         """Render one part, with its opening and closing lines in place."""
         result = render_module.render(
             group, resolver=resolver, highlight=highlight,
-            head_html=head + split_module.transition_head_html(base_title, index, total),
+            head_html=part_head(index, total),
             tail_html=tail,
         )
-        if total > 1:
-            # The line that closes a part comes after the reference
-            # links: the links are where the article ends.
-            result = replace(result, html=result.html + split_module.transition_tail_html(
-                base_title, index, total))
+        # The line that closes a part comes after the reference links:
+        # the links are where the article ends.  The signature comes
+        # after that: it is the last thing the reader reads.
+        result = replace(result, html=result.html
+                         + split_module.transition_tail_html(base_title, index, total)
+                         + signature)
         return result
 
     def save(group, result, index, total):
@@ -682,18 +732,24 @@ def _render_parts(post, args) -> list:
         """The room the body of a part may take.
 
         The framing is measured, not estimated: the transition lines,
-        the category tag and the reference-links wrapper are what the
-        body has to fit between, and a part that ignores them does not
-        fit.
+        the category tag, the card, the signature and the
+        reference-links wrapper are what the body has to fit between,
+        and a part that ignores them does not fit.
         """
         result = render_module.render(group, resolver=resolver)
-        framing = (len(head) + len(tail)
-                   + len(split_module.transition_head_html(base_title, index, total))
+        framing = (len(part_head(index, total)) + len(tail)
                    + len(split_module.transition_tail_html(base_title, index, total))
+                   + len(signature)
                    + len(render_module.links_html(result.external_links)))
         return CONTENT_LIMIT - framing
 
-    reserve = split_module.framing_reserve(base_title, tag)
+    # The card and the signature are paid for out of the body, so they
+    # are part of the reserve.  The reserve is the same for every part
+    # even though the card only opens the first one: a reserve that is
+    # too small does not make a part shorter, it makes the whole
+    # article unpublishable.
+    reserve = split_module.framing_reserve(base_title, tag,
+                                           extra=card + signature)
     groups = split_module.plan_parts(
         blocks, CONTENT_LIMIT, measure,
         plain_measure=lambda group: measure(group, highlight=False),
@@ -749,8 +805,14 @@ def _render_parts(post, args) -> list:
         part_title = (base_title if total == 1
                       else split_module.part_title(base_title, index))
         key = post.slug if index == 1 else "{}#{}".format(post.slug, index)
+        # The first part carries the summary of the whole article -- the
+        # one the author wrote about it.  The later parts describe
+        # themselves, so the draft box does not show the same line
+        # again and again.
+        part_summary = (summary if index == 1
+                        else digest_module.part_digest(group))
         parts.append(Part(index=index, total=total, blocks=group, result=result,
-                           title=part_title, key=key))
+                           title=part_title, key=key, digest=part_summary))
     return parts
 
 
@@ -817,11 +879,12 @@ def _draft_part(client, store, post, part, fingerprint, args) -> DraftResult:
 
     # Every part describes itself: the same summary on every row of the
     # draft box would tell the reader nothing.
-    digest = split_module.part_digest(part.blocks) or post.digest
-    if part.title != post.title:
+    digest = part.digest or post.digest
+    if _effective_title(post) != post.title:
         # The title was shortened.  The original one goes into the
         # summary, so the draft box still says what the article is
-        # called on the site.
+        # called on the site.  A title that was only numbered for a
+        # split does not need this: the row already carries it.
         digest = "{}｜{}".format(post.title, digest)[:DIGEST_LIMIT]
     article = {
         "article_type": "news",

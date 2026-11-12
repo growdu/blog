@@ -93,9 +93,9 @@ def transition_head_html(title: str, index: int, total: int) -> str:
     if total <= 1:
         return ""
     if index <= 1:
-        text = "全文共 {} 部分，这是第 {} 部分。".format(total, index)
+        text = "本文共 {} 部分，这是第 {} 部分。".format(total, index)
     else:
-        text = "接上文《{}》。全文共 {} 部分，这是第 {} 部分。".format(
+        text = "接《{}》。本文共 {} 部分，这是第 {} 部分。".format(
             part_title(title, index - 1), total, index)
     return '<p style="{}">{}</p>'.format(_TRANSITION_STYLE, text)
 
@@ -111,14 +111,17 @@ def transition_tail_html(title: str, index: int, total: int) -> str:
     return '<p style="{}">{}</p>'.format(_TAIL_STYLE, text)
 
 
-def framing_reserve(title: str, tag_html: str = "") -> int:
+def framing_reserve(title: str, tag_html: str = "", extra: str = "") -> int:
     """The characters one part spends on its own framing.
 
     The transition lines carry the article title and the part numbers,
     and the category tag carries the categories, so the length depends
-    on the article.  The numbers are taken at their widest (99 of 999)
-    -- more than any real article needs -- so the reserve covers the
-    framing of every part and not just of the shortest one.
+    on the article.  ``extra`` is the framing that every part pays for
+    whatever the article is -- the title-page card and the signature.
+
+    The numbers are taken at their widest (99 of 999) -- more than any
+    real article needs -- so the reserve covers the framing of every
+    part and not just of the shortest one.
 
     Getting this wrong is not a rounding error: a reserve that is a
     few dozen characters short does not make a part shorter, it makes
@@ -126,7 +129,7 @@ def framing_reserve(title: str, tag_html: str = "") -> int:
     """
     head = transition_head_html(title, 99, 999)
     tail = transition_tail_html(title, 99, 999)
-    return RESERVE + len(tag_html) + len(head) + len(tail)
+    return RESERVE + len(tag_html) + len(head) + len(tail) + len(extra)
 
 
 # --- where a split may happen -------------------------------------------

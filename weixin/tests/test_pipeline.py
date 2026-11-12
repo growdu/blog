@@ -1113,7 +1113,7 @@ def test_batch_splits_an_article_that_is_too_long(tmp_path, server, monkeypatch,
     assert titles == ["太长（一）", "太长（二）"]
     # The parts are connected, so the reader knows how they fit together.
     assert "未完待续" in _Handler.drafts[0]["content"]
-    assert "接上文" in _Handler.drafts[1]["content"]
+    assert "接《太长（一）》" in _Handler.drafts[1]["content"]
 
 
 def test_the_report_tells_skips_and_failures_apart(tmp_path, server, monkeypatch):
@@ -1351,7 +1351,8 @@ def test_re_running_a_split_article_creates_nothing(tmp_path, server, monkeypatc
 
 def _render_args(out_dir):
     """The arguments ``_render_parts`` needs -- no network, no server."""
-    return SimpleNamespace(out_dir=str(out_dir), category_tag="top")
+    return SimpleNamespace(out_dir=str(out_dir), category_tag="top",
+                          author="growdu")
 
 
 def _long_render_post(tmp_path, paragraphs=700, title="很长",
@@ -1404,7 +1405,7 @@ def test_a_part_that_still_does_not_fit_is_cut_again(tmp_path, monkeypatch):
     after rendering is measured and cut once more.
     """
     monkeypatch.setattr(split_module, "framing_reserve",
-                        lambda title, tag_html="": 0)
+                        lambda title, tag_html="", extra="": 0)
     post = _long_render_post(tmp_path)
 
     parts = _render_parts(post, _render_args(tmp_path / "out"))
@@ -1639,3 +1640,135 @@ def test_a_new_pipeline_version_makes_the_draft_look_changed(tmp_path, server, m
     assert main(["batch"] + args) == 0
     assert _Handler.calls.count("/cgi-bin/draft/update") == 1
     assert "/cgi-bin/draft/add" not in _Handler.calls
+
+
+# --- the brand of the draft -----------------------------------------------
+
+BRAND_SAMPLE = """---
+title: "带标题页的文章"
+date: 2026-09-29 15:00:00
+author: growdu
+categories:
+  - 数据库
+---
+
+| 编写人 | 编写内容 | 编写时间 |
+| --- | --- | --- |
+| growdu | 面向 PostgreSQL 内核开发 / DBA，把一张表的元数据完整拆开。 | 2026-09-29 |
+
+正文一段，讲的是元数据到底存在哪里。
+"""
+
+
+def _brand_post(tmp_path, body=BRAND_SAMPLE, name="brand"):
+    posts_dir = tmp_path / "source" / "_posts"
+    target = posts_dir / "database" / "{}.md".format(name)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(body, encoding="utf-8")
+    return load_post(target, posts_dir), posts_dir, "database/{}".format(name)
+
+
+def test_the_first_part_carries_the_card(tmp_path):
+    """The title page the author wrote becomes a card at the top."""
+    post, _, _ = _brand_post(tmp_path)
+
+    parts = _render_parts(post, _render_args(tmp_path / "out"))
+    html = parts[0].result.html
+
+    assert html.startswith("<section")
+    assert "面向 PostgreSQL 内核开发" in html
+    assert "2026-09-29" in html
+
+
+def test_the_title_page_is_not_a_table_in_the_body(tmp_path):
+    """A three column table whose middle column is a paragraph is not
+    something a reader should scroll past."""
+    post, _, _ = _brand_post(tmp_path)
+
+    parts = _render_parts(post, _render_args(tmp_path / "out"))
+
+    assert "编写内容" not in parts[0].result.html
+    assert "<table" not in parts[0].result.html
+
+
+def test_every_part_ends_with_the_signature(tmp_path):
+    """The last line of every part says who wrote it."""
+    post, _, _ = _brand_post(tmp_path)
+
+    parts = _render_parts(post, _render_args(tmp_path / "out"))
+
+    assert parts
+    for part in parts:
+        assert part.result.html.rstrip().endswith("见文末「阅读原文」</p>")
+
+
+def test_every_part_of_a_split_article_ends_with_the_signature(tmp_path):
+    """A reader who comes in through part three finds the author there
+    too -- not only in the first instalment."""
+    post = _long_render_post(tmp_path)
+
+    parts = _render_parts(post, _render_args(tmp_path / "out"))
+
+    assert len(parts) > 1
+    for part in parts:
+        assert part.result.html.rstrip().endswith("见文末「阅读原文」</p>")
+
+
+def test_the_card_and_the_signature_do_not_break_the_limit(tmp_path):
+    """The framing is paid for out of the body, so an article that used
+    to fit may have to be split."""
+    post, _, _ = _brand_post(tmp_path)
+
+    parts = _render_parts(post, _render_args(tmp_path / "out"))
+
+    for part in parts:
+        assert part.result.content_length <= CONTENT_LIMIT
+
+
+def test_the_digest_is_the_authors_own_description(tmp_path, server):
+    """What the reader sees before opening the article is what the
+    author wrote about it."""
+    post, posts_dir, slug = _brand_post(tmp_path)
+
+    code = main(["publish", slug] + _args(posts_dir, tmp_path / "out",
+                                          server=server))
+
+    assert code == 0
+    payload = json.loads(_Handler.bodies["/cgi-bin/draft/add"])
+    article = payload["articles"][0]
+    assert article["digest"].startswith("面向 PostgreSQL 内核开发")
+    assert "正文一段" not in article["digest"]
+
+
+def test_the_digest_of_a_split_part_does_not_repeat_the_title(tmp_path):
+    """The row already carries the title; the summary has room to carry
+    something else."""
+    post = _long_render_post(tmp_path)
+
+    parts = _render_parts(post, _render_args(tmp_path / "out"))
+
+    assert len(parts) > 1
+    for part in parts:
+        assert not part.digest.startswith("很长｜")
+
+
+def test_the_digest_carries_the_original_title_when_the_title_was_shortened(
+        tmp_path, server):
+    """When the title is cut, the draft box still says what the article
+    is called on the site."""
+    posts_dir = tmp_path / "source" / "_posts"
+    target = posts_dir / "database" / "demo.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        "---\ntitle: \"一个很长很长的主标题部分：{}\"\n"
+        "date: 2026-11-09 15:00:00\n---\n\n正文。\n".format("副标题内容" * 10),
+        encoding="utf-8")
+
+    code = main(["publish", "database/demo"] + _args(
+        posts_dir, tmp_path / "out", server=server))
+
+    assert code == 0
+    payload = json.loads(_Handler.bodies["/cgi-bin/draft/add"])
+    article = payload["articles"][0]
+    assert article["digest"].startswith("一个很长很长的主标题部分")
+    assert len(article["digest"]) <= 120

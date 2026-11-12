@@ -311,3 +311,31 @@ def test_plan_parts_cuts_a_part_that_is_still_too_big():
 def test_plan_parts_leaves_a_whole_article_alone():
     blocks = parse("## 小节\n\n正文。")
     assert plan_parts(blocks, LIMIT, _measure) == [(blocks, False)]
+
+
+# --- the words of the transition ------------------------------------------
+
+
+def test_the_transition_talks_about_the_article_not_the_corpus():
+    """「全文共 N 部分」 reads like the whole site; the reader is in one
+    article."""
+    html = transition_head_html("标题", 1, 3)
+
+    assert "本文共 3 部分" in html
+    assert "全文共" not in html
+
+
+def test_the_transition_points_at_the_previous_part_without_the_formality():
+    """「接上文」 is the tone of a printed book; this is a feed."""
+    html = transition_head_html("标题", 2, 3)
+
+    assert "接《标题（一）》" in html
+    assert "接上文" not in html
+
+
+def test_the_reserve_counts_the_extra_framing():
+    """The card and the signature are paid for out of the body."""
+    without = framing_reserve("标题")
+    with_extra = framing_reserve("标题", extra="<p>额外</p>")
+
+    assert with_extra == without + len("<p>额外</p>")
