@@ -1,12 +1,14 @@
 """出包：产物结构、幂等、状态快照、两档预检。"""
 
+import dataclasses
 import json
 import os
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
 
-from channels import package, snapshot
+from channels import package, snapshot, state
 
 
 def test_build_package_writes_every_file(meta, video, tmp_path):
@@ -226,6 +228,9 @@ def test_the_cli_packages_and_marks_an_episode(tmp_path, monkeypatch, make_video
                       .read_text(encoding="utf-8"))
     assert shot["status"] == "published"
     assert shot["published_url"] == url
+    # 回填出来的快照同样要相对路径——快照要入库
+    assert not Path(shot["package_dir"]).is_absolute(), (
+        f"package_dir 是绝对路径：{shot['package_dir']}")
 
 
 # --- 通知 -------------------------------------------------------------------
@@ -246,3 +251,117 @@ def test_a_failing_webhook_does_not_break_the_run(capsys):
                           webhook="not-a-url")
     assert "待你上传" in text
     assert "WARNING" in capsys.readouterr().out
+
+
+# --- 幂等：成片没变不等于文案没变 --------------------------------------------
+
+
+def test_changing_the_copy_refreshes_the_package(meta, video, tmp_path):
+    """改了文案重跑，文案必须跟着更新。
+
+    成片没变 ≠ 文案没变。只认成片 sha256 的幂等会让包里的标题停在旧版本，
+    而命令还报「成功」——那是静默成功。
+    """
+    out = tmp_path / "out"
+    package.build_package("ep01", meta, video, out)
+
+    changed = dataclasses.replace(
+        meta, channels={**meta.channels, "title": "新标题"})
+    result = package.build_package("ep01", changed, video, out)
+
+    assert result.reused is True          # 视频与封面确实复用了
+    assert (out / "ep01" / "title.txt").read_text(encoding="utf-8") == "新标题"
+    assert "新标题" in (out / "ep01" / "publish.md").read_text(encoding="utf-8")
+
+
+# --- 人工回填的发布状态不能被出包抹掉 ----------------------------------------
+
+
+def _mark_published(out, episode, url):
+    """模拟 `channels.cli mark published`：状态与包内快照一起更新。"""
+    store = state.StateStore(out / "state.json")
+    current = store.get(episode)
+    current.status = "published"
+    current.published_url = url
+    store.save(episode, current)
+    package.mark_published(out / episode, url)
+
+
+def test_repackaging_keeps_the_published_status(meta, video, tmp_path, outbox):
+    """重出包不能把人工回填的「已发布」抹成「待上传」。
+
+    已经发出去的就是这一条片子，重新出包只是刷新文案。
+    """
+    out = tmp_path / "out"
+    url = "https://channels.weixin.qq.com/x"
+    package.build_package("ep01", meta, video, out)
+    _mark_published(out, "ep01", url)
+
+    result = package.build_package("ep01", meta, video, out)
+    assert result.status == "published"
+
+    meta_json = json.loads((out / "ep01" / "meta.json").read_text(encoding="utf-8"))
+    assert meta_json["status"] == "published"
+    assert meta_json["published_url"] == url
+
+    shot = json.loads((outbox / "ep01__channels.json").read_text(encoding="utf-8"))
+    assert shot["status"] == "published"
+    assert shot["published_url"] == url
+
+
+def test_a_changed_video_resets_the_status(meta, video, tmp_path, make_video):
+    """成片变了，之前发出去的是另一条片子，状态回到「待上传」。"""
+    out = tmp_path / "out"
+    url = "https://channels.weixin.qq.com/x"
+    package.build_package("ep01", meta, video, out)
+    _mark_published(out, "ep01", url)
+
+    other = make_video(tmp_path / "other.mp4", seconds=4)
+    result = package.build_package("ep01", meta, other, out)
+
+    assert result.reused is False
+    assert result.status == "packaged"
+    meta_json = json.loads((out / "ep01" / "meta.json").read_text(encoding="utf-8"))
+    assert meta_json["status"] == "packaged"
+    assert meta_json["published_url"] is None
+
+
+# --- 快照：内容没变就别动它 --------------------------------------------------
+
+
+def test_an_unchanged_snapshot_keeps_its_timestamp(tmp_path, monkeypatch):
+    """内容没变，`updated_at` 不动。
+
+    否则每次重跑都把工作树弄脏，而内容一个字都没变。
+    """
+    path = tmp_path / "outbox" / "ep01__channels.json"
+    payload = dict(episode="ep01", status="packaged", title="短标题",
+                   package_dir="channels/out/ep01", published_url=None, reason="理由")
+    snapshot.write_snapshot(path, **payload)
+    first = json.loads(path.read_text(encoding="utf-8"))
+
+    later = datetime.now(timezone.utc) + timedelta(minutes=1)
+    monkeypatch.setattr(snapshot, "_now", lambda: later)
+    snapshot.write_snapshot(path, **payload)
+    second = json.loads(path.read_text(encoding="utf-8"))
+
+    assert second == first
+    assert second["updated_at"] == first["updated_at"]
+
+
+def test_a_changed_snapshot_gets_a_new_timestamp(tmp_path, monkeypatch):
+    """状态真的变了，时间戳要跟着变。"""
+    path = tmp_path / "outbox" / "ep01__channels.json"
+    payload = dict(episode="ep01", status="packaged", title="短标题",
+                   package_dir="channels/out/ep01", published_url=None, reason="理由")
+    snapshot.write_snapshot(path, **payload)
+    first = json.loads(path.read_text(encoding="utf-8"))
+
+    later = datetime.now(timezone.utc) + timedelta(minutes=1)
+    monkeypatch.setattr(snapshot, "_now", lambda: later)
+    snapshot.write_snapshot(path, **dict(payload, status="published",
+                                         published_url="https://x"))
+    second = json.loads(path.read_text(encoding="utf-8"))
+
+    assert second["status"] == "published"
+    assert second["updated_at"] != first["updated_at"]

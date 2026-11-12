@@ -90,7 +90,8 @@ def cmd_mark(args: argparse.Namespace) -> int:
     snapshot.write_snapshot(
         outbox / f"{args.episode}__channels.json",
         episode=args.episode, status="published", title=title,
-        package_dir=str(target), published_url=args.url,
+        # 相对路径：快照要入库，绝对路径换台机器就对不上
+        package_dir=package.repo_relative(target), published_url=args.url,
         reason="人工发布后回填",
     )
     notify.notify(args.episode, "published", title, str(target),

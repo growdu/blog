@@ -177,7 +177,7 @@ def build_package(episode: str, meta: epmeta.EpisodeMeta, video: str | Path,
     files: dict[str, Path] = {}
     reused = False
     if previous.video_sha256 == digest and (target / "meta.json").is_file():
-        # 成片没变，包还在：直接复用，不重抽帧。
+        # 成片没变：抽帧与软链复用，不重做费事的那部分。
         reused = True
         meta_file = json.loads((target / "meta.json").read_text(encoding="utf-8"))
         files = {name: target / name for name in meta_file["files"]}
@@ -189,47 +189,60 @@ def build_package(episode: str, meta: epmeta.EpisodeMeta, video: str | Path,
             link.unlink()
         link.symlink_to(video_path.resolve())
 
-        (target / "title.txt").write_text(copy.title, encoding="utf-8")
-        (target / "description.txt").write_text(copy.description, encoding="utf-8")
-        (target / "topics.txt").write_text(
-            contract.topics_line(copy.topics), encoding="utf-8")
-
         names = ("video.mp4", "cover-16x9.jpg", "cover-9x16.jpg",
-                 "title.txt", "description.txt", "topics.txt")
+                 "title.txt", "description.txt", "topics.txt", "publish.md")
         files = {name: target / name for name in names}
-        checklist = _checklist(episode, copy, info, warnings)
-        (target / "publish.md").write_text(checklist, encoding="utf-8")
-        files["publish.md"] = target / "publish.md"
 
-        (target / "meta.json").write_text(
-            json.dumps({
-                "episode": episode,
-                "video_sha256": digest,
-                "files": sorted(files),
-                "cover_at": copy.cover_at,
-                # 人工发布这一步没做完，状态就只能是「待上传」。
-                "status": "packaged",
-                "published_url": None,
-            }, ensure_ascii=False, indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
+    # **文案每次都按当前元数据重写。**
+    # 成片没变 ≠ 文案没变：改了标题再重跑，必须出新标题。
+    # 否则包里的文案停在旧版本，而命令还报「成功」——那是静默成功。
+    (target / "title.txt").write_text(copy.title, encoding="utf-8")
+    (target / "description.txt").write_text(copy.description, encoding="utf-8")
+    (target / "topics.txt").write_text(
+        contract.topics_line(copy.topics), encoding="utf-8")
+    (target / "publish.md").write_text(
+        _checklist(episode, copy, info, warnings), encoding="utf-8")
+
+    # 人工回填的发布状态不能被出包抹掉。
+    # 成片没变 → 之前发出去的就是这一条，状态保留；
+    # 成片变了 → 发出去的是另一条片子，状态回到「待上传」。
+    if reused:
+        status = previous.status
+        published_url = previous.published_url
+    else:
+        status = "packaged"
+        published_url = None
+
+    (target / "meta.json").write_text(
+        json.dumps({
+            "episode": episode,
+            "video_sha256": digest,
+            "files": sorted(files),
+            "cover_at": copy.cover_at,
+            # 人工发布这一步没做完，状态就只能是「待上传」。
+            "status": status,
+            "published_url": published_url,
+        }, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
 
     store.save(episode, state.ChannelState(
-        episode=episode, video_sha256=digest, status="packaged",
-        published_url=previous.published_url,
+        episode=episode, video_sha256=digest, status=status,
+        published_url=published_url,
     ))
 
-    reason = "视频号无公开发布接口，已出包待人工上传"
+    reason = ("视频号无公开发布接口，已出包待人工上传" if status == "packaged"
+              else "人工发布后回填")
     outbox = Path(outbox_dir) if outbox_dir else snapshot.OUTBOX_DIR
     snapshot.write_snapshot(
         outbox / f"{episode}__channels.json",
-        episode=episode, status="packaged", title=copy.title,
-        package_dir=repo_relative(target), published_url=previous.published_url,
+        episode=episode, status=status, title=copy.title,
+        package_dir=repo_relative(target), published_url=published_url,
         reason=reason,
     )
     return PackageResult(
         episode=episode, dir=target, files=files, video_sha256=digest,
-        status="packaged", reason=reason, reused=reused, warnings=warnings,
+        status=status, reason=reason, reused=reused, warnings=warnings,
     )
 
 
