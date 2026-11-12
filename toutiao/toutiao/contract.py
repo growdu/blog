@@ -169,6 +169,23 @@ def _split_code(text: str) -> list[tuple[bool, str]]:
     return pieces
 
 
+def _is_code_sample(chunk: str) -> bool:
+    """Whether a backtick-quoted span really is a code sample.
+
+    Two stray backticks around a piece of prose are not a code span.
+    When such a span carries a real tag, the tag is markup in a normal
+    sentence and has to come out -- otherwise the body keeps a literal
+    ``<div>`` in it.
+
+    The one exception is a span that holds nothing but markup (a lone
+    ``<div>`` between backticks): there the tags are the sample itself,
+    and taking them away would leave nothing behind.
+    """
+    if not _HTML_TAG.search(chunk):
+        return True
+    return not _HTML_TAG.sub("", chunk).strip("`").strip()
+
+
 def _clean_html(text: str) -> str:
     """Take the HTML markup out, keep the text it wraps.
 
@@ -177,10 +194,16 @@ def _clean_html(text: str) -> str:
     known HTML elements count as tags -- ``<db_oid>`` is not one of them,
     and stripping it would publish a wrong path.
 
+    A backtick pair that spans a real tag is not code, it is two stray
+    backticks around a sentence -- so the tag still comes out.
+
     Entities are decoded as well, but only for a block that really carries
     a tag: decoding everywhere would rewrite text that never was HTML.
     """
-    pieces = _split_code(text)
+    pieces = [
+        (False, chunk) if is_code and not _is_code_sample(chunk) else (is_code, chunk)
+        for is_code, chunk in _split_code(text)
+    ]
     if not any(_HTML_TAG.search(chunk) for is_code, chunk in pieces if not is_code):
         return text
     out = []

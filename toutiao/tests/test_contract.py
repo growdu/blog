@@ -142,6 +142,26 @@ def test_inline_code_keeps_its_escaped_angle_brackets():
     assert "`local index\\<leader index，则append log`" in result.article.body
 
 
+def test_stray_backticks_do_not_protect_a_real_tag():
+    """两个杂散反引号之间的真标签不是代码 —— 它必须被剥掉。
+
+    这对反引号之间夹的是一句带标记的正文，不是代码示例。
+    保护它就等于让字面量 `<div>` 逃进头条正文。
+    """
+    post = _post(body="用 ` 符号，<div>真实标签</div> 和 ` 另一个")
+    result = slice_post(post, LIMITS)
+    assert "<div>" not in result.article.body
+    assert "真实标签" in result.article.body
+
+
+def test_stray_backticks_do_not_protect_a_real_tag_around_words():
+    """同一件事的第二种形状：反引号之间有字，也有标记。"""
+    post = _post(body="a ` b <b>粗</b> c ` d")
+    result = slice_post(post, LIMITS)
+    assert "<b>" not in result.article.body
+    assert "粗" in result.article.body
+
+
 def test_angle_brackets_outside_the_whitelist_are_kept():
     """不在白名单里的 `<xxx>` 不是标签，原样保留。"""
     post = _post(body="占位符 <db_oid> 和 <relfilenode> 要留着。")
@@ -156,6 +176,19 @@ def test_tag_names_with_underscores_or_capitals_are_not_tags():
     result = slice_post(post, LIMITS)
     assert "<Db_Oid>" in result.article.body
     assert "<FONT>" in result.article.body
+
+
+def test_a_tag_name_that_starts_with_a_whitelisted_one_is_not_a_tag():
+    """`\\b` 边界：`<fontcolor=…>` 不是 `<font>`。
+
+    没有这条边界，白名单里的短标签名会把长标签名的开头吃掉，
+    剥标签就变成了删内容。
+    """
+    post = _post(body='<fontcolor="x">不是标签</fontcolor> 与 <divclass="note">')
+    result = slice_post(post, LIMITS)
+    assert '<fontcolor="x">' in result.article.body
+    assert "</fontcolor>" in result.article.body
+    assert '<divclass="note">' in result.article.body
 
 
 def test_a_line_of_pure_html_is_dropped():
