@@ -1,0 +1,19 @@
+{
+  "episode": "structured-ddl",
+  "title": "为什么 DDL 同步不能直接把 SQL 文本发过去",
+  "url": "https://growdu.cn/2026/11/12/life/aiv/",
+  "cover_at": 17.0,
+  "channels": {
+    "title": "DDL 同步，为什么不能发 SQL 文本",
+    "description": "DDL 写进 WAL、解码出来原样发给订阅端，听着最省事。但社区讨论下来它有 4 条做不到的事——订阅端只拿到文本，就没法判断这条命令到底做了什么。方向是拆成带语义的结构化对象。",
+    "topics": ["逻辑复制", "DDL", "PostgreSQL", "数据库内核"]
+  },
+  "bilibili": {
+    "title": "为什么 DDL 同步不能直接把 SQL 文本发过去：拆成带语义的结构化对象",
+    "description": "DDL 写进 WAL，解码出来原样发给订阅端，听着最省事。但社区讨论下来它有 4 条做不到的事——订阅端只拿到文本，就没法判断这条命令到底做了什么。方向是拆成带语义的结构化对象，分五步走：先捕获，再结构化，中间过一次 deparse。deparser 会补全 schema name，也会把没发布的表过滤掉，最后订阅端按语义执行，这样才支持名字映射和跨版本。\n\n这一期讲的是社区讨论的方向，社区还没有合入主线的版本。\n\n完整版与引用见 growdu.cn",
+    "tags": ["PostgreSQL", "DDL", "逻辑复制", "数据库", "开源"],
+    "tid": 231,
+    "copyright": 1,
+    "no_reprint": 1
+  }
+}

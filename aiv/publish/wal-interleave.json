@@ -1,0 +1,19 @@
+{
+  "episode": "wal-interleave",
+  "title": "WAL 里的顺序，不等于事务的顺序",
+  "url": "https://growdu.cn/2026/11/12/life/aiv/",
+  "cover_at": 20.0,
+  "channels": {
+    "title": "WAL 交错着写，事务要整组还原",
+    "description": "WAL 是操作级记录，一行只写一个动作。6 条记录可能来自 3 个并发事务，交错着写。订阅端要的是「一个事务一整组」——靠 WAL 里的事务号归并进 ReorderBuffer，一个事务一个槽，攒到提交记录出现才整组发出。",
+    "topics": ["逻辑复制", "WAL", "PostgreSQL", "数据库内核"]
+  },
+  "bilibili": {
+    "title": "WAL 里的顺序，不等于事务的顺序：6 条记录怎么归并成 3 个事务",
+    "description": "WAL 是操作级记录，一行只写一个动作。6 条 WAL 记录可能来自 3 个并发事务，交错着写。订阅端靠 WAL 里的事务号把它们归并进 ReorderBuffer，一个事务一个槽；攒不下就 spill 到磁盘，攒到提交记录出现才整组发出，发出去的是提交顺序。\n\n这一期讲的是上游逻辑解码的公开机制，不是 openGauss 的 CSN 方案——那是上一期。\n\n完整版与引用见 growdu.cn",
+    "tags": ["PostgreSQL", "逻辑复制", "WAL", "数据库", "源码"],
+    "tid": 231,
+    "copyright": 1,
+    "no_reprint": 1
+  }
+}

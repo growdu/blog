@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "structured-ddl",
+  "kind": "video",
+  "package_dir": "channels/out/structured-ddl",
+  "platform": "channels",
+  "published_url": null,
+  "reason": "视频号无公开发布接口，已出包待人工上传",
+  "status": "packaged",
+  "title": "DDL 同步，为什么不能发 SQL 文本",
+  "updated_at": "2026-11-12T10:00:39+00:00"
+}

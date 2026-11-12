@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "parallel-apply",
+  "kind": "video",
+  "package_dir": "channels/out/parallel-apply",
+  "platform": "channels",
+  "published_url": null,
+  "reason": "视频号无公开发布接口，已出包待人工上传",
+  "status": "packaged",
+  "title": "发布端并行了，订阅端还在排队",
+  "updated_at": "2026-11-12T10:00:39+00:00"
+}

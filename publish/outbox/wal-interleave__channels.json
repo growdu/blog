@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "wal-interleave",
+  "kind": "video",
+  "package_dir": "channels/out/wal-interleave",
+  "platform": "channels",
+  "published_url": null,
+  "reason": "视频号无公开发布接口，已出包待人工上传",
+  "status": "packaged",
+  "title": "WAL 交错着写，事务要整组还原",
+  "updated_at": "2026-11-12T10:00:39+00:00"
+}
