@@ -13,16 +13,29 @@
 不 import 平台 adapter 的任何模块（§11.1 的接缝原则）。想锁住两边不漂移，
 靠的是 §5.3 那条兼容性测试，不是靠 import。
 
-**唯一的口径差异是 CRLF，而且是有意为之。** 本层的 front matter 正则认
-``\r\n``（``^---\r?\n(.*?)\r?\n---\r?\n``），weixin 那份只认 ``\n``
+**口径差异有两处，都是有意为之**——一句话「逐条一致」因此不能说死，
+每一条差异都由 ``publish/tests/test_contract.py`` 里的一条用例**显式钉住**，
+不靠默契。
+
+**一、CRLF。** 本层的 front matter 正则认 ``\r\n``
+（``^---\r?\n(.*?)\r?\n---\r?\n``），weixin 那份只认 ``\n``
 （``^---\n(.*?)\n---\n``）。同一段 CRLF 文本，契约层解析出
 ``{title, platforms}``，weixin 那份解析出 ``{}``。
 
+**二、缩进标量。** ``platforms:`` 下面缩进一个非列表项（``  wechat``），
+契约层按 YAML 的真实语义读成**标量** ``"wechat"``；weixin 那份把这一行
+整行跳过，剩下一个空列表 ``[]``。空列表意味着「这篇不属于任何平台」→
+不进发布候选集，而作者明明写了 platforms——这一层是唯一的闸门，
+闸门不能自己把人放过去。
+
 为什么不对称：契约层的读者不止 weixin 一个（还有未来的 B站 / 视频号 / 头条），
 对母稿格式更宽容是实质性的健壮性；而「与 weixin 一致」这个承诺不该把两边
-互相绑定（§11.1 的「各改各的」）。代价是两边对同一段 CRLF 文本给出不同
-答案——所以那句话不能说「逐条一致」，这条差异由
-``publish/tests/test_contract.py`` 里的一条用例**显式钉住**，不靠默契。
+互相绑定（§11.1 的「各改各的」）。代价是两边对同一段文本给出不同答案
+——所以那句话不能说「逐条一致」，差异钉在测试里。
+
+（第二处差异在**生产链路上碰不到**：weixin 读的是 ``source/_posts/``，
+那里的缩进标量已被 sync 折叠成单行 ``key: value``。它只在直接读作者原稿
+``docs/`` 时才会出现——而那正是 ``read_contract()`` 承诺支持的用法。）
 
 字段白名单（§4.1）与约束：
 
@@ -143,12 +156,16 @@ def parse_front_matter(text: str) -> tuple:
     to guess the shape.  A ``key:`` with no items below it is an empty list
     (``cover:`` → ``[]``)——this matches ``weixin/wechat/posts.py`` field for
     field, so the two never disagree about what a draft said（LF 输入下；
-    CRLF 下本层更宽松，见模块 docstring）。
+    两处有意分歧见模块 docstring）。
+
+    **缩进标量**：``key:`` 下面缩进一个非列表项（``  wechat``）时，按 YAML 的
+    真实语义读成**标量** ``"wechat"``。这一形态不是 sync 产出的形状（sync
+    把它折叠成单行 ``key: value``），只在直接读作者原稿时才会遇到。
 
     在 **LF 输入下**与 ``weixin/wechat/posts.py:82`` 的 ``parse_front_matter()``
-    逐条对齐；CRLF 输入下本层认 ``\r\n`` 而 weixin 那份不认——这条差异是
-    有意为之，见模块 docstring。代码独立：契约层不 import 平台 adapter 的
-    任何模块。
+    逐条对齐（缩进标量除外）；CRLF 输入下本层认 ``\r\n`` 而 weixin 那份不认
+    ——这两处差异都是有意为之，见模块 docstring。代码独立：契约层不 import
+    平台 adapter 的任何模块。
     """
     if not isinstance(text, str):
         raise ContractFieldError(
@@ -177,6 +194,22 @@ def parse_front_matter(text: str) -> tuple:
         if stripped.startswith("- "):
             if list_key is not None:
                 list_items.append(_unquote(stripped[2:]))
+            continue
+        if raw[:1] in (" ", "\t") and list_key is not None and ":" not in raw:
+            # 缩进标量：``key:`` 下面缩进的、不是列表项的一行。
+            #
+            # 这一形态**不是** sync 产出的形状——sync 把它折叠成单行
+            # ``key: value``——所以只有直接读作者原稿 ``docs/`` 时才会遇到。
+            # 按 YAML 的真实语义它是**标量**：``platforms:`` 下面缩进的
+            # ``wechat`` 是字符串 "wechat"，不是空列表。
+            #
+            # 为什么不能当空列表：空列表意味着「这篇不属于任何平台」→
+            # ``is_publish_candidate`` 为 False → 这篇**静默**不进发布候选集，
+            # 而作者明明写了 platforms。这一层是唯一的闸门，闸门不能自己把
+            # 人放过去——响亮地报「platforms 必须是列表」才是它该做的。
+            key = list_key
+            close_list()
+            fields[key] = _unquote(stripped)
             continue
         if ":" in raw:
             key, _, value = raw.partition(":")
@@ -352,6 +385,12 @@ def read_contract(path) -> ContentContract:
 
     母稿可以是 ``docs/`` 下的原稿，也可以是 ``source/_posts/`` 下的内容单元
     ——两者的 front matter 是同一套。
+
+    有一处例外：**缩进标量**（``platforms:`` 下面缩进一个非列表项）在原稿
+    里是作者写的，在 ``source/_posts/`` 里已被 sync 折叠成单行
+    ``platforms: wechat``。同一份内容，两条路径给出的**判定不同**：原稿那条
+    路径报「platforms 必须是列表」（响亮失败），sync 那条路径也是同一条报错
+    ——所以这里不会出现「同一篇文章，一个说不发、另一个说发」的分裂。
     """
     path = Path(path)
     try:

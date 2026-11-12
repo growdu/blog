@@ -2,9 +2,9 @@
 
 这一层的测试盯三件事：
 1. 解析语义在 **LF 输入下**与 ``weixin/wechat/posts.py`` 的
-   ``parse_front_matter()`` 逐条一致（规格 §4.2 明文要求）；CRLF 输入下
-   契约层更宽松（weixin 那份不认 CRLF）——这条差异是钉死的有意为之，
-   由下面那条用例显式断言；
+   ``parse_front_matter()`` 逐条一致（规格 §4.2 明文要求）；两处例外
+   ——CRLF（weixin 那份不认）与缩进标量（weixin 那份读成空列表）——
+   都是钉死的有意为之，各由下面一条用例显式断言；
 2. 坏字段必须以 ``ContractFieldError`` 明确失败，不漏出裸 KeyError / TypeError；
 3. ``platforms`` 非空即进入发布候选集（06 规格 §3.2）。
 """
@@ -129,6 +129,62 @@ def test_crlf_front_matter_is_parsed():
     fields, _ = parse_front_matter("---\r\ntitle: x\r\n---\r\n\r\n正文\r\n")
 
     assert fields["title"] == "x"
+
+
+# --- 缩进标量 -------------------------------------------------------------
+#
+# ``key:`` 下面缩进一个非列表项（``  wechat``）——YAML 合法，也是最自然的写法。
+# 这一形态不是 sync 产出的形状（sync 把它折叠成单行 ``key: value``），
+# 所以只有直接读作者原稿 ``docs/`` 时才会遇到。
+#
+# 读成**标量**而不是空列表：空列表意味着「这篇不属于任何平台」→ 静默不进
+# 发布候选集，而作者明明写了 platforms。契约层是唯一的闸门，闸门不能自己
+# 把人放过去。
+
+
+def test_an_indented_scalar_is_read_as_a_scalar_not_as_an_empty_list():
+    fields, _ = parse_front_matter("---\nplatforms:\n  wechat\n---\n\n正文\n")
+
+    assert fields["platforms"] == "wechat"
+
+
+def test_an_indented_scalar_under_a_list_field_is_reported_as_a_violation():
+    """响亮地报错，而不是静默跳过。"""
+    fields, _ = parse_front_matter("---\nplatforms:\n  wechat\n---\n\n正文\n")
+
+    assert validate_fields(fields) == ["platforms 必须是列表"]
+
+
+def test_read_contract_on_a_raw_draft_with_an_indented_scalar_raises(tmp_path):
+    """读原稿时也要响亮失败——不能悄悄把文章踢出候选集。"""
+    path = tmp_path / "post.md"
+    path.write_text(
+        "---\ntitle: x\nplatforms:\n  wechat\n---\n\n正文\n", encoding="utf-8"
+    )
+
+    with pytest.raises(ContractFieldError) as excinfo:
+        read_contract(path)
+
+    assert "platforms 必须是列表" in str(excinfo.value)
+
+
+def test_a_regular_list_is_still_a_list():
+    """回归：正常写法不受影响。"""
+    fields, _ = parse_front_matter(
+        "---\nplatforms:\n  - wechat\n  - toutiao\n---\n\n正文\n"
+    )
+
+    assert fields["platforms"] == ["wechat", "toutiao"]
+
+
+def test_an_indented_scalar_under_a_scalar_field_is_a_string():
+    """标量字段的缩进形态也是标量——``cover`` 本来就该是字符串。"""
+    fields, _ = parse_front_matter(
+        "---\ncover:\n  images/cover.jpg\n---\n\n正文\n"
+    )
+
+    assert fields["cover"] == "images/cover.jpg"
+    assert validate_fields(fields) == []
 
 
 # --- 契约读取 -----------------------------------------------------------
@@ -423,7 +479,8 @@ def test_contract_reads_a_real_calendar_date():
 # 在 **LF 输入下**必须对同一段 front matter 给出同一个答案。这条测试**只读**
 # weixin/，不改它一个字节；weixin 那边挪了目录或改了导入路径时，本条自动 skip。
 #
-# **CRLF 是唯一被允许的分歧**（契约层更宽松），由下面那条用例显式钉住。
+# **两处被允许的分歧**（契约层更宽容/更响亮），各由下面一条用例显式钉住：
+# CRLF 与缩进标量。
 
 WEIXIN_DIR = Path(__file__).resolve().parents[2] / "weixin"
 
@@ -487,3 +544,29 @@ def test_crlf_is_the_one_deliberate_divergence_from_the_weixin_parser():
 
     assert mine_fields == {"title": "x", "platforms": ["wechat"]}
     assert their_fields == {}
+
+
+def test_the_indented_scalar_form_is_the_second_deliberate_divergence():
+    """缩进标量下两边给出不同答案——这是钉死的有意为之，不是漏网。
+
+    契约层按 YAML 的真实语义读成**标量** ``"wechat"``，weixin 那份把这一行
+    整行跳过，剩下空列表 ``[]``。
+
+    为什么保留这个分歧：空列表意味着「这篇不属于任何平台」→ 这篇静默地
+    不进发布候选集，而作者明明写了 platforms。契约层是唯一的闸门，闸门
+    不能自己把人放过去——响亮地报「platforms 必须是列表」才是它该做的。
+
+    （生产链路上碰不到这个分歧：weixin 读的是 ``source/_posts/``，那里的
+    缩进标量已被 sync 折叠成单行 ``key: value``。）
+    """
+    weixin_parser = _weixin_parser()
+    if weixin_parser is None:
+        pytest.skip("weixin/ 不可用，跳过与 wechat.posts 的对照")
+
+    text = "---\ntitle: x\nplatforms:\n  wechat\n---\n\n正文\n"
+
+    mine_fields, _ = parse_front_matter(text)
+    their_fields, _ = weixin_parser(text)
+
+    assert mine_fields == {"title": "x", "platforms": "wechat"}
+    assert their_fields == {"title": "x", "platforms": []}
