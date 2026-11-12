@@ -1232,6 +1232,48 @@ def test_a_part_that_still_does_not_fit_is_cut_again(tmp_path, monkeypatch):
         assert part.result.content_length <= CONTENT_LIMIT
 
 
+def test_a_split_article_does_not_keep_the_file_of_a_whole_one(tmp_path):
+    """The file of the other shape is removed.
+
+    An article that used to be whole and is split now keeps a single
+    file from the older run.  It looks like the current product and it
+    is not: it is the whole article, over the limit, and it was never
+    drafted.
+    """
+    post = _long_render_post(tmp_path)
+    out_dir = tmp_path / "out"
+    slug_dir = out_dir / post.slug
+    slug_dir.mkdir(parents=True, exist_ok=True)
+    (slug_dir / "article.html").write_text("<p>旧的整篇</p>", encoding="utf-8")
+
+    parts = _render_parts(post, _render_args(out_dir))
+
+    assert len(parts) > 1
+    assert not (slug_dir / "article.html").exists()
+    assert (slug_dir / "part-1.html").is_file()
+
+
+def test_a_whole_article_does_not_keep_the_parts_of_an_older_split(tmp_path):
+    """The other way round: parts of an older split are removed."""
+    posts_dir = tmp_path / "source" / "_posts"
+    (posts_dir / "database").mkdir(parents=True, exist_ok=True)
+    target = posts_dir / "database" / "short.md"
+    target.write_text(
+        "---\ntitle: \"短\"\ndate: 2026-11-05 15:00:00\nauthor: growdu\n"
+        "categories:\n  - 数据库\n---\n\n正文一段。\n", encoding="utf-8")
+    post = load_post(target, posts_dir)
+    out_dir = tmp_path / "out"
+    slug_dir = out_dir / post.slug
+    slug_dir.mkdir(parents=True, exist_ok=True)
+    (slug_dir / "part-1.html").write_text("<p>旧的一部分</p>", encoding="utf-8")
+
+    parts = _render_parts(post, _render_args(out_dir))
+
+    assert len(parts) == 1
+    assert (slug_dir / "article.html").is_file()
+    assert not (slug_dir / "part-1.html").exists()
+
+
 def test_new_only_finishes_an_article_whose_parts_are_missing(tmp_path, server, monkeypatch):
     """A run that stopped halfway must not leave the article half-drafted.
 

@@ -564,10 +564,24 @@ def _render_parts(post, args) -> list:
         return result
 
     def save(group, result, index, total):
-        """Keep the rendered HTML on disk, one file per part."""
+        """Keep the rendered HTML on disk, one file per part.
+
+        The file of the other shape is removed: an article that is
+        whole again must not keep the parts of an older split, and an
+        article that is split must not keep the single file of an older
+        whole run.  A leftover would look like the current product.
+        """
         target_dir = Path(args.out_dir) / post.slug
         target_dir.mkdir(parents=True, exist_ok=True)
-        name = "article.html" if total == 1 else "part-{}.html".format(index)
+        if total == 1:
+            name = "article.html"
+            for old in target_dir.glob("part-*.html"):
+                old.unlink()
+        else:
+            name = "part-{}.html".format(index)
+            single = target_dir / "article.html"
+            if single.is_file():
+                single.unlink()
         (target_dir / name).write_text(result.html, encoding="utf-8")
 
     def measure(group, highlight=True):
