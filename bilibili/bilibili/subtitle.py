@@ -7,7 +7,7 @@
 这样字幕生成器不依赖时间轴模块的具体实现。
 
 代价是「storyboard 里的字幕从哪来」这条规则写了两遍（这里 + `pyv.timeline`）。
-**两边不许漂**：`publish/tests/test_bilibili_subtitle_contract.py` 拿真实的
+**两边不许漂**：`publish/tests/test_video_publish_contracts.py` 拿真实的
 storyboard 对照两边结果，规则一改就会红。
 """
 from __future__ import annotations
