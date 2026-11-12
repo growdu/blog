@@ -1,0 +1,19 @@
+{
+  "episode": "csn-total-ordering",
+  "title": "一个 64 位计数器，决定所有事务的提交顺序",
+  "url": "https://growdu.cn/2026/11/12/life/aiv/",
+  "cover_at": 18.0,
+  "channels": {
+    "title": "一个计数器决定提交顺序",
+    "description": "并发提交的时间顺序是乱的。openGauss 的做法是给每次 commit 发一个单调递增的 CSN，订阅端拿到号就知道该不该先应用。",
+    "topics": ["openGauss", "数据库内核", "逻辑复制"]
+  },
+  "bilibili": {
+    "title": "一个 64 位计数器，决定所有事务的提交顺序",
+    "description": "并发时 commit 的先后是乱的，按时间戳排并不可靠。openGauss 用一个 64 位原子计数器给每次提交发号，号写进 WAL 带到订阅端，订阅端按号排序。\n\n这一期讲的是 openGauss 的实现，不是 PostgreSQL 18 的能力。\n\n完整版与引用见 growdu.cn",
+    "tags": ["openGauss", "数据库", "源码", "逻辑复制", "PostgreSQL"],
+    "tid": 231,
+    "copyright": 1,
+    "no_reprint": 1
+  }
+}

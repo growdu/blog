@@ -243,6 +243,53 @@ def cmd_bgm(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_publish(args: argparse.Namespace) -> int:
+    """检查一期的发布元数据与成片技术门槛。
+
+    不发任何请求、不写任何文件——这是给作者看的体检报告。
+    """
+    from pyv import epmeta, preflight
+
+    try:
+        meta = epmeta.load_meta(args.episode)
+    except epmeta.MetaError as exc:
+        print(f"ERROR {exc}", file=sys.stderr)
+        return 1
+
+    contract_episode = ""
+    contract_path = epmeta.AIV_ROOT / "contracts" / f"{args.episode}.json"
+    if contract_path.is_file():
+        from pyv import contract as contract_mod
+        contract_episode = contract_mod.load_contract(contract_path).episode
+
+    video = epmeta.AIV_ROOT / "out" / f"{args.episode}.mp4"
+    info = None
+    duration = None
+    if video.is_file():
+        info = preflight.probe(video)
+        duration = info.duration
+    else:
+        print(f"WARNING preflight.video 成片不在本机（{video}），"
+              f"跳过技术门槛检查")
+
+    findings = epmeta.check_meta(
+        meta, contract_episode=contract_episode, duration=duration)
+    if info is not None:
+        for platform in ("channels", "bilibili"):
+            findings.extend(preflight.check_video(info, platform))
+
+    for finding in findings:
+        marker = "ERROR  " if finding.level == epmeta.ERROR else "WARNING"
+        print(f"{marker} {finding.rule_id}  {finding.message}")
+    print(f"元数据 {meta.path}；{len(findings)} 个问题")
+    if any(f.level == epmeta.ERROR for f in findings):
+        sys.stdout.flush()
+        print("FAIL 有硬约束违规，发布前必须改", file=sys.stderr)
+        return 1
+    print("OK 发布前检查通过")
+    return 0
+
+
 def _cmd_bgm_windows(args: argparse.Namespace) -> int:
     """挑（或重挑）系列片头片尾的配乐窗口。
 
@@ -391,6 +438,13 @@ def main(argv: list[str] | None = None) -> int:
     p_bgm_brand.add_argument("--music", default=None,
                              help="motif 音频，默认取台账里 series_role=motif 的那条")
     p_bgm_brand.set_defaults(func=cmd_bgm)
+
+    p_publish = sub.add_parser("publish")
+    publish_sub = p_publish.add_subparsers(dest="publish_command", required=True)
+
+    p_publish_check = publish_sub.add_parser("check")
+    p_publish_check.add_argument("--episode", required=True)
+    p_publish_check.set_defaults(func=cmd_publish)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -1,0 +1,19 @@
+{
+  "episode": "pg-parallel-decode",
+  "title": "PostgreSQL 18 并行逻辑解码",
+  "url": "https://growdu.cn/2026/11/12/life/aiv/",
+  "cover_at": 16.0,
+  "channels": {
+    "title": "32 核机器，解码只占 1 核",
+    "description": "默认发布端只有一个解码线程，串行处理。PostgreSQL 18 把它拆成 reader 协调 + 多 worker，32 核机器上不再只用 1 核。",
+    "topics": ["PostgreSQL", "逻辑复制", "数据库内核"]
+  },
+  "bilibili": {
+    "title": "PostgreSQL 18 并行逻辑解码：32 核机器上，解码只占 1 核",
+    "description": "默认发布端只有一个解码线程，串行处理；大事务小事务都跟不上。PostgreSQL 18 把它拆成 reader 协调 + 多 worker 并行解码。本地压测性能提升 2~5 倍。\n\n作者本人压测的数字，不是厂商结论。\n\n完整版与引用见 growdu.cn",
+    "tags": ["PostgreSQL", "逻辑复制", "数据库", "源码", "开源"],
+    "tid": 231,
+    "copyright": 1,
+    "no_reprint": 1
+  }
+}
