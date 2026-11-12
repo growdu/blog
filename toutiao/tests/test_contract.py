@@ -132,6 +132,25 @@ def test_inline_images_beyond_the_cap_are_dropped():
     assert "图 【图1】" in result.article.body
 
 
+def test_image_path_drops_the_trailing_title():
+    """`![alt](url "标题")` 里的标题不是路径的一部分，必须剥掉。"""
+    post = _post(body='![甲](https://example.com/a.png "在这里插入图片描述")')
+    result = slice_post(post, LIMITS)
+    assert result.article.images == ("https://example.com/a.png",)
+
+
+def test_image_path_drops_a_single_quoted_title():
+    post = _post(body="![甲](https://example.com/a.png 'recover_without_timeline')")
+    result = slice_post(post, LIMITS)
+    assert result.article.images == ("https://example.com/a.png",)
+
+
+def test_inline_image_path_drops_the_trailing_title():
+    post = _post(body='其架构如下图![](images/a.png "架构图")。')
+    result = slice_post(post, LIMITS)
+    assert result.article.images == ("images/a.png",)
+
+
 def test_only_the_first_three_images_are_kept():
     body = "\n\n".join("![图{}](images/{}.png)".format(i, i) for i in range(1, 6))
     result = slice_post(_post(body=body), LIMITS)

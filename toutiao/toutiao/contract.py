@@ -24,6 +24,7 @@ __all__ = ["SliceResult", "ToutiaoArticle", "slice_post"]
 _HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
 _IMAGE_LINE = re.compile(r"^!\[([^\]]*)\]\(([^)]*)\)$")
 _IMAGE_INLINE = re.compile(r"!\[([^\]]*)\]\(([^)]*)\)")
+_IMAGE_TITLE = re.compile(r"""\s+(?:"[^"]*"|'[^']*')\s*$""")
 _LIST = re.compile(r"^(?:[-*+]|\d+\.)\s+(.*)$")
 _MARKER = re.compile(r"^【图(\d+)】$")
 _MARKER_IN_TEXT = re.compile(r"【图(\d+)】")
@@ -89,8 +90,14 @@ def _truncate_title(title: str, limit: int) -> str:
 
 
 def _image_path(raw: str) -> str:
-    """The path inside ``![alt](path)``."""
-    return raw.strip()
+    """The path inside ``![alt](path)`` -- without the optional title.
+
+    Markdown allows a title after the path: ``![alt](https://x/a.png "图说")``.
+    Keeping it would hand the downloader a string that is not a path at all,
+    so the title is dropped and only the URL or file path survives.
+    """
+    path = raw.strip()
+    return _IMAGE_TITLE.sub("", path).strip()
 
 
 def _replace_inline_images(text: str, images: list[str]) -> str:
