@@ -8,6 +8,11 @@ webp, squeeze under the size cap, crop a cover to 3:4.
 Only local images are handled.  A remote URL is never fetched: the package
 must not depend on the network, and the uploader has to download such a
 picture by hand anyway.
+
+Pillow does not read every picture format there is -- an SVG is not one it
+can open.  Such a file is refused with :class:`UnreadableImage`, so that the
+caller can tell "this file is not a picture I can convert" apart from "this
+picture is too big to squeeze".
 """
 
 from __future__ import annotations
@@ -17,8 +22,8 @@ from pathlib import Path
 
 __all__ = [
     "AssetNotFound", "ImageTooLarge", "PreparedImage", "RemoteAsset",
-    "can_make_cover", "is_remote", "make_cover", "prepare_image",
-    "resolve_asset",
+    "UnreadableImage", "can_make_cover", "is_remote", "make_cover",
+    "prepare_image", "resolve_asset",
 ]
 
 # The quality ladder ``prepare_image()`` walks down when the picture is too
@@ -38,6 +43,16 @@ class RemoteAsset(ValueError):
 
 class AssetNotFound(ValueError):
     """The asset path does not resolve to a file inside the site."""
+
+
+class UnreadableImage(ValueError):
+    """The file is not a picture Pillow can convert.
+
+    Raised instead of letting Pillow's own ``UnidentifiedImageError`` (an
+    ``OSError``) out: the caller has to be able to tell "this file is not a
+    picture I can convert" -- a job for a human -- from "this picture is too
+    big to squeeze under the limit".
+    """
 
 
 @dataclass(frozen=True)
@@ -103,25 +118,45 @@ def prepare_image(src: Path, dst: Path, max_bytes: int) -> PreparedImage:
     itself.  When neither is enough the picture is refused rather than
     written out over the limit: a package that ships an oversized image is
     a package the platform will reject at upload time.
+
+    A file Pillow cannot open (an SVG, for one) is refused with
+    :class:`UnreadableImage` before any of that: it is not a picture that
+    is too big, it is a file that needs a human.
     """
-    from PIL import Image
+    from PIL import Image, UnidentifiedImageError
 
     src = Path(src)
     dst = Path(dst)
     dst.parent.mkdir(parents=True, exist_ok=True)
 
-    with Image.open(src) as opened:
-        image = opened.convert("RGB")
-        for quality in _QUALITIES:
-            image.save(dst, "WEBP", quality=quality, method=6)
-            if dst.stat().st_size <= max_bytes:
-                break
-        else:
-            image.thumbnail((max(image.width // 2, 1), max(image.height // 2, 1)))
-            image.save(dst, "WEBP", quality=_QUALITIES[-1], method=6)
-        # ``image.size`` is read after the shrink, so the reported size is
-        # the size of the file that was actually written.
-        width, height = image.size
+    try:
+        with Image.open(src) as opened:
+            image = opened.convert("RGB")
+    except UnidentifiedImageError as error:
+        raise UnreadableImage(
+            "Pillow 读不了这个文件（可能是 SVG 等格式）：{}".format(src.name)
+        ) from error
+    except (FileNotFoundError, PermissionError):
+        # The file is not there, or not ours to read -- that is not an
+        # unreadable picture, and the caller has to see it as it is.
+        raise
+    except OSError as error:
+        # The format is one Pillow knows, but the file does not decode (a
+        # truncated picture, for one).  Also a job for a human.
+        raise UnreadableImage(
+            "Pillow 解不开这个文件（可能已截断）：{}".format(src.name)
+        ) from error
+
+    for quality in _QUALITIES:
+        image.save(dst, "WEBP", quality=quality, method=6)
+        if dst.stat().st_size <= max_bytes:
+            break
+    else:
+        image.thumbnail((max(image.width // 2, 1), max(image.height // 2, 1)))
+        image.save(dst, "WEBP", quality=_QUALITIES[-1], method=6)
+    # ``image.size`` is read after the shrink, so the reported size is
+    # the size of the file that was actually written.
+    width, height = image.size
 
     size = dst.stat().st_size
     if size > max_bytes:

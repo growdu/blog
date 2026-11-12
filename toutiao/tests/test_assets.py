@@ -4,8 +4,8 @@ import pytest
 from PIL import Image
 
 from toutiao.assets import (
-    AssetNotFound, ImageTooLarge, RemoteAsset, can_make_cover, is_remote,
-    make_cover, prepare_image, resolve_asset,
+    AssetNotFound, ImageTooLarge, RemoteAsset, UnreadableImage,
+    can_make_cover, is_remote, make_cover, prepare_image, resolve_asset,
 )
 
 
@@ -204,3 +204,47 @@ def test_the_asset_errors_are_separate_kinds_of_problem():
 def test_is_remote_does_not_care_about_case_or_padding():
     assert is_remote("  HTTPS://example.com/a.png  ") is True
     assert is_remote("Http://example.com/a.png") is True
+
+
+# --- 读不了的格式 -----------------------------------------------------------
+#
+# Pillow 读不了的格式（真实语料里就有一张 SVG）会让裸的
+# UnidentifiedImageError 漏出去 —— 出包时那一张图就会把整包带崩。
+# 所以它有自己的异常：调用方要能分辨「这个文件不是我能转的格式」
+# 和「这个文件我转不动（压不进 5MB）」。
+
+
+def test_prepare_image_raises_unreadable_for_a_format_pillow_cannot_read(tmp_path):
+    """SVG 之类 Pillow 读不了的格式要报成专用异常，不是裸的底层异常。"""
+    src = tmp_path / "logo.svg"
+    src.write_text("<svg></svg>", encoding="utf-8")
+    dst = tmp_path / "out" / "01.webp"
+    with pytest.raises(UnreadableImage) as error:
+        prepare_image(src, dst, max_bytes=5242880)
+    assert "logo.svg" in str(error.value)
+    assert "SVG" in str(error.value)
+    # 底层那个异常不能漏出去 —— 它不是 ValueError，出包时接不住。
+    assert not isinstance(error.value, OSError)
+    assert not (dst).exists()
+
+
+def test_prepare_image_raises_unreadable_for_a_file_that_is_not_an_image(tmp_path):
+    """后缀是 .png 但内容不是图 —— 一样是「读不了」，不是「转不动」。"""
+    src = tmp_path / "broken.png"
+    src.write_bytes(b"this is not an image at all")
+    with pytest.raises(UnreadableImage):
+        prepare_image(src, tmp_path / "out" / "01.webp", max_bytes=5242880)
+
+
+def test_unreadable_image_is_its_own_kind_of_problem():
+    """「读不了」与「转不动」「路径解析不了」是三件事。"""
+    assert issubclass(UnreadableImage, ValueError)
+    assert not issubclass(UnreadableImage, ImageTooLarge)
+    assert not issubclass(UnreadableImage, AssetNotFound)
+    assert not issubclass(UnreadableImage, RemoteAsset)
+
+
+def test_prepare_image_does_not_call_a_missing_file_an_unreadable_one(tmp_path):
+    """文件根本不在，不该被当成「读不了的图」——那是两回事。"""
+    with pytest.raises(FileNotFoundError):
+        prepare_image(tmp_path / "nope.png", tmp_path / "out" / "01.webp", max_bytes=5242880)
