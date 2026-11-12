@@ -1725,9 +1725,11 @@ def test_the_card_and_the_signature_do_not_break_the_limit(tmp_path):
         assert part.result.content_length <= CONTENT_LIMIT
 
 
-def test_the_digest_is_the_authors_own_description(tmp_path, server):
+def test_the_digest_is_the_authors_own_description(tmp_path, server, monkeypatch):
     """What the reader sees before opening the article is what the
     author wrote about it."""
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
     post, posts_dir, slug = _brand_post(tmp_path)
 
     code = main(["publish", slug] + _args(posts_dir, tmp_path / "out",
@@ -1753,9 +1755,11 @@ def test_the_digest_of_a_split_part_does_not_repeat_the_title(tmp_path):
 
 
 def test_the_digest_carries_the_original_title_when_the_title_was_shortened(
-        tmp_path, server):
+        tmp_path, server, monkeypatch):
     """When the title is cut, the draft box still says what the article
     is called on the site."""
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
     posts_dir = tmp_path / "source" / "_posts"
     target = posts_dir / "database" / "demo.md"
     target.parent.mkdir(parents=True, exist_ok=True)
