@@ -209,6 +209,8 @@ def test_status_lists_the_recorded_articles(tmp_path, capsys):
     out = capsys.readouterr().out
     assert "db/demo" in out
     assert "待人工上传" in out
+    # 发布包目录也在状态里：status 要能告诉人这一篇的包在哪。
+    assert str(tmp_path / "out" / "db-demo") in out
 
 
 def test_status_explains_that_drafted_means_waiting_for_a_human(tmp_path, capsys):
@@ -305,6 +307,27 @@ def test_a_corrupt_state_file_is_reported_loudly(tmp_path, capsys):
     assert code != EXIT_OK
     # 证据留着，不删。
     assert (tmp_path / "out" / "state.json.corrupt").is_file()
+
+
+def test_convert_also_reports_a_corrupt_state_file(tmp_path, capsys):
+    """convert 读到损坏的状态文件也要喊出来。
+
+    这一条最要命：出包照做不误，但状态是从空状态来的——发过的文章
+    可能被再发一遍。喊出来，这一次运行就不算干净（退出码 3）。
+    """
+    _site(tmp_path)
+    state_file = tmp_path / "out" / "state.json"
+    state_file.parent.mkdir(parents=True, exist_ok=True)
+    state_file.write_text("{not json", encoding="utf-8")
+
+    code = main(_args(tmp_path, "convert", "db/demo"))
+
+    err = capsys.readouterr().err
+    assert "状态文件损坏" in err
+    assert "再发一遍" in err
+    assert code == EXIT_ERROR
+    # 出包本身还是做了：这一次只是不可信，不是失败。
+    assert (tmp_path / "out" / "db-demo" / "article.html").is_file()
 
 
 # --- the state file the commands rely on --------------------------------
