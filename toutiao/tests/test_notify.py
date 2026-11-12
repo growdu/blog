@@ -1,20 +1,21 @@
 """Tests for the notification wording and the three backends.
 
-Two layers:
+Three layers:
 
 - unit tests: one situation each -- what a state says, what a backend
-  would put on the wire;
+  would put on the wire, what a receipt means;
 - integration tests: a message built by ``build_message()`` goes out
   through a backend unchanged.
 
 **No test here touches the network.**  ``_post()`` is replaced by a
 recorder, and the assertions look at the URL, the payload and the content
-type that *would* have been sent.  A test that really posted to
-Server酱 or 企业微信 would make the suite depend on a third party and
-could wake somebody up at night.
+type that *would* have been sent, plus the receipt that came back.  A
+test that really posted to Server酱 or 企业微信 would make the suite
+depend on a third party and could wake somebody up at night.
 """
 
 import json
+import urllib.error
 import urllib.parse
 
 import pytest
@@ -22,9 +23,20 @@ import pytest
 from toutiao import notify
 from toutiao.notify import STATUS_SUBJECTS, build_message, send
 
+#: Each platform's own receipt shape: Server酱 puts the outcome in
+#: ``code``, 企业微信 in ``errcode``.
+_RECEIPTS = {
+    "sctapi.ftqq.com": b'{"code":0,"message":"","data":{}}',
+    "qyapi.weixin.qq.com": b'{"errcode":0,"errmsg":"ok"}',
+}
 
-def _recorder(monkeypatch):
-    """Replace ``_post()`` with a recorder.  Returns the recorded calls."""
+
+def _recorder(monkeypatch, body=None):
+    """Replace ``_post()`` with a recorder.  Returns the recorded calls.
+
+    ``body`` overrides the answer the fake platform gives back; the
+    default is the receipt each platform really sends.
+    """
     calls = []
 
     def fake_post(url, *, data, content_type, timeout):
@@ -36,6 +48,12 @@ def _recorder(monkeypatch):
                 "timeout": timeout,
             }
         )
+        if body is not None:
+            return body
+        for host, receipt in _RECEIPTS.items():
+            if host in url:
+                return receipt
+        return b'{"ok":true}'
 
     monkeypatch.setattr(notify, "_post", fake_post)
     return calls
@@ -168,3 +186,69 @@ def test_a_built_message_goes_out_unchanged(monkeypatch):
     assert fields["title"] == [subject]
     assert fields["desp"] == [body]
     assert "已发布" not in fields["desp"][0]
+
+
+# --- the receipt --------------------------------------------------------
+#
+# HTTP 200 不等于送达：Server酱 与企业微信在 200 的正文里放业务错误码。
+# 只看状态码，通知失败会被当成通知成功——项目最恨的那种「静悄悄的成功」。
+
+
+def test_a_successful_receipt_is_a_success(monkeypatch):
+    _recorder(monkeypatch)
+    send("serverchan", "SCTKEY", "主题", "正文")
+
+
+def test_a_refused_serverchan_receipt_is_reported(monkeypatch):
+    _recorder(monkeypatch, body=b'{"code":40001,"message":"bad key"}')
+    with pytest.raises(notify.ReceiptError) as excinfo:
+        send("serverchan", "SCTKEY", "主题", "正文")
+    assert "40001" in str(excinfo.value)
+
+
+def test_a_refused_wechat_work_receipt_is_reported(monkeypatch):
+    _recorder(monkeypatch, body=b'{"errcode":93000,"errmsg":"invalid webhook url"}')
+    with pytest.raises(notify.ReceiptError) as excinfo:
+        send("wechat_work", "WKKEY", "主题", "正文")
+    assert "93000" in str(excinfo.value)
+
+
+def test_an_unreadable_receipt_is_not_a_success(monkeypatch):
+    """读不出来的回执确认不了任何事：不能当成成功。"""
+    _recorder(monkeypatch, body=b"not json")
+    with pytest.raises(notify.ReceiptError):
+        send("serverchan", "SCTKEY", "主题", "正文")
+
+
+def test_a_receipt_without_the_code_field_is_not_a_success(monkeypatch):
+    _recorder(monkeypatch, body=b"{}")
+    with pytest.raises(notify.ReceiptError):
+        send("wechat_work", "WKKEY", "主题", "正文")
+
+
+def test_a_webhook_has_no_receipt_convention(monkeypatch):
+    """自建 webhook 没有约定：只看 HTTP 状态码，正文是什么都不算失败。"""
+    _recorder(monkeypatch, body=b"whatever the endpoint answers")
+    send("webhook", "https://example.com/hook", "主题", "正文")
+
+
+def test_an_http_error_is_a_delivery_failure(monkeypatch):
+    """HTTP 错误是「没发出去」，跟「发出去了但被拒」是两回事。"""
+
+    def boom(*args, **kwargs):
+        raise urllib.error.HTTPError(
+            "https://sctapi.ftqq.com/SCTKEY.send", 500, "Internal Server Error", {}, None
+        )
+
+    monkeypatch.setattr(notify.urllib.request, "urlopen", boom)
+    with pytest.raises(notify.DeliveryError) as excinfo:
+        send("serverchan", "SCTKEY", "主题", "正文")
+    assert "500" in str(excinfo.value)
+
+
+def test_the_two_failures_are_different_types():
+    """调用方要能分辨「没发出去」和「发出去了但被拒」。"""
+    assert issubclass(notify.DeliveryError, notify.NotificationError)
+    assert issubclass(notify.ReceiptError, notify.NotificationError)
+    assert not issubclass(notify.DeliveryError, notify.ReceiptError)
+    assert not issubclass(notify.ReceiptError, notify.DeliveryError)
