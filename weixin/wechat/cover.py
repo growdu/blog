@@ -1,8 +1,8 @@
 """Draw a cover card for a part that has no picture of its own.
 
-549 of the 765 parts in the draft box have no picture at all -- 71.8%
-of them -- so they all wear the same cover that ships with this tool.
-The result is a list of several hundred drafts that look alike.
+549 of the 766 parts in the draft box had no picture at all -- 71.8%
+of them -- so they all wore the same cover that ships with this tool.
+The result was a list of several hundred drafts that look alike.
 
 A card gives each one its own face: a two-tone background in a colour
 derived from the article's slug, the category, and the topic of the

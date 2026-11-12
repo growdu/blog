@@ -17,6 +17,7 @@ box is a useful human review gate either way.
 from __future__ import annotations
 
 import argparse
+import atexit
 import hashlib
 import json
 import os
@@ -363,7 +364,7 @@ def _upload_cover(client, result, args, external_prepared=None, card=None):
        own colour
     5. the default cover that ships with this tool
 
-    The last two matter more than they look: 549 of the 765 parts in
+    The last two matter more than they look: 549 of the 766 parts in
     the box have no picture at all, and 39 more have only external
     ones.  Without a fallback those articles could never become a
     draft, and a draft with no cover is not something WeChat accepts.
@@ -989,6 +990,71 @@ def cmd_auto_draft(args) -> int:
     return cmd_batch(args)
 
 
+def _batch_lock_path(out_dir) -> Path:
+    """Where the lock that keeps two batches apart lives."""
+    return Path(out_dir) / "batch.lock"
+
+
+def _pid_alive(pid: int) -> bool:
+    """True when a process with that pid is still running."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except OSError:
+        return True
+    return True
+
+
+def _take_batch_lock(out_dir) -> bool:
+    """Take the batch lock, or report that somebody else holds it.
+
+    A batch and the scheduled job can otherwise run at the same time.
+    Both would decide that an article has no draft yet -- the ledger
+    says so -- and both would create one, leaving two copies of the
+    same article in the box.
+
+    The lock is a file that holds the pid of the process that took it.
+    A lock whose process is gone was left behind by a crash, and the
+    next run takes it over.
+    """
+    path = _batch_lock_path(out_dir)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    for _ in range(3):
+        try:
+            handle = os.open(str(path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        except FileExistsError:
+            try:
+                pid = int(path.read_text(encoding="utf-8").strip() or "0")
+            except (OSError, ValueError):
+                pid = 0
+            if pid and pid != os.getpid() and _pid_alive(pid):
+                return False
+            try:
+                path.unlink()
+            except OSError:
+                return False
+            continue
+        with os.fdopen(handle, "w") as out:
+            out.write(str(os.getpid()))
+        return True
+    return False
+
+
+def _drop_batch_lock(out_dir) -> None:
+    """Give the lock back, but only if this process is the one holding it."""
+    path = _batch_lock_path(out_dir)
+    try:
+        pid = int(path.read_text(encoding="utf-8").strip() or "0")
+    except (OSError, ValueError):
+        pid = 0
+    if pid == os.getpid():
+        try:
+            path.unlink()
+        except OSError:
+            pass
+
+
 def cmd_batch(args) -> int:
     """Put many posts into the draft box.
 
@@ -1056,6 +1122,14 @@ def cmd_batch(args) -> int:
         print("缺少 WX_APPID / WX_APPSECRET 环境变量", file=sys.stderr)
         return EXIT_REJECTED
 
+    # From here on the run writes to the ledger and to the draft box, so
+    # only one of them may be going at a time.
+    if not _take_batch_lock(args.out_dir):
+        print("另一个批量任务正在运行（{}），本次跳过".format(
+            _batch_lock_path(args.out_dir)))
+        return EXIT_OK
+    atexit.register(_drop_batch_lock, args.out_dir)
+
     client = publish_module.WeChatClient(
         args.appid, args.appsecret, base_url=args.api_base)
 
@@ -1116,6 +1190,9 @@ def cmd_batch(args) -> int:
             len(selected) - created - updated - rejected - failed))
     if created or updated:
         _notify_batch(args, created, updated, rejected, failed)
+    # The lock is given back here, not only when the process exits, so
+    # that the next run can start right away.
+    _drop_batch_lock(args.out_dir)
     return EXIT_API_ERROR if failed else EXIT_OK
 
 

@@ -1,4 +1,36 @@
+import threading
+
 from wechat.state import PublishState, StateStore, needs_draft, needs_submit
+
+
+def test_two_writers_do_not_lose_each_other_s_entries(tmp_path):
+    """The ledger is read in full and written back in full.
+
+    Two writers doing that at the same time used to overwrite each
+    other: an entry that was written by one of them was simply gone.
+    A draft that is in the box but missing from the ledger is created a
+    second time on the next run, which is the one failure the whole
+    idempotency exists to prevent.
+    """
+    store = StateStore(tmp_path / "state.json")
+    errors = []
+
+    def writer(index):
+        try:
+            for step in range(20):
+                store.save("writer-{}/{}".format(index, step),
+                           PublishState(fingerprint="f", media_id="m"))
+        except Exception as error:      # pragma: no cover - only on a failure
+            errors.append(error)
+
+    threads = [threading.Thread(target=writer, args=(index,)) for index in range(4)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert not errors
+    assert len(store.all()) == 80
 
 
 def test_needs_draft_when_no_media_id():

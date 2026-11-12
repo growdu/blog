@@ -13,7 +13,11 @@ committed.
 
 from __future__ import annotations
 
+import fcntl
 import json
+import os
+import tempfile
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -45,6 +49,46 @@ class StateStore:
     def __init__(self, path: Path):
         self.path = Path(path)
 
+    @contextmanager
+    def _locked(self):
+        """Hold the lock on the ledger while it is read and written.
+
+        The ledger is one file that every writer reads in full and
+        writes back in full.  Two writers doing that at the same moment
+        lose each other's entries, and a draft that is in the box but
+        missing from the ledger is created a second time on the next
+        run -- which is the one failure the whole three-layer
+        idempotency exists to prevent.
+        """
+        lock_path = self.path.with_name(self.path.name + ".lock")
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(lock_path, "a+") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+
+    def _write(self, posts: dict) -> None:
+        """Write the ledger out.
+
+        The write goes to a temporary file that is then moved into
+        place, so a reader never sees half a file.  The temporary name
+        is unique, so two writers cannot move each other's file away.
+        """
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        handle, temporary_name = tempfile.mkstemp(
+            dir=str(self.path.parent), prefix=self.path.name + ".", suffix=".tmp")
+        temporary = Path(temporary_name)
+        try:
+            with os.fdopen(handle, "w", encoding="utf-8") as out:
+                json.dump({"posts": posts}, out, ensure_ascii=False,
+                          indent=2, sort_keys=True)
+            temporary.replace(self.path)
+        except BaseException:
+            temporary.unlink(missing_ok=True)
+            raise
+
     def _load_all(self) -> dict:
         if not self.path.is_file():
             return {}
@@ -73,14 +117,11 @@ class StateStore:
         return PublishState(**known)
 
     def save(self, slug: str, state: PublishState) -> None:
-        posts = self._load_all()
-        state.updated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        posts[slug] = asdict(state)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
-            json.dumps({"posts": posts}, ensure_ascii=False, indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
+        with self._locked():
+            posts = self._load_all()
+            state.updated_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            posts[slug] = asdict(state)
+            self._write(posts)
 
     def forget_draft(self, slug: str) -> None:
         """Forget that a draft exists for this post.
@@ -91,19 +132,16 @@ class StateStore:
         already published stays published, no matter what happened to
         its draft.
         """
-        posts = self._load_all()
-        entry = posts.get(slug)
-        if not isinstance(entry, dict):
-            return
-        entry["media_id"] = None
-        entry["fingerprint"] = None
-        entry["updated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
-        posts[slug] = entry
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
-            json.dumps({"posts": posts}, ensure_ascii=False, indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
+        with self._locked():
+            posts = self._load_all()
+            entry = posts.get(slug)
+            if not isinstance(entry, dict):
+                return
+            entry["media_id"] = None
+            entry["fingerprint"] = None
+            entry["updated_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            posts[slug] = entry
+            self._write(posts)
 
     def remove(self, slug: str) -> None:
         """Drop one entry entirely.
@@ -111,15 +149,12 @@ class StateStore:
         Used when a draft was deleted because the part it belonged to
         no longer exists: there is nothing left to remember.
         """
-        posts = self._load_all()
-        if slug not in posts:
-            return
-        del posts[slug]
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        self.path.write_text(
-            json.dumps({"posts": posts}, ensure_ascii=False, indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
+        with self._locked():
+            posts = self._load_all()
+            if slug not in posts:
+                return
+            del posts[slug]
+            self._write(posts)
 
 
 def needs_draft(fingerprint: str, state: PublishState) -> bool:

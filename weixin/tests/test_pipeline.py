@@ -11,7 +11,8 @@ from PIL import Image
 
 from wechat import notify as notify_module
 from wechat import split as split_module
-from wechat.cli import (_docs_changed, _fingerprint, _render_parts, main)
+from wechat.cli import (_docs_changed, _drop_batch_lock, _fingerprint,
+                       _render_parts, _take_batch_lock, main)
 from wechat.posts import CONTENT_LIMIT, load_post
 
 SAMPLE = """---
@@ -902,6 +903,58 @@ def test_batch_new_only_skips_articles_that_already_have_a_draft(tmp_path, serve
     _Handler.calls = []
     assert main(["batch", "--new-only"] + args) == 0
     assert _Handler.calls.count("/cgi-bin/draft/add") == 0
+
+
+def test_a_second_batch_does_not_run_while_one_is_going(tmp_path, server, monkeypatch):
+    """The scheduled job and a manual batch must not overlap.
+
+    Both would find an article without a draft and both would create
+    one, leaving two copies of the same article in the box.
+    """
+    posts_dir = _batch_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    out_dir = tmp_path / "out"
+    lock = out_dir / "batch.lock"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    # The pid of another process that is running: init always is.
+    lock.write_text("1", encoding="utf-8")
+
+    _Handler.calls = []
+    code = main(["batch"] + _args(posts_dir, out_dir, server=server))
+    assert code == 0
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 0
+
+    # Once the lock is gone the next batch runs as usual.
+    lock.unlink()
+    _Handler.calls = []
+    assert main(["batch"] + _args(posts_dir, out_dir, server=server)) == 0
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 3
+
+
+def test_a_lock_left_behind_by_a_dead_process_is_taken_over(tmp_path):
+    """A crash must not lock the tool out forever."""
+    out_dir = tmp_path / "out"
+    lock = out_dir / "batch.lock"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    # A pid that is not running: the lock was left behind.
+    lock.write_text("999999", encoding="utf-8")
+    assert _take_batch_lock(out_dir) is True
+    _drop_batch_lock(out_dir)
+    assert not lock.exists()
+
+
+def test_the_lock_is_given_back_when_the_batch_is_done(tmp_path, server, monkeypatch):
+    """A finished batch must not keep the next one out."""
+    posts_dir = _batch_posts(tmp_path)
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    out_dir = tmp_path / "out"
+    args = _args(posts_dir, out_dir, server=server)
+    assert main(["batch"] + args) == 0
+    assert not (out_dir / "batch.lock").exists()
 
 
 def test_batch_changed_only_picks_up_an_edited_article(tmp_path, server, monkeypatch):
