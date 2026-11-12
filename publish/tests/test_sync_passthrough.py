@@ -1,0 +1,247 @@
+"""集成测试：真的跑一遍 tools/sync-hexo.py，产物里真的带上 platforms / publish_on。
+
+契约层说「母稿说了什么就透传什么」——这句话要由**真的跑一遍发布脚本**来验，
+不是靠读代码。本文件用一份最小母稿语料跑完整的 sync-hexo.py，再检查
+source/_posts/ 下生成出来的 front matter。
+
+语料是合成的（跑全量 docs/ 要三分钟，不适合放进单元测试），
+但跑的是**仓库里那一份真的** tools/sync-hexo.py。
+"""
+
+import re
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+from publishkit.contract import parse_front_matter
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+SYNC_SCRIPT = REPO_ROOT / "tools" / "sync-hexo.py"
+
+
+def build_corpus(root: Path, drafts) -> None:
+    """Write a minimal docs/ tree plus the config sync-hexo.py reads."""
+    for rel, text in drafts.items():
+        path = root / "docs" / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+    # sync-hexo.py 用 _config.matery.yml 生成关于页；缺了它脚本会中断。
+    shutil.copy(REPO_ROOT / "_config.matery.yml", root / "_config.matery.yml")
+
+
+def run_sync(root: Path) -> None:
+    """Run the repository's sync-hexo.py over the corpus in ``root``."""
+    result = subprocess.run(
+        [sys.executable, str(SYNC_SCRIPT)],
+        cwd=str(root),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, "sync-hexo.py 失败：\n{}\n{}".format(
+        result.stdout, result.stderr
+    )
+
+
+def read_post(root: Path, rel: str) -> str:
+    path = root / "source" / "_posts" / rel
+    assert path.is_file(), "sync-hexo.py 没有生成 {}".format(path)
+    return path.read_text(encoding="utf-8")
+
+
+PLAIN_DRAFT = """\
+---
+title: "普通一篇"
+---
+
+# 普通一篇
+
+正文第一段。
+"""
+
+SCHEDULED_DRAFT = """\
+---
+title: "带发布计划的一篇"
+platforms:
+  - wechat
+  - toutiao
+publish_on: 2026-11-13
+---
+
+# 带发布计划的一篇
+
+正文第一段。
+"""
+
+
+# --- 透传 ---------------------------------------------------------------
+
+
+def test_sync_carries_platforms_and_publish_on(tmp_path):
+    build_corpus(tmp_path, {"blog/scheduled.md": SCHEDULED_DRAFT})
+    run_sync(tmp_path)
+
+    fields, _ = parse_front_matter(read_post(tmp_path, "blog/scheduled.md"))
+
+    assert fields["platforms"] == ["wechat", "toutiao"]
+    assert fields["publish_on"] == "2026-11-13"
+
+
+def test_passthrough_values_are_byte_identical_to_the_source(tmp_path):
+    """含引号、含中文的值要**逐字**搬过去，不能被重新加引号或转义。"""
+    draft = (
+        "---\n"
+        'title: "带引号的中文标题"\n'
+        "platforms:\n"
+        "  - wechat\n"
+        '  - "toutiao"\n'
+        'publish_on: "2026-11-13"\n'
+        "---\n\n"
+        "# 正文\n"
+    )
+    build_corpus(tmp_path, {"blog/quoted.md": draft})
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/quoted.md")
+
+    assert "  - wechat\n" in out
+    assert '  - "toutiao"\n' in out
+    assert 'publish_on: "2026-11-13"\n' in out
+
+
+def test_platforms_without_publish_on(tmp_path):
+    build_corpus(
+        tmp_path,
+        {"blog/only-platforms.md": '---\ntitle: x\nplatforms:\n  - wechat\n---\n\n正文\n'},
+    )
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/only-platforms.md")
+    fields, _ = parse_front_matter(out)
+
+    assert fields["platforms"] == ["wechat"]
+    assert "publish_on" not in fields
+
+
+def test_publish_on_without_platforms(tmp_path):
+    build_corpus(
+        tmp_path,
+        {"blog/only-date.md": "---\ntitle: x\npublish_on: 2026-11-13\n---\n\n正文\n"},
+    )
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/only-date.md")
+    fields, _ = parse_front_matter(out)
+
+    assert fields["publish_on"] == "2026-11-13"
+    assert "platforms" not in fields
+
+
+def test_an_inline_platforms_list_is_carried_through_for_the_contract_to_reject(tmp_path):
+    """内联列表不在格式规则里（§4.2）——但不能悄悄丢掉，要让契约层报错。"""
+    build_corpus(
+        tmp_path,
+        {"blog/inline.md": "---\ntitle: x\nplatforms: [wechat, toutiao]\n---\n\n正文\n"},
+    )
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/inline.md")
+    fields, _ = parse_front_matter(out)
+
+    assert fields["platforms"] == "[wechat, toutiao]"
+
+
+# --- 没有弄坏别的东西 ----------------------------------------------------
+
+
+def test_posts_without_the_fields_keep_their_front_matter_unchanged(tmp_path):
+    """没写这两个字段的母稿，front matter 必须与改动前逐字段一致。"""
+    build_corpus(tmp_path, {"blog/plain.md": PLAIN_DRAFT})
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/plain.md")
+    fields, _ = parse_front_matter(out)
+
+    assert set(fields) == {"title", "date", "author", "categories", "tags"}
+    assert fields["title"] == "普通一篇"
+    assert fields["author"] == "growdu"
+    assert fields["categories"] == ["blog"]
+    assert fields["tags"] == ["blog"]
+    assert "platforms" not in out
+    assert "publish_on" not in out
+
+
+def test_the_existing_front_matter_shape_is_unchanged(tmp_path):
+    """front matter 的骨架一行都不能动——多一行少一行都会改掉站点渲染。"""
+    build_corpus(tmp_path, {"blog/plain.md": PLAIN_DRAFT})
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/plain.md")
+
+    assert re.match(
+        r'^---\ntitle: "普通一篇"\ndate: \d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\n'
+        r'author: growdu\ncategories:\n  - blog\ntags:\n  - blog\n---\n',
+        out,
+    )
+
+
+def test_the_passthrough_does_not_disturb_the_title_override(tmp_path):
+    """作者在 front matter 里写的 title 仍然优先于正文里的 H1。"""
+    build_corpus(
+        tmp_path,
+        {"blog/titled.md": '---\ntitle: "front matter 的标题"\n---\n\n# 正文里的 H1\n'},
+    )
+    run_sync(tmp_path)
+
+    fields, _ = parse_front_matter(read_post(tmp_path, "blog/titled.md"))
+
+    assert fields["title"] == "front matter 的标题"
+
+
+def test_the_body_is_unchanged_by_the_passthrough(tmp_path):
+    build_corpus(tmp_path, {"blog/scheduled.md": SCHEDULED_DRAFT})
+    run_sync(tmp_path)
+
+    out = read_post(tmp_path, "blog/scheduled.md")
+
+    assert "正文第一段。" in out
+    assert out.rstrip().endswith("正文第一段。")
+
+
+def test_the_generated_post_satisfies_the_content_contract(tmp_path):
+    """产物本身要能被内容契约读懂——这不是巧合，是接缝的定义。"""
+    build_corpus(tmp_path, {"blog/scheduled.md": SCHEDULED_DRAFT})
+    run_sync(tmp_path)
+
+    from publishkit.contract import contract_from_fields
+
+    fields, _ = parse_front_matter(read_post(tmp_path, "blog/scheduled.md"))
+    contract = contract_from_fields(fields)
+
+    assert contract.platforms == ("wechat", "toutiao")
+    assert contract.publish_on == "2026-11-13"
+    assert contract.is_publish_candidate is True
+
+
+def test_sync_script_does_not_import_the_contract_layer():
+    """站点构建脚本不许 import 契约层——两边互不依赖，契约层不是构建期依赖。"""
+    source = SYNC_SCRIPT.read_text(encoding="utf-8")
+
+    assert SYNC_SCRIPT.is_file()
+    assert not re.search(r"^\s*(import|from)\s+publishkit", source, re.MULTILINE), (
+        "sync-hexo.py 不许 import 契约层"
+    )
+
+
+@pytest.mark.parametrize("draft_name", ["scheduled.md", "plain.md"])
+def test_every_post_is_written(tmp_path, draft_name):
+    drafts = {
+        "blog/scheduled.md": SCHEDULED_DRAFT,
+        "blog/plain.md": PLAIN_DRAFT,
+    }
+    build_corpus(tmp_path, drafts)
+    run_sync(tmp_path)
+
+    assert (tmp_path / "source" / "_posts" / "blog" / draft_name).is_file()

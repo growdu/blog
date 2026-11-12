@@ -493,6 +493,86 @@ def yaml_escape(s):
     return s.replace('\\','\\\\').replace('"','\\"')
 
 
+# 透传字段：契约层（publish/publishkit/contract.py）要读的那两个。
+# sync 只负责**原样搬运**——值的校验归契约层管（publish/spec/00-架构设计.md §4.1）。
+# 平台 id 与发布日期都不参与站点渲染，搬过去不影响现有页面。
+PASSTHROUGH_LIST_FIELDS = ('platforms',)
+PASSTHROUGH_SCALAR_FIELDS = ('publish_on',)
+
+
+def _fm_scalar(fm, key):
+    """Raw text of a top-level ``key: value`` line in ``fm``.
+
+    Returns ``None`` when the key is absent or carries no value.  The value
+    comes back verbatim (quotes included) so the passthrough is byte-exact.
+    """
+    if not fm:
+        return None
+    for raw in fm.split('\n'):
+        if not raw.strip() or raw[:1] in (' ', '\t'):
+            continue
+        head, sep, tail = raw.partition(':')
+        if sep and head.strip() == key:
+            value = tail.strip()
+            return value or None
+    return None
+
+
+def _fm_list(fm, key):
+    """Raw items of a top-level ``key:`` + ``  - item`` block in ``fm``.
+
+    Returns ``None`` when the key is absent or carries a scalar value.
+    Items come back verbatim (quotes included).
+    """
+    if not fm:
+        return None
+    items = []
+    list_key = None
+    for raw in fm.split('\n'):
+        if not raw.strip():
+            continue
+        if raw[:1] in (' ', '\t'):
+            stripped = raw.strip()
+            if list_key == key and stripped.startswith('- '):
+                items.append(stripped[2:].strip())
+            continue
+        head, sep, tail = raw.partition(':')
+        if sep and head.strip() == key and not tail.strip():
+            list_key = key
+        else:
+            list_key = None
+    return items or None
+
+
+def passthrough_block(fm):
+    """The front-matter lines the publish contract needs, carried verbatim.
+
+    ``platforms`` is a list, ``publish_on`` a scalar.  Both are read from the
+    author's own front matter and written out unchanged -- the contract layer
+    owns their validation, this side only carries them.
+
+    A post that declares neither gets no extra lines, so its front matter
+    stays byte-identical to what it was before.
+    """
+    lines = []
+    for key in PASSTHROUGH_LIST_FIELDS:
+        items = _fm_list(fm, key)
+        if items:
+            lines.append('{}:'.format(key))
+            lines.extend('  - {}'.format(item) for item in items)
+        else:
+            # 不是列表形态（内联列表 / 单个标量）：原样带过去，让契约层去报错。
+            # 在这里悄悄丢掉更糟——丢了等于「这篇不发」，而作者以为自己写了。
+            value = _fm_scalar(fm, key)
+            if value:
+                lines.append('{}: {}'.format(key, value))
+    for key in PASSTHROUGH_SCALAR_FIELDS:
+        value = _fm_scalar(fm, key)
+        if value:
+            lines.append('{}: {}'.format(key, value))
+    return ''.join(line + '\n' for line in lines)
+
+
 def read_matery_about_config():
     """Read profile/myProjects/mySkills from _config.matery.yml.
 
@@ -1125,7 +1205,9 @@ def process(filepath, section_titles, cascades):
     # keeps the primary category first and appends each topic exactly once.
     all_tags = list(dict.fromkeys(post_cats + topics))
     tags_block = categories_yaml(all_tags)
-    fm_out = f'---\ntitle: "{yaml_escape(title)}"\ndate: {date}\nauthor: growdu{top_line}\ncategories:\n{cats_block}\ntags:\n{tags_block}\n---\n'
+    # 发布契约要读的两个字段，原样搬过去（没有就什么都不加）。
+    passthrough = passthrough_block(fm)
+    fm_out = f'---\ntitle: "{yaml_escape(title)}"\ndate: {date}\nauthor: growdu{top_line}\ncategories:\n{cats_block}\ntags:\n{tags_block}\n{passthrough}---\n'
 
     if os.path.basename(filepath) == 'index.md':
         name = os.path.basename(os.path.dirname(filepath))
