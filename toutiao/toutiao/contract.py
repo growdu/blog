@@ -284,10 +284,16 @@ def slice_post(post: SourcePost, limits: Limits, source_url: str = "https://grow
     elif len(post.title) > limits.title_chars:
         title = _truncate_title(post.title, limits.title_chars)
         title_truncated = True
+        if not title.strip():
+            # A title of nothing but separators cuts down to nothing --
+            # publishing it would be a silent success with no title.
+            return SliceResult(reason="标题裁剪后为空")
         notes.append("标题已裁剪到 {} 字".format(limits.title_chars))
     else:
         title = post.title
         title_truncated = False
+        if not title.strip():
+            return SliceResult(reason="标题为空")
 
     blocks, images = _scan(post.body)
     if not blocks:

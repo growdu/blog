@@ -289,7 +289,15 @@ def test_empty_title_and_no_paragraph_is_skipped():
     result = slice_post(_post(title="", body="## 只有小标题"), LIMITS)
     assert result.article is None
     assert result.reason
-    assert "摘要" in result.reason
+    assert "标题" in result.reason
+
+
+def test_title_truncated_to_nothing_is_skipped():
+    """标题全是分隔符，裁完一个字都不剩 —— 跳过该篇，不产出空标题文章。"""
+    result = slice_post(_post(title="：" * 40), LIMITS)
+    assert result.article is None
+    assert result.reason
+    assert "标题" in result.reason
 
 
 def test_long_digest_is_truncated_and_noted():
