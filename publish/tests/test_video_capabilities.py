@@ -3,8 +3,8 @@
 契约层的数据文件也要有测试——平台规则变了改 TOML，
 但「该有的键有没有」「数值还是不是当初核过的那几个」得有人盯着。
 """
-import re
 import tomllib
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -24,16 +24,6 @@ LIMIT_KEYS = {
     "channels": ("title_chars", "description_chars", "topics_max", "topic_chars"),
     "bilibili": ("title_chars", "description_chars", "tags_chars", "tag_chars"),
 }
-MEDIA_KEYS = {
-    "channels": ("min_width", "min_height", "max_fps", "require_pix_fmt",
-                 "require_video_codec", "max_duration_s", "max_bytes",
-                 "max_audio_channels", "max_sample_rate", "require_faststart"),
-    "bilibili": ("max_width", "max_height", "max_fps", "require_pix_fmt",
-                 "require_video_codec", "max_duration_s", "max_bytes",
-                 "max_audio_bitrate", "max_audio_channels", "max_sample_rate",
-                 "max_video_bitrate", "max_keyframe_gap_s"),
-}
-
 # 核过的数值。改了这里就要同时改规格文档，并说明出处。
 PINNED = {
     "channels": {"title_chars": 22, "description_chars": 1000,
@@ -60,6 +50,9 @@ MEDIA_PINNED = {
         "max_keyframe_gap_s": 10,
     },
 }
+
+# 键集合从 MEDIA_PINNED 推导，不另写一份——两份手工同步的同键列表迟早会漂。
+MEDIA_KEYS = {platform: tuple(pinned) for platform, pinned in MEDIA_PINNED.items()}
 
 
 def _load(platform: str) -> dict:
@@ -119,6 +112,13 @@ def test_the_pinned_media_numbers_still_hold(platform):
     把 max_video_bitrate 改大，整套测试照样全绿。
     """
     media = _load(platform)["media"]
+    # 键集合必须**完全相等**：多出一个键就是凭空多一道闸——规格 §5.2 里视频号
+    # 明确为「—」的项（比如 max_video_bitrate），加上去就多判一道。
+    assert set(media) == set(MEDIA_PINNED[platform]), (
+        f"{platform}.toml 的 media 键集合变了："
+        f"多出 {sorted(set(media) - set(MEDIA_PINNED[platform]))}，"
+        f"缺少 {sorted(set(MEDIA_PINNED[platform]) - set(media))}"
+    )
     for key, value in MEDIA_PINNED[platform].items():
         assert media[key] == value, (
             f"{platform}.toml 的 media.{key} 变成了 {media[key]}，"
@@ -176,13 +176,19 @@ def test_auth_takes_a_known_value():
         assert _load(platform)["auth"] in AUTH
 
 
-def test_verified_is_an_iso_date():
-    """`verified` = 这些平台数字最后对着平台文档复核过的日期。"""
+def test_verified_is_a_real_date():
+    """`verified` = 这些平台数字最后对着平台文档复核过的日期。
+
+    要真的是一个存在的日子——光对上正则的 `2026-13-45` 是蒙混过关。
+    """
     for platform in PLATFORMS:
         value = _load(platform)["verified"]
-        assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", value), (
-            f"{platform}.toml 的 verified={value!r} 不是 ISO 日期"
-        )
+        try:
+            date.fromisoformat(value)
+        except ValueError:
+            raise AssertionError(
+                f"{platform}.toml 的 verified={value!r} 不是一个存在的日期"
+            ) from None
 
 
 def test_both_platforms_keep_the_audio_gates():
