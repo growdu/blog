@@ -81,8 +81,33 @@ make bgm         # 按《背景音乐规范》检查曲库台账
 ```
 
 出片链路（`align → validate → brand → render → compose`）还需要
-`storyboard.json`（时间轴，由旁白算出来）和旁白音频，两者都是本机素材，不入库；
+`storyboard_<期号>.json`（时间轴，由旁白算出来）和旁白音频，两者都是本机素材，不入库；
 入库的是 `contracts/` 里的视觉分镜契约——它决定**画面上写什么**。
+
+## 换一期
+
+流水线按期号（`EP`）切：
+
+```bash
+cd aiv/pipeline
+make EP=pg-parallel-decode align    # 按这一期的旁白对齐出时间轴
+make EP=pg-parallel-decode all       # validate → brand → render → compose
+```
+
+`EP` 决定这一期的契约、旁白、时间轴、片段目录与成片的文件名；
+**口播稿按主题命名**（`字幕-并行解码.md`、`字幕-CSN全序.md`），
+在 Makefile 里按 `EP` 显式登记——换期时忘了换稿会当场报错，
+而不是静悄悄地拿上一期的稿子出片。
+
+片段目录也按期分开（`build/<期号>/`）：各期的段 id 会重名（`s01`…），
+共用一个目录会互相覆盖。
+
+| 入库 | 不入库（留本机） |
+| --- | --- |
+| `contracts/<期号>.json` 视觉分镜契约 | `narration_<期号>.mp3` 旁白 |
+| `字幕-<主题>.md` 口播稿与字幕表 | `storyboard_<期号>.json` 时间轴 |
+| `pipeline/pyv/scenes/*.py` 场景代码 | `build/<期号>/*.mp4` 片段 |
+| | `out/<期号>.mp4` 成片 |
 
 ## 发布到博客的那一份
 

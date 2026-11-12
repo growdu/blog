@@ -18,8 +18,8 @@ build/
 out/
 frames/
 
-# 时间轴产物（由旁白对齐算出，跟着本地旁白走）
-storyboard.json
+# 时间轴产物（由旁白对齐算出，跟着本地旁白走；按期命名）
+storyboard*.json
 
 # Design 运行时状态（画布节点图与资产索引，由应用与流水线共同写入）
 .hilo/

@@ -281,13 +281,17 @@ def test_compose_re_renders_when_source_is_newer(tmp_path):
 
 
 def test_real_storyboard_matches_real_narration():
-    """真实契约：正文时长必须等于旁白时长（29.599 秒）。
+    """真实契约：正文时长必须等于旁白时长。
 
     套上品牌片头/片尾后，契约总时长会变长，但正文（品牌片之外的部分）
     必须仍然等于旁白时长。
+
+    ⚠️ 这条曾经是**死的**：它指向的 `pa_decode_v2.mp3` 早已被
+    `narration_pg-parallel-decode.mp3` 取代，文件不存在 → 一直静默 skip。
+    旁白换稿后要跟着改这里，否则这条守卫等于没有。
     """
-    storyboard_path = ROOT / "storyboard.json"
-    narration_path = ROOT / "pa_decode_v2.mp3"
+    storyboard_path = ROOT / "storyboard_pg-parallel-decode.json"
+    narration_path = ROOT / "narration_pg-parallel-decode.mp3"
     if not storyboard_path.exists() or not narration_path.exists():
         pytest.skip("真实资产不在仓库中，跳过")
 
@@ -299,4 +303,4 @@ def test_real_storyboard_matches_real_narration():
     assert float(info["format"]["duration"]) == pytest.approx(
         body_duration, abs=0.05
     )
-    assert body_duration == pytest.approx(29.599, abs=0.001)
+    assert body_duration == pytest.approx(33.156, abs=0.001)
