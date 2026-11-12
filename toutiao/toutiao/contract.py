@@ -179,16 +179,16 @@ def _first_paragraph(blocks: list[str]) -> str:
     return ""
 
 
-def _first_marker(blocks: list[str]) -> str:
-    """The first image placeholder -- the only text an image-only post has."""
-    for block in blocks:
-        if _MARKER.match(block):
-            return block
-    return ""
-
-
 def slice_post(post: SourcePost, limits: Limits, source_url: str = "https://growdu.cn") -> SliceResult:
-    """Cut one source post into the Toutiao version."""
+    """Cut one source post into the Toutiao version.
+
+    The digest falls back through ``description`` -> ``tldr`` -> the first
+    paragraph -> the article title.  The title is the last resort: it only
+    steps in when the body has no paragraph to summarize at all, which is
+    what a picture-led post looks like.  A digest that is still too long
+    is cut down and the cut is written into ``notes`` -- nothing is
+    shortened silently.
+    """
     notes: list[str] = []
 
     short_title = _field_text(post.fields, "short_title")
@@ -208,6 +208,11 @@ def slice_post(post: SourcePost, limits: Limits, source_url: str = "https://grow
         title_truncated = False
 
     blocks, images = _scan(post.body)
+    if not blocks:
+        # Nothing survived the filter: a body of nothing but tables,
+        # quotes, code fences or raw HTML has no Toutiao version.  Say so
+        # instead of publishing an empty article.
+        return SliceResult(reason="正文里没有可保留的内容")
 
     if len(images) > limits.max_body_images:
         dropped = len(images) - limits.max_body_images
@@ -231,15 +236,13 @@ def slice_post(post: SourcePost, limits: Limits, source_url: str = "https://grow
         _field_text(post.fields, "description")
         or _field_text(post.fields, "tldr")
         or _first_paragraph(blocks)
+        or title
     )
     if not digest:
-        # A body that is nothing but images still has text to summarize:
-        # the placeholder.  Skipping such a post would silently drop a
-        # picture-led post, so the placeholder becomes the digest.
-        digest = _first_marker(blocks)
-    if not digest:
         return SliceResult(reason="正文里没有可摘要的段落")
-    digest = digest[: limits.digest_chars]
+    if len(digest) > limits.digest_chars:
+        digest = digest[: limits.digest_chars]
+        notes.append("摘要已裁剪到 {} 字".format(limits.digest_chars))
 
     site = source_url.split("://", 1)[-1].rstrip("/")
     tail = "完整版见 {}".format(site)

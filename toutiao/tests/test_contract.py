@@ -110,11 +110,13 @@ def test_only_the_first_three_images_are_kept():
     assert any("只保留" in note for note in result.article.notes)
 
 
-def test_image_only_post_still_gets_a_digest():
-    """整篇只有图时占位符就是摘要 —— 不能因为没有段落就把这篇丢掉。"""
-    result = slice_post(_post(body="![甲](images/a.png)\n\n![乙](images/b.png)"), LIMITS)
+def test_image_only_post_falls_back_to_the_title():
+    """整篇只有图时没有首段可摘，兜底用文章标题（不是图占位符）。"""
+    result = slice_post(
+        _post(title="图集标题", body="![甲](images/a.png)\n\n![乙](images/b.png)"), LIMITS
+    )
     assert result.article is not None
-    assert result.article.digest == "【图1】"
+    assert result.article.digest == "图集标题"
 
 
 # ---- 链接降级 ----
@@ -125,6 +127,18 @@ def test_links_become_plain_text():
     assert "https://example.com/a" not in result.article.body
     assert "这篇" in result.article.body
     assert result.article.dropped_links == 1
+
+
+def test_bare_urls_stay_in_the_body():
+    """裸 URL 原样留着 —— 平台禁的是外链跳转代码，不是 URL 这个字符串。
+
+    权益没开通时正文里的 URL 本来就只是文本，不会变成可点击的链接；
+    被降级的只有 markdown 链接那种带链接标记的。见设计文档 §3.4。
+    """
+    post = _post(body="参考 https://example.com/a 这篇。")
+    result = slice_post(post, LIMITS)
+    assert "https://example.com/a" in result.article.body
+    assert result.article.dropped_links == 0
 
 
 # ---- 摘要 ----
@@ -140,6 +154,28 @@ def test_digest_prefers_description_over_tldr():
         _post(body="正文。", description="长摘要", tldr="短摘要"), LIMITS
     )
     assert result.article.digest == "长摘要"
+
+
+def test_digest_prefers_the_first_paragraph_over_the_title():
+    """正文有段落时用首段 —— 标题只是兜底，不参与竞争。"""
+    result = slice_post(
+        _post(title="文章标题", body="正文第一段。\n\n正文第二段。"), LIMITS
+    )
+    assert result.article.digest == "正文第一段。"
+
+
+def test_long_digest_is_truncated_and_noted():
+    """摘要超长要裁到 `digest_chars`，并且留下记录（不静默截断）。"""
+    result = slice_post(_post(body="正文。", description="摘" * 200), LIMITS)
+    assert len(result.article.digest) == LIMITS.digest_chars
+    assert any("摘要" in note and "裁剪" in note for note in result.article.notes)
+
+
+def test_short_digest_is_not_truncated_and_not_noted():
+    """摘要没超长时不裁，也不添那条多余的 note。"""
+    result = slice_post(_post(body="正文。", description="短摘要"), LIMITS)
+    assert result.article.digest == "短摘要"
+    assert not any("摘要" in note for note in result.article.notes)
 
 
 def test_digest_falls_back_to_tldr_then_first_paragraph():
