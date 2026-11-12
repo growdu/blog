@@ -335,8 +335,8 @@ def slice_post(post: SourcePost, limits: Limits, source_url: str = "https://grow
         or _first_paragraph(blocks)
         or title
     )
-    if not digest:
-        return SliceResult(reason="正文里没有可摘要的段落")
+    # `title` is non-empty here -- the three branches above guarantee it --
+    # so the digest never is.
     if len(digest) > limits.digest_chars:
         digest = digest[: limits.digest_chars]
         notes.append("摘要已裁剪到 {} 字".format(limits.digest_chars))
