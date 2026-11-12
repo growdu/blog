@@ -130,3 +130,23 @@ def test_a_whole_article_has_no_part_number():
 
 def test_a_part_of_a_split_article_carries_its_number():
     assert "（三）" in cover_text("标题：副标题", 3, 12)
+
+
+def test_the_part_number_is_never_split_across_two_lines():
+    """A line that ends with 「（六」 looks broken.
+
+    The number belongs to the title, so the whole group has to move to
+    the next line together when it does not fit.
+    """
+    from wechat.cover import _font, _wrap
+
+    font = _font(54)
+    assert font is not None, "this machine has no Chinese font"
+    text = cover_text("数据库技术自媒体运营手册", 6, 6)
+    lines = _wrap(text, font, 900 - 62 * 2)
+    assert len(lines) > 1, "this text is expected to need two lines"
+    for line in lines:
+        assert not line.endswith("（") or line.endswith("（六）")
+        assert not line.startswith("）")
+    # The number is on one line, whole.
+    assert any(line.endswith("（六）") for line in lines)

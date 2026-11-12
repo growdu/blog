@@ -47,6 +47,10 @@ _FALLBACK_FONTS = (
 
 _BRAND = "growdu.cn"
 
+# Bumped when the drawing changes, so that the cards already drawn are
+# drawn again instead of being served from the cache.
+_CARD_VERSION = 2
+
 
 def _font(size: int, *, chinese: bool = True):
     """A font of that size, or None when the machine has none."""
@@ -80,7 +84,10 @@ def _wrap(text: str, font, max_width: int) -> list:
     """Break the text into lines that fit.
 
     Chinese can break between any two characters, but an English word
-    should not be broken in half, so words are kept together.
+    should not be broken in half, so words are kept together.  A bracketed
+    group is kept together as well: the part number 「（六）」 belongs to
+    the title, and a line that ends with 「（六」 while the next one
+    starts with 「）」 looks broken.
     """
     lines = []
     current = ""
@@ -89,6 +96,15 @@ def _wrap(text: str, font, max_width: int) -> list:
         if current and font.getlength(candidate) > max_width:
             lines.append(current)
             current = token.lstrip()
+        elif not current and font.getlength(token) > max_width:
+            # A group that does not fit on a line of its own: break it
+            # by characters, because there is nothing else to do.
+            for char in token:
+                if current and font.getlength(current + char) > max_width:
+                    lines.append(current)
+                    current = char
+                else:
+                    current += char
         else:
             current = candidate
     if current:
@@ -96,18 +112,47 @@ def _wrap(text: str, font, max_width: int) -> list:
     return lines
 
 
+# The brackets whose group has to stay on one line.
+_BRACKETS = {
+    "（": "）",
+    "(": ")",
+    "【": "】",
+    "「": "」",
+    "《": "》",
+}
+
+
 def _tokens(text: str) -> list:
     """The text as pieces that may not be broken apart."""
     tokens = []
     word = ""
-    for char in text:
+    index = 0
+    length = len(text)
+    while index < length:
+        char = text[index]
+        if char in _BRACKETS:
+            if word:
+                tokens.append(word)
+                word = ""
+            closer = _BRACKETS[char]
+            end = text.find(closer, index)
+            if end < 0:
+                # An unbalanced bracket is just a character.
+                tokens.append(char)
+                index += 1
+                continue
+            tokens.append(text[index:end + 1])
+            index = end + 1
+            continue
         if char.isascii() and (char.isalnum() or char in "-_.,:/"):
             word += char
+            index += 1
             continue
         if word:
             tokens.append(word)
             word = ""
         tokens.append(char)
+        index += 1
     if word:
         tokens.append(word)
     return tokens
@@ -135,7 +180,8 @@ def cover_card(slug: str, title: str, category: str, out_dir: Path, *,
     """
     text = cover_text(title, part_index, part_total)
     key = hashlib.sha1(
-        "{}|{}|{}|{}".format(slug, title, category, text).encode("utf-8")
+        "{}|{}|{}|{}|{}".format(
+            _CARD_VERSION, slug, title, category, text).encode("utf-8")
     ).hexdigest()[:12]
     target_dir = Path(out_dir) / "covers"
     target_dir.mkdir(parents=True, exist_ok=True)
