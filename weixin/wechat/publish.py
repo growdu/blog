@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import mimetypes
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -55,7 +56,8 @@ class WeChatClient:
 
     # -- transport ----------------------------------------------------
 
-    def _request(self, path: str, *, data=None, headers=None, params=None, token=None):
+    def _request(self, path: str, *, data=None, headers=None, params=None, token=None,
+                 retries: int = 3):
         url = self.base_url + path
         query = dict(params or {})
         if token:
@@ -63,13 +65,26 @@ class WeChatClient:
         if query:
             url += "?" + urllib.parse.urlencode(query)
         request = urllib.request.Request(url, data=data, headers=headers or {}, method="POST")
-        try:
-            with urllib.request.urlopen(request, timeout=self.timeout) as response:
-                raw = response.read()
-        except urllib.error.HTTPError as error:
-            raw = error.read()
-        except urllib.error.URLError as error:
-            raise WeChatError(-1, "network error: {}".format(error), path) from error
+
+        raw = b""
+        for attempt in range(retries):
+            try:
+                with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                    raw = response.read()
+                break
+            except urllib.error.HTTPError as error:
+                # The API answered; its body carries the errcode.
+                raw = error.read()
+                break
+            except (urllib.error.URLError, OSError) as error:
+                # A dropped connection is not an answer from the API.
+                # Retrying costs a second; not retrying costs the whole
+                # batch, because the exception would travel out of the
+                # per-article error handling.
+                if attempt == retries - 1:
+                    raise WeChatError(-1, "network error: {}".format(error), path) from error
+                time.sleep(2 ** attempt)
+
         try:
             return json.loads(raw.decode("utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as error:

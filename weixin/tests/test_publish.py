@@ -199,3 +199,61 @@ def test_network_failure_raises_wechat_error():
     client = WeChatClient("appid", "secret", base_url="http://127.0.0.1:1", timeout=2)
     with pytest.raises(WeChatError):
         client.stable_token()
+
+
+class _FlakyHandler(BaseHTTPRequestHandler):
+    """A server that drops connections.
+
+    A dropped connection is not an answer from the API: the client has
+    to try again, because an exception that travels out of the
+    per-article error handling takes the whole batch down.
+    """
+
+    calls = 0
+    # How many calls to drop before answering normally.
+    drops = 1
+
+    def log_message(self, *args):
+        pass
+
+    def do_POST(self):
+        _FlakyHandler.calls += 1
+        if _FlakyHandler.calls <= _FlakyHandler.drops:
+            self.close_connection = True
+            try:
+                self.connection.close()
+            except OSError:
+                pass
+            return
+        body = json.dumps({"access_token": "TOKEN"}).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+
+@pytest.fixture
+def flaky_server():
+    _FlakyHandler.calls = 0
+    _FlakyHandler.drops = 1
+    httpd = HTTPServer(("127.0.0.1", 0), _FlakyHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    yield "http://127.0.0.1:{}".format(httpd.server_port)
+    httpd.shutdown()
+
+
+def test_a_dropped_connection_is_retried(flaky_server):
+    client = WeChatClient("appid", "secret", base_url=flaky_server)
+    assert client.stable_token() == "TOKEN"
+    assert _FlakyHandler.calls == 2
+
+
+def test_a_server_that_never_answers_gives_up_after_three_tryings(flaky_server):
+    """The retries are bounded: a dead server must not hang the batch."""
+    _FlakyHandler.drops = 99
+    client = WeChatClient("appid", "secret", base_url=flaky_server)
+    with pytest.raises(WeChatError):
+        client._request("/cgi-bin/draft/add", data=b"{}", retries=2)
+    assert _FlakyHandler.calls == 2
