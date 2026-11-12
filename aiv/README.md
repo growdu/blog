@@ -150,23 +150,38 @@ python3 aiv/scripts/sync_publish_docs.py
 链接会自己恢复。反过来，看到「相对链接 404」要先查目标页在不在，
 而不是去改链接文本。
 
-### AIV 专题页还缺着
+### AIV 专题页
 
-`docs/life/aiv/index.md`（专题页「AIV 视频生产线：九个环节、唯一契约与入库边界」）
-在目录迁移提交 `0b9cb9a` 里被删了，仓库里有 **8 处链接**指向它、目前全 404：
+专题页「AIV 视频生产线：九个环节、唯一契约与入库边界」
+（正本 `index.md`，发布副本 `docs/life/aiv/index.md`）讲的是这条线本身：
+九个环节、唯一契约、入库边界，以及「片尾接回片头」的配乐闭环。
+
+它在目录迁移提交 `0b9cb9a` 里被删过，仓库里有 **8 处链接**指向它、当时全 404。
+旧页在 git 历史里（`0b9cb9a^:docs/life/aiv/index.md`，213 行），但**不能直接恢复**：
+里面写的是「成片线归雇主、我们支持了 X」的公司口径，与现在的第三方开发者口径冲突；
+还引用已作废的 `pa_decode_v2.mp3`、把 `storyboard.json` 说成唯一契约
+（现在契约是 `contracts/*.json`，storyboard 是产物）。所以按现状重写了。
+
+重写后链接自己就恢复了——引用它的页面一个字都没改：
 
 | 位置 | 处数 |
 | --- | --- |
 | `docs/life/_index.md` | 2 |
 | `docs/life/blog-to-wechat/index.md` | 3 |
 | `docs/life/shehui/media-account/index.md` | 2 |
-| `docs/database/_index.md` | 1（路径是 `../db/aiv/index.html`，另错了一层） |
+| `docs/database/_index.md` | 1（路径另错了一层，一并改成 `../life/aiv/index.html`） |
 
-旧页在 git 历史里（`0b9cb9a^:docs/life/aiv/index.md`，213 行），但**不能直接恢复**：
-里面写的是「成片线归雇主、我们支持了 X」的公司口径，与现在的第三方开发者口径冲突；
-还引用已作废的 `pa_decode_v2.mp3`、把 `storyboard.json` 说成唯一契约
-（现在契约是 `contracts/*.json`，storyboard 是产物）。要按现状重写。
-
-落地方式：正本 `aiv/index.md` + 发布副本 `docs/life/aiv/index.md`，
+落地方式：正本 `index.md` + 发布副本 `docs/life/aiv/index.md`，
 并把 `index.md` 加进 `aiv/scripts/sync_publish_docs.py` 的 `PUBLISH_DOCS`，
 这样副本漂移继续被 `test_publish_copy.py` 抓住。
+
+### 一个容易踩的坑：正文里的方括号
+
+`sync-hexo.py` 重写站内相对链接用的是一条「左方括号 + 文字 + 右方括号 +
+左圆括号 + 地址 + 右圆括号」的匹配，它**不认代码块**。
+正文里任何不成对的左方括号（比如区间写法里的半开区间记号）
+都会让它一路吃到后面某个链接的右圆括号，把中间整段包成一个链接——
+markdown 源码看着没变，渲染出来却是上千字的巨型蓝色链接。
+
+所以发布文档里**不要用 ASCII 方括号**写区间。`tests/test_publish_copy.py`
+有一条测试盯住发布目录里的跨段误匹配，踩到了会红。
