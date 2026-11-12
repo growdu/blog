@@ -15,7 +15,10 @@
   排查清单见 [docs/02-试点记录.md](docs/02-试点记录.md) §R1）
 - **自动化能到的最远一步（当前）**：产出发布包 + 通知，等人工上传
 - **实现状态**：切片、渲染、出包、幂等状态、通知、命令行**都已实现**
-  （[docs/11-实施计划.md](docs/11-实施计划.md) 的 Task 1~10），321 条测试通过。
+  （[docs/11-实施计划.md](docs/11-实施计划.md) 的 Task 1~10），**326 条用例**。
+  其中 2 条是**语料级回归**——母稿 `source/_posts` 不入库，
+  干净检出里它们是 `skipped`（324 passed / 2 skipped），
+  本地有母稿时才会真跑（326 passed）。
   逐条任务见 [docs/00-设计.md](docs/00-设计.md)
 
 ## 为什么是「裁」而不是「搬」
@@ -96,9 +99,18 @@ cd "$(git rev-parse --show-toplevel)"/toutiao && python3 -m toutiao.cli status
 `<slug>` 是文章相对 `source/_posts/` 的路径去掉 `.md`，
 例如 `db/postgresql/postgresql-logical-replication-add-guc`。
 
-每个命令都能把工作目录指到别处，测试与试用不会写进仓库：
-`--posts-dir` / `--out-dir` / `--outbox-dir` / `--state-file` /
-`--capability`。选项写在命令名前后都行。
+每个命令都能把落盘位置指到别处，**但要把每一处都指走**，否则还是会写进仓库：
+`--posts-dir` / `--out-dir` / `--outbox-dir` / `--state-file` / `--capability`。
+另外三个选项管内容与通知：`--source-url`（正文末尾署名的站点地址）、
+`--notify`（通知通道：serverchan / wechat_work / webhook）、`--notify-key`（通知凭据）。
+选项写在命令名前后都行。
+
+⚠️ **只指 `--out-dir` 是不够的**：`convert` 会把状态快照写进仓库里的
+`publish/outbox/<slug>__toutiao.json`——**那个文件是被 git 跟踪的**，
+而快照里的 `package_dir` 会变成相对你那个 `--out-dir` 的路径。
+结果就是仓库里多出一处改动，它指向的包却根本不在仓库里。
+只在仓库里试跑，就**别传** `--out-dir`；要让仓库完全不动，
+`--outbox-dir` 和 `--state-file` 也要一起指走。
 
 **两件事它不会悄悄做**：状态文件损坏会打到 stderr 并让退出码变成 `3`
 （空状态读起来就是「什么都没发过」= 再发一遍的起点）；一篇文章切不出来
