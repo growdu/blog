@@ -17,12 +17,25 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from pyv import epmeta, preflight
 
 from channels import assets, contract, snapshot, state
+
+# 仓库根：channels/channels/package.py → channels/channels → channels → 仓库根
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def repo_relative(path: str | Path, root: str | Path | None = None) -> str:
+    """把路径写成相对仓库根的形式。
+
+    快照要入库。绝对路径换台机器就对不上，还把本机信息带进了库。
+    """
+    base = Path(root) if root else REPO_ROOT
+    return os.path.relpath(Path(path).resolve(), base.resolve())
 
 
 class PackageError(RuntimeError):
@@ -211,7 +224,7 @@ def build_package(episode: str, meta: epmeta.EpisodeMeta, video: str | Path,
     snapshot.write_snapshot(
         outbox / f"{episode}__channels.json",
         episode=episode, status="packaged", title=copy.title,
-        package_dir=str(target), published_url=previous.published_url,
+        package_dir=repo_relative(target), published_url=previous.published_url,
         reason=reason,
     )
     return PackageResult(

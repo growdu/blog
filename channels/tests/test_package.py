@@ -1,6 +1,8 @@
 """出包：产物结构、幂等、状态快照、两档预检。"""
 
 import json
+import os
+from pathlib import Path
 
 import pytest
 
@@ -71,6 +73,21 @@ def test_the_snapshot_has_the_contract_shape(tmp_path):
     assert data["status"] == "packaged"
 
 
+def test_the_snapshot_records_a_relative_package_dir(tmp_path):
+    """快照要入库——绝对路径换台机器就对不上，还带本机信息。"""
+    target = tmp_path / "out" / "ep01"
+    target.mkdir(parents=True)
+    relative = package.repo_relative(target)
+    assert not Path(relative).is_absolute()
+    assert relative.endswith(os.path.join("out", "ep01"))
+
+
+def test_repo_relative_strips_the_workspace_prefix():
+    """在仓库里出包时，写出来的是 channels/out/<EP> 这种相对形式。"""
+    target = package.REPO_ROOT / "channels" / "out" / "ep01"
+    assert package.repo_relative(target) == os.path.join("channels", "out", "ep01")
+
+
 def test_the_package_meta_says_packaged_not_published(meta, video, tmp_path):
     """机器可读的快照也一样：没发就是没发。"""
     result = package.build_package("ep01", meta, video, tmp_path / "out")
@@ -85,6 +102,9 @@ def test_the_package_writes_an_outbox_snapshot(meta, video, tmp_path):
     data = json.loads((outbox / "ep01__channels.json").read_text(encoding="utf-8"))
     assert data["status"] == "packaged"
     assert data["published_url"] is None
+    # 快照要入库——package_dir 必须是相对路径，不能是本机绝对路径
+    assert not Path(data["package_dir"]).is_absolute(), (
+        f"package_dir 是绝对路径：{data['package_dir']}")
 
 
 # --- 两档预检：error 停止，warning 继续但要写进清单 ------------------------
