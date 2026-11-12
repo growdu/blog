@@ -102,6 +102,36 @@ def test_images_become_markers():
     assert "images/a.png" not in result.article.body
 
 
+def test_inline_images_are_collected_and_replaced():
+    """行内图片也是图：要收进 `images`，正文里换成占位符。"""
+    post = _post(body="其架构如下图![](images/a.png)。\n\n段落。")
+    result = slice_post(post, LIMITS)
+    assert result.article.images == ("images/a.png",)
+    assert "其架构如下图【图1】。" in result.article.body
+    assert "images/a.png" not in result.article.body
+
+
+def test_inline_and_standalone_images_share_one_numbering():
+    """行内图与独占行的图共用一套编号，按正文顺序连续。"""
+    post = _post(
+        body="图一 ![](images/a.png)\n\n![乙](images/b.png)\n\n图三 ![](images/c.png)"
+    )
+    result = slice_post(post, LIMITS)
+    assert result.article.images == ("images/a.png", "images/b.png", "images/c.png")
+    assert "图一 【图1】" in result.article.body
+    assert "【图2】" in result.article.body
+    assert "图三 【图3】" in result.article.body
+
+
+def test_inline_images_beyond_the_cap_are_dropped():
+    """超限的行内图，占位符也要一起消失。"""
+    body = "图 ![](images/a.png)\n\n图 ![](images/b.png)\n\n图 ![](images/c.png)\n\n图 ![](images/d.png)"
+    result = slice_post(_post(body=body), LIMITS)
+    assert len(result.article.images) == 3
+    assert "【图4】" not in result.article.body
+    assert "图 【图1】" in result.article.body
+
+
 def test_only_the_first_three_images_are_kept():
     body = "\n\n".join("![图{}](images/{}.png)".format(i, i) for i in range(1, 6))
     result = slice_post(_post(body=body), LIMITS)

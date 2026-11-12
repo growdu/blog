@@ -22,9 +22,11 @@ from .mdparse import SourcePost
 __all__ = ["SliceResult", "ToutiaoArticle", "slice_post"]
 
 _HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
-_IMAGE = re.compile(r"^!\[([^\]]*)\]\(([^)]+)\)$")
+_IMAGE_LINE = re.compile(r"^!\[([^\]]*)\]\(([^)]*)\)$")
+_IMAGE_INLINE = re.compile(r"!\[([^\]]*)\]\(([^)]*)\)")
 _LIST = re.compile(r"^(?:[-*+]|\d+\.)\s+(.*)$")
 _MARKER = re.compile(r"^【图(\d+)】$")
+_MARKER_IN_TEXT = re.compile(r"【图(\d+)】")
 _LINK = re.compile(r"(?<!!)\[([^\]]*)\]\([^)]*\)")
 _CJK = re.compile(r"[\u3000-\u9fff\uff00-\uffef]")
 
@@ -86,6 +88,34 @@ def _truncate_title(title: str, limit: int) -> str:
     return head.rstrip(" ：:，、—|")
 
 
+def _image_path(raw: str) -> str:
+    """The path inside ``![alt](path)``."""
+    return raw.strip()
+
+
+def _replace_inline_images(text: str, images: list[str]) -> str:
+    """Swap every inline image for a ``【图N】`` placeholder.
+
+    An image that sits inside a line of prose is an image too: it has to
+    be uploaded like the ones that stand on their own line, so it goes
+    into ``images`` and leaves a placeholder behind.  The numbering is
+    shared with the standalone images and follows document order.
+    """
+
+    def replace(match):
+        images.append(_image_path(match.group(2)))
+        return "【图{}】".format(len(images))
+
+    return _IMAGE_INLINE.sub(replace, text)
+
+
+def _drop_excess_markers(block: str, keep: int) -> str:
+    """Remove the placeholders of the images that did not make the cut."""
+    return _MARKER_IN_TEXT.sub(
+        lambda m: "" if int(m.group(1)) > keep else m.group(0), block
+    )
+
+
 def _scan(body: str) -> tuple[list[str], list[str]]:
     """Split a post body into kept blocks and image paths.
 
@@ -104,7 +134,7 @@ def _scan(body: str) -> tuple[list[str], list[str]]:
 
     def flush():
         if paragraph:
-            blocks.append(_join(paragraph))
+            blocks.append(_replace_inline_images(_join(paragraph), images))
             del paragraph[:]
 
     in_fence = False
@@ -135,20 +165,20 @@ def _scan(body: str) -> tuple[list[str], list[str]]:
         if heading:
             flush()
             if 2 <= len(heading.group(1)) <= 3:
-                blocks.append("## " + heading.group(2).strip())
+                blocks.append("## " + _replace_inline_images(heading.group(2).strip(), images))
             continue
 
-        image = _IMAGE.match(stripped)
+        image = _IMAGE_LINE.match(stripped)
         if image:
             flush()
-            images.append(image.group(2).strip())
+            images.append(_image_path(image.group(2)))
             blocks.append("【图{}】".format(len(images)))
             continue
 
         item = _LIST.match(stripped)
         if item:
             flush()
-            blocks.append("- " + item.group(1).strip())
+            blocks.append("- " + _replace_inline_images(item.group(1).strip(), images))
             continue
 
         paragraph.append(stripped)
@@ -217,11 +247,13 @@ def slice_post(post: SourcePost, limits: Limits, source_url: str = "https://grow
     if len(images) > limits.max_body_images:
         dropped = len(images) - limits.max_body_images
         images = images[: limits.max_body_images]
+        # The placeholders of the images that did not make the cut go too --
+        # they sit inside a line of prose as often as they stand alone.
         blocks = [
-            block
+            _drop_excess_markers(block, limits.max_body_images).strip()
             for block in blocks
-            if not (_MARKER.match(block) and int(_MARKER.match(block).group(1)) > limits.max_body_images)
         ]
+        blocks = [block for block in blocks if block]
         notes.append("正文图 {} 张，只保留前 {} 张".format(len(images) + dropped, limits.max_body_images))
 
     dropped_links = 0
