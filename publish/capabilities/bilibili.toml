@@ -16,6 +16,7 @@ automation = "manual"
 review = "platform"
 requires_certification = false
 requires_min_followers = 0
+# verified = 这些数值最后对着平台文档复核过的日期（ISO 日期）。
 verified = "2026-11-12"
 
 [limits]
@@ -29,13 +30,20 @@ max_width = 4096
 max_height = 4096
 max_fps = 120
 require_pix_fmt = "yuv420p"
-max_duration_s = 18000
+# 视频号部分安卓机不解 H.265，成片一律 H.264。
+require_video_codec = "h264"
+# 《文件上传预处理》：「时长小于 5 小时」→ 上限取 17999 s。
+max_duration_s = 17999
 max_bytes = 4294967296
 max_audio_bitrate = 320000
 max_audio_channels = 2
 max_sample_rate = 48000
 # 《文件上传预处理》：「视频关键帧至少 10 秒一个」→ 间隔 ≤ 10 秒。
 max_keyframe_gap_s = 10
+# 《文件上传预处理》：「视频码率峰值不超过 60Mbps」。
+# ffprobe 只能给平均码率，给不出峰值——预检用平均码率代理判定（偏松，但实测成片
+# 平均码率约 1.05 Mbps，差近两个数量级，代理够用）。口径写在规格 §5.2。
+max_video_bitrate = 60000000
 
 [adapter]
 package = "bilibili"

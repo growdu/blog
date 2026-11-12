@@ -19,6 +19,9 @@ auth = "none"
 automation = "manual"
 review = "platform"
 requires_certification = false
+# 发稿的粉丝数门槛：视频号个人号没有这个限制，记 0。
+requires_min_followers = 0
+# verified = 这些数值最后对着平台文档复核过的日期（ISO 日期）。
 verified = "2026-11-12"
 
 [limits]
@@ -32,8 +35,15 @@ min_width = 1280
 min_height = 720
 max_fps = 60
 require_pix_fmt = "yuv420p"
+# 视频号部分安卓机不解 H.265，成片一律 H.264。
+require_video_codec = "h264"
 max_duration_s = 3600
 max_bytes = 2147483648
+# 音频门槛两平台都适用（规格 §5.2）——视频号这道闸不能缺席。
+max_audio_channels = 2
+max_sample_rate = 48000
+# 视频号要求 moov 前置：moov 不在前面的片子，手机端要等整片下完才起播。
+require_faststart = true
 
 [adapter]
 package = "channels"
