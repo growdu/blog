@@ -24,6 +24,17 @@ breaks the naive reading: the slicer keeps the picture in
 package therefore follows the placeholders that are *in the body* and packs
 only those -- a file the body never refers to is a picture nobody asked
 for.
+
+Which failures reach the snapshot is a deliberate line, not an
+oversight.  The outbox is the publish layer's idempotency key, not a
+processing log: a failure that *tried* to publish belongs there (it is
+what the "already published" rule reads), but a failure that never even
+produced a Toutiao version is not a publish attempt and must not enter.
+Written into the outbox, such a post would be read as already published
+and skipped forever.  The criterion in one line:
+「发生过发布尝试的失败进 outbox；连发布对象都没形成的失败不进」-- a
+post the slicer dropped therefore has no snapshot here; giving those a
+place of their own is the next task's business.
 """
 
 from __future__ import annotations
@@ -66,10 +77,14 @@ _MARKER = re.compile(r"【图(\d+)】")
 # The head of the upload checklist.
 README_HEAD = "# 上传清单：{}\n\n"
 
-# 「没有封面」的三种原因，写法各不相同 —— 把「没有文件可裁」说成
-# 「裁不出来」是错的：前者要人工下载，后者要人工另配。
+# 「没有封面」的原因，写法各不相同 —— 把「没有文件可裁」说成
+# 「裁不出来」是错的：前者要人工下载或补文件，后者要人工另配。
 #
 # ① 正文里根本没有图。
+# ② 正文图全是外链：出包不下载外链图，就没有本地文件可裁。
+# ③ 有本地图，但一张都裁不出合规封面。
+# ④ 有本地图，但一张都转不出来（缺文件 / 读不了 / 压不进上限）：
+#    同样没有本地文件可裁，但原因不是「裁不出」。
 NO_COVER_NOTE = (
     "这篇没有正文图：按头条的「无图」模式发布；若后台强制要封面，需人工另配"
 )
@@ -83,6 +98,12 @@ NO_COVER_REMOTE_ONLY_NOTE = (
 NO_COVER_UNCROPPABLE_NOTE = (
     "正文图都裁不出合规封面（{ratio} 且 ≥{min_pixels}）："
     "可人工另配，或按头条的「无图」模式发布"
+)
+# ④ 正文有本地图，但一张都转不出来（缺文件 / 读不了 / 压不进上限）：
+#    原因不是「外链」，也不是「裁不出」，同样没有本地文件可裁。
+NO_COVER_NO_USABLE_FILE_NOTE = (
+    "正文图都转不出来（文件缺失、读不了或压不进上限，见下面几行），没有本地文件可裁："
+    "可人工处理后自行裁成 {ratio}（≥{min_pixels}），或按头条的「无图」模式发布"
 )
 
 
@@ -106,8 +127,32 @@ def flatten_id(content_id: str) -> str:
     A content id is a path inside the site (``db/postgresql/demo``), and
     a path cannot go into a file name: the slashes would scatter the
     package into subdirectories and the snapshot into a tree.
+
+    The id is the only thing between the caller and the filesystem, so
+    it is checked here instead of being left to the caller: ``..`` puts
+    the package *outside* the package root -- and the reset that clears
+    a stale package deletes files over there.  Writing to the wrong
+    place is untidy; deleting files outside the package root is damage.
+    A bad id is refused by name, the way ``capability.py`` refuses a
+    bad field.
     """
-    return content_id.replace("/", "-")
+    if not isinstance(content_id, str) or not content_id.strip():
+        raise ValueError(
+            "content_id 必须是非空字符串，实际是 {!r}".format(content_id)
+        )
+    for segment in content_id.split("/"):
+        if segment in (".", ".."):
+            raise ValueError(
+                "content_id 的路径段 {!r} 会跑出包目录：content_id={!r}".format(
+                    segment, content_id
+                )
+            )
+    flat = content_id.replace("/", "-")
+    if flat in (".", ".."):
+        raise ValueError(
+            "content_id 不能是 {!r}：它就是包目录名本身".format(flat)
+        )
+    return flat
 
 
 def snapshot_name(content_id: str, platform: str) -> str:
@@ -189,7 +234,20 @@ def write_package(
     The pictures that need a human -- remote, missing, unreadable or too
     big -- never break the package.  They are listed in the checklist
     with their URL or path, and the article goes out anyway.
+
+    Only the ``manual`` automation may take this path.  The upgrade
+    route is a one-line TOML edit, so that edit must not quietly
+    produce a ``packaged`` snapshot for a tier this function does not
+    serve: a wrong tier with a right-looking status is exactly the
+    silent success the project refuses.  Anything but ``manual`` is
+    refused here, before a single file is written.
     """
+    if capability.automation != "manual":
+        raise ValueError(
+            "write_package 只服务 manual 档（出包待人工上传），实际档位是 {!r}".format(
+                capability.automation
+            )
+        )
     package_dir = Path(package_root) / flatten_id(article.content_id)
     images_dir = package_dir / "images"
     package_dir.mkdir(parents=True, exist_ok=True)
@@ -214,9 +272,11 @@ def write_package(
     missing: list[str] = []
     orphans: list[int] = []
     for number in numbers:
-        if number > len(article.images):
+        if number < 1 or number > len(article.images):
             # A placeholder without a picture: the slicer does not do
             # this, but it must not be dropped silently either.
+            # ``number < 1`` counts too: ``images[number - 1]`` would
+            # wrap around and quietly pick the *last* picture.
             orphans.append(number)
             continue
         body_images.append((number, article.images[number - 1]))
@@ -233,6 +293,9 @@ def write_package(
         try:
             source = resolve_asset(relative, posts_dir)
         except RemoteAsset:
+            # 防御性冗余，不是活代码：``resolve_asset()`` 只对外链抛这个
+            # 异常，而外链在上面的 ``is_remote()`` 那里就分走了。留着是
+            # 免得以后改了上面那道判断，外链图被当成缺图。
             remote.append(relative)
             continue
         except AssetNotFound:
@@ -315,6 +378,14 @@ def write_package(
             ratio=limits.cover_ratio,
             min_pixels="{0}×{1}".format(*limits.cover_min_pixels),
         )))
+    elif not prepared:
+        # ④ 正文有本地图，但一张都转不出来（缺文件 / 读不了 / 压不进上限）：
+        #    说成 ③「裁不出」是错的 —— 那儿一个能裁的文件都没有，
+        #    真正的原因是「没有文件可裁」，跟 ② 一类，不是跟 ③ 一类。
+        checklist.append("- [ ] 封面：{}".format(NO_COVER_NO_USABLE_FILE_NOTE.format(
+            ratio=limits.cover_ratio,
+            min_pixels="{0}×{1}".format(*limits.cover_min_pixels),
+        )))
     else:
         # ③ 有本地图但一张都裁不出合规封面 —— 与前两种分开说。
         checklist.append("- [ ] 封面：{}".format(NO_COVER_UNCROPPABLE_NOTE.format(
@@ -354,7 +425,7 @@ def write_package(
     checklist.append("- [ ] 发表")
 
     notes = list(article.notes)
-    referenced = sum(1 for number in numbers if number <= len(article.images))
+    referenced = sum(1 for number in numbers if 1 <= number <= len(article.images))
     if len(article.images) > referenced:
         notes.append(
             "另有 {} 张图没有进入正文（正文里没有它们的占位符），未打包".format(
@@ -397,10 +468,15 @@ def write_snapshot(result: PackageResult, outbox_dir: Path) -> Path:
     The snapshot ends up in the site index, so it carries public
     information only: no token, no secret, and no absolute path of the
     machine that produced it.
+
+    The file name comes from the content id, so the id is validated
+    before the outbox directory is even created: a refused id leaves
+    no trace on disk.
     """
     outbox_dir = Path(outbox_dir)
+    name = snapshot_name(result.content_id, result.platform)
     outbox_dir.mkdir(parents=True, exist_ok=True)
-    path = outbox_dir / snapshot_name(result.content_id, result.platform)
+    path = outbox_dir / name
     payload = {
         "content_id": result.content_id,
         "platform": result.platform,

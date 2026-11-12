@@ -139,6 +139,64 @@ def test_snapshot_name():
     assert snapshot_name("db/postgresql/demo", "toutiao") == "db-postgresql-demo__toutiao.json"
 
 
+@pytest.mark.parametrize(
+    "content_id",
+    ["..", ".", "", "   ", "a/../b", "../escape", "a/./b"],
+)
+def test_flatten_id_refuses_ids_that_leave_the_package_root(content_id):
+    """会跑出包目录的 id —— 这里自己挡住，不留给调用方。
+
+    ``..`` 落到包根的上一层；``.`` 和空串落到包根本身。``write_package``
+    是导出的公共接口，而清掉旧包的那一步会在目标目录里删文件：包根
+    之外删文件是破坏，不是脏。
+    """
+    with pytest.raises(ValueError) as excinfo:
+        flatten_id(content_id)
+    assert "content_id" in str(excinfo.value)
+
+
+@pytest.mark.parametrize("content_id", ["..", ".", ""])
+def test_a_dangerous_content_id_writes_and_deletes_nothing(tmp_path, content_id):
+    """越界的 id —— 包根之外不能有文件被创建或删除。
+
+    包根的上一层先放一个「上一次出包」留下的 cover.webp 和
+    images/01.webp：id 是 ``..`` 时，那正是会被清掉的地方。
+    """
+    site, posts = _site(tmp_path)
+    package_root = tmp_path / "out"
+
+    outside_cover = tmp_path / "cover.webp"
+    outside_cover.write_bytes(b"keep me")
+    outside_images = tmp_path / "images"
+    outside_images.mkdir()
+    (outside_images / "01.webp").write_bytes(b"keep me too")
+
+    article = _article(
+        body="【图1】\n\n段落。", images=("images/demo.png",), content_id=content_id
+    )
+    with pytest.raises(ValueError):
+        write_package(article, CAP, package_root, posts, "https://growdu.cn")
+
+    # 包根之外：文件既没被删，也没被改
+    assert outside_cover.read_bytes() == b"keep me"
+    assert (outside_images / "01.webp").read_bytes() == b"keep me too"
+    # 包根本身：一个文件也没写出来
+    assert not package_root.exists() or not any(package_root.iterdir())
+
+
+def test_write_snapshot_refuses_a_dangerous_content_id(tmp_path):
+    """快照的文件名也来自 content_id —— 一样要挡住。"""
+    result = PackageResult(
+        content_id="..", platform="toutiao", automation="manual", status="packaged",
+        title="演示标题", package_dir=tmp_path / "out" / "demo", files=(),
+    )
+    with pytest.raises(ValueError) as excinfo:
+        write_snapshot(result, tmp_path / "outbox")
+    assert "content_id" in str(excinfo.value)
+    # 连目录都不该被建出来
+    assert not (tmp_path / "outbox").exists()
+
+
 # ---- 包的结构 -----------------------------------------------------------
 
 
@@ -195,6 +253,26 @@ def test_package_readme_lists_the_manual_steps(tmp_path):
     assert "article.html" in readme
     assert "article.txt" in readme
     assert "发表" in readme
+
+
+def test_write_package_refuses_a_tier_it_does_not_serve(tmp_path):
+    """档位不是 manual —— 出包这一步不接，得当场拒绝。
+
+    规格说「升级路径是改一行 TOML，不是改代码」：那一行从 manual 改成
+    api_draft 之后，write_package 要是照跑，就会产出一个
+    ``status="packaged"`` + ``reason=null`` 的快照 —— 看起来完全正常，
+    档位却是错的。这正是「不静默成功」要防的形状。
+    """
+    site, posts = _site(tmp_path)
+    api_draft = dataclasses.replace(CAP, automation="api_draft")
+    article = _article(body="【图1】\n\n段落。", images=("images/demo.png",))
+    with pytest.raises(ValueError) as excinfo:
+        write_package(article, api_draft, tmp_path / "out", posts, "https://growdu.cn")
+    message = str(excinfo.value)
+    assert "api_draft" in message
+    assert "manual" in message
+    # 一个文件也不能有
+    assert not (tmp_path / "out").exists()
 
 
 # ---- 没有封面不是错误 ---------------------------------------------------
@@ -299,6 +377,37 @@ def test_the_four_image_problems_are_not_merged_into_one_line(tmp_path):
     assert len([line for line in readme.splitlines() if line.startswith("- [ ] 读不了的图")]) == 1
 
 
+def test_remote_images_never_reach_the_asset_resolver(tmp_path, monkeypatch):
+    """外链图在 ``is_remote()`` 那里就分走了，从不进 ``resolve_asset()``。
+
+    ``resolve_asset()`` 只对外链抛 ``RemoteAsset``，而 ``publish.py``
+    在调它之前先用 ``is_remote()`` 判过一次 —— 所以下面那道
+    ``except RemoteAsset`` 是防御性冗余，不是活代码。这条测试把它钉
+    住：哪天有人删了上面那道判断，外链图会被当成缺图。
+    """
+    import toutiao.publish as publish_module
+
+    site, posts = _site(tmp_path)
+    calls = []
+    original = publish_module.resolve_asset
+
+    def spy(path, posts_dir):
+        calls.append(path)
+        return original(path, posts_dir)
+
+    monkeypatch.setattr(publish_module, "resolve_asset", spy)
+
+    article = _article(
+        body="【图1】\n\n【图2】\n\n段落。",
+        images=("https://example.com/a.png", "images/demo.png"),
+    )
+    result = write_package(article, CAP, tmp_path / "out", posts, "https://growdu.cn")
+    assert calls == ["images/demo.png"]
+    readme = _readme(result)
+    assert "远程图" in readme
+    assert "缺图" not in readme
+
+
 # ---- 图的编号 -----------------------------------------------------------
 
 
@@ -348,6 +457,23 @@ def test_a_remote_picture_keeps_its_number(tmp_path):
     assert "https://example.com/a.png" in readme
     # 清单要写清正文里要替换的是哪几个占位符
     assert "【图1】" in readme and "【图2】" in readme
+
+
+def test_placeholder_zero_does_not_pick_the_last_picture(tmp_path):
+    """【图0】 —— 编号从 1 开始，0 号没有对应的图。
+
+    ``images[number - 1]`` 在 number=0 时会取到**最后**一张图：正文里
+    的【图0】悄悄变成了另一张图。切片器不会编号到 0，但这个函数是导出
+    的公共接口，手搓的 article 就能触发。
+    """
+    site, posts = _site_with_two_images(tmp_path)
+    article = _article(body="【图0】\n\n段落。", images=("images/good.png",))
+    result = write_package(article, CAP, tmp_path / "out", posts, "https://growdu.cn")
+    # 没有打包任何图（0 号不是 good.png）
+    assert _image_names(result) == []
+    readme = _readme(result)
+    assert "【图0】" in readme
+    assert "没有对应的图" in readme
 
 
 def test_every_placeholder_in_the_body_has_a_file_or_an_explanation(tmp_path):
@@ -448,6 +574,43 @@ def test_the_three_reasons_for_no_cover_are_worded_differently(tmp_path):
     line = _cover_line(_readme(local))
     assert "裁不出合规封面" in line
     assert "外链" not in line
+
+
+@pytest.mark.parametrize(
+    "relative, svg",
+    [
+        ("images/gone.png", False),
+        ("images/logo.svg", True),
+    ],
+    ids=["missing-file", "unreadable-file"],
+)
+def test_a_local_picture_that_never_became_a_file_is_not_called_uncroppable(
+    tmp_path, relative, svg
+):
+    """本地图转不出来（缺文件 / 读不了）—— 说「没有文件可裁」，不是「裁不出」。
+
+    这两种情况下本机一张能裁的图都没有：文件压根没有，和「裁不出合
+    规尺寸」不是一回事。套用 ③ 的措辞，会让人以为图在、只是尺寸不够，
+    于是去改尺寸而不是去补文件。
+    """
+    site, posts = _site(tmp_path)
+    if svg:
+        (site / "images" / "logo.svg").write_text("<svg></svg>", encoding="utf-8")
+
+    result = write_package(
+        _article(body="【图1】\n\n段落。", images=(relative,)),
+        CAP, tmp_path / "out", posts, "https://growdu.cn",
+    )
+    line = _cover_line(_readme(result))
+    # 不是 ③：那儿说的是「裁不出合规封面」
+    assert "裁不出合规封面" not in line
+    # 不是 ①：正文里是有图的
+    assert "这篇没有正文图" not in line
+    # 不是 ②：这不是外链
+    assert "外链" not in line
+    # 真正的原因：没有本地文件可裁
+    assert "没有本地文件可裁" in line
+    assert "转不出来" in line
 
 
 def test_the_cover_decision_follows_the_converted_webp(tmp_path):
