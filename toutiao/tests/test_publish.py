@@ -599,6 +599,10 @@ def test_the_three_reasons_for_no_cover_are_worded_differently(tmp_path):
     ① 正文没有图；② 正文图全是外链（出包不下载，没有本地文件可裁）；
     ③ 有本地图但都裁不出合规封面。真实语料里 ② 有 46 篇、③ 有 15 篇 ——
     把 ② 说成 ③ 是错的：它们不是「裁不出」，是「没有文件可裁」。
+
+    ④（有本地图但一张都转不出来）由
+    ``test_a_local_picture_that_never_became_a_file_is_not_called_uncroppable``
+    单独守——它要的是「缺文件 / 读不了」的素材，不是本用例的三种。
     """
     site, posts = _site(tmp_path)
 
