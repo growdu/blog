@@ -14,7 +14,16 @@ permissions:
 
 concurrency:
   group: deploy
-  cancel-in-progress: false
+  # 「最新推送优先」：新 run 进来就把还在跑的那个取消掉。
+  #
+  # 之前是 false：同组里只保留一个 pending（旧的 pending 会被取消），
+  # 但**正在跑的那个会一直等它自己结束**。2026-11-13 就这么堵死了——
+  # deploy-server 的 rsync 挂了 20 多分钟没动，后面所有推送的部署全在排队，
+  # 主站 growdu.cn 停在旧版本好几十分钟。
+  #
+  # 取消是安全的：部署用 `ln -sfn` + `mv -Tf` 原子切换 symlink，
+  # 中途被砍只会留下一个没切换的半成品 release 目录，线上指向不变。
+  cancel-in-progress: true
 
 jobs:
   build:
