@@ -37,7 +37,8 @@ MEDIA_PINNED = {
     "channels": {
         "min_width": 1280, "min_height": 720, "max_fps": 60,
         "require_pix_fmt": "yuv420p", "require_video_codec": "h264",
-        "max_duration_s": 3600, "max_bytes": 2147483648,
+        # 时长 8 h / 体积 20 GB：投稿页实测提示（2026-11-13，规格 §5.2）
+        "max_duration_s": 28800, "max_bytes": 21474836480,
         "max_audio_channels": 2, "max_sample_rate": 48000,
         "require_faststart": True,
     },

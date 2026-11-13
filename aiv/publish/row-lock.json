@@ -4,7 +4,7 @@
   "url": "https://growdu.cn/2026/10/15/database/postgresql-row-lock-deep-dive/",
   "cover_at": 17.0,
   "channels": {
-    "title": "两个事务改同一行，谁先谁后",
+    "title": "两个事务改同一行 谁先谁后",
     "description": "MVCC 只管读和写，写和写之间它管不了。两个事务改同一行，谁也看不见对方，后写的会覆盖先写的。PostgreSQL 在 MVCC 之上加了一层行锁：4 种模式从弱到强，冲不冲突看一张 4×4 兼容性矩阵；锁不另起结构，藏在元组头的 t_infomask 与 xmax 里。",
     "topics": ["PostgreSQL", "数据库内核", "行锁", "MVCC"]
   },
