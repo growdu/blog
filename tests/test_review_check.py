@@ -442,3 +442,10 @@ def test_str_03_scans_the_whole_last_section(tmp_path):
     )
     doc = make_doc(tmp_path, text)
     assert load_tool().rule_str_03(doc) == []
+
+
+def test_str_02_accepts_a_bold_target_marker(tmp_path):
+    """回归：「**目标**：…」带 markdown 强调时也要认得出是定位句。"""
+    text = "# 标题\n\n**目标**：理解 PostgreSQL 堆表的页面布局与 MVCC 可见性。\n\n正文。\n"
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_str_02(doc) == []

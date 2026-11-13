@@ -1,6 +1,22 @@
 # 06 堆表与 MVCC
 
-> 目标：理解 PostgreSQL 堆表的页面布局、HeapTuple 结构、xmin/xmax/cmin/cmax 语义、HOT 链、pruning、vacuumlazy。**这是 PG 与 MySQL InnoDB 在工程上最大的差异点**。
+| 编写人 | 编写内容 | 编写时间 |
+| --- | --- | --- |
+| growdu | 修订：补系列链接与版本说明、修 GDB 断点前置条件与 pg_xact_status 的类型、重排两个小结 | 2026-11-14 |
+
+**目标**：理解 PostgreSQL 堆表的页面布局、HeapTuple 结构、xmin/xmax/cmin/cmax 语义、HOT 链、pruning、vacuumlazy。
+
+**这是 PG 与 MySQL InnoDB 在工程上最大的差异点**：PG 没有 undo log，所有历史版本都留在
+heap page 的 tuple 链里，所以 VACUUM 承担了 InnoDB purge 的职责。读 PG 源码时，
+请时刻记住这一点。
+
+> **版本说明**：本文源码与命令基于 **PostgreSQL 17**；文中标注了 PG 13/14 起有变化的地方。
+>
+> **系列位置**：这是「PostgreSQL 源码修炼之路」学习路径的第 6 篇。
+> 上一篇 [05 缓冲管理器](./05-buffer-manager.md) ·
+> 下一篇 [07 B-Tree 索引](./07-btree-index.md) ·
+> 相关：[08 锁与并发](./08-locks-and-concurrency.md) ·
+> [13 逻辑复制](./13-logical-replication.md)
 
 ## 6.1 页面布局
 
@@ -279,10 +295,16 @@ postgres=# SELECT lp, lp_off, lp_len, t_xmin, t_xmax, t_ctid
 ### 6.10.3 看 xmin/xmax 与 clog
 
 ```sql
-postgres=# SELECT pg_xact_status(t_xmin::text::xid), t_xmin,
-                  pg_xact_status(t_xmax::text::xid), t_xmax
+postgres=# SELECT pg_xact_status(t_xmin::xid8), t_xmin,
+                  pg_xact_status(t_xmax::xid8), t_xmax
            FROM heap_page_items(get_raw_page('t', 0));
 ```
+
+> **版本差异**：这里必须显式转成 `xid8`。`heap_page_items` 返回的 `t_xmin` / `t_xmax`
+> 是 32 位的 `xid`，而 `pg_xact_status` 从 **PG 13 起**接收的是 64 位的 `xid8`，
+> 两者之间**没有隐式转换**，直接写 `pg_xact_status(t_xmin)` 会报
+> `function pg_xact_status(xid) does not exist`。PG 13 之前的写法是
+> `pg_xact_status(t_xmin::text::xid)`（那时 `pg_xact_status` 收的是 `xid`）。
 
 ### 6.10.4 手动 freeze
 
@@ -303,7 +325,25 @@ postgres=# VACUUM (FREEZE, VERBOSE) t;
 (gdb) c
 ```
 
-任意 UPDATE，会依次停在各点。注意 `p tup->t_data->t_xmin/xmax/cmin/cmax` 看 hint bit 变化。
+任意 UPDATE，会依次停在各点。
+
+**前置条件**：这些断点要生效，PG 必须带调试符号编译，否则你会得到
+`No symbol table info available`：
+
+```bash
+./configure --enable-debug CFLAGS="-O0 -g3"
+```
+
+另外注意 `heap_insert` / `heap_update` / `heap_delete` 都是 `heapam.c` 里的**静态函数**，
+普通 `b heap_insert` 命不中，必须靠上面这种「文件:函数名」的形式。
+
+看 hint bit 用 `p tup->t_data->t_infomask`（提示位在 `t_infomask` 里），
+看 `t_xmin` / `t_xmax` 用 `p tup->t_data->t_xmin` / `t_xmax`。
+
+**别把 `cmin` / `cmax` 当成 hint bit**：提示位在 `t_infomask` 里，而 `cmin` / `cmax`
+是「虚拟字段」——它们和 `xvac` 共用同一个物理字段 `t_field3`，只在插入/删除事务
+自己的生命周期内有意义，且离开那个后端就无法解释（见 `combocid.c`）。
+所以日常排查用不上它们（`HeapTupleHeaderGetCmin` 至今仍在用，只是不该拿它们当提示位看）。
 
 ## 6.11 与 InnoDB 对照（重要）
 
@@ -319,7 +359,7 @@ postgres=# VACUUM (FREEZE, VERBOSE) t;
 
 读 PG 源码时，**时刻记住**：没有 undo log。所有“历史”信息都在 tuple 链里。所以 PG 的 VACUUM 实际上是 InnoDB 的 “purge”——回收老版本 + 维护 undo。
 
-## 6.12 小结
+## 6.12 主篇小结
 
 - 堆表页面 = PageHeader + ItemId 数组 + HeapTuples + Special。
 - MVCC 通过 `t_xmin / t_xmax` + clog + Snapshot 协作完成。
@@ -327,7 +367,11 @@ postgres=# VACUUM (FREEZE, VERBOSE) t;
 - prune 复用页面空间；vacuumlazy 才彻底清理死 tuple。
 - 与 InnoDB 最大的不同：没有 undo log，历史版本全在 heap page 内。
 
-下一章 07 进入 B-Tree 索引——PG 的默认索引，也是最常被问到“它到底怎么实现的”话题。
+下一章 [07 B-Tree 索引](./07-btree-index.md) 进入 PG 的默认索引，也是最常被问到
+“它到底怎么实现的”话题。
+
+> 下面 6.13 ~ 6.21 是**进阶篇**，把主篇没展开的模块补齐；读完主篇可以直接跳到
+> 6.22 进阶篇小结，或者从 6.23 图示回看结构。
 
 ## 6.13 进阶：TOAST 大对象存储
 
@@ -786,7 +830,7 @@ PG 18+ 支持 concurrent relation extension：
 
 `src/backend/storage/smgr/bulk_write.c` 是 AIO 时代的核心。
 
-## 6.22 小结
+## 6.22 进阶篇小结
 
 - TOAST 用 chunk table + 压缩存放大对象。
 - Hint bit 通过 lazy write 减少 clog 查询；脏 page 比例高是主要 IO 源。
@@ -962,3 +1006,20 @@ flowchart TB
 ```
 
 > 图示配套源码：`src/include/storage/bufpage.h`、`src/include/access/htup_details.h`、`src/backend/access/heap/{heapam.c,heapam_visibility.c,heapam_xlog.c,hio.c,pruneheap.c,vacuumlazy.c,visibilitymap.c,heaptoast.c,rewriteheap.c}`。
+
+## 排查清单：怀疑 MVCC 有问题时先看这三样
+
+| 现象 | 先看 | 怎么读 |
+| --- | --- | --- |
+| 读到的数据「不对」 | `heap_page_items(get_raw_page('表名', 0))` | 看 `t_xmin` / `t_xmax` 与 `pg_xact_status` 的状态对不对得上 |
+| 表越涨越大 | `pg_stat_user_tables.n_dead_tup` + `pg_stat_progress_vacuum` | dead tuple 堆积说明回收跟不上，要么 VACUUM 没跑，要么被长事务挡住 |
+| 回收不掉 | `pg_stat_activity` 里的长事务 | 事务不结束，`OldestXmin` 就压着，VACUUM 永远只能干等 |
+
+## 系列导航
+
+- 上一篇：[05 缓冲管理器](./05-buffer-manager.md)——脏页是怎么被写出去的
+- 本篇：06 堆表与 MVCC
+- 下一篇：[07 B-Tree 索引](./07-btree-index.md)——PG 的默认索引
+- 相关：[08 锁与并发](./08-locks-and-concurrency.md)（xmax 之外的锁模型）、
+  [13 逻辑复制](./13-logical-replication.md)（tuple 变更怎么流到别的库）、
+  [09 WAL 与恢复](./09-wal-and-recovery.md)（这些页变更怎么进 WAL）

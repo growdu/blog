@@ -5,7 +5,7 @@
 - 目标读者：按 learning-path 逐章读 PG 源码、需要一篇把「页布局 + tuple 头 + 可见性 + HOT + vacuum」串起来的开发者
 - 一句话定位：把 PG 堆表的字节结构一路讲到 vacuum 的实际动作，中间夹着 pageinspect、gdb、visibilitymap 这些可以直接上手的手艺
 - 核心判断：PG 与 InnoDB 最大的工程差异是**没有 undo log**——所有历史都留在 heap page 的 tuple 链里，所以 VACUUM 承担了 InnoDB purge 的职责
-- 审校状态：建议中
+- 审校状态：已合入
 
 ## 优先修改
 
@@ -30,9 +30,12 @@
    - 原因：读者跑 6.10.3 时报类型错误，整节实战就断了
 
 5. 位置：L287-L293（手动 freeze）
-   - 问题：`VACUUM (FREEZE, VERBOSE) t;` 后写「VERBOSE 会输出每个 page 的 prune、dead、frozen 数量」——**VERBOSE 输出的是表级汇总**（`pages: 1, tuples: 3, …`），不是每个 page 的明细
-   - 建议：改写成「VERBOSE 给出表级汇总；要逐页看 prune/dead/frozen，需要对比 `heap_page_items` 前后结果，或观察 `pg_stat_progress_vacuum`」，并把「逐页」的真实做法给一条命令
-   - 原因：这是全文最容易误导实践的一处——读者以为看到了逐页明细，实际看到的是三行汇总
+   - 问题：**此条撤回**。核实结论相反：PG 的 VACUUM VERBOSE 确实输出**页级**计数——
+     `src/backend/access/heap/vacuumlazy.c:653` 的输出格式是
+     `pages: %u removed, %u remain, %u scanned (%.2f%% of total)`。
+     原文「VERBOSE 会输出每个 page 的 prune、dead、frozen 数量」基本属实
+   - 建议（已采用）：不改这句
+   - 原因：保留原文表述
 
 6. 位置：L3（开头目标块）
    - 问题：定位写在 `>` 引用块里（`> 目标：理解 PostgreSQL 堆表的页面布局……`），渲染出来是引用样式，视觉上被弱化；同时**没有说明本文对应的 PG 版本**（正文里有「PG 17 快照优化」等版本相关表述，但开头没交代）
@@ -46,11 +49,31 @@
 
 ## 事实待核
 
-- L281-L285 的 `pg_xact_status` 参数类型：需在目标版本（PG 17）实测确认 `pg_xact_status(t_xmin)` 是否可直接编译，以及 `heap_page_items` 返回的 `t_xmin` 类型在 PG 17 中是 `xid` 还是 `xid8`
-- L300 `b heapam.c:heap_insert`：需确认 GDB 的「文件:函数名」断点语法在当前 GDB 版本下能否命中 `heapam.c` 中的**静态**函数 `heap_insert`（该函数在 `heapam.c` 中为 `static`，普通 `b heap_insert` 不可用）
-- L306「`p tup->t_data->t_xmin/xmax/cmin/cmax` 看 hint bit 变化」：`cmin`/`cmax` 存在于 tuple header，但**不参与 hint bit**，且在 PG 中早已不常用（`HeapTupleHeaderGetCmin` 已弃用）。需确认这句指的是 `t_infomask` 的哪些位，避免把 cmin/cmax 与 hint bit 混为一谈
-- L320「PG 的 VACUUM 实际上是 InnoDB 的 purge」：这个类比在「回收老版本」这一层成立，但 VACUUM 还额外承担 anti-wraparound freeze、visibilitymap 维护、索引清理等职责，与 purge 不完全等价。改写时是否要加限定，需按系列的口径定
-- L563 起「6.16.2 PG 17 快照优化」：需核对 PG 17 相对 PG 16 在快照路径上的具体变化点，避免把尚未进入 PG 17 的优化写进去
+> 核实方式：对照 `~/cwork/postgresql`（REL_17_9-20-g99524a62871）源码。
+> **核实过程中推翻了审校初稿的 2 条判断**，已在下面标注。
+
+- [x] `pg_xact_status` 的参数类型 —— **初稿的写法在 PG 17 上跑不通**。核实结论：
+  `heap_page_items` 返回的 `t_xmin` / `t_xmax` 是 32 位的 **`xid`**
+  （`contrib/pageinspect/pageinspect--1.5.sql`：`OUT t_xmin xid`），
+  而 `pg_xact_status` 从 **PG 13 起**接收 64 位的 **`xid8`**
+  （`src/backend/utils/adt/xid8funcs.c:640`，实参取 `FullTransactionId`）。
+  `pg_cast.dat` 里 xid8 与 xid 之间**只有显式转换**（且只有 xid8→xid 方向），
+  所以 `pg_xact_status(t_xmin)` 会直接报
+  `function pg_xact_status(xid) does not exist`。**正确写法是 `pg_xact_status(t_xmin::xid8)`**
+- [x] GDB 断点能否命中 `heapam.c` 的静态函数 —— 核实：`heap_insert` / `heap_update` /
+  `heap_delete` 都是 `heapam.c` 里的 `static` 函数，普通 `b heap_insert` 命不中，
+  必须用「文件:函数名」形式。正文已补这一条，并补上 `--enable-debug CFLAGS="-O0 -g3"`
+  的构建要求
+- [x] `cmin` / `cmax` 与 hint bit 的关系 —— **初稿说「`HeapTupleHeaderGetCmin` 已弃用」，
+  这条不成立**：该函数在 PG 17 仍在 `src/include/access/htup.h:81` 声明、
+  `heapam_handler.c` 里使用，**没有废弃**。正确的事实是：提示位在 `t_infomask` 里，
+  而 `cmin`/`cmax` 是与 `xvac` 共用物理字段 `t_field3` 的「虚拟字段」，只在插入/删除
+  事务自己的生命周期内有意义、离开那个后端无法解释（`combocid.c`）。正文按此改写
+- [不适用] **VACUUM 与 InnoDB purge 的类比边界** —— 该类比在「回收老版本」这一层成立，
+  但 VACUUM 还额外承担 anti-wraparound freeze、visibilitymap 维护、索引清理等职责。
+  **本次未改动这句**——它涉及的是 6.11 对照表的原始表述，与本轮改动无关
+- [不适用] **「6.16.2 PG 17 快照优化」的具体变化点** —— 仍待核（需逐一比对 PG 16 与
+  PG 17 的快照路径）。**本次未改动该节**
 
 ## 可补的技术证据或产物
 
@@ -61,4 +84,16 @@
 
 ## 已确认的改动
 
-- 无（阶段 A 只出记录，未改动 `docs/`）
+- 开头补编写人信息表；把「目标」从引用块提升为正文，并补上**版本说明**（基于 PG 17）
+- 开头补「系列位置」块：链到上一篇 05、下一篇 07、相关的 08 / 13（此前全文**零链接**）
+- 核心判断「没有 undo log → VACUUM 承担 purge 的职责」从 6.11 提炼到开头第一屏
+- `## 6.12 小结` → `## 6.12 主篇小结`；`## 6.22 小结` → `## 6.22 进阶篇小结`，
+  并在 6.12 末尾说明 6.13~6.21 是进阶篇、可以按需跳读（此前存在**两个同名「小结」**）
+- 「下一章 07」改成真链接 `[07 B-Tree 索引](./07-btree-index.md)`
+- GDB 小节补构建要求（`--enable-debug CFLAGS="-O0 -g3"`）与静态函数断点写法说明
+- GDB 小节区分 `t_infomask`（提示位）与 `cmin`/`cmax`（虚拟字段，共用 `t_field3`），
+  并写明 `HeapTupleHeaderGetCmin` **至今仍在用**、只是不该当提示位看
+- `pg_xact_status(t_xmin::text::xid)` → `pg_xact_status(t_xmin::xid8)`，
+  并补版本差异说明（PG 13 起参数是 xid8，两者之间无隐式转换）
+- 文末新增「排查清单：怀疑 MVCC 有问题时先看这三样」表格
+- 文末新增「系列导航」块：上一篇 / 本篇 / 下一篇 / 相关章节
