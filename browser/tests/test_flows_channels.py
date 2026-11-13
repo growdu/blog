@@ -70,8 +70,12 @@ def test_a_chinese_comma_in_the_title_is_rejected():
 
 
 def test_an_over_long_title_is_reported():
-    problems = check_limits(_plan_with(title="标" * 23))
-    assert any("标题" in p and "22" in p for p in problems)
+    """实测：视频号短标题上限是 **16 字**（投稿页标「标题超过16字限制」）。
+
+    超限时「保存草稿」按钮直接变灰——所以这一步要在出包时就拦住。
+    """
+    problems = check_limits(_plan_with(title="标" * 17))
+    assert any("标题" in p and "16" in p for p in problems)
 
 
 def test_an_over_long_description_is_reported():
@@ -365,14 +369,16 @@ def test_draft_stores_it_and_the_draft_box_shows_it(page, draft_selectors, packa
     flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
                         ChannelsConfig.load(draft_selectors))
 
-    result = flow.draft(plan)
+    flow.prepare(plan, wait_for="draft")
+    flow.save_draft()
+    # 存草稿**不是发表**：「发表」一次都没点
+    # （这一步要在回读草稿箱之前查——回读会跳到另一个页面）
+    assert page.evaluate("() => window.__publishClicks()") == 0
 
-    assert result["found_in_draft_box"] is True
+    assert flow.verify_draft(plan.description[:12]) is True
     rows = flow.read_draft_rows()
     # 行里显示的是**简介**，不是短标题
     assert any("MVCC 只管读和写。" in row for row in rows)
-    # 存草稿**不是发表**：「发表」一次都没点
-    assert page.evaluate("() => window.__publishClicks()") == 0
 
 
 def test_draft_never_clicks_a_gray_draft_button(page, draft_selectors, package_dir):
@@ -394,9 +400,14 @@ def test_draft_never_clicks_a_gray_draft_button(page, draft_selectors, package_d
     assert page.evaluate("() => window.__clicks()") == 0
 
 
-def test_save_draft_fails_loudly_when_the_click_had_no_effect(
+def test_save_draft_does_not_treat_a_silent_page_as_a_failure(
         page, draft_selectors, package_dir):
-    """点得动，但点了页面什么反应也没有——要报错，不能装作存上了。"""
+    """实测（2026-11-13）：点完「保存草稿」**页面上没有任何反应**。
+
+    表单原样留在页面上，没有提示条、URL 也没变。
+    所以「点完有没有反应」不能当判据——存没存上要看草稿箱。
+    把一次成功的存草稿报成失败，比漏报更糟。
+    """
     _draft_mode(draft_selectors, "dead")
 
     plan = load_plan(package_dir)
@@ -404,12 +415,28 @@ def test_save_draft_fails_loudly_when_the_click_had_no_effect(
                         ChannelsConfig.load(draft_selectors))
     flow.prepare(plan, wait_for="draft")
 
+    result = flow.save_draft()
+
+    assert result["draft_clicked"] is True
+    assert result["notices"] == []
+    assert result["url_changed"] is False
+
+
+def test_draft_fails_loudly_when_the_draft_box_does_not_show_it(
+        page, draft_selectors, package_dir):
+    """点了但草稿箱里没有这一条——要报错，不能装作存上了。"""
+    _draft_mode(draft_selectors, "dead")
+
+    plan = load_plan(package_dir)
+    flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
+                        ChannelsConfig.load(draft_selectors))
+
     with pytest.raises(FlowError) as error:
-        flow.save_draft()
+        flow.draft(plan)
     message = str(error.value)
-    assert "没反应" in message
-    # 报错要告诉人下一步：先核实，别重复点
-    assert "核实" in message
+    assert "草稿箱里找不到" in message
+    # 报错要告诉人下一步：先自己看一眼，别急着再点一次
+    assert "别急着再点一次" in message
 
 
 def test_draft_reports_when_the_draft_box_does_not_show_it(page, draft_selectors,

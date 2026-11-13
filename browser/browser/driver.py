@@ -391,6 +391,33 @@ class PageDriver:
                         found.append(text)
         return found
 
+    def texts_of(self, selector: Selector) -> list[str]:
+        """页面上所有匹配元素的**可见**文本（跨 frame）。
+
+        **只收看得见的。** 隐藏的元素不算——列表页常把同一份 DOM
+        渲染两份（一份藏在折叠面板里），把隐藏的那份也算进来，
+        就会「找到」一条其实没显示出来的内容。
+        """
+        found: list[str] = []
+        for candidate in _as_list(selector):
+            for frame in self._frames():
+                try:
+                    items = frame.locator(candidate)
+                    count = items.count()
+                except Exception:
+                    continue
+                for index in range(count):
+                    item = items.nth(index)
+                    try:
+                        if not item.is_visible():
+                            continue
+                        text = (item.inner_text() or "").strip()
+                    except Exception:
+                        continue
+                    if text:
+                        found.append(text)
+        return found
+
     def screenshot(self, path: Path | str, *, full_page: bool = True) -> Path:
         """截图存盘，返回路径。"""
         target = Path(path)

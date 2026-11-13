@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>假草稿箱</title></head>
+<body>
+  <!--
+    假「内容管理 → 草稿箱」页。
+
+    **为什么要单独一页。** 真站上「草稿箱」入口只在**首页**的导航里，
+    投稿页点不到——所以回读草稿箱之前必须先回首页。
+    这个夹具照着做：存完草稿 → 回草稿箱页 → 才看得见那一行。
+
+    草稿存在 localStorage 里（跨页不丢），对应真站上「草稿存到服务器」这件事。
+  -->
+  <div class="finder-ui-desktop-menu__sub__wrp">
+    <span class="finder-ui-desktop-sub-menu__item" id="nav-video">视频</span>
+    <span class="finder-ui-desktop-sub-menu__item" id="nav-draft">草稿箱</span>
+  </div>
+
+  <div id="draft-box">
+    <div id="draft-list"></div>
+  </div>
+
+  <script>
+    var drafts = [];
+    try { drafts = JSON.parse(localStorage.getItem('drafts') || '[]'); } catch (e) { drafts = []; }
+    var list = document.getElementById('draft-list');
+    drafts.forEach(function (text) {
+      var row = document.createElement('div');
+      row.className = 'post-feed-item';
+      var title = document.createElement('div');
+      title.className = 'post-title';
+      title.textContent = text;
+      row.appendChild(title);
+      list.appendChild(row);
+    });
+    document.getElementById('nav-draft').addEventListener('click', function () {});
+  </script>
+</body>
+</html>

@@ -148,7 +148,7 @@ def test_a_clean_package_has_no_warnings(meta, video, tmp_path):
 
 
 @pytest.mark.parametrize("section", [
-    {"title": "标" * 23, "description": "短", "topics": ["a"]},          # 标题 > 22 字
+    {"title": "标" * 17, "description": "短", "topics": ["a"]},          # 标题 > 16 字（实测上限）
     {"title": "短", "description": "字" * 1001, "topics": ["a"]},         # 简介 > 1000 字
     {"title": "短", "description": "短", "topics": ["a", "b", "c", "d", "e", "f"]},  # 话题 > 5 个
     {"title": "短", "description": "短", "topics": ["标" * 16]},           # 单个话题 > 15 字

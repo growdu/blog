@@ -41,6 +41,7 @@ def fixture_selectors(tmp_path):
     """指向本地假页面的选择器表（entry_url 换成真路径）。"""
     raw = json.loads(SELECTORS.read_text(encoding="utf-8"))
     raw["entry_url"] = POST_PAGE.as_uri()
+    raw["platform_url"] = POST_PAGE.as_uri()
     target = tmp_path / "channels-selectors.json"
     target.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
     return target
@@ -71,6 +72,7 @@ def repo_root() -> Path:
 PROCESSING_PAGE = FIXTURES / "post-processing.html"
 LIST_PAGE = FIXTURES / "post-list.html"
 DRAFT_PAGE = FIXTURES / "post-draft.html"
+DRAFT_BOX_PAGE = FIXTURES / "post-draft-box.html"
 
 
 def _selectors_for(page_path: Path, target: Path, *, timeouts: dict | None = None) -> Path:
@@ -102,11 +104,17 @@ def draft_selectors(tmp_path):
 
     超时调得很短：理由同 `processing_selectors`——
     要验的是「等」「点了」「回读核对」这三个动作，不是等了多久。
+
+    **platform_url 指向单独的草稿箱页**：真站上「草稿箱」入口只在首页的导航里，
+    投稿页点不到——夹具照着做，回读之前得先「回首页」。
     """
-    return _selectors_for(
-        DRAFT_PAGE, tmp_path / "draft-selectors.json",
-        timeouts={"draft_ready_ms": 5000, "draft_effect_ms": 1500},
-    )
+    raw = json.loads(SELECTORS.read_text(encoding="utf-8"))
+    raw["entry_url"] = DRAFT_PAGE.as_uri()
+    raw["platform_url"] = DRAFT_BOX_PAGE.as_uri()
+    raw["timeouts"] = {"draft_ready_ms": 5000, "draft_effect_ms": 1500}
+    target = tmp_path / "draft-selectors.json"
+    target.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+    return target
 
 
 @pytest.fixture
@@ -141,6 +149,7 @@ def list_selectors(tmp_path, fixture_server):
     """指向假的内容列表页（取公开链接用）。"""
     raw = json.loads(SELECTORS.read_text(encoding="utf-8"))
     raw["entry_url"] = f"{fixture_server}/post-list.html"
+    raw["platform_url"] = f"{fixture_server}/post-list.html"
     raw["selectors"]["list"] = {
         "entry_item": [".finder-ui-desktop-sub-menu__item:has-text('视频')"],
         "share_button": [".post-feed-item:has-text('{row_text}') "

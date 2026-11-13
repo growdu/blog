@@ -26,7 +26,9 @@ LIMIT_KEYS = {
 }
 # 核过的数值。改了这里就要同时改规格文档，并说明出处。
 PINNED = {
-    "channels": {"title_chars": 22, "description_chars": 1000,
+    # 标题上限 16：**实测**（2026-11-13，投稿页标「标题超过16字限制」）。
+    # 公开口径里的 20 / 22 / 34 都不作数——规格 §十四 第 1 条。
+    "channels": {"title_chars": 16, "description_chars": 1000,
                  "topics_max": 5, "topic_chars": 15},
     "bilibili": {"title_chars": 79, "description_chars": 249,
                  "tags_chars": 199, "tag_chars": 20},

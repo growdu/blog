@@ -3,6 +3,9 @@
 
   "entry_url": "https://channels.weixin.qq.com/platform/post/create",
 
+  "_platform_url_note": "内容管理首页。「草稿箱」「视频」这些入口**只在这个页面的左边导航里**，投稿页（post/create）左边只有一列图标，点不到草稿箱——回读草稿箱前必须先回这里。",
+  "platform_url": "https://channels.weixin.qq.com/platform",
+
   "_text_layout_note": "实测：视频号**有独立的短标题框**与描述框，所以是 separate。描述框是 contenteditable，在里面打 #话题 会被编辑器自动变成真话题（<span class=\"hl topic\">），不用点「#话题」按钮。",
   "text_layout": "separate",
 
@@ -28,8 +31,8 @@
       "original_checkbox": [".declare-original-checkbox input[type=checkbox]"],
       "topic_chip": ["span.hl.topic[data-type='topic']"],
       "submit_button": ["button.weui-desktop-btn_primary:has-text('发表')"],
-      "_draft_note": "「保存草稿」与「发表」是两个按钮。草稿**不公开**，但存草稿也要求平台处理完视频——处理期间按钮是灰的，点了没反应（和「发表」同一个坑）。",
-      "draft_button": ["button.weui-desktop-btn:has-text('保存草稿')", "button:has-text('保存草稿')"],
+      "_draft_note": "「保存草稿」与「发表」是两个按钮。草稿**不公开**，但存草稿也要求平台处理完视频——处理期间按钮是灰的，点了没反应（和「发表」同一个坑）。**选择器必须精确匹配**：鼠标悬停时平台会弹一个提示浮层，文字是「保存 使用定时发表将无法保存草稿。若要保存草稿，需先取消定时发表。」——里面也有「保存草稿」四个字，用 `:has-text()` 会误命中那个**隐藏的**浮层元素，于是按钮被误判成「点不动」。",
+      "draft_button": ["button.weui-desktop-btn:text-is('保存草稿')", "button:text-is('保存草稿')", "button:has-text('保存草稿')"],
       "_draft_marker_note": "点完「保存草稿」后页面上出现的东西（提示条/成功标记）。**空着** = 只能靠 URL 变化与按钮变灰判断有没有反应；宁可报「没反应」也不假装成功。权威判据还是草稿箱回读。",
       "draft_marker": [],
       "draft_notice": [],
@@ -48,13 +51,13 @@
     },
     "list": {
       "_note": "内容管理 → 视频 列表。**列表行渲染在 iframe 里**（micro/content/iframe/post-card.html），主文档看不到行。行里显示的是**简介**，不是短标题——找行要给简介里那段文字。分享菜单里三项：复制视频ID / 下载视频二维码 / 复制视频链接，**必须精确匹配**（2026-11-13 实测：模糊匹配会抄回视频ID）。",
-      "entry_item": [".finder-ui-desktop-sub-menu__item:has-text('视频')"],
+      "entry_item": [".finder-ui-desktop-sub-menu__item:text-is('视频')", ".finder-ui-desktop-sub-menu__item:has-text('视频')"],
       "nav_parent": [".finder-ui-desktop-menu__sub__wrp"],
       "share_button": [".post-feed-item:has-text('{row_text}') .opr-item-wrap .more-actions"],
       "copy_link_item": [":text-is('复制视频链接')"],
-      "draft_box_entry": [".finder-ui-desktop-sub-menu__item:has-text('草稿箱')"],
-      "_draft_row_note": "草稿箱里的每一行。**行里显示的是简介，不是短标题**（和「视频」列表一样），所以回读核对要拿简介里那段文字去匹配。",
-      "draft_row": [".post-feed-item .post-title", ".post-title"]
+      "draft_box_entry": [".finder-ui-desktop-sub-menu__item:text-is('草稿箱')", ".finder-ui-desktop-sub-menu__item:has-text('草稿箱')"],
+      "_draft_row_note": "草稿箱里的每一行。**行里显示的是简介，不是短标题**（和「视频」列表一样），所以回读核对要拿简介里那段文字去匹配。实测 2026-11-13：草稿列表渲染在 frame `channels.weixin.qq.com/micro/content/post/draftListManager` 里；导航上的「草稿箱」后面还带**条数**（如「草稿箱 (1)」），那是另一个人工可读的核对信号。",
+      "draft_row": [".post-title"]
     }
   }
 }

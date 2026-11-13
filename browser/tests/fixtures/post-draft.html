@@ -108,17 +108,21 @@
       if (save.className.indexOf('disabled') >= 0) return;
       if (mode === 'dead') return;
       document.getElementById('draft-notice').style.display = '';
-      // 草稿箱里多一行，**显示的是简介**（不是短标题）。
+      // 草稿存到「服务器」（localStorage），行里显示的是**简介**（不是短标题）。
+      var title = document.getElementById('desc').innerText.replace(/\s+/g, ' ').trim();
+      var drafts = [];
+      try { drafts = JSON.parse(localStorage.getItem('drafts') || '[]'); } catch (e) { drafts = []; }
+      drafts.push(title);
+      localStorage.setItem('drafts', JSON.stringify(drafts));
       var row = document.createElement('div');
       row.className = 'post-feed-item';
-      var title = document.getElementById('desc').innerText.replace(/\s+/g, ' ').trim();
       row.innerHTML = '<div class="post-title">' + title + '</div>';
       document.getElementById('draft-list').appendChild(row);
     });
 
+    // 草稿箱在**首页**上——投稿页点不到，实测踩过这个坑。
     document.getElementById('nav-draft').addEventListener('click', function () {
-      document.getElementById('draft-box').style.display = '';
-      document.getElementById('post-area').style.display = 'none';
+      location.href = 'post-draft-box.html';
     });
     document.getElementById('nav-video').addEventListener('click', function () {
       document.getElementById('draft-box').style.display = 'none';
