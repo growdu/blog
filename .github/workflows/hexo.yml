@@ -162,6 +162,13 @@ jobs:
   deploy-server:
     needs: build
     runs-on: ubuntu-latest
+    # rsync 走 SSH 到自建服务器。**SSH 挂住时 ssh 会等密码提示**，
+    # 于是这个 job 能一直挂着——2026-11-13 就这么把整条部署队列堵了
+    # 20 多分钟（workflow 的 concurrency 是串行的，cancel-in-progress: false，
+    # 后面的 run 全在排队）。
+    # 两道保险：BatchMode 让认证失败立刻报错而不是等输入，
+    # ConnectTimeout 与 timeout-minutes 让网络不通也很快收摊。
+    timeout-minutes: 20
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v8
@@ -185,16 +192,16 @@ jobs:
           REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
           # 1. rsync 到新的 release 目录
           rsync -avz --delete \
-            -e "ssh -p ${DEPLOY_PORT}" \
+            -e "ssh -p ${DEPLOY_PORT} -o BatchMode=yes -o ConnectTimeout=20" \
             ./public/ \
             "${REMOTE}:/var/www/blog/releases/${TIMESTAMP}/"
           # 2. 原子切换 symlink
-          ssh -p ${DEPLOY_PORT} "${REMOTE}" "
+          ssh -p ${DEPLOY_PORT} -o BatchMode=yes -o ConnectTimeout=20 "${REMOTE}" "
             ln -sfn /var/www/blog/releases/${TIMESTAMP} /var/www/blog/current.new && \
             mv -Tf /var/www/blog/current.new /var/www/blog/current
           "
           # 3. 清理 7 天前的旧 release（保留最近 10 个）
-          ssh -p ${DEPLOY_PORT} "${REMOTE}" "
+          ssh -p ${DEPLOY_PORT} -o BatchMode=yes -o ConnectTimeout=20 "${REMOTE}" "
             cd /var/www/blog/releases && \
             ls -1t | tail -n +11 | xargs -r rm -rf
           "
