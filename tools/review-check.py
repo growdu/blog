@@ -252,6 +252,94 @@ def rule_aif_05(doc: Doc) -> list[Signal]:
 RULES.extend([rule_aif_01, rule_aif_02, rule_aif_03, rule_aif_04, rule_aif_05])
 
 
+# --- 技术深度五要素 ---------------------------------------------------------
+#
+# 对应 review/README.md 的「技术深度检查」一节。要素命中数是可数的事实，
+# 是否达标仍然要读全文判断——DEP-00 只是提示，不是判决。
+
+VERSION_RE = re.compile(
+    r"(?i)\b(?:postgresql|pg|opengauss|linux|kernel|ubuntu|centos)\s+v?\d+(?:\.\d+)*"
+    r"|\bv?\d+\.\d+(?:\.\d+)*\b"
+)
+BOUNDARY_WORDS = ("环境", "前提", "规模", "边界", "前置条件", "版本")
+
+SOURCE_PATH_RE = re.compile(r"(?:src|backend|include)/[A-Za-z0-9_./-]+\.[ch]\b")
+IDENTIFIER_CALL_RE = re.compile(r"\b[a-z][a-z0-9]*_[a-z0-9_]+\s*\(")
+MECHANISM_WORDS = ("调用链", "状态机", "执行器", "流程", "实现", "源码")
+
+EVIDENCE_RE = re.compile(
+    r"(?i)\b(?:select|insert|update|delete|create|explain|vacuum|psql|docker|gdb|strace|perf|tcpdump)\b"
+)
+EVIDENCE_SHELL_RE = re.compile(r"(?m)^\s*(\$ |#\s|docker |psql |gdb |strace |perf |tcpdump )")
+EVIDENCE_LOG_RE = re.compile(r"(?m)^\s*(LOG|ERROR|WARNING|PANIC|FATAL)[:\s]")
+
+TRADEOFF_WORDS = ("相比", "相比之下", "替代", "取舍", "权衡", "代价", "适用场景",
+                  "优点", "缺点", "利弊", "优劣", "对比", "选型", "不建议", "更推荐")
+PITFALL_WORDS = ("坑", "注意", "误区", "验证", "校验", "复现", "监控", "陷阱", "别用",
+                 "不要用", "风险", "切勿", "务必", "检查", "观察")
+
+
+def _count_regex(doc: Doc, pattern: re.Pattern) -> int:
+    return len(pattern.findall(doc.text))
+
+
+def _count_words(doc: Doc, words: tuple[str, ...]) -> int:
+    return sum(doc.text.count(word) for word in words)
+
+
+def rule_dep_01(doc: Doc) -> list[Signal]:
+    """问题边界：版本、系统规模、前置条件。"""
+    doc.depth["DEP-01"] = _count_regex(doc, VERSION_RE) + _count_words(doc, BOUNDARY_WORDS)
+    return []
+
+
+def rule_dep_02(doc: Doc) -> list[Signal]:
+    """机制解释：源码定位与调用链。"""
+    doc.depth["DEP-02"] = (_count_regex(doc, SOURCE_PATH_RE)
+                            + _count_regex(doc, IDENTIFIER_CALL_RE)
+                            + _count_words(doc, MECHANISM_WORDS))
+    return []
+
+
+def rule_dep_03(doc: Doc) -> list[Signal]:
+    """可复现证据：能照着跑的命令、SQL 或日志。"""
+    total = 0
+    for block in doc.blocks:
+        if block.kind != CODE:
+            continue
+        if EVIDENCE_RE.search(block.text) or EVIDENCE_SHELL_RE.search(block.text) \
+                or EVIDENCE_LOG_RE.search(block.text):
+            total += 1
+    doc.depth["DEP-03"] = total
+    return []
+
+
+def rule_dep_04(doc: Doc) -> list[Signal]:
+    """工程取舍：替代方案、代价、适用场景。"""
+    doc.depth["DEP-04"] = _count_words(doc, TRADEOFF_WORDS)
+    return []
+
+
+def rule_dep_05(doc: Doc) -> list[Signal]:
+    """踩坑与校验：怎么观察、怎么验证结果。"""
+    doc.depth["DEP-05"] = _count_words(doc, PITFALL_WORDS)
+    return []
+
+
+def rule_dep_00(doc: Doc) -> list[Signal]:
+    """要素命中少于 2 项：技术深度可能不够。"""
+    elements = sum(1 for key in ("DEP-01", "DEP-02", "DEP-03", "DEP-04", "DEP-05")
+                   if doc.depth.get(key, 0) > 0)
+    doc.depth["DEP-00"] = 0 if elements >= 2 else 1
+    if elements >= 2:
+        return []
+    return [Signal("DEP-00", "warn", 1, "",
+                   f"只命中 {elements}/5 个技术深度要素（边界/机制/证据/取舍/校验）")]
+
+
+RULES.extend([rule_dep_01, rule_dep_02, rule_dep_03, rule_dep_04, rule_dep_05, rule_dep_00])
+
+
 def derive_identity(path: Path, docs_root: Path = DOCS_ROOT) -> tuple[str, str]:
     """Derive ``(pillar, slug)`` from a docs/-relative path.
 

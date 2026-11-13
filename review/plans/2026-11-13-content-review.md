@@ -896,6 +896,14 @@ def test_dep_00_flags_a_shallow_article(tmp_path):
     assert doc.depth["DEP-00"] == 1
 
 
+def test_dep_04_counts_tradeoff_wording_beyond_comparison(tmp_path):
+    """回归：只认「相比/替代」会漏掉用「优点/缺点」讲取舍的文章。"""
+    doc = make_doc(tmp_path, "它的优点是简单，缺点是不好扩展。\n")
+    module = load_tool()
+    module.check_doc(doc)
+    assert doc.depth["DEP-04"] > 0
+
+
 def test_dep_03_needs_a_code_block_not_prose(tmp_path):
     doc = make_doc(tmp_path, "正文里提到 SELECT 这个关键字，但没有代码块。\n")
     module = load_tool()
@@ -932,8 +940,10 @@ EVIDENCE_RE = re.compile(
 EVIDENCE_SHELL_RE = re.compile(r"(?m)^\s*(\$ |#\s|docker |psql |gdb |strace |perf |tcpdump )")
 EVIDENCE_LOG_RE = re.compile(r"(?m)^\s*(LOG|ERROR|WARNING|PANIC|FATAL)[:\s]")
 
-TRADEOFF_WORDS = ("相比", "相比之下", "替代", "取舍", "权衡", "代价", "适用场景")
-PITFALL_WORDS = ("坑", "注意", "误区", "验证", "校验", "复现", "监控", "陷阱", "别用", "不要用")
+TRADEOFF_WORDS = ("相比", "相比之下", "替代", "取舍", "权衡", "代价", "适用场景",
+                  "优点", "缺点", "利弊", "优劣", "对比", "选型", "不建议", "更推荐")
+PITFALL_WORDS = ("坑", "注意", "误区", "验证", "校验", "复现", "监控", "陷阱", "别用",
+                 "不要用", "风险", "切勿", "务必", "检查", "观察")
 
 
 def _count_regex(doc: Doc, pattern: re.Pattern) -> int:
@@ -1001,7 +1011,7 @@ RULES.extend([rule_dep_01, rule_dep_02, rule_dep_03, rule_dep_04, rule_dep_05, r
 
 Run: `python3 -m pytest tests/test_review_check.py -q`
 
-Expected: PASS（19 passed）。
+Expected: PASS（21 passed）。
 
 - [ ] **Step 5: 提交**
 
@@ -1608,6 +1618,12 @@ python3 tools/review-check.py <原文路径>          # 看信号
    核不了就明写「待核实」，**不许改写补全**（README 原则 1）；
 4. 「可补的技术证据或产物」要具体到机制/源码入口/实验方法，不是「可以再补充」；
 5. 状态一律 `建议中`——阶段 A 不碰 `docs/`。
+
+**先判是不是「文章」**：四支柱里混着交付计划、配置流程、安装步骤、源码编译笔记
+这类工作文档（`db/logical_decode/逻辑复制支持DDL开发交付计划`、
+`db/mysql/macos安装mysql` 等）。它们是项目流水账不是技术文章，审校目标
+「读者读完能学会什么」不成立——这类跳过，在 INDEX 里标「非文章，跳过」，
+不产出审校记录。判据：文章有「问题→机制→证据→取舍」的结构。
 
 **每篇一个提交**（写完一篇立刻提交，不要攒着）：
 

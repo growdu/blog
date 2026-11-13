@@ -224,3 +224,44 @@ def test_aif_05_ignores_parallel_code_introduction_lines(tmp_path):
     )
     doc = make_doc(tmp_path, text)
     assert load_tool().rule_aif_05(doc) == []
+
+
+# --- DEP 规则 -------------------------------------------------------------
+
+
+def test_dep_counts_each_element(tmp_path):
+    text = (
+        "# 标题\n\n"
+        "本文基于 PostgreSQL 17.2 环境，源码路径是 src/backend/access/heap/heapam.c。\n\n"
+        "```sql\nSELECT * FROM pg_class;\n```\n\n"
+        "相比之下，逻辑复制代价更高，适用场景也不同。\n\n"
+        "注意这里的坑：要用 pg_stat_statements 验证。\n"
+    )
+    doc = make_doc(tmp_path, text)
+    module = load_tool()
+    module.check_doc(doc)
+    for key in ("DEP-01", "DEP-02", "DEP-03", "DEP-04", "DEP-05"):
+        assert doc.depth[key] > 0, key
+    assert doc.depth["DEP-00"] == 0
+
+
+def test_dep_00_flags_a_shallow_article(tmp_path):
+    doc = make_doc(tmp_path, "# 标题\n\n这是一篇很短的文章，讲了一点点东西。\n")
+    module = load_tool()
+    module.check_doc(doc)
+    assert doc.depth["DEP-00"] == 1
+
+
+def test_dep_03_needs_a_code_block_not_prose(tmp_path):
+    doc = make_doc(tmp_path, "正文里提到 SELECT 这个关键字，但没有代码块。\n")
+    module = load_tool()
+    module.check_doc(doc)
+    assert doc.depth["DEP-03"] == 0
+
+
+def test_dep_04_counts_tradeoff_wording_beyond_comparison(tmp_path):
+    """回归：只认「相比/替代」会漏掉用「优点/缺点」讲取舍的文章。"""
+    doc = make_doc(tmp_path, "它的优点是简单，缺点是不好扩展。\n")
+    module = load_tool()
+    module.check_doc(doc)
+    assert doc.depth["DEP-04"] > 0
