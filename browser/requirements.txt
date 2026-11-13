@@ -1,0 +1,20 @@
+# 发布执行器（Playwright）的第三方依赖。
+#
+# 装法：
+#
+#   pip install -r browser/requirements.txt
+#   python3 -m playwright install chromium          # 下载浏览器
+#   python3 -m playwright install --with-deps chromium   # Linux 上补系统依赖（要 root）
+#
+# 或者直接跑一键脚本（会装系统包）：
+#
+#   sudo bash browser/scripts/bootstrap_linux.sh
+#
+# 版本写的是**下界**：浏览器版本必须跟 playwright 的版本对上，
+# 所以浏览器本体不要单独指定版本——让 `playwright install` 跟着
+# playwright 的版本走。pin playwright 的版本倒是可以的，
+# 但那样浏览器就得重装一次。
+#
+# 登录态放在 browser/profile/（gitignore），不在这里。
+
+playwright>=1.40

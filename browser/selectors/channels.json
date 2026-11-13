@@ -1,0 +1,26 @@
+{
+  "_note": "视频号助手的页面结构。**这些是探测出来的，不是猜的**——先跑 `python3 -m browser.cli probe`，照着探出来的结构填这里。候选按顺序试，挨个不中就换下一个。",
+
+  "entry_url": "https://channels.weixin.qq.com/platform",
+
+  "_text_layout_note": "视频号的文案表单有两种可能：separate = 有独立标题框与描述框；combined = 只有一个描述框，标题是它的第一行。以 probe 看到的为准。",
+  "text_layout": "combined",
+
+  "selectors": {
+    "login": {
+      "logged_in_marker": [],
+      "logged_out_marker": []
+    },
+    "post": {
+      "video_file_input": [],
+      "title_input": [],
+      "description_input": [],
+      "cover_input": [],
+      "original_checkbox": [],
+      "submit_button": [],
+      "published_marker": [],
+      "published_url_text": [],
+      "published_url_input": []
+    }
+  }
+}

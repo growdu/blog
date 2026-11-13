@@ -1,0 +1,21 @@
+{
+  "_note": "测试专用选择器，指向 tests/fixtures/post.html。与真站的选择器无关。",
+  "entry_url": "file://FIXTURE/post.html",
+  "text_layout": "combined",
+  "selectors": {
+    "login": {
+      "logged_in_marker": []
+    },
+    "post": {
+      "video_file_input": ["#video-file"],
+      "title_input": ["#title"],
+      "description_input": ["#desc"],
+      "cover_input": ["#cover-file"],
+      "original_checkbox": ["#original"],
+      "submit_button": ["#publish"],
+      "published_marker": ["#done"],
+      "published_url_text": ["#link"],
+      "published_url_input": []
+    }
+  }
+}

@@ -1,0 +1,17 @@
+# 浏览器 profile：里面是 cookie 与 localStorage，等同于凭据。
+# 契约 §7.5：token 与 secret 永不入库。绝不要提交这个目录。
+profile/
+
+# 本地产物：探测结果、截图、填表清单
+out/
+
+# 凭据（如果将来加了）
+secrets.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# macOS
+.DS_Store
