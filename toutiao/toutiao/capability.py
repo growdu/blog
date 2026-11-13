@@ -81,6 +81,8 @@ class Limits:
     cover_ratio: str
     cover_min_pixels: tuple[int, int]
     max_body_images: int
+    #: 单段的字数上限，按**平台字数**算（不是字符数）。
+    paragraph_words: int
 
 
 @dataclass(frozen=True)
@@ -301,6 +303,9 @@ def load_capability(path: Path) -> Capability:
         ),
         max_body_images=_field(
             limits_raw, "max_body_images", "limits", _as_int
+        ),
+        paragraph_words=_field(
+            limits_raw, "paragraph_words", "limits", _as_int
         ),
     )
 

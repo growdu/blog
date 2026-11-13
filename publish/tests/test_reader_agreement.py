@@ -44,6 +44,7 @@ image_formats = ["webp"]
 cover_ratio = "3:4"
 cover_min_pixels = [600, 800]
 max_body_images = 3
+paragraph_words = 200
 
 [adapter]
 package = "toutiao"
@@ -105,7 +106,7 @@ def test_both_readers_read_the_real_declaration_the_same_way():
     assert contract_cap.requires_min_followers == adapter_cap.requires_min_followers == 1000
 
     for key in ("title_chars", "body_chars", "digest_chars", "image_bytes",
-                "cover_ratio", "max_body_images"):
+                "cover_ratio", "max_body_images", "paragraph_words"):
         assert contract_cap.limits[key] == getattr(adapter_cap.limits, key), key
     assert list(contract_cap.limits["image_formats"]) == list(adapter_cap.limits.image_formats)
     assert list(contract_cap.limits["cover_min_pixels"]) == list(

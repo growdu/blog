@@ -260,7 +260,11 @@ def _convert(args) -> tuple:
     store.save(result.article.content_id, state)
 
     print("标题：{}".format(package.title))
-    print("字数：{}（上限 {}）".format(len(result.article.body), capability.limits.body_chars))
+    print("字数：{} 字符（平台计 {} 字；切片上限 {} 字符）".format(
+        len(result.article.body),
+        package.platform_chars,
+        capability.limits.body_chars,
+    ))
     print("图片：{} 张".format(len(result.article.images)))
     print("发布包：{}".format(package.package_dir))
     print("状态快照：{}".format(snapshot))

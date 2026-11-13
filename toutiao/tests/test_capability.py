@@ -28,6 +28,7 @@ image_formats = ["webp"]
 cover_ratio = "3:4"
 cover_min_pixels = [600, 800]
 max_body_images = 3
+paragraph_words = 200
 
 [adapter]
 package = "toutiao"
@@ -43,6 +44,7 @@ image_formats = ["webp"]
 cover_ratio = "3:4"
 cover_min_pixels = [600, 800]
 max_body_images = 3
+paragraph_words = 200
 """
 
 
@@ -99,6 +101,7 @@ def test_public_interface_is_locked():
     assert tuple(f.name for f in dataclasses.fields(Limits)) == (
         "title_chars", "body_chars", "digest_chars", "image_bytes",
         "image_formats", "cover_ratio", "cover_min_pixels", "max_body_images",
+        "paragraph_words",
     )
     assert tuple(f.name for f in dataclasses.fields(Capability)) == (
         "id", "name", "kind", "automation", "review", "requires_certification",

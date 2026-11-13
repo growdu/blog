@@ -324,6 +324,7 @@ _LIMIT_TYPES = {
     "image_formats": _as_str_list,
     "cover_ratio": _as_str,
     "cover_min_pixels": _as_int_pair,
+    "paragraph_words": _as_int,
 }
 
 

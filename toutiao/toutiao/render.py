@@ -114,11 +114,19 @@ class _Token:
 
 @dataclass(frozen=True)
 class RenderResult:
-    """The two pasteable forms of one article."""
+    """The two pasteable forms of one article.
+
+    ``blocks`` is the text of every top-level block, in order -- what the
+    platform will show as one paragraph each.  It is not the same as
+    splitting ``text`` on blank lines: consecutive list items share one
+    line group in the plain-text form, but the platform shows each of them
+    as its own paragraph, and the per-paragraph limit is judged on those.
+    """
 
     html: str
     text: str
     image_markers: tuple[str, ...]
+    blocks: tuple[str, ...] = ()
 
 
 def _escape(text: str) -> str:
@@ -570,6 +578,7 @@ def render(article: ToutiaoArticle) -> RenderResult:
     """
     html_parts: list[str] = []
     text_groups: list[str] = []
+    blocks: list[str] = []
     markers: list[str] = []
     seen: set[str] = set()
     previous_was_item = False
@@ -599,6 +608,7 @@ def render(article: ToutiaoArticle) -> RenderResult:
                     '<h2 style="{}">{}</h2>'.format(_H2_STYLE, _inline(tokens, True))
                 )
                 text_groups.append(_inline(tokens, False))
+                blocks.append(_inline(tokens, False))
                 previous_was_item = False
                 continue
 
@@ -607,6 +617,7 @@ def render(article: ToutiaoArticle) -> RenderResult:
                     '<p style="{}">• {}</p>'.format(_ITEM_STYLE, _inline(tokens, True))
                 )
                 line_text = "• " + _inline(tokens, False)
+                blocks.append(line_text)
                 if previous_was_item and text_groups:
                     # Consecutive items are one list: they stay on one
                     # line each, without a blank line between them.
@@ -624,6 +635,7 @@ def render(article: ToutiaoArticle) -> RenderResult:
                     '<p style="{}">{}</p>'.format(_MARK_STYLE, _escape(line))
                 )
                 text_groups.append(line)
+                blocks.append(line)
                 previous_was_item = False
                 continue
 
@@ -631,10 +643,12 @@ def render(article: ToutiaoArticle) -> RenderResult:
                 '<p style="{}">{}</p>'.format(_P_STYLE, _inline(tokens, True))
             )
             text_groups.append(_inline(tokens, False))
+            blocks.append(_inline(tokens, False))
             previous_was_item = False
 
     return RenderResult(
         html="\n".join(html_parts),
         text="\n\n".join(text_groups),
         image_markers=tuple(markers),
+        blocks=tuple(blocks),
     )

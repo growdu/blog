@@ -59,6 +59,7 @@ from .assets import (
 from .capability import Capability
 from .contract import ToutiaoArticle
 from .render import RenderResult, render
+from .wordcount import platform_word_count
 
 __all__ = [
     "PackageResult", "flatten_id", "snapshot_name", "write_package",
@@ -119,6 +120,8 @@ class PackageResult:
     package_dir: Path
     files: tuple[str, ...]
     reason: str | None = None
+    #: 这篇在头条号编辑器里会显示成多少字（平台自己的口径，不是字符数）。
+    platform_chars: int = 0
 
 
 def flatten_id(content_id: str) -> str:
@@ -442,6 +445,21 @@ def write_package(
             )
         )
 
+    # 平台按它自己的口径判「段落字数过多」，口径不是字符数 ——
+    # 所以这段检查只能算在**渲染之后**的每一段上（见 wordcount.py）。
+    long_blocks = [
+        platform_word_count(block)
+        for block in rendered.blocks
+        if platform_word_count(block) > limits.paragraph_words
+    ]
+    if long_blocks:
+        notes.append(
+            "有 {} 段超过 {} 平台字（最长一段 {} 字），平台会提示「段落字数过多」"
+            "，上传前建议手工分段".format(
+                len(long_blocks), limits.paragraph_words, max(long_blocks)
+            )
+        )
+
     readme = README_HEAD.format(article.title) + "\n".join(checklist) + "\n"
     if notes:
         readme += "\n## 切片备注\n\n" + "\n".join("- " + note for note in notes) + "\n"
@@ -462,6 +480,7 @@ def write_package(
         package_dir=package_dir,
         files=_package_files(package_dir),
         reason=reason,
+        platform_chars=platform_word_count(rendered.text),
     )
 
 

@@ -23,6 +23,7 @@ from toutiao.assets import can_make_cover, make_cover
 from toutiao.capability import default_capability_path, load_capability
 from toutiao.contract import ToutiaoArticle, slice_post
 from toutiao.mdparse import load_post
+from toutiao.wordcount import platform_word_count
 from toutiao.publish import (
     PackageResult, flatten_id, snapshot_name, write_package, write_snapshot,
 )
@@ -641,6 +642,49 @@ def test_the_three_reasons_for_no_cover_are_worded_differently(tmp_path):
     line = _cover_line(_readme(local))
     assert "裁不出合规封面" in line
     assert "外链" not in line
+
+
+def test_a_paragraph_over_the_platform_limit_is_recorded(tmp_path):
+    """单段超 200 平台字 → 出包清单里写明，平台会提示「段落字数过多」。
+
+    平台按**它自己的口径**数（见 ``wordcount.py``），所以这一段检查只能
+    算在**渲染之后**的每一段上：216 个原始字符的中英混排段落平台计 178 字，
+    按字符数去判就会误报。
+    """
+    site, posts = _site(tmp_path)
+    article = _article(body="段落。\n\n" + "测" * 250)
+
+    result = write_package(article, CAP, tmp_path / "out", posts, "https://growdu.cn")
+
+    readme = _readme(result)
+    assert "段落字数过多" in readme
+    assert "有 1 段超过 200 平台字" in readme
+    assert "最长一段 250 字" in readme
+
+
+def test_a_paragraph_at_the_limit_is_not_recorded(tmp_path):
+    """正好 200 平台字不告警 —— 实测：200 不报，201 报。"""
+    site, posts = _site(tmp_path)
+    article = _article(body="段落。\n\n" + "测" * 200)
+
+    result = write_package(article, CAP, tmp_path / "out", posts, "https://growdu.cn")
+
+    assert "段落字数过多" not in _readme(result)
+
+
+def test_the_package_carries_the_platform_word_count(tmp_path):
+    """出包结果带上平台口径的字数。
+
+    编辑器底部显示的「共 N 字」就是这个数，而它跟字符数不是一回事：
+    2717 个字符的文章，平台显示 1866 字（口径见 ``wordcount.py``）。
+    """
+    site, posts = _site(tmp_path)
+    article = _article(body="段落。\n\n" + "测" * 250)
+
+    result = write_package(article, CAP, tmp_path / "out", posts, "https://growdu.cn")
+
+    assert result.platform_chars == platform_word_count("段落。\n\n" + "测" * 250)
+    assert result.platform_chars == 253
 
 
 @pytest.mark.parametrize(

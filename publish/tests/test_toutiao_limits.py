@@ -28,6 +28,7 @@ MEASURED_LIMITS = {
     "cover_ratio": "452:352",
     "cover_min_pixels": [452, 352],
     "max_body_images": 3,
+    "paragraph_words": 200,
 }
 
 MEASUREMENT_DATE = "2026-11-13"
