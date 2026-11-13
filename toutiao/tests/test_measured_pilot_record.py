@@ -185,6 +185,23 @@ def test_the_dry_run_trap_is_recorded(repo_root):
 
 
 
+def test_the_open_decisions_are_recorded(repo_root):
+    """两件拍过板的事必须留在文档里。
+
+    * **重复稿**：删掉 14:11 那篇、保留 14:05 那篇，删除动作在后台做
+      （「更多」→「删除作品」），留给人工；
+    * **幂等指纹**：先不改——只算正文是既有设计，改算法会让所有旧状态作废。
+
+    决策不写下来，下一个人会重新问一遍，或者干脆按自己的理解动手。
+    """
+    text = _text(repo_root)
+
+    assert "删掉 14:11 那篇" in text, "试点记录里没有「删掉 14:11 那篇」这个决定"
+    assert "保留 14:05 那篇" in text, "试点记录里没有「保留 14:05 那篇」这个决定"
+    assert "删除作品" in text, "试点记录里没有写删除动作在哪一步做"
+    assert "先不改" in text, "试点记录里没有「幂等指纹先不改」这个决定"
+
+
 def test_the_title_limit_is_not_claimed_as_save_verified(repo_root):
     """标题上限的依据是占位符原文，**不是**「保存被拒」。
 
