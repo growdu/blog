@@ -71,6 +71,17 @@ def test_the_default_limit_is_used_when_nothing_is_given(monkeypatch):
     assert resolve_content_limit(0) == CONTENT_LIMIT
 
 
+def test_the_default_limit_is_the_measured_ceiling_with_a_margin(monkeypatch):
+    """默认上限留有余地，不是贴着天花板。
+
+    实测的天花板是 100000 字符（``draft/add`` 收下、``draft/get`` 原样
+    存回，后台编辑器也不截断）。但默认取 60000：折合读者能看到的约
+    1.5 万字，已经是一篇长文，还留着一段余量。要更长就 ``--max-length``。
+    """
+    monkeypatch.delenv("WX_MAX_LENGTH", raising=False)
+    assert resolve_content_limit(0) == 60000
+
+
 def test_a_broken_limit_is_refused(monkeypatch):
     """上限写错了要报错，不能悄悄换一个数继续跑。"""
     monkeypatch.setenv("WX_MAX_LENGTH", "很多")
@@ -125,12 +136,26 @@ def test_a_part_that_does_not_fit_is_not_accepted(tmp_path):
 def test_the_limit_is_part_of_the_fingerprint(tmp_path):
     """换了上限，拆分就变了，草稿必须重发。"""
     post = _long_post(tmp_path, paragraphs=1)
-    assert _fingerprint(post, "", 20000) != _fingerprint(post, "", 60000)
+    assert _fingerprint(post, "", 20000, "growdu") != _fingerprint(
+        post, "", 60000, "growdu")
 
 
 def test_the_fingerprint_of_an_unchanged_article_does_not_move(tmp_path):
     post = _long_post(tmp_path, paragraphs=1)
-    assert _fingerprint(post, "", 60000) == _fingerprint(post, "", 60000)
+    assert _fingerprint(post, "", 60000, "growdu") == _fingerprint(
+        post, "", 60000, "growdu")
+
+
+def test_the_fingerprint_moves_when_the_author_changes(tmp_path):
+    """改了署名要能刷到草稿里——所以署名得进指纹。
+
+    以前 ``author`` 不在指纹里，单独改 ``--author`` 不会让草稿重刷，
+    改完看着像没生效。现在署名和正文、标题、分类标签、上限一样，
+    都是内容的一部分。
+    """
+    post = _long_post(tmp_path, paragraphs=1)
+    assert _fingerprint(post, "", 60000, "growdu") != _fingerprint(
+        post, "", 60000, "内核开发者")
 
 
 # --- 上限进了统计 ---------------------------------------------------------

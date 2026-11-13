@@ -171,7 +171,7 @@ def _limit(args) -> int:
     return getattr(args, "max_length", 0) or CONTENT_LIMIT
 
 
-def _fingerprint(post, tag_html: str, limit: int) -> str:
+def _fingerprint(post, tag_html: str, limit: int, author: str) -> str:
     """Content hash covering everything that ends up in the published body.
 
     The markdown on its own is not enough: the category tag is part of
@@ -189,6 +189,11 @@ def _fingerprint(post, tag_html: str, limit: int) -> str:
     The limit counts as well, and for the same reason: it decides
     where the article is cut.  A different limit means different parts,
     so the drafts that carry the old cut have to be replaced.
+
+    The author counts too: it is printed above the body of every part,
+    so a new signature has to reach the drafts.  It used to be missing
+    from this hash, which meant that changing ``--author`` looked like
+    it did nothing -- the drafts kept the old signature.
     """
     digest = hashlib.sha256()
     digest.update(post.fingerprint.encode("utf-8"))
@@ -202,6 +207,8 @@ def _fingerprint(post, tag_html: str, limit: int) -> str:
     digest.update(tag_html.encode("utf-8"))
     digest.update(b"\x00")
     digest.update(str(limit).encode("utf-8"))
+    digest.update(b"\x00")
+    digest.update(author.encode("utf-8"))
     return digest.hexdigest()
 
 
@@ -896,7 +903,7 @@ def _draft_parts(client, store, post, args) -> list:
     whole corpus cheap.
     """
     tag = _category_tag(post, args)
-    fingerprint = _fingerprint(post, tag, _limit(args))
+    fingerprint = _fingerprint(post, tag, _limit(args), args.author)
 
     state = store.get(post.slug)
     if (state.media_id and state.fingerprint == fingerprint
@@ -1246,7 +1253,8 @@ def cmd_batch(args) -> int:
             ineligible += 1
             skipped.append((post.slug, "; ".join(eligibility.reasons)))
             continue
-        fingerprint = _fingerprint(post, _category_tag(post, args), _limit(args))
+        fingerprint = _fingerprint(post, _category_tag(post, args),
+                                  _limit(args), args.author)
         state = store.get(post.slug)
         drafted = bool(state.media_id)
         # A split article has several drafts; the article counts as done
