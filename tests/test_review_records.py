@@ -69,6 +69,23 @@ def git(*args: str) -> str:
     return result.stdout
 
 
+def history_is_shallow() -> bool:
+    """Whether this checkout can see the whole commit history.
+
+    A shallow clone (``git clone --depth 1``, which is what
+    ``actions/checkout`` does by default) only carries the tip commit, so
+    ``git log --all`` cannot show the merge commits of articles that were
+    merged earlier.  Without the history, the check below cannot make a
+    truthful verdict -- it must be skipped, not failed.
+    """
+    shallow = REPO_ROOT / ".git" / "shallow"
+    if shallow.exists():
+        return True
+    result = subprocess.run(["git", "rev-parse", "--is-shallow-repository"],
+                            cwd=REPO_ROOT, capture_output=True, text=True)
+    return result.stdout.strip() == "true"
+
+
 def merged_commit_for(slug: str) -> list[str]:
     """Commits whose subject is exactly ``docs(review): <slug>``."""
     out = git("log", "--format=%H%x00%s", "--all")
@@ -126,6 +143,8 @@ def test_record_status_is_valid():
 
 
 def test_merged_record_has_a_matching_commit():
+    if history_is_shallow():
+        pytest.skip("浅克隆看不到历史，跳过「已合入提交」检查")
     for path in record_files():
         info = parse_record(path)
         if info["status"] != "已合入":
