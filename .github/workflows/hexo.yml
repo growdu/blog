@@ -36,7 +36,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     # 每个 job 都必须有上限。run 不结束 → 并发组不释放 → 后面所有推送卡在 pending。
-    timeout-minutes: 15
+    # npm install + hexo generate 实测几分钟，20 分钟够用。
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
         with:
@@ -191,7 +192,12 @@ jobs:
     #   BatchMode       认证失败立刻报错，不再等密码提示（最常见的一种挂法）
     #   ConnectTimeout  网络不通也只等 20 秒
     #   timeout-minutes 上面都失效时（比如 rsync 传输中途断流）到点收摊
-    timeout-minutes: 15
+    #
+    # 超时要给足余量：一次正常部署要把 167MB / 2400 个文件搬三遍
+    # （artifact 上传、artifact 下载、rsync 到服务器），实测端到端
+    # 十几分钟。超时是给「挂死」兜底的，不是给「慢」设限——
+    # 设太紧就变成部署自己把部署杀掉。
+    timeout-minutes: 30
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v8
@@ -243,7 +249,7 @@ jobs:
     name: Build for GitHub Pages
     runs-on: ubuntu-latest
     # 同上：run 不结束 → 并发组不释放 → 后面所有推送都卡住。
-    timeout-minutes: 15
+    timeout-minutes: 20
     # Serialize after the growdu.cn build.  Both jobs used to create the
     # Gitalk issues concurrently: each listed the existing issues, each
     # saw the post as missing, and each created its own copy -> 182
