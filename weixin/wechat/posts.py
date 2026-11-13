@@ -10,6 +10,7 @@ and adds the metadata WeChat needs: digest, permalink and eligibility.
 from __future__ import annotations
 
 import hashlib
+import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
@@ -18,18 +19,57 @@ from urllib.parse import quote
 from .digest import DIGEST_LIMIT, make_digest
 from .titles import TITLE_LIMIT
 
-BODY_LIMIT = 20000
 AUTHOR_LIMIT = 16
 
-# WeChat caps the article body at 20000 characters of the ``content``
-# field, which is the rendered HTML, and at 1 MB of bytes.  BODY_LIMIT is
-# a cheap pre-check on the raw markdown; it is a necessary but not
-# sufficient condition -- across the corpus 142 posts pass the raw check
-# and still exceed the limit once rendered.  The authoritative check
-# therefore runs on the rendered content (RenderResult.content_length)
-# before anything is uploaded.
-CONTENT_LIMIT = 20000
+# The body limit of one draft, in characters of rendered HTML.
+#
+# The official field table says "content 少于 2 万字符", but that line is
+# wrong.  ``draft/add`` was measured taking 20 001, 25 000, 40 000,
+# 65 535 and 100 000 characters, and every one of them came back from
+# ``draft/get`` with the same length -- not one character was dropped.
+# The same table claims the title is 32 characters while the editor
+# takes 64: it is a copy of an old version, not a description of the
+# platform.
+#
+# So this is not a platform limit but a choice -- how long one draft
+# should be.  Only a quarter of the rendered HTML is text the reader
+# sees; the inline styles eat the rest.  20 000 characters therefore
+# reach the reader as about 5 000 words, and 60 000 as about 15 000.
+#
+# It is a parameter of the whole pipeline, not a constant: the command
+# line (``--max-length``) wins, then the environment (``WX_MAX_LENGTH``),
+# then this default.
+CONTENT_LIMIT = 60000
+
+# The cheap pre-check on the raw markdown.  The rendered HTML is never
+# shorter than the text it was rendered from -- checked over the whole
+# corpus -- so the same number is a valid necessary condition.  The
+# authoritative check runs on the rendered content
+# (RenderResult.content_length) before anything is uploaded.
+BODY_LIMIT = CONTENT_LIMIT
+
+# WeChat also caps the body at 1 MB of bytes.
 CONTENT_BYTES_LIMIT = 1024 * 1024
+
+
+def resolve_content_limit(value: int = 0) -> int:
+    """The body limit of this run.
+
+    The command line wins, then ``WX_MAX_LENGTH``, then the default.
+    A value that is not a positive whole number is refused rather than
+    ignored: a typo in the limit must not quietly halve or double
+    every article in the corpus.
+    """
+    raw = value or os.environ.get("WX_MAX_LENGTH", "") or 0
+    if raw == 0 or raw == "":
+        return CONTENT_LIMIT
+    try:
+        limit = int(raw)
+    except (TypeError, ValueError):
+        raise ValueError("正文上限不是一个整数: {}".format(raw))
+    if limit <= 0:
+        raise ValueError("正文上限必须是正整数: {}".format(raw))
+    return limit
 
 _FM_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 
@@ -168,8 +208,19 @@ def discover(posts_dir: Path) -> list:
     return [load_post(path, posts_dir) for path in sorted(posts_dir.rglob("*.md"))]
 
 
+def is_empty(post: Post) -> bool:
+    """True when the article has no content left after its front matter.
+
+    A file that carries nothing but its front matter is a page with a
+    title and nothing else.  Put into the draft box it becomes a shell
+    -- a title, a category line and a signature around no text at all
+    -- so it is skipped instead, and the reason is written down.
+    """
+    return not re.sub(r"\s", "", post.body)
+
+
 def check_eligibility(post: Post) -> Eligibility:
-    """Check the post against WeChat's hard limits.
+    """Check the post against the things that really stop it.
 
     Neither a long title nor a long body is a reason to skip the
     article any more.  The title is shortened at a boundary that keeps
@@ -177,6 +228,11 @@ def check_eligibility(post: Post) -> Eligibility:
     drafts that each fit (``wechat/split.py``).  The lengths are still
     measured -- the ``audit`` command reports them -- but they no longer
     decide whether the article may be published.
+
+    An article with no content at all is the one thing that cannot be
+    published: there is nothing to put in the draft.
     """
     reasons = []
+    if is_empty(post):
+        reasons.append("正文为空：源文件里只剩 front matter，没有可发布的内容")
     return Eligibility(ok=not reasons, reasons=tuple(reasons))

@@ -144,7 +144,7 @@ def test_audit_counts_an_article_that_is_split(tmp_path):
     (posts_dir / "long.md").write_text(
         _post("很长的文章", "## 第一节\n\n" + body), encoding="utf-8")
 
-    report = audit_corpus(posts_dir)
+    report = audit_corpus(posts_dir, limit=20000)
     assert report.publishable == 1
     assert report.unsplittable == 0
     assert report.split_posts == 1

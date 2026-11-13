@@ -26,7 +26,7 @@ from pathlib import Path
 
 from .collection import render_category_tag
 from .mdparse import parse
-from .posts import BODY_LIMIT, CONTENT_LIMIT, discover
+from .posts import CONTENT_LIMIT, discover, is_empty
 from .render import links_html, links_items_html, render
 from .split import framing_reserve, plan_parts
 from .titles import TITLE_LIMIT, effective_title
@@ -89,6 +89,10 @@ class Audit:
     unsplittable: int
     buckets: dict = field(default_factory=dict)
     violations: list = field(default_factory=list)
+    # The limit these numbers were measured against.
+    limit: int = CONTENT_LIMIT
+    # Posts that carry nothing but their front matter.
+    empty_posts: int = 0
 
     @property
     def publishable_ratio(self) -> float:
@@ -138,8 +142,13 @@ def html_violations_from_htmls(pairs) -> list:
     return violations
 
 
-def word_buckets(lengths, limit: int = BODY_LIMIT) -> dict:
-    """Group raw word counts into the buckets used by the analysis docs."""
+def word_buckets(lengths) -> dict:
+    """Group raw word counts into the buckets used by the analysis docs.
+
+    The edges are absolute: they describe the corpus, not the limit.
+    A limit that moves would otherwise change the name of the buckets
+    and the numbers quoted in the docs along with them.
+    """
     buckets = {
         "<2000": 0,
         "2000-5000": 0,
@@ -154,7 +163,7 @@ def word_buckets(lengths, limit: int = BODY_LIMIT) -> dict:
             buckets["2000-5000"] += 1
         elif length < 10000:
             buckets["5000-10000"] += 1
-        elif length <= limit:
+        elif length <= 20000:
             buckets["10000-20000"] += 1
         else:
             buckets[">20000"] += 1
@@ -172,13 +181,17 @@ def _measure(blocks, highlight: bool = True) -> int:
     return body + len(links_items_html(result.external_links))
 
 
-def audit_corpus(posts_dir: Path) -> Audit:
+def audit_corpus(posts_dir: Path, limit: int = CONTENT_LIMIT) -> Audit:
     """Measure the corpus in ``posts_dir`` against the publishing limits.
 
     Both rendering modes are measured, because the pipeline falls back to
     plain code blocks when the highlighted version does not fit.  A post
     that fits in neither mode is not lost: it is split into several
     drafts, which is what ``split_posts`` and ``split_parts`` report.
+
+    ``limit`` is the body limit one draft has to fit into -- the same
+    number the pipeline splits with, so the numbers here describe the
+    drafts that would really be created.
 
     The measurement is a conservative one: no mermaid resolver is used
     here, so a diagram counts as its own source code -- which is longer
@@ -191,7 +204,7 @@ def audit_corpus(posts_dir: Path) -> Audit:
                      render_over=0, raw_within=0, fit_highlight=0, fit_plain=0,
                      fit_either=0, publishable=0, needs_plain_only=0,
                      median_highlight=0.0, median_plain=0.0, split_posts=0,
-                     split_parts=0, unsplittable=0)
+                     split_parts=0, unsplittable=0, limit=limit)
 
     raw_lengths = [len(re.sub(r"\s", "", post.body)) for post in posts]
     highlighted = []
@@ -216,14 +229,18 @@ def audit_corpus(posts_dir: Path) -> Audit:
         after_title.append(index)
         if len(effective_title(post.title)) < len(post.title):
             shortened += 1
-        if len(re.sub(r"\s", "", post.body)) > BODY_LIMIT:
+        if len(re.sub(r"\s", "", post.body)) > limit:
             continue
         after_raw.append(index)
-        if min(highlighted[index], plain[index]) > CONTENT_LIMIT:
+        if min(highlighted[index], plain[index]) > limit:
             continue
         after_render.append(index)
-        if highlighted[index] > CONTENT_LIMIT:
+        if highlighted[index] > limit:
             needs_plain_only += 1
+
+    # Posts that carry nothing but their front matter never become a
+    # draft: there is nothing to publish.
+    empty = sum(1 for post in posts if is_empty(post))
 
     # How many drafts the corpus turns into once the long articles are
     # split -- and how many articles cannot be split at all.
@@ -231,15 +248,17 @@ def audit_corpus(posts_dir: Path) -> Audit:
     split_parts = 0
     unsplittable = 0
     for post in posts:
+        if is_empty(post):
+            continue
         blocks = parse(post.body)
         title = effective_title(post.title)
         # The same reserve the pipeline uses: every part pays once for
         # its transition lines, its category tag and its reference-links
         # wrapper, and that room has to be kept back from the body.
         reserve = framing_reserve(title, render_category_tag(post.categories))
-        budget = CONTENT_LIMIT - reserve
+        budget = limit - reserve
         parts = plan_parts(
-            blocks, CONTENT_LIMIT,
+            blocks, limit,
             lambda group: _measure(group, True),
             lambda group: _measure(group, False),
             reserve=reserve)
@@ -254,11 +273,11 @@ def audit_corpus(posts_dir: Path) -> Audit:
             split_posts += 1
 
     # Corpus wide: how every post measures on each criterion on its own.
-    raw_within = sum(1 for length in raw_lengths if length <= BODY_LIMIT)
-    fit_highlight = sum(1 for length in highlighted if length <= CONTENT_LIMIT)
-    fit_plain = sum(1 for length in plain if length <= CONTENT_LIMIT)
+    raw_within = sum(1 for length in raw_lengths if length <= limit)
+    fit_highlight = sum(1 for length in highlighted if length <= limit)
+    fit_plain = sum(1 for length in plain if length <= limit)
     fit_either = sum(
-        1 for high, low in zip(highlighted, plain) if min(high, low) <= CONTENT_LIMIT)
+        1 for high, low in zip(highlighted, plain) if min(high, low) <= limit)
 
     categories = {post.categories[0] for post in posts if post.categories}
 
@@ -278,8 +297,9 @@ def audit_corpus(posts_dir: Path) -> Audit:
         fit_either=fit_either,
         # An article is publishable as soon as its title fits and it
         # can be cut into parts that fit: a long body is split, not
-        # refused -- unless there is nowhere left to cut it.
-        publishable=len(after_title) - unsplittable,
+        # refused -- unless there is nowhere left to cut it, or there is
+        # nothing to publish in the first place.
+        publishable=len(after_title) - unsplittable - empty,
         needs_plain_only=needs_plain_only,
         median_highlight=statistics.median(highlighted),
         median_plain=statistics.median(plain),
@@ -288,4 +308,6 @@ def audit_corpus(posts_dir: Path) -> Audit:
         unsplittable=unsplittable,
         buckets=word_buckets(raw_lengths),
         violations=html_violations_from_htmls(rendered),
+        limit=limit,
+        empty_posts=empty,
     )

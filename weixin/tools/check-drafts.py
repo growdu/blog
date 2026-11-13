@@ -21,7 +21,7 @@ WECHAT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(WECHAT_ROOT))
 
 from wechat.audit import check_html
-from wechat.posts import CONTENT_LIMIT
+from wechat.posts import resolve_content_limit
 
 TRANSITION_HEAD = re.compile(r"共 \d+ 部分，这是第 \d+ 部分")
 TRANSITION_TAIL = re.compile(r"未完待续|全文完")
@@ -46,6 +46,10 @@ def parts_of(slug_dir: Path) -> list:
 def main(argv) -> int:
     out_dir = (Path(argv[1]) if len(argv) > 1
                else WECHAT_ROOT / "out")
+    # The same limit the pipeline used: the environment decides, the
+    # default is the last resort.  A draft that is longer than the
+    # limit it was made under is not a problem -- it is a leftover.
+    limit = resolve_content_limit()
     state_path = out_dir / "state.json"
     ledger = json.loads(state_path.read_text(encoding="utf-8"))["posts"] if state_path.is_file() else {}
 
@@ -66,7 +70,7 @@ def main(argv) -> int:
         total_parts += len(parts)
         for index, path in enumerate(parts, 1):
             html = path.read_text(encoding="utf-8")
-            if len(html) > CONTENT_LIMIT:
+            if len(html) > limit:
                 over_length.append((slug, index, len(html)))
             for issue in check_html(html):
                 problems.append((slug, index, issue))
@@ -78,7 +82,7 @@ def main(argv) -> int:
     print("文章 {} 篇，渲染出的部分 {} 个".format(len(slugs), total_parts))
     print("带衔接语的部分: {}".format(with_transition))
     print("带参考链接区块的部分: {}".format(with_links))
-    print("超长（>{} 字符）的部分: {}".format(CONTENT_LIMIT, len(over_length)))
+    print("超长（>{} 字符）的部分: {}".format(limit, len(over_length)))
     for slug, index, length in over_length[:10]:
         print("   {} 第{}部分 {} 字符".format(slug, index, length))
     print("HTML 不合规的部分: {}".format(len(problems)))

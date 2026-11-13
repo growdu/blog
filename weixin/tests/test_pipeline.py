@@ -17,6 +17,12 @@ from wechat.assets import prepare_image
 from wechat.material import MaterialCache
 from wechat.posts import CONTENT_LIMIT, load_post
 
+# The tests below are about how an article is cut, so they pin the
+# limit they cut at.  The default limit is a choice that may move --
+# and when it moves, the split moves with it, which is a different
+# question from the one these tests ask.
+SPLIT_LIMIT = 20000
+
 SAMPLE = """---
 title: "演示文章"
 date: 2026-11-09 15:00:00
@@ -170,10 +176,12 @@ def sample_post(tmp_path):
     return posts_dir, "database/demo"
 
 
-def _args(posts_dir, out_dir, slug=None, server=None):
+def _args(posts_dir, out_dir, slug=None, server=None, max_length=0):
     args = ["--posts-dir", str(posts_dir), "--out-dir", str(out_dir)]
     if server:
         args += ["--api-base", server]
+    if max_length:
+        args += ["--max-length", str(max_length)]
     return args
 
 
@@ -235,12 +243,16 @@ def test_convert_shortens_a_long_title_instead_of_refusing(tmp_path, capsys):
     assert "一个很长很长的主标题部分" in out
 
 
-def _legacy_fingerprint(post, tag_html):
+def _legacy_fingerprint(post, tag_html, limit):
     """The fingerprint as it was before the title was shortened.
 
-    The 463 drafts that were already in the box carry this hash, so a
-    draft that has not changed must keep it -- otherwise every one of
-    them would have to be sent again for nothing.
+    The drafts that are already in the box carry this hash, so a draft
+    that has not changed must keep it -- otherwise every one of them
+    would have to be sent again for nothing.
+
+    The limit is part of it: it decides where the article is cut, so a
+    different limit means different parts, and the drafts that carry
+    the old cut have to be replaced.
     """
     digest = hashlib.sha256()
     digest.update(post.fingerprint.encode("utf-8"))
@@ -248,6 +260,8 @@ def _legacy_fingerprint(post, tag_html):
     digest.update(post.title.encode("utf-8"))
     digest.update(b"\x00")
     digest.update(tag_html.encode("utf-8"))
+    digest.update(b"\x00")
+    digest.update(str(limit).encode("utf-8"))
     return digest.hexdigest()
 
 
@@ -270,14 +284,16 @@ def test_the_fingerprint_of_an_untouched_article_does_not_move(tmp_path):
     """
     post = _post_with_title(tmp_path, "一个短标题")
     tag = "<p>分类</p>"
-    assert _fingerprint(post, tag) == _legacy_fingerprint(post, tag)
+    assert _fingerprint(post, tag, CONTENT_LIMIT) == _legacy_fingerprint(
+        post, tag, CONTENT_LIMIT)
 
 
 def test_the_fingerprint_moves_when_the_title_is_shortened(tmp_path):
     """A title that was cut has to reach the drafts that carry it."""
     post = _post_with_title(tmp_path, "主标题在这里：{}".format("副标题" * 20))
     tag = "<p>分类</p>"
-    assert _fingerprint(post, tag) != _legacy_fingerprint(post, tag)
+    assert _fingerprint(post, tag, CONTENT_LIMIT) != _legacy_fingerprint(
+        post, tag, CONTENT_LIMIT)
 
 
 def test_publish_creates_draft_with_expected_payload(sample_post, tmp_path, server, monkeypatch):
@@ -441,7 +457,7 @@ def test_publish_refuses_content_over_the_limit(tmp_path, server, monkeypatch, c
     monkeypatch.setenv("WX_APPID", "appid")
     monkeypatch.setenv("WX_APPSECRET", "secret")
 
-    code = main(["publish", "database/huge"] + _args(posts_dir, tmp_path / "out", server=server))
+    code = main(["publish", "database/huge"] + _args(posts_dir, tmp_path / "out", server=server, max_length=SPLIT_LIMIT))
     assert code == 2
     assert "/cgi-bin/draft/add" not in _Handler.calls
 
@@ -1115,7 +1131,7 @@ def test_batch_splits_an_article_that_is_too_long(tmp_path, server, monkeypatch,
     monkeypatch.setenv("WX_APPID", "appid")
     monkeypatch.setenv("WX_APPSECRET", "secret")
 
-    code = main(["batch"] + _args(posts_dir, tmp_path / "out", server=server))
+    code = main(["batch"] + _args(posts_dir, tmp_path / "out", server=server, max_length=SPLIT_LIMIT))
     out = capsys.readouterr()
     assert code == 0
     # Two parts of the long article, plus the short one next to it.
@@ -1148,7 +1164,7 @@ def test_the_report_tells_skips_and_failures_apart(tmp_path, server, monkeypatch
     monkeypatch.setenv("WX_APPSECRET", "secret")
     _Handler.fail_titles = {"文章0"}
 
-    main(["batch"] + _args(posts_dir, tmp_path / "out", server=server))
+    main(["batch"] + _args(posts_dir, tmp_path / "out", server=server, max_length=SPLIT_LIMIT))
     report = json.loads((tmp_path / "out" / "batch-report.json").read_text(encoding="utf-8"))
     assert report["rejected"] == 1
     assert report["failed"] == 1
@@ -1340,7 +1356,7 @@ def test_a_split_article_gets_one_ledger_entry_per_part(tmp_path, server, monkey
     monkeypatch.setenv("WX_APPID", "appid")
     monkeypatch.setenv("WX_APPSECRET", "secret")
 
-    assert main(["batch"] + _args(posts_dir, tmp_path / "out", server=server)) == 0
+    assert main(["batch"] + _args(posts_dir, tmp_path / "out", server=server, max_length=SPLIT_LIMIT)) == 0
 
     state = json.loads((tmp_path / "out" / "state.json").read_text(encoding="utf-8"))["posts"]
     assert "database/long" in state
@@ -1362,10 +1378,10 @@ def test_re_running_a_split_article_creates_nothing(tmp_path, server, monkeypatc
     assert "/cgi-bin/media/uploadimg" not in _Handler.calls
 
 
-def _render_args(out_dir):
+def _render_args(out_dir, max_length=SPLIT_LIMIT):
     """The arguments ``_render_parts`` needs -- no network, no server."""
     return SimpleNamespace(out_dir=str(out_dir), category_tag="top",
-                          author="growdu")
+                          author="growdu", max_length=max_length)
 
 
 def _long_render_post(tmp_path, paragraphs=700, title="很长",
@@ -1406,7 +1422,7 @@ def test_an_article_whose_parts_land_on_the_limit_is_split_not_refused(tmp_path)
 
     assert len(parts) > 1
     for part in parts:
-        assert part.result.content_length <= CONTENT_LIMIT
+        assert part.result.content_length <= SPLIT_LIMIT
 
 
 def test_a_part_that_still_does_not_fit_is_cut_again(tmp_path, monkeypatch):
@@ -1425,7 +1441,7 @@ def test_a_part_that_still_does_not_fit_is_cut_again(tmp_path, monkeypatch):
 
     assert len(parts) > 1
     for part in parts:
-        assert part.result.content_length <= CONTENT_LIMIT
+        assert part.result.content_length <= SPLIT_LIMIT
 
 
 def test_a_split_article_does_not_keep_the_file_of_a_whole_one(tmp_path):
@@ -1487,7 +1503,8 @@ def test_new_only_finishes_an_article_whose_parts_are_missing(tmp_path, server, 
     monkeypatch.setenv("WX_APPID", "appid")
     monkeypatch.setenv("WX_APPSECRET", "secret")
 
-    assert main(["batch", "--new-only"] + _args(posts_dir, out_dir, server=server)) == 0
+    assert main(["batch", "--new-only"] + _args(posts_dir, out_dir, server=server,
+                                                max_length=SPLIT_LIMIT)) == 0
     # The first part is brought up to date, the second one is created.
     assert _Handler.calls.count("/cgi-bin/draft/update") == 1
     assert _Handler.calls.count("/cgi-bin/draft/add") == 1
@@ -1498,7 +1515,7 @@ def test_a_shorter_article_deletes_the_parts_it_no_longer_needs(tmp_path, server
     target = _long_post(posts_dir)
     monkeypatch.setenv("WX_APPID", "appid")
     monkeypatch.setenv("WX_APPSECRET", "secret")
-    args = _args(posts_dir, tmp_path / "out", server=server)
+    args = _args(posts_dir, tmp_path / "out", server=server, max_length=SPLIT_LIMIT)
 
     assert main(["batch"] + args) == 0
     assert len(_Handler.drafts) == 2
@@ -1523,7 +1540,7 @@ def test_every_part_gets_its_own_digest(tmp_path, server, monkeypatch):
     monkeypatch.setenv("WX_APPID", "appid")
     monkeypatch.setenv("WX_APPSECRET", "secret")
 
-    assert main(["batch"] + _args(posts_dir, tmp_path / "out", server=server)) == 0
+    assert main(["batch"] + _args(posts_dir, tmp_path / "out", server=server, max_length=SPLIT_LIMIT)) == 0
 
     digests = [article["digest"] for article in _Handler.drafts]
     assert len(digests) == 2
@@ -1537,7 +1554,7 @@ def test_the_parts_are_numbered_in_their_titles(tmp_path, server, monkeypatch):
     monkeypatch.setenv("WX_APPID", "appid")
     monkeypatch.setenv("WX_APPSECRET", "secret")
 
-    assert main(["batch"] + _args(posts_dir, tmp_path / "out", server=server)) == 0
+    assert main(["batch"] + _args(posts_dir, tmp_path / "out", server=server, max_length=SPLIT_LIMIT)) == 0
 
     titles = [article["title"] for article in _Handler.drafts]
     assert titles == ["很长（一）", "很长（二）"]
@@ -1735,7 +1752,7 @@ def test_the_card_and_the_signature_do_not_break_the_limit(tmp_path):
     parts = _render_parts(post, _render_args(tmp_path / "out"))
 
     for part in parts:
-        assert part.result.content_length <= CONTENT_LIMIT
+        assert part.result.content_length <= SPLIT_LIMIT
 
 
 def test_the_digest_is_the_authors_own_description(tmp_path, server, monkeypatch):

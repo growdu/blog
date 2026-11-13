@@ -44,7 +44,8 @@ from . import titles as titles_module
 from . import version as version_module
 from .mdparse import parse
 from .posts import (AUTHOR_LIMIT, BODY_LIMIT, CONTENT_BYTES_LIMIT, CONTENT_LIMIT,
-                    DIGEST_LIMIT, TITLE_LIMIT, check_eligibility, discover, load_post)
+                    DIGEST_LIMIT, TITLE_LIMIT, check_eligibility, discover, load_post,
+                    resolve_content_limit)
 from .state import PublishState, StateStore, needs_submit
 
 DEFAULT_POSTS_DIR = Path(__file__).resolve().parents[2] / "source" / "_posts"
@@ -158,7 +159,19 @@ def _effective_title(post) -> str:
     return titles_module.effective_title(post.title)
 
 
-def _fingerprint(post, tag_html: str) -> str:
+def _limit(args) -> int:
+    """The body limit of this run, in characters of rendered HTML.
+
+    The command line decides (``--max-length``), the environment is the
+    fallback (``WX_MAX_LENGTH``), and the default in ``wechat.posts`` is
+    the last resort.  An argument object that was built by hand -- in a
+    test, or by another tool -- may carry no limit at all, and then the
+    default is used.
+    """
+    return getattr(args, "max_length", 0) or CONTENT_LIMIT
+
+
+def _fingerprint(post, tag_html: str, limit: int) -> str:
     """Content hash covering everything that ends up in the published body.
 
     The markdown on its own is not enough: the category tag is part of
@@ -172,6 +185,10 @@ def _fingerprint(post, tag_html: str) -> str:
     from the original**: adding it unconditionally would change the
     hash of every article, and the 463 drafts already in the box would
     all have to be re-sent for no change in their content.
+
+    The limit counts as well, and for the same reason: it decides
+    where the article is cut.  A different limit means different parts,
+    so the drafts that carry the old cut have to be replaced.
     """
     digest = hashlib.sha256()
     digest.update(post.fingerprint.encode("utf-8"))
@@ -183,6 +200,8 @@ def _fingerprint(post, tag_html: str) -> str:
         digest.update(effective.encode("utf-8"))
         digest.update(b"\x00")
     digest.update(tag_html.encode("utf-8"))
+    digest.update(b"\x00")
+    digest.update(str(limit).encode("utf-8"))
     return digest.hexdigest()
 
 
@@ -220,26 +239,29 @@ def cmd_scan(args) -> int:
 
 def cmd_audit(args) -> int:
     """Recompute every number quoted in weixin/docs/."""
-    report = audit_module.audit_corpus(args.posts_dir)
+    limit = _limit(args)
+    report = audit_module.audit_corpus(args.posts_dir, limit=limit)
 
     print("语料: {} 篇, {} 个分类".format(report.posts, report.categories))
+    print("正文上限: {} 字符（渲染后的 HTML，可用 --max-length 改）".format(limit))
     print()
     print("闸门（逐层收紧，每层只数上一层放行的文章）:")
     print("  标题 <= {} 字符         放行 {:>4}  需要裁剪 {:>4}   ← 超长不再拦下，改裁剪".format(
         TITLE_LIMIT, report.title_ok, report.title_shortened))
     print("  原始正文 <= {} 字       放行 {:>4}  超长 {:>4}   ← 超长不再拦下，改拆分".format(
-        BODY_LIMIT, report.raw_ok, report.raw_over))
+        limit, report.raw_ok, report.raw_over))
     print("  渲染后 <= {} 字符       单篇放得下 {:>4}  需要拆 {:>4}".format(
-        CONTENT_LIMIT, report.render_ok, report.render_over))
+        limit, report.render_ok, report.render_over))
     print()
     print("可发布: {} 篇 ({:.1f}%)，草稿总数 {} 篇".format(
         report.publishable, report.publishable_ratio, report.split_parts))
     print("  其中需要拆成多篇: {} 篇".format(report.split_posts))
     print("  其中拆不开（单块就超限）: {} 篇".format(report.unsplittable))
     print("  其中只有关掉代码高亮才放得下: {} 篇".format(report.needs_plain_only))
+    print("  其中正文为空（源文件只剩 front matter）: {} 篇".format(report.empty_posts))
     print()
     print("全语料口径:")
-    print("  原始正文 <= {} 字       {:>4} 篇".format(BODY_LIMIT, report.raw_within))
+    print("  原始正文 <= {} 字       {:>4} 篇".format(limit, report.raw_within))
     print("  渲染后放得下（带高亮）  {:>4} 篇".format(report.fit_highlight))
     print("  渲染后放得下（关高亮）  {:>4} 篇".format(report.fit_plain))
     print("  正文长度中位            带高亮 {} 字符, 关高亮 {} 字符".format(
@@ -275,12 +297,13 @@ def cmd_convert(args) -> int:
     assets = _mermaid_assets(post, args)
     result = _prepare(post, args, resolver=_Resolver(assets))
     degraded = False
+    limit = _limit(args)
 
     # Syntax colouring costs one <span> per token.  On a code-heavy
     # article that is a quarter of the character budget, so when the
     # highlighted version does not fit, plain code is used instead:
     # readable content beats colourful content.
-    if result.content_length > CONTENT_LIMIT:
+    if result.content_length > limit:
         plain = _prepare(post, args, resolver=_Resolver(assets), highlight=False)
         if plain.content_length < result.content_length:
             result = plain
@@ -300,7 +323,7 @@ def cmd_convert(args) -> int:
     print("  HTML: {}".format(
         (Path(args.out_dir) / post.slug / "article.html").as_posix()))
     print("  正文长度: {} 字符 (上限 {}){}".format(
-        result.content_length, CONTENT_LIMIT,
+        result.content_length, limit,
         "  [已关闭代码高亮以压缩体积]" if degraded else ""))
     print("  待上传图片: {}".format(len(result.assets)))
     if result.external_images:
@@ -670,9 +693,9 @@ class Part:
     digest: str = ""
 
 
-def _fits(result) -> bool:
+def _fits(result, limit: int = CONTENT_LIMIT) -> bool:
     """True when WeChat would accept this content as it is."""
-    return (result.content_length <= CONTENT_LIMIT
+    return (result.content_length <= limit
             and len(result.html.encode("utf-8")) < CONTENT_BYTES_LIMIT)
 
 
@@ -701,6 +724,7 @@ def _render_parts(post, args) -> list:
     assets = _mermaid_assets(post, args)
     resolver = _Resolver(assets)
     tag = _category_tag(post, args)
+    limit = _limit(args)
     position = getattr(args, "category_tag", "top")
     head = tag if position == "top" else ""
     tail = tag if position == "bottom" else ""
@@ -773,7 +797,7 @@ def _render_parts(post, args) -> list:
                    + len(split_module.transition_tail_html(base_title, index, total))
                    + len(signature)
                    + len(render_module.links_html(result.external_links)))
-        return CONTENT_LIMIT - framing
+        return limit - framing
 
     # The card and the signature are paid for out of the body, so they
     # are part of the reserve.  The reserve is the same for every part
@@ -783,7 +807,7 @@ def _render_parts(post, args) -> list:
     reserve = split_module.framing_reserve(base_title, tag,
                                            extra=card + signature)
     groups = split_module.plan_parts(
-        blocks, CONTENT_LIMIT, measure,
+        blocks, limit, measure,
         plain_measure=lambda group: measure(group, highlight=False),
         reserve=reserve)
 
@@ -801,9 +825,9 @@ def _render_parts(post, args) -> list:
         total = len(groups)
         rendered = [(build(group, index, total, not use_plain), group, use_plain)
                     for index, (group, use_plain) in enumerate(groups, 1)]
-        overflow = {index: max(result.content_length - CONTENT_LIMIT, 1)
+        overflow = {index: max(result.content_length - limit, 1)
                     for index, (result, _, _) in enumerate(rendered)
-                    if not _fits(result)}
+                    if not _fits(result, limit)}
         if not overflow or attempt == MAX_SPLIT_PASSES - 1:
             break
         rebuilt = []
@@ -828,11 +852,11 @@ def _render_parts(post, args) -> list:
     total = len(groups)
     parts = []
     for index, (result, group, _use_plain) in enumerate(rendered, 1):
-        if not _fits(result):
+        if not _fits(result, limit):
             raise RejectedPost(
                 "第 {} 部分渲染后正文 {} 字符，超过上限 {} 字符，已拒绝发布\n"
                 "提示：这一部分单独放也放不下，只能人工拆得更细".format(
-                    index, result.content_length, CONTENT_LIMIT))
+                    index, result.content_length, limit))
         save(group, result, index, total)
         part_title = (base_title if total == 1
                       else split_module.part_title(base_title, index))
@@ -872,7 +896,7 @@ def _draft_parts(client, store, post, args) -> list:
     whole corpus cheap.
     """
     tag = _category_tag(post, args)
-    fingerprint = _fingerprint(post, tag)
+    fingerprint = _fingerprint(post, tag, _limit(args))
 
     state = store.get(post.slug)
     if (state.media_id and state.fingerprint == fingerprint
@@ -1215,12 +1239,14 @@ def cmd_batch(args) -> int:
     selected = []
     ineligible = 0
     unchanged = 0
+    skipped = []
     for post in posts:
         eligibility = check_eligibility(post)
         if not eligibility.ok:
             ineligible += 1
+            skipped.append((post.slug, "; ".join(eligibility.reasons)))
             continue
-        fingerprint = _fingerprint(post, _category_tag(post, args))
+        fingerprint = _fingerprint(post, _category_tag(post, args), _limit(args))
         state = store.get(post.slug)
         drafted = bool(state.media_id)
         # A split article has several drafts; the article counts as done
@@ -1248,8 +1274,10 @@ def cmd_batch(args) -> int:
     if args.dry_run:
         print("预检：将处理 {} 篇（不改数据、不调接口）".format(len(selected)))
         print("不合规跳过 {} 篇，内容未变跳过 {} 篇".format(ineligible, unchanged))
-        print("（预检只看标题与原始正文字数；渲染后超限的会在实际运行时跳过，"
-              "所以这里的篇数是上界）")
+        for slug, reason in skipped:
+            print("  ! 跳过 {} -> {}".format(slug, reason))
+        print("（预检只按正文有没有内容判断；标题会按内容裁剪，正文会按上限 {} 拆分，"
+              "所以这里的篇数是上界）".format(_limit(args)))
         for post in selected:
             print("  {}".format(post.slug))
         return EXIT_OK
@@ -1257,6 +1285,8 @@ def cmd_batch(args) -> int:
     if not selected:
         print("没有需要处理的文章（不合规 {} 篇，内容未变 {} 篇）".format(
             ineligible, unchanged))
+        for slug, reason in skipped:
+            print("  ! 跳过 {} -> {}".format(slug, reason))
         return EXIT_OK
 
     if not args.appid or not args.appsecret:
@@ -1539,9 +1569,9 @@ def cmd_publish_collection(args) -> int:
         return EXIT_REJECTED
 
     html = collection_module.render_collection_index(collection, args.source_url)
-    if len(html) > CONTENT_LIMIT:
+    if len(html) > _limit(args):
         print("合集导览正文 {} 字符，超过上限 {} 字符，已拒绝发布".format(
-            len(html), CONTENT_LIMIT), file=sys.stderr)
+            len(html), _limit(args)), file=sys.stderr)
         return EXIT_REJECTED
 
     client = publish_module.WeChatClient(
@@ -1758,6 +1788,9 @@ def _add_common_options(parser, *, suppress: bool) -> None:
     parser.add_argument("--category-tag", choices=("top", "bottom", "none"),
                         default=default("top"),
                         help="分类标签位置: top / bottom / none，默认 top")
+    parser.add_argument("--max-length", type=int, default=default(0),
+                        help="每个草稿的正文上限（渲染后的 HTML 字符数），默认 {}，"
+                             "也可用环境变量 WX_MAX_LENGTH".format(CONTENT_LIMIT))
     parser.add_argument("--notify", default=default(""),
                         help="通知通道: serverchan / wechat_work / webhook，默认取环境变量 WX_NOTIFY")
     parser.add_argument("--notify-key", default=default(""),
@@ -1844,6 +1877,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv=None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    try:
+        args.max_length = resolve_content_limit(args.max_length)
+    except ValueError as error:
+        print(str(error), file=sys.stderr)
+        return EXIT_REJECTED
     args.appid = args.appid or os.environ.get("WX_APPID", "")
     args.appsecret = args.appsecret or os.environ.get("WX_APPSECRET", "")
     args.source_url = os.environ.get("WX_SOURCE_URL", args.source_url)
