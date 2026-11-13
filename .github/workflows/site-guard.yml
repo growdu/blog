@@ -1,0 +1,61 @@
+name: Site guard
+
+# 根级 `tests/` 是**站点契约测试**：部署工作流的形状、文档里的死链与页内锚点、
+# 站点根路径前缀（主站挂 `/`、镜像挂 `/blog/`，交叉链接必须带对前缀）。
+#
+# 这些测试以前只在本机跑——CI 里没有任何地方执行它们。于是
+# 「测试全绿」和「CI 绿」是两件事：一份提交可以带着红着的契约测试
+# 直接进 master，而 CI 全绿、看起来一切正常。
+#
+# 这条工作流补上那一格。它**不阻塞部署**（独立工作流、独立并发组），
+# 挂了只报注解（不登录也能从 API 看到是哪条挂了），不挡别人的推送。
+#
+# 只跑根级 tests/：AIV 流水线那套测试由 aiv-pipeline.yml 负责，
+# 两边各管各的，失败时才知道该看哪边的注解。
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: site-guard-${{ github.ref }}
+  # 这里可以取消：测试只要看最新状态，几秒钟的事；
+  # 部署那种「必须跑完」的活才不能取消（见 hexo.yml）。
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: 跑站点契约测试
+    runs-on: ubuntu-latest
+    # 同样要有上限：run 不结束 → 并发组不释放 → 后面全卡在 pending。
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 装 pytest
+        run: python3 -m pip install pytest
+
+      - name: 跑测试
+        run: |
+          set -o pipefail
+          python3 -m pytest tests/ -q -rf 2>&1 | tee /tmp/pytest.log || true
+          # 失败条目用 ::error:: 报成注解：**不登录也能从 API 看到是哪条挂了**。
+          # 工作流日志要仓库管理员权限才能下，注解不要——CI 挂了却看不到原因，
+          # 等于白跑。
+          #
+          # `|| true` 必须在**大括号里**：管道优先级高于 `||`，写成
+          # `grep ... || true | while` 会被解析成 `grep || (true | while)`；
+          # 而且没有匹配时 grep 退出码是 1，在 `set -e` 下会把整个步骤打断——
+          # 上一版就是这么把「测试全过」变成「步骤失败」的。
+          { grep -E "^(FAILED|ERROR) " /tmp/pytest.log || true; } \
+            | while IFS= read -r line; do
+                echo "::error title=站点契约测试失败::${line}"
+              done
+          if grep -qE "^(FAILED|ERROR) " /tmp/pytest.log; then exit 1; fi
