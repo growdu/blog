@@ -12,7 +12,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CAPABILITIES = REPO_ROOT / "publish" / "capabilities"
 
-PLATFORMS = ("channels", "bilibili")
+PLATFORMS = ("channels", "bilibili", "douyin")
 
 TOP_KEYS = ("id", "name", "kind", "auth", "automation", "review",
             "requires_certification", "requires_min_followers", "verified")
@@ -23,6 +23,10 @@ AUTH = ("none", "appid_secret")
 LIMIT_KEYS = {
     "channels": ("title_chars", "description_chars", "topics_max", "topic_chars"),
     "bilibili": ("title_chars", "description_chars", "tags_chars", "tag_chars"),
+    # 抖音的 text 是**一个字段**装下标题+正文+话题，所以限额是四项 + 拼装后的总量。
+    # text_chars 是给 adapter 拼装完做总量校验用的（epmeta 逐字段查不到总量）。
+    "douyin": ("text_chars", "title_chars", "description_chars",
+               "topics_max", "topic_chars"),
 }
 # 核过的数值。改了这里就要同时改规格文档，并说明出处。
 PINNED = {
@@ -32,6 +36,11 @@ PINNED = {
                  "topics_max": 5, "topic_chars": 15},
     "bilibili": {"title_chars": 79, "description_chars": 249,
                  "tags_chars": 199, "tag_chars": 20},
+    # 抖音（2026-11-14 对官方文档核对，**非实测**——个人主体批不下发布能力）。
+    # text_chars = 1000 是**平台写明**的（错误码 2100005「标题文字不得多于1000个」）；
+    # 剩下四项是**我们自己的编辑口径**，平台没写死（规格 §6.6）。
+    "douyin": {"text_chars": 1000, "title_chars": 55, "description_chars": 500,
+               "topics_max": 5, "topic_chars": 15},
 }
 
 # [media] 段核过的数值。这些是成片的技术门槛，来源见规格 §5.2。
@@ -51,6 +60,15 @@ MEDIA_PINNED = {
         "max_audio_bitrate": 320000, "max_audio_channels": 2,
         "max_sample_rate": 48000, "max_video_bitrate": 60000000,
         "max_keyframe_gap_s": 10,
+    },
+    # 抖音：**只放有出处的闸**。平台没文档化尺寸与帧率上限，所以那两项不设
+    # （设了就是拿编辑偏好冒充平台规则）。时长 15 分钟（错误码 2114006）、
+    # 体积 4GB（官方「视频总大小 4GB 以内」）是平台写明的；音频两条平台
+    # 未文档化，取我们出片的规格——标注在 douyin.toml 的注释里。
+    "douyin": {
+        "require_video_codec": "h264", "require_pix_fmt": "yuv420p",
+        "max_duration_s": 900, "max_bytes": 4294967296,
+        "max_audio_channels": 2, "max_sample_rate": 48000,
     },
 }
 
@@ -158,19 +176,53 @@ def test_channels_has_no_keyframe_rule():
     assert "max_keyframe_gap_s" not in media
 
 
+def test_douyin_has_no_size_or_fps_gate():
+    """抖音**没有文档化**尺寸与帧率上限，所以不设闸。
+
+    加上去就是拿编辑偏好冒充平台规则——规格 §6.6 把这条写清楚了。
+    真要加之前，先把官方文档的依据写进 `douyin.toml` 的注释里。
+    """
+    media = _load("douyin")["media"]
+    for key in ("max_width", "max_height", "max_fps"):
+        assert key not in media, (
+            f"douyin.toml 的 media 多了 {key}——平台没文档化这一项，"
+            f"这是我们自己的偏好，不是平台门槛"
+        )
+
+
+def test_douyin_editor_budgets_never_exceed_the_platform_text_limit():
+    """我们的编辑预算拼起来不能顶穿平台的 `text` 硬上限。
+
+    抖音的 `text` 一个字段装下标题+正文+话题（话题每个带一个 `#`）。
+    如果编辑预算的最坏情况已经超过平台上限，那「编辑预算」就变成了
+    平台拒绝的理由——闸会拦住一条本来能发的稿子。
+    """
+    limits = _load("douyin")["limits"]
+    worst = (limits["title_chars"] + limits["description_chars"]
+             + limits["topics_max"] * (limits["topic_chars"] + 1))
+    assert worst <= limits["text_chars"], (
+        f"抖音编辑预算最坏情况 {worst} 字，超过平台 text 上限 "
+        f"{limits['text_chars']} 字"
+    )
+
+
 def test_top_level_key_sets_are_identical():
-    """两个平台的顶层键必须完全一样。
+    """所有视频平台的顶层键必须完全一样。
 
     不对称的键集合意味着「有一个平台少了一道闸」。
     少一道闸比闸判错更糟——它不报错，只是静悄悄地不生效。
+
+    之前这条只比视频号与B站两个平台；加进抖音之后改成**遍历全部**，
+    否则新平台进来时这条守卫又变成半个。
     """
-    channels = set(_load("channels"))
-    bilibili = set(_load("bilibili"))
-    assert channels == bilibili, (
-        f"两个平台的顶层键不一致："
-        f"只有视频号有 {sorted(channels - bilibili)}，"
-        f"只有B站有 {sorted(bilibili - channels)}"
-    )
+    sets = {platform: set(_load(platform)) for platform in PLATFORMS}
+    reference = sets[PLATFORMS[0]]
+    for platform, keys in sets.items():
+        assert keys == reference, (
+            f"{platform}.toml 的顶层键与 {PLATFORMS[0]} 不一致："
+            f"多出 {sorted(keys - reference)}，"
+            f"缺少 {sorted(reference - keys)}"
+        )
 
 
 def test_auth_takes_a_known_value():
@@ -194,17 +246,24 @@ def test_verified_is_a_real_date():
             ) from None
 
 
-def test_both_platforms_keep_the_audio_gates():
-    """规格 §5.2 说音频门槛两平台都适用。
+def test_every_platform_keeps_the_audio_gates():
+    """规格 §5.2 说音频门槛所有平台都适用。
 
     视频号曾经漏掉这两道闸——闸缺席不报错，只是静悄悄地不生效。
+    之前这条只查视频号一个平台；改成**遍历全部**，新平台进来就不再是例外。
     """
-    channels = _load("channels")["media"]
-    assert channels["max_audio_channels"] == 2
-    assert channels["max_sample_rate"] == 48000
-
-
-def test_both_platforms_demand_h264():
-    """视频号部分安卓机不解 H.265，两平台都要 H.264。"""
     for platform in PLATFORMS:
-        assert _load(platform)["media"]["require_video_codec"] == "h264"
+        media = _load(platform)["media"]
+        assert media["max_audio_channels"] == 2, (
+            f"{platform} 的 max_audio_channels 变成 {media['max_audio_channels']}"
+        )
+        assert media["max_sample_rate"] == 48000, (
+            f"{platform} 的 max_sample_rate 变成 {media['max_sample_rate']}"
+        )
+
+
+def test_every_platform_demands_h264():
+    """视频号部分安卓机不解 H.265，所有平台都要 H.264。"""
+    for platform in PLATFORMS:
+        codec = _load(platform)["media"]["require_video_codec"]
+        assert codec == "h264", f"{platform} 的 require_video_codec 变成 {codec}"
