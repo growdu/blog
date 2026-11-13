@@ -139,7 +139,7 @@ def test_a_missing_file_raises(tmp_path):
         epmeta.load_meta("ep99", root=tmp_path)
 
 
-# --- 列表限额：两个平台的总限额口径不一样 --------------------------------
+# --- 列表限额：各平台的总限额口径不一样 ------------------------------------
 
 
 def test_too_many_tags_is_an_error(tmp_path):
@@ -197,6 +197,101 @@ def test_topics_still_use_the_count_limit(tmp_path):
     meta = epmeta.load_meta("ep01", root=root)
     findings = _errors(epmeta.check_meta(meta))
     assert any(f.rule_id == "epmeta.list-limit" for f in findings)
+
+
+# --- 抖音：文案三段拼一个 text ----------------------------------------------
+#
+# 抖音**没有独立的 description 字段**：标题、正文、话题全塞在一个 `text` 里
+# （规格 §6.6.3）。这里查各段自己的上限；拼装后的**总长**由 adapter 查
+# （`text_chars`，平台写明的硬上限）——epmeta 逐字段查不出「三段加起来超了」。
+
+
+def _douyin_meta(tmp_path, **overrides):
+    payload = dict(BASE)
+    section = {"title": "钩子", "description": "正文", "topics": ["数据库"]}
+    section.update(overrides)
+    payload["douyin"] = section
+    root = _write(tmp_path, payload)
+    return epmeta.load_meta("ep01", root=root)
+
+
+def test_a_missing_field_inside_the_douyin_section_is_an_error(tmp_path):
+    """配了抖音但没填全 = 配置错误，不是「这一期不发抖音」。
+
+    这两种情况必须分开：整个段缺失只是 warning（合法的「不发」），
+    段内缺字段是 error（作者忘了填）。
+    """
+    meta = _douyin_meta(tmp_path)
+    meta.douyin.pop("topics")
+    findings = _errors(epmeta.check_meta(meta))
+    assert any(f.rule_id == "epmeta.platform-required" for f in findings)
+
+
+def test_a_douyin_title_over_the_limit_is_an_error(tmp_path):
+    meta = _douyin_meta(tmp_path, title="字" * 56)
+    findings = _errors(epmeta.check_meta(meta))
+    assert any(f.rule_id == "epmeta.text-limit" for f in findings)
+
+
+def test_a_douyin_description_over_the_limit_is_an_error(tmp_path):
+    meta = _douyin_meta(tmp_path, description="字" * 501)
+    findings = _errors(epmeta.check_meta(meta))
+    assert any(f.rule_id == "epmeta.text-limit" for f in findings)
+
+
+def test_too_many_douyin_topics_is_an_error(tmp_path):
+    """抖音的话题上限是**个数**（5 个）——与视频号同口径，但出处不同。"""
+    meta = _douyin_meta(tmp_path, topics=["一", "二", "三", "四", "五", "六"])
+    findings = _errors(epmeta.check_meta(meta))
+    assert any(f.rule_id == "epmeta.list-limit" for f in findings)
+
+
+def test_a_long_douyin_topic_is_an_error(tmp_path):
+    """单个话题超长也要拦——个数没超不代表没超长。"""
+    meta = _douyin_meta(tmp_path, topics=["x" * 16])
+    findings = _errors(epmeta.check_meta(meta))
+    assert any(f.rule_id == "epmeta.list-limit" for f in findings)
+
+
+def test_a_douyin_section_is_never_required_to_exist(tmp_path):
+    """整个抖音段缺失只是 warning——「这一期不发抖音」是合法的。"""
+    payload = dict(BASE)
+    payload.pop("douyin", None)
+    root = _write(tmp_path, payload)
+    meta = epmeta.load_meta("ep01", root=root)
+    findings = epmeta.check_meta(meta)
+    warnings = [f for f in findings if f.level == epmeta.WARNING]
+    assert any(f.rule_id == "epmeta.platform-missing" for f in warnings)
+    assert _errors(findings) == []
+
+
+# --- 入库的真实元数据 ------------------------------------------------------
+
+
+def test_every_stored_episode_passes_the_meta_check():
+    """`aiv/publish/*.json` 是**入库的事实**——坏了要在测试里红。
+
+    不是等到出包那天才发现某一期的文案超了限额。
+    """
+    for path in sorted(epmeta.PUBLISH_DIR.glob("*.json")):
+        meta = epmeta.load_meta(path.stem)
+        errors = _errors(epmeta.check_meta(meta))
+        assert errors == [], (
+            f"{path.name} 有校验错误：" + "；".join(str(f) for f in errors)
+        )
+
+
+def test_every_stored_episode_carries_a_douyin_section():
+    """这六期都发抖音，所以六期都得有抖音文案段。
+
+    「某一期不发抖音」是合法状态，但那是**在事实里记下来的**——
+    要跳过某一期，就改这一处并说明，别让「忘了写」混过去。
+    """
+    for path in sorted(epmeta.PUBLISH_DIR.glob("*.json")):
+        meta = epmeta.load_meta(path.stem)
+        assert meta.platform("douyin") is not None, (
+            f"{path.name} 没有 douyin 段——这一期不发抖音的话，在这里明确排除它"
+        )
 
 
 # --- 整数字段的取值域 ------------------------------------------------------

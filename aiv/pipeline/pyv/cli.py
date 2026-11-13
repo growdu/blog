@@ -282,7 +282,9 @@ def cmd_publish(args: argparse.Namespace) -> int:
     findings = epmeta.check_meta(
         meta, contract_episode=contract_episode, duration=duration)
     if info is not None:
-        for platform in ("channels", "bilibili"):
+        # 每个配了文案的平台都做一次成片预检。平台清单只有一个来源
+        # （epmeta 的 PLATFORM_SPECS）——在这里再抄一份，迟早会漏掉新平台。
+        for platform in epmeta.PLATFORM_SPECS:
             findings.extend(preflight.check_video(info, platform))
 
     for finding in findings:

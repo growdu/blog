@@ -15,5 +15,10 @@
     "tid": 231,
     "copyright": 1,
     "no_reprint": 1
+  },
+  "douyin": {
+    "title": "一个单调递增的号，决定事务的提交顺序",
+    "description": "并发提交的时间顺序是乱的——两个事务几乎同时 commit，看时间戳分不出先后。openGauss 的做法是给每次 commit 发一个单调递增的 CSN：订阅端拿到号就知道该不该先应用。这一期讲这个号怎么发、为什么它能当全序用。",
+    "topics": ["openGauss", "逻辑复制", "数据库", "源码"]
   }
 }

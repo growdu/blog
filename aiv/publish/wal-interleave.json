@@ -15,5 +15,10 @@
     "tid": 231,
     "copyright": 1,
     "no_reprint": 1
+  },
+  "douyin": {
+    "title": "WAL 里的顺序，不等于事务的顺序",
+    "description": "WAL 是操作级记录，一行只写一个动作。6 条记录可能来自 3 个并发事务，交错着写。但订阅端要的是「一个事务一整组」。怎么归并？靠 WAL 里的事务号进 ReorderBuffer，一个事务一个槽，攒到提交记录出现才整组发出。这一期讲归并是怎么做的。",
+    "topics": ["PostgreSQL", "逻辑复制", "WAL", "数据库"]
   }
 }

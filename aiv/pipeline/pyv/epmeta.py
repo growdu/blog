@@ -3,7 +3,7 @@
 **入库的是事实**：元数据要评审、要版本化，所以进 `aiv/publish/<EP>.json`。
 **不入库的是产物**：成片、发布包都留本机。
 
-元数据只回答「这一期叫什么、封面取哪一帧、两个平台的文案是什么」，
+元数据只回答「这一期叫什么、封面取哪一帧、各平台的文案是什么」，
 不回答「怎么发」——那是 adapter 的事。
 
 平台段落里**缺一个字段就报错**，绝不静默补默认值：
@@ -28,10 +28,12 @@ WARNING = "warning"
 
 # 每个平台：必填字段、文本限额在 TOML 里的键名、列表限额、整数字段
 #
-# **列表限额的总限额怎么量，两个平台不一样**，所以口径写在这里而不是靠键名猜：
+# **列表限额的总限额怎么量，各平台不一样**，所以口径写在这里而不是靠键名猜：
 #
 # - 视频号 `topics_max`：话题**个数**的上限（5 个）。
 # - B站 `tags_chars`：标签**英文逗号分隔后的总字符数**上限（199 字）。
+# - 抖音 `topics_max`：话题**个数**的上限（5 个）——平台没文档化上限，
+#   这条是我们的编辑预算，性质同视频号但出处不同（规格 §6.6.3）。
 #
 # 搞混的后果是方向相反的：视频号会把 5 个超长话题放过（真正该拦的是字数），
 # B站会把 199 个标签放过（真正该拦的是总长）。规格 §4.3 有各自的定义。
@@ -70,6 +72,25 @@ PLATFORM_SPECS = {
         # 转载必须给来源地址——平台会拒没有来源的转载（规格 §4.3）。
         "required_when": {"copyright": {2: ("source",)}},
     },
+    "douyin": {
+        # 抖音**没有独立的 description 字段**：标题、正文、话题全塞在一个
+        # `text` 里。这一段是**三段拼一个字段**——adapter 拼好再去对
+        # `text_chars` 查总量（规格 §6.6.3）。这里逐字段查的是各自的上限。
+        "required": ("title", "description", "topics"),
+        "text_limits": {"title": "title_chars", "description": "description_chars"},
+        "list_limits": {
+            "topics": {
+                "total": "topics_max",
+                "item": "topic_chars",
+                "measure": "count",
+                # 抖音的话题是 `#话题` 内嵌在 text 里，没有独立的列表字段。
+                "separator": " ",
+            },
+        },
+        "int_fields": (),
+        "int_domains": {},
+        "required_when": {},
+    },
 }
 
 
@@ -101,6 +122,7 @@ class EpisodeMeta:
     url: str = ""
     channels: dict | None = None
     bilibili: dict | None = None
+    douyin: dict | None = None
     path: Path | None = None
 
     def platform(self, name: str) -> dict | None:
@@ -127,6 +149,7 @@ def load_meta(episode: str, root: Path | None = None) -> EpisodeMeta:
         raise MetaError(f"发布元数据必须是对象：{path}")
     channels = raw.get("channels")
     bilibili = raw.get("bilibili")
+    douyin = raw.get("douyin")
     # cover_at 写成非数字时要说人话——`float("x")` 抛的裸 ValueError
     # 会被 CLI 漏出去变成 traceback，而 CLI 只认 MetaError。
     try:
@@ -141,6 +164,7 @@ def load_meta(episode: str, root: Path | None = None) -> EpisodeMeta:
         url=str(raw.get("url", "")),
         channels=channels if isinstance(channels, dict) else None,
         bilibili=bilibili if isinstance(bilibili, dict) else None,
+        douyin=douyin if isinstance(douyin, dict) else None,
         path=path,
     )
 

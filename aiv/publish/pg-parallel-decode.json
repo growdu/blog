@@ -15,5 +15,10 @@
     "tid": 231,
     "copyright": 1,
     "no_reprint": 1
+  },
+  "douyin": {
+    "title": "32 核机器，解码只占 1 核",
+    "description": "默认发布端只有一个解码线程，串行处理，CPU 怎么加都用不满。PostgreSQL 18 把它拆成 reader 协调 + 多 worker，32 核机器上不再只用 1 核。这一期讲它怎么拆的，以及并行解码带来的顺序问题怎么解决。",
+    "topics": ["PostgreSQL", "逻辑复制", "数据库", "开源"]
   }
 }
