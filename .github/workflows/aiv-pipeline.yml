@@ -51,4 +51,13 @@ jobs:
 
       - name: 跑测试
         working-directory: aiv/pipeline
-        run: python3 -m pytest tests/ -q
+        run: |
+          set -o pipefail
+          python3 -m pytest tests/ -q -rf 2>&1 | tee /tmp/pytest.log || true
+          # 失败条目用 ::error:: 报成注解：**不登录也能从 API 看到是哪条挂了**。
+          # 工作流日志要仓库管理员权限才能下，注解不要——CI 挂了却看不到原因，
+          # 等于白跑。
+          grep -E "^(FAILED|ERROR) " /tmp/pytest.log | while IFS= read -r line; do
+            echo "::error title=pytest 失败::${line}"
+          done
+          if grep -qE "^(FAILED|ERROR) " /tmp/pytest.log; then exit 1; fi
