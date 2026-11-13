@@ -29,16 +29,22 @@ AUTHOR_LIMIT = 16
 # ``draft/get`` with the same length -- not one character was dropped.
 # The same table claims the title is 32 characters while the editor
 # takes 64: it is a copy of an old version, not a description of the
-# platform.
+# platform.  The backend editor does not truncate either -- on
+# 2026-11-14 the account owner opened a long draft and the body was
+# complete.
 #
 # So this is not a platform limit but a choice -- how long one draft
 # should be.  Only a quarter of the rendered HTML is text the reader
 # sees; the inline styles eat the rest.  20 000 characters therefore
 # reach the reader as about 5 000 words, and 60 000 as about 15 000.
 #
-# It is a parameter of the whole pipeline, not a constant: the command
-# line (``--max-length``) wins, then the environment (``WX_MAX_LENGTH``),
-# then this default.
+# The default sits below the measured ceiling on purpose: 60 000
+# characters is about 15 000 words for the reader, which is already a
+# long read, and it keeps a comfortable margin against anything the
+# platform might still enforce on the editor side.  A longer article is
+# one flag away: ``--max-length`` (or ``WX_MAX_LENGTH``) takes it up to
+# 100 000, and the limit is a parameter of the whole pipeline rather
+# than a constant.
 CONTENT_LIMIT = 60000
 
 # The cheap pre-check on the raw markdown.  The rendered HTML is never
@@ -217,6 +223,24 @@ def is_empty(post: Post) -> bool:
     -- so it is skipped instead, and the reason is written down.
     """
     return not re.sub(r"\s", "", post.body)
+
+
+# How short a draft has to be to count as an empty shell.  The shell a
+# post without content used to produce is about 115 characters: the
+# category line, the signature and the transition line.  The limit is
+# generous on purpose -- a draft the author has since written into is
+# no longer a shell, and it must not be cleaned up.
+SHELL_LIMIT = 500
+
+
+def is_empty_shell(content: str) -> bool:
+    """True when a draft still holds nothing but its own framing.
+
+    The judgement is on the length of the body, not on the title: an
+    author who opened such a draft and wrote something into it has
+    turned it back into a real article, and that must survive.
+    """
+    return len(content) < SHELL_LIMIT
 
 
 def check_eligibility(post: Post) -> Eligibility:

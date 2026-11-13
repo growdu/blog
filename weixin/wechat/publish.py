@@ -260,6 +260,16 @@ class WeChatClient:
                 break
         return drafts
 
+    def get_draft(self, media_id: str) -> dict:
+        """Read one draft back, body and all.
+
+        ``draft/batchget`` can be asked to leave the body out, but then
+        the length of what WeChat really stores is unknown -- and that
+        length is the one thing worth checking: it is the difference
+        between "the body is complete" and "the body was cut short".
+        """
+        return self._post_json("/cgi-bin/draft/get", {"media_id": media_id})
+
     def update_draft(self, media_id: str, article: dict, index: int = 0) -> None:
         """Replace one article of an existing draft, in place.
 

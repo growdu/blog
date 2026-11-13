@@ -16,6 +16,7 @@ from wechat.cli import (_docs_changed, _drop_batch_lock, _fingerprint,
 from wechat.assets import prepare_image
 from wechat.material import MaterialCache
 from wechat.posts import CONTENT_LIMIT, load_post
+from wechat.publish import WeChatClient
 
 # The tests below are about how an article is cut, so they pin the
 # limit they cut at.  The default limit is a choice that may move --
@@ -143,6 +144,9 @@ class _Handler(BaseHTTPRequestHandler):
         elif path.endswith("/draft/delete"):
             _Handler.deleted.append(json.loads(body)["media_id"])
             self._json({"errcode": 0, "errmsg": "ok"})
+        elif path.endswith("/draft/get"):
+            article = _Handler.drafts[-1] if _Handler.drafts else {}
+            self._json({"news_item": [article]})
         elif path.endswith("/freepublish/submit"):
             self._json({"publish_id": "PUBLISH_ID"})
         elif path.endswith("/freepublish/get"):
@@ -314,6 +318,21 @@ def test_publish_creates_draft_with_expected_payload(sample_post, tmp_path, serv
     assert article["content_source_url"] == "https://growdu.cn/2026/11/09/database/demo/"
     assert article["thumb_media_id"] == "COVER_ID"
     assert len(article["digest"]) <= 120
+    assert "参考链接" in article["content"]
+
+
+def test_get_draft_reads_the_body_back(sample_post, tmp_path, server, monkeypatch):
+    """能读回一篇草稿的正文——这是核对「微信到底存了多少」的唯一办法。"""
+    posts_dir, slug = sample_post
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+
+    assert main(["publish", slug] + _args(posts_dir, tmp_path / "out",
+                                          server=server)) == 0
+    client = WeChatClient("appid", "secret", base_url=server)
+    draft = client.get_draft("DRAFT_ID")
+    article = draft["news_item"][0]
+    assert article["title"] == "演示文章"
     assert "参考链接" in article["content"]
 
 

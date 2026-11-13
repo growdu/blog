@@ -4,6 +4,7 @@ from wechat.posts import (
     build_permalink,
     check_eligibility,
     discover,
+    is_empty_shell,
     load_post,
     make_digest,
     parse_front_matter,
@@ -202,3 +203,13 @@ def test_check_eligibility_body_limit_boundary(tmp_path):
     posts_dir, target = _write(tmp_path, "database/edge.md", FM + body)
     post = load_post(target, posts_dir)
     assert check_eligibility(post).ok is True
+
+
+def test_is_empty_shell_recognises_a_draft_with_nothing_in_it():
+    """空文章建出来的草稿只有标题、分类行和落款，正文不到 200 字符。
+
+    清理这类草稿之前要能认出它——但不能把用户后来自己写进去的内容
+    一起删掉，所以判据是**正文长度**，不是标题。
+    """
+    assert is_empty_shell("<p>本文作者：growdu｜完整版见文末</p>") is True
+    assert is_empty_shell("<p>" + "字" * 600 + "</p>") is False
