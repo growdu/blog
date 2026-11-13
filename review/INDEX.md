@@ -27,3 +27,4 @@
 | [postgresql-logical-replication-worker-model](database/postgresql-logical-replication-worker-model.md) | database | 建议中 | 0 | 5 | 试点 |
 | [06-heap-and-mvcc](db/postgresql/learning-path/06-heap-and-mvcc.md) | db | 建议中 | 0 | 5 | 试点 |
 | [checkpoint机制浅析](pgsql/checkpoint机制浅析.md) | pgsql | 建议中 | 1 | 5 | 试点 |
+| [分布式一致性协议](cluster/分布式一致性协议.md) | cluster | 建议中 | 1 | 5 | 试点 |
