@@ -75,6 +75,10 @@ class ChannelsConfig:
     publish_ready_ms: int = 900_000
     # 点完「发表」，最多等多久看页面有没有反应（毫秒）。这一步要么很快有反应，要么就是没反应。
     publish_effect_ms: int = 60_000
+    # 等「保存草稿」按钮变可点，最多等多久（毫秒）。
+    draft_ready_ms: int = 900_000
+    # 点完「保存草稿」，最多等多久看页面有没有反应（毫秒）。
+    draft_effect_ms: int = 60_000
 
     @classmethod
     def load(cls, path: Path | None = None) -> "ChannelsConfig":
@@ -97,6 +101,9 @@ class ChannelsConfig:
                                               cls.publish_ready_ms)),
             publish_effect_ms=int(timeouts.get("publish_effect_ms",
                                                cls.publish_effect_ms)),
+            draft_ready_ms=int(timeouts.get("draft_ready_ms", cls.draft_ready_ms)),
+            draft_effect_ms=int(timeouts.get("draft_effect_ms",
+                                             cls.draft_effect_ms)),
         )
 
     def need(self, group: str, key: str) -> list[str]:
@@ -310,6 +317,23 @@ class ChannelsFlow:
 
     # -- 内容列表（取公开链接） ------------------------------------------------
 
+    def _ensure_platform_page(self) -> None:
+        """确保当前在助手里；不在的话先回投稿页。
+
+        **按 entry_url 的域名判断，不按路径。** 用 `"/platform" in url` 判断的话，
+        本地夹具页（file://）会被判成「不在助手里」，
+        于是每回读一次草稿箱就把页面重载一遍——刚存进去的草稿全没了。
+        """
+        from urllib.parse import urlparse
+
+        current = self.driver.page.url or ""
+        if not current or current == "about:blank":
+            self.driver.page.goto(self.config.entry_url, wait_until="domcontentloaded")
+            return
+        entry_host = urlparse(self.config.entry_url).netloc
+        if entry_host and entry_host not in current:
+            self.driver.page.goto(self.config.entry_url, wait_until="domcontentloaded")
+
     def open_content_list(self) -> None:
         """进「内容管理 → 视频」列表。
 
@@ -327,8 +351,7 @@ class ChannelsFlow:
                 "把「视频」那个入口的选择器填进 browser/selectors/channels.json。"
             )
         # 不在助手页面上的话先回去——列表是助手里的一个视图
-        if "/platform" not in (self.driver.page.url or ""):
-            self.driver.page.goto(self.config.entry_url, wait_until="domcontentloaded")
+        self._ensure_platform_page()
         for parent in self.config.maybe("list", "nav_parent"):
             try:
                 self.driver.hover(parent)
@@ -365,19 +388,30 @@ class ChannelsFlow:
             return None
         return link
 
-    def prepare(self, plan: PublishPlan, *, cover: Path | None = None) -> dict:
+    def prepare(self, plan: PublishPlan, *, cover: Path | None = None,
+                wait_for: str = "publish") -> dict:
         """把发布包里的东西都填进页面，**停在发表之前**。
+
+        `wait_for` 决定等哪个按钮变可点：
+
+        - `"publish"`：等「发表」——发表前平台必须处理完视频（转码、取封面）；
+        - `"draft"`：等「保存草稿」。
 
         返回一份「填了什么」的清单，供人核对。
         """
         if not plan.video or not plan.video.is_file():
             raise FlowError(f"发布包里没有成片：{plan.package_dir}")
+        if wait_for not in ("publish", "draft"):
+            raise FlowError(f"wait_for 只能是 publish 或 draft，收到 {wait_for!r}")
 
         self.open_entry()
         self.upload_video(plan.video)
-        # 上传完了平台还要处理视频。处理完之前「发表」是灰的——
-        # 点了也不会发出去，所以这里先等它真的可点。
-        self.wait_publish_ready()
+        # 上传完了平台还要处理视频。处理完之前按钮是灰的——
+        # 点了也不会生效，所以这里先等它真的可点。
+        if wait_for == "publish":
+            self.wait_publish_ready()
+        else:
+            self.wait_draft_ready()
         self.fill_text(plan.title, plan.description, plan.topics)
 
         filled = {
@@ -448,7 +482,9 @@ class ChannelsFlow:
             "别直接重发，可能已经发出去了。"
         )
 
-    def _has_effect(self, before_url: str, submit_selector: list[str]) -> bool:
+    def _has_effect(self, before_url: str, submit_selector: list[str],
+                    marker_keys: tuple[str, ...] = ("published_marker",
+                                                    "published_notice")) -> bool:
         """点了之后，页面有反应吗。
 
         四样都算反应：
@@ -456,10 +492,10 @@ class ChannelsFlow:
         1. 选择器表里说的「成功标记」出现了（且看得见）；
         2. 「成功提示」（toast）出现了；
         3. 页面 URL 变了（跳到内容列表或成功页）；
-        4. **「发表」自己变灰了**——平台开始处理这次发表了。
+        4. **按钮自己变灰了**——平台开始处理这次动作了。
            （点之前它是可点的，否则这里根本不会点。）
         """
-        for key in ("published_marker", "published_notice"):
+        for key in marker_keys:
             for candidate in self.config.maybe("post", key):
                 try:
                     if self.driver.is_visible(candidate):
@@ -475,6 +511,149 @@ class ChannelsFlow:
             return self.driver.page.url != before_url
         except Exception:  # pragma: no cover - 页面已关
             return False
+
+    # -- 草稿（不发表） -------------------------------------------------------
+
+    def wait_draft_ready(self, *, timeout_ms: int | None = None) -> None:
+        """等「保存草稿」按钮真的点得动。
+
+        **和「发表」是同一个坑。** 平台处理视频期间，按钮是灰的，
+        而且灰按钮**没有 `disabled` 属性**——Playwright 的 click() 正常返回，
+        平台却什么也不做。所以这里一样要等到它真的可点。
+        """
+        import time
+
+        selector = self.config.need("post", "draft_button")
+        limit = timeout_ms if timeout_ms is not None else self.config.draft_ready_ms
+        deadline = time.monotonic() + limit / 1000
+        while True:
+            try:
+                if self.driver.is_enabled(selector):
+                    return
+            except ActionError:
+                pass  # 按钮还没渲染出来，继续等
+            if time.monotonic() >= deadline:
+                raise FlowError(
+                    f"等了 {limit // 1000} 秒，「保存草稿」按钮还是点不动——"
+                    "视频可能还在平台处理中，或者处理失败了。\n"
+                    "这种按钮点了也不会存上，所以这里不点。"
+                )
+            time.sleep(2)
+
+    def save_draft(self) -> dict:
+        """点「保存草稿」。
+
+        **存草稿不等于发出去了。** 草稿躺在平台的草稿箱里，等人点发表。
+        所以这个方法返回的是「点下去之后看到了什么」，
+        **不是**「草稿存上了」——存没存上要看草稿箱（`verify_draft`）。
+
+        点完必须验页面有没有反应，不能「点了就算」：
+        和「发表」一样，点了没反应时宁可报错，也不假装成功。
+        """
+        import time
+
+        selector = self.config.need("post", "draft_button")
+        if not self.driver.is_enabled(selector):
+            raise FlowError(
+                "「保存草稿」按钮点不动——视频可能还在平台处理中。\n"
+                "这种按钮点了也不会存上，所以这里不点。"
+            )
+
+        before_url = self.driver.page.url
+        self.driver.click(selector)
+
+        deadline = time.monotonic() + self.config.draft_effect_ms / 1000
+        reacted = False
+        while True:
+            if self._has_effect(before_url, selector,
+                                 ("draft_marker", "draft_notice")):
+                reacted = True
+                break
+            if time.monotonic() >= deadline:
+                break
+            time.sleep(1)
+
+        if not reacted:
+            raise FlowError(
+                "点了「保存草稿」，但页面没反应——既没有提示，URL 也没变。\n"
+                "**先到草稿箱核实**：可能已经存上了，别重复点。"
+            )
+        return {"draft_saved": True, "url_after": self.driver.page.url}
+
+    def open_draft_box(self) -> None:
+        """进「内容管理 → 草稿箱」。
+
+        和进「视频」列表一样：左边导航默认收着，子菜单要**先 hover 父项**。
+        """
+        entry = self.config.maybe("list", "draft_box_entry")
+        if not entry:
+            raise FlowError(
+                "选择器表里没有 list.draft_box_entry。\n"
+                "跑 `python3 -m browser.cli probe` 看内容管理页的结构，"
+                "把「草稿箱」那个入口的选择器填进 browser/selectors/channels.json。"
+            )
+        self._ensure_platform_page()
+        for parent in self.config.maybe("list", "nav_parent"):
+            try:
+                self.driver.hover(parent)
+            except ActionError:
+                continue
+        self.driver.click_visible(entry)
+
+    def read_draft_rows(self) -> list[str]:
+        """把草稿箱里的条目读出来（每条一段文字）。
+
+        **列表渲染在 iframe 里**（和「视频」列表同一个 post-card 页），
+        所以跨 frame 找。找不到行就返回空列表——**不编**。
+        """
+        selectors = self.config.maybe("list", "draft_row")
+        if not selectors:
+            return []
+        rows: list[str] = []
+        for candidate in selectors:
+            rows = self.driver.texts_of(candidate)
+            if rows:
+                break
+        return rows
+
+    def verify_draft(self, *texts: str) -> bool:
+        """回读草稿箱，确认这几段文字里有这一条。
+
+        **这是权威判据。** 「点了没报错」不算存上了——
+        平台的草稿箱里能看见这一条，才算。
+        """
+        self.open_draft_box()
+        rows = self.read_draft_rows()
+        for text in texts:
+            needle = (text or "").strip()
+            if not needle:
+                continue
+            for row in rows:
+                if needle in row:
+                    return True
+        return False
+
+    def draft(self, plan: PublishPlan) -> dict:
+        """把一期存成平台上的草稿（**不发表**）。
+
+        顺序：上传 → 等处理完 → 填表 → 勾原创 → 存草稿 → **回读草稿箱核对**。
+
+        最后那一步是权威判据：只有「点了没报错」不算存上了，
+        得在草稿箱里真的看见这一条。
+        """
+        filled = self.prepare(plan, wait_for="draft")
+        saved = self.save_draft()
+        # 列表行里显示的是**简介**，不是短标题——两个都试一遍。
+        found = self.verify_draft(plan.description[:12], plan.title)
+        result = dict(filled)
+        result.update(saved)
+        result["found_in_draft_box"] = found
+        if not found:
+            raise FlowError(
+                "点了「保存草稿」，页面也有反应，但**草稿箱里找不到这一条**。\n"
+                "先去草稿箱自己看一眼：可能平台改了位置，也可能根本没存上。"
+            )
+        return result
 
     def read_published_url(self) -> str | None:
         """从页面上把发布链接读出来。

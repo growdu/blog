@@ -70,6 +70,7 @@ def repo_root() -> Path:
 
 PROCESSING_PAGE = FIXTURES / "post-processing.html"
 LIST_PAGE = FIXTURES / "post-list.html"
+DRAFT_PAGE = FIXTURES / "post-draft.html"
 
 
 def _selectors_for(page_path: Path, target: Path, *, timeouts: dict | None = None) -> Path:
@@ -92,6 +93,19 @@ def processing_selectors(tmp_path):
     return _selectors_for(
         PROCESSING_PAGE, tmp_path / "processing-selectors.json",
         timeouts={"publish_ready_ms": 5000, "publish_effect_ms": 1500},
+    )
+
+
+@pytest.fixture
+def draft_selectors(tmp_path):
+    """指向「保存草稿 + 草稿箱」的假页面。
+
+    超时调得很短：理由同 `processing_selectors`——
+    要验的是「等」「点了」「回读核对」这三个动作，不是等了多久。
+    """
+    return _selectors_for(
+        DRAFT_PAGE, tmp_path / "draft-selectors.json",
+        timeouts={"draft_ready_ms": 5000, "draft_effect_ms": 1500},
     )
 
 

@@ -176,6 +176,31 @@ class PageDriver:
         except Exception as error:
             raise self._fail(f"上传失败：{error}", candidates, "upload")
 
+    def upload_via_chooser(self, selector: Selector, path: Path | str, *,
+                           timeout_ms: int = 30000) -> None:
+        """点一个会弹出**系统文件选择框**的按钮，把本地文件交给它。
+
+        **什么时候要这个。** 有些上传入口不是 `<input type=file>`，
+        而是一个按钮——点了才弹系统文件框（B站 的「上传字幕」就是这种）。
+        这种入口没法用 `set_input_files` 直接喂文件，
+        只能等文件框事件（`filechooser`）出来，再把文件塞给它。
+
+        **为什么不能用「先点再等」的写法。** 文件框事件是**点击那一刻**
+        触发的；先点完再开始等，就永远等不到——事件已经过去了。
+        所以监听必须先挂上，点击动作包在监听里。
+        """
+        target = Path(path)
+        if not target.is_file():
+            raise ActionError(f"要上传的文件不存在：{target}")
+        candidates = _as_list(selector)
+        locator = self._locator(selector)
+        try:
+            with self.page.expect_file_chooser(timeout=timeout_ms) as waiter:
+                locator.click(timeout=self.timeout_ms)
+            waiter.value.set_files(str(target))
+        except Exception as error:
+            raise self._fail(f"文件选择框没出来：{error}", candidates, "chooser")
+
     def click(self, selector: Selector) -> None:
         """点一下。"""
         candidates = _as_list(selector)
@@ -338,6 +363,33 @@ class PageDriver:
                 seen.add(href)
                 unique.append(href)
         return unique
+
+    def texts_of(self, selector: Selector) -> list[str]:
+        """页面上所有匹配元素的**可见**文本（跨 frame）。
+
+        **只收看得见的。** 隐藏的元素不算——列表页常把同一份 DOM
+        渲染两份（一份藏在折叠面板里），把隐藏的那份也算进来，
+        就会「找到」一条其实没显示出来的内容。
+        """
+        found: list[str] = []
+        for candidate in _as_list(selector):
+            for frame in self._frames():
+                try:
+                    items = frame.locator(candidate)
+                    count = items.count()
+                except Exception:
+                    continue
+                for index in range(count):
+                    item = items.nth(index)
+                    try:
+                        if not item.is_visible():
+                            continue
+                        text = (item.inner_text() or "").strip()
+                    except Exception:
+                        continue
+                    if text:
+                        found.append(text)
+        return found
 
     def screenshot(self, path: Path | str, *, full_page: bool = True) -> Path:
         """截图存盘，返回路径。"""

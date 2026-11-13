@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>假投稿页（存草稿）</title></head>
+<body>
+  <!--
+    模仿视频号投稿页 + 草稿箱。
+
+    真实站上的几件事，这里都照着做：
+
+    1. **「保存草稿」在视频处理完之前是灰的**——类名带 disabled，
+       没有 disabled 属性。所以 Playwright 的 click() 会「成功」返回，
+       而平台什么也不做（和「发表」同一个坑，2026-11-13 实测）。
+    2. 点「保存草稿」之后，**草稿箱里会多出一行**，行里显示的是**简介**
+       （不是短标题）——所以回读核对要拿简介去匹配。
+    3. 草稿箱的入口在左边导航里，子菜单要 hover 父项才展开。
+
+    query 参数：
+      （默认）    1.2 秒后「保存草稿」变可点
+      ?never=1   一直灰着
+      ?dead=1    可点了，但点了什么也不发生
+  -->
+  <div class="finder-ui-desktop-menu__sub__wrp">
+    <span class="finder-ui-desktop-sub-menu__item" id="nav-video">视频</span>
+    <span class="finder-ui-desktop-sub-menu__item" id="nav-draft">草稿箱</span>
+  </div>
+
+  <div id="post-area">
+    <input id="video-file" type="file" accept="video/mp4,video/x-m4v,video/*">
+    <input id="title" type="text" placeholder="填写短标题有机会获得更多流量">
+    <div id="desc" contenteditable="" data-placeholder="添加描述" class="input-editor"></div>
+    <input id="cover-file" type="file" accept="image/jpeg,image/jpg,image/png">
+
+    <div class="declare-original-checkbox">
+      <label class="ant-checkbox-wrapper">
+        <span class="ant-checkbox"><input type="checkbox" class="ant-checkbox-input" value=""></span>
+        <span>声明后，作品将展示原创标记。</span>
+      </label>
+    </div>
+
+    <div class="declare-original-dialog">
+      <div class="weui-desktop-dialog__wrp" style="display: none;">
+        <div class="weui-desktop-dialog">
+          <div class="weui-desktop-dialog__hd"><h3 class="weui-desktop-dialog__title">原创权益</h3></div>
+          <div class="weui-desktop-dialog__bd">
+            <label class="ant-checkbox-wrapper">
+              <span class="ant-checkbox"><input type="checkbox" class="ant-checkbox-input agree"></span>
+              <span>我已阅读并同意《原创声明须知》和《使用条款》。</span>
+            </label>
+          </div>
+          <div class="weui-desktop-dialog__ft">
+            <button type="button" class="weui-desktop-btn weui-desktop-btn_default">取消</button>
+            <button type="button" class="weui-desktop-btn weui-desktop-btn_primary">声明原创</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button id="save-draft" type="button" class="weui-desktop-btn weui-desktop-btn_disabled">保存草稿</button>
+    <button id="publish" type="button" class="weui-desktop-btn weui-desktop-btn_primary">发表</button>
+    <div id="draft-notice" style="display:none">已保存到草稿箱</div>
+  </div>
+
+  <div id="draft-box" style="display:none">
+    <div id="draft-list"></div>
+  </div>
+
+  <script>
+    var editor = document.getElementById('desc');
+    editor.addEventListener('input', function () {
+      var parts = editor.innerText.split(/(#[^\s#]+)/g);
+      var html = parts.map(function (p) {
+        if (p.charAt(0) === '#' && p.length > 1) {
+          return '<span class="hl topic" data-type="topic">' + p + '</span>';
+        }
+        return p;
+      }).join('');
+      if (html !== editor.innerHTML) editor.innerHTML = html;
+    });
+
+    var main = document.querySelector('.declare-original-checkbox input[type=checkbox]');
+    var dlg = document.querySelector('.declare-original-dialog .weui-desktop-dialog__wrp');
+    var agree = document.querySelector('.declare-original-dialog .agree');
+    main.addEventListener('change', function () {
+      if (main.checked) dlg.style.display = '';
+    });
+    document.querySelector('.declare-original-dialog button.weui-desktop-btn_primary')
+      .addEventListener('click', function () {
+        if (agree.checked) { main.checked = true; }
+        dlg.style.display = 'none';
+      });
+
+    var params = new URLSearchParams(location.search);
+    var mode = params.get('mode') || 'ready';
+
+    var save = document.getElementById('save-draft');
+    var clicks = 0;
+    window.__clicks = function () { return clicks; };
+
+    if (mode === 'ready' || mode === 'dead') {
+      setTimeout(function () {
+        save.className = 'weui-desktop-btn weui-desktop-btn_default';
+      }, 1200);
+    }
+
+    save.addEventListener('click', function () {
+      clicks++;
+      // 灰着的时候点了什么也不发生——**事件派发了，草稿没存上**。
+      if (save.className.indexOf('disabled') >= 0) return;
+      if (mode === 'dead') return;
+      document.getElementById('draft-notice').style.display = '';
+      // 草稿箱里多一行，**显示的是简介**（不是短标题）。
+      var row = document.createElement('div');
+      row.className = 'post-feed-item';
+      var title = document.getElementById('desc').innerText.replace(/\s+/g, ' ').trim();
+      row.innerHTML = '<div class="post-title">' + title + '</div>';
+      document.getElementById('draft-list').appendChild(row);
+    });
+
+    document.getElementById('nav-draft').addEventListener('click', function () {
+      document.getElementById('draft-box').style.display = '';
+      document.getElementById('post-area').style.display = 'none';
+    });
+    document.getElementById('nav-video').addEventListener('click', function () {
+      document.getElementById('draft-box').style.display = 'none';
+      document.getElementById('post-area').style.display = '';
+    });
+
+    // 「发表」单独计数——存草稿的流程**一次都不许点它**。
+    var publishClicks = 0;
+    window.__publishClicks = function () { return publishClicks; };
+    document.getElementById('publish').addEventListener('click', function () {
+      publishClicks++;
+    });
+  </script>
+</body>
+</html>

@@ -6,10 +6,12 @@
   "_text_layout_note": "实测：视频号**有独立的短标题框**与描述框，所以是 separate。描述框是 contenteditable，在里面打 #话题 会被编辑器自动变成真话题（<span class=\"hl topic\">），不用点「#话题」按钮。",
   "text_layout": "separate",
 
-  "_timeouts_note": "publish_ready_ms：上传完成后平台还要处理视频（转码、取封面），这期间「发表」是灰的，点它不会发出去。实测 12:31（上传后 14 分钟）按钮已可点，14:05（上传后 1 分钟）仍是灰的。publish_effect_ms：点完「发表」最多等多久看页面有没有反应。",
+  "_timeouts_note": "publish_ready_ms：上传完成后平台还要处理视频（转码、取封面），这期间「发表」是灰的，点它不会发出去。实测 12:31（上传后 14 分钟）按钮已可点，14:05（上传后 1 分钟）仍是灰的。publish_effect_ms：点完「发表」最多等多久看页面有没有反应。draft_ready_ms / draft_effect_ms：同理，给「保存草稿」用。",
   "timeouts": {
     "publish_ready_ms": 900000,
-    "publish_effect_ms": 60000
+    "publish_effect_ms": 60000,
+    "draft_ready_ms": 900000,
+    "draft_effect_ms": 60000
   },
 
   "selectors": {
@@ -26,6 +28,11 @@
       "original_checkbox": [".declare-original-checkbox input[type=checkbox]"],
       "topic_chip": ["span.hl.topic[data-type='topic']"],
       "submit_button": ["button.weui-desktop-btn_primary:has-text('发表')"],
+      "_draft_note": "「保存草稿」与「发表」是两个按钮。草稿**不公开**，但存草稿也要求平台处理完视频——处理期间按钮是灰的，点了没反应（和「发表」同一个坑）。",
+      "draft_button": ["button.weui-desktop-btn:has-text('保存草稿')", "button:has-text('保存草稿')"],
+      "_draft_marker_note": "点完「保存草稿」后页面上出现的东西（提示条/成功标记）。**空着** = 只能靠 URL 变化与按钮变灰判断有没有反应；宁可报「没反应」也不假装成功。权威判据还是草稿箱回读。",
+      "draft_marker": [],
+      "draft_notice": [],
       "_published_marker_note": "点完「发表」后页面上出现的东西（成功提示/链接框）。**还空着**——2026-11-13 那次没成功点出去，所以没观察到成功态长什么样。空着 = 点了之后只能靠 URL 变化判断有没有反应；宁可报「没反应」也不假装成功。",
       "published_marker": [],
       "published_notice": [],
@@ -44,7 +51,10 @@
       "entry_item": [".finder-ui-desktop-sub-menu__item:has-text('视频')"],
       "nav_parent": [".finder-ui-desktop-menu__sub__wrp"],
       "share_button": [".post-feed-item:has-text('{row_text}') .opr-item-wrap .more-actions"],
-      "copy_link_item": [":text-is('复制视频链接')"]
+      "copy_link_item": [":text-is('复制视频链接')"],
+      "draft_box_entry": [".finder-ui-desktop-sub-menu__item:has-text('草稿箱')"],
+      "_draft_row_note": "草稿箱里的每一行。**行里显示的是简介，不是短标题**（和「视频」列表一样），所以回读核对要拿简介里那段文字去匹配。",
+      "draft_row": [".post-feed-item .post-title", ".post-title"]
     }
   }
 }

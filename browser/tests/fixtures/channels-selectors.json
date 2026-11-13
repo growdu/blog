@@ -16,12 +16,20 @@
       "submit_button": ["#publish"],
       "published_marker": ["#done"],
       "published_url_text": ["#link"],
-      "published_url_input": []
+      "published_url_input": [],
+      "draft_button": ["#save-draft"],
+      "draft_marker": [],
+      "draft_notice": ["#draft-notice"]
     },
     "original_dialog": {
       "agree_checkbox": [".declare-original-dialog input.agree"],
       "confirm_button": [".declare-original-dialog button.weui-desktop-btn_primary"],
       "cancel_button": [".declare-original-dialog button.weui-desktop-btn_default"]
+    },
+    "list": {
+      "draft_box_entry": ["#nav-draft"],
+      "nav_parent": [".finder-ui-desktop-menu__sub__wrp"],
+      "draft_row": [".post-feed-item .post-title"]
     }
   }
 }
