@@ -23,7 +23,8 @@ class ChannelState:
 
     episode: str = ""
     video_sha256: str | None = None
-    status: str = "packaged"     # packaged | published
+    # packaged（出包待上传）| drafted（草稿已在平台上，等人点发表）| published（已发布）
+    status: str = "packaged"
     published_url: str | None = None
     updated_at: str | None = None
 

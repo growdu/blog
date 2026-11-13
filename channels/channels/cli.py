@@ -71,32 +71,59 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_mark(args: argparse.Namespace) -> int:
+    """回填状态。
+
+    两个档：
+    - `drafted`：草稿已存在平台上（视频号没有公开发布接口，人工点「保存草稿」后回填）；
+    - `published`：已发表，带公开链接。
+    """
+    if args.state == "published" and not args.url:
+        print("ERROR published 需要 --url（公开链接）", file=sys.stderr)
+        return 1
+
     store = state.StateStore(Path(args.out) / "state.json")
     current = store.get(args.episode)
-    current.status = "published"
-    current.published_url = args.url
+    target = Path(args.out) / args.episode
+
+    if args.state == "published":
+        current.status = "published"
+        current.published_url = args.url
+        try:
+            package.mark_published(target, args.url)
+        except FileNotFoundError as error:
+            print(f"WARNING {error}", file=sys.stderr)
+        reason = "人工发布后回填"
+        published_url = args.url
+        summary = "已回填发布链接"
+    else:
+        # 草稿还没发出去：链接必须清空，
+        # 留着旧链接会让人以为这条已经发出去了。
+        current.status = "drafted"
+        current.published_url = None
+        try:
+            package.mark_drafted(target)
+        except FileNotFoundError as error:
+            print(f"WARNING {error}", file=sys.stderr)
+        reason = "已存草稿，待人工发表"
+        published_url = None
+        summary = "已回填草稿状态"
+
     store.save(args.episode, current)
 
     meta = epmeta.load_meta(args.episode)
     title = _title_of(meta)
 
-    target = Path(args.out) / args.episode
-    try:
-        package.mark_published(target, args.url)
-    except FileNotFoundError as error:
-        print(f"WARNING {error}", file=sys.stderr)
-
     outbox = Path(args.outbox) if args.outbox else snapshot.OUTBOX_DIR
     snapshot.write_snapshot(
         outbox / f"{args.episode}__channels.json",
-        episode=args.episode, status="published", title=title,
+        episode=args.episode, status=args.state, title=title,
         # 相对路径：快照要入库，绝对路径换台机器就对不上
-        package_dir=package.repo_relative(target), published_url=args.url,
-        reason="人工发布后回填",
+        package_dir=package.repo_relative(target), published_url=published_url,
+        reason=reason,
     )
-    notify.notify(args.episode, "published", title, str(target),
+    notify.notify(args.episode, args.state, title, str(target),
                   os.environ.get(WEBHOOK_ENV))
-    print(f"OK {args.episode} 已回填发布链接")
+    print(f"OK {args.episode} {summary}")
     return 0
 
 
@@ -118,9 +145,10 @@ def main(argv: list[str] | None = None) -> int:
     p_status.set_defaults(func=cmd_status)
 
     p_mark = sub.add_parser("mark")
-    p_mark.add_argument("state", choices=["published"])
+    p_mark.add_argument("state", choices=["published", "drafted"],
+                        help="published=已发表（要 --url）；drafted=已存草稿，待人工发表")
     p_mark.add_argument("episode")
-    p_mark.add_argument("--url", required=True)
+    p_mark.add_argument("--url", default=None, help="公开链接，published 档必填")
     p_mark.add_argument("--out", default=str(DEFAULT_OUT))
     p_mark.add_argument("--outbox", default=None,
                         help="状态快照目录，默认 publish/outbox")

@@ -232,8 +232,10 @@ def build_package(episode: str, meta: epmeta.EpisodeMeta, video: str | Path,
         published_url=published_url,
     ))
 
-    reason = ("视频号无公开发布接口，已出包待人工上传" if status == "packaged"
-              else "人工发布后回填")
+    reason = {
+        "packaged": "视频号无公开发布接口，已出包待人工上传",
+        "drafted": "已存草稿，待人工发表",
+    }.get(status, "人工发布后回填")
     outbox = Path(outbox_dir) if outbox_dir else snapshot.OUTBOX_DIR
     snapshot.write_snapshot(
         outbox / f"{episode}__channels.json",
@@ -256,6 +258,27 @@ def mark_published(target: str | Path, url: str) -> Path:
     data = json.loads(path.read_text(encoding="utf-8"))
     data["status"] = "published"
     data["published_url"] = url
+    path.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    return path
+
+
+def mark_drafted(target: str | Path) -> Path:
+    """回填「已存草稿」：草稿已在平台上，等人点发表。
+
+    **和 `published` 是两回事。** 草稿还没发出去，所以 `published_url` 要清掉——
+    留着旧链接会让人以为这条已经发出去了（头条号那边就踩过同一个坑：
+    `drafted` 被读成「还没发」或「已发」都会导致重发）。
+    """
+    directory = Path(target)
+    path = directory / "meta.json"
+    if not path.is_file():
+        raise FileNotFoundError(f"发布包不存在：{directory}")
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["status"] = "drafted"
+    data["published_url"] = None
     path.write_text(
         json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True),
         encoding="utf-8",
