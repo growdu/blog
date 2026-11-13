@@ -77,11 +77,22 @@
     <%# ============== Tabbed articles ============== %>
     <div class="home-tabs" data-aos="fade-up">
       <ul class="tabs">
-        <li class="tab col s4"><a class="active" href="#home-tab-featured"><i class="fas fa-star"></i>&nbsp;编辑推荐</a></li>
+        <%# 最新发布排第一并默认激活：新文章上线即可见。
+            Materialize 的 tabs 组件在本主题里从未初始化，三个面板其实是
+            依次平铺渲染的，所以「最新发布」必须排在 DOM 最前面才真正
+            出现在首屏；只把 active 类挪过去是不够的。 %>
+        <li class="tab col s4"><a class="active" href="#home-tab-latest"><i class="fas fa-clock"></i>&nbsp;最新发布</a></li>
+        <li class="tab col s4"><a href="#home-tab-featured"><i class="fas fa-star"></i>&nbsp;编辑推荐</a></li>
         <li class="tab col s4"><a href="#home-tab-hot"><i class="fas fa-fire"></i>&nbsp;近期热门</a></li>
-        <li class="tab col s4"><a href="#home-tab-latest"><i class="fas fa-clock"></i>&nbsp;最新发布</a></li>
       </ul>
 
+      <div id="home-tab-latest" class="col s12">
+        <div class="post-grid">
+          <% latest.forEach(function (post) { %>
+            <%- partial('_partial/post-card', { post: post }) %>
+          <% }); %>
+        </div>
+      </div>
       <div id="home-tab-featured" class="col s12">
         <div class="post-grid">
           <% featured.forEach(function (post) { %>
@@ -92,13 +103,6 @@
       <div id="home-tab-hot" class="col s12">
         <div class="post-grid">
           <% hot.forEach(function (post) { %>
-            <%- partial('_partial/post-card', { post: post }) %>
-          <% }); %>
-        </div>
-      </div>
-      <div id="home-tab-latest" class="col s12">
-        <div class="post-grid">
-          <% latest.forEach(function (post) { %>
             <%- partial('_partial/post-card', { post: post }) %>
           <% }); %>
         </div>
