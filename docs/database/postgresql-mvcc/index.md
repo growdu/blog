@@ -10,6 +10,11 @@ PostgreSQL 选择了一种更"魔法"的思路：**书从来不被收回**。你
 
 这就是 **MVCC（Multi-Version Concurrency Control，多版本并发控制）** 的全部核心。本文会沿着 `~/cwork/postgresql/src/backend/access/heap/` 的源码，把这条魔法一步步拆给你看。
 
+本文回答四个问题：① 快照是什么、它从哪来；② 可见性怎么判；③ UPDATE/DELETE 之后磁盘上
+留下了什么；④ VACUUM / HOT / 提示位各解决什么问题。
+
+> **版本说明**：源码与行为基于 **PostgreSQL 17**；涉及版本差异的地方会单独标出。
+
 ---
 
 ## 为什么我们需要 MVCC
@@ -253,15 +258,23 @@ typedef struct SnapshotData
           ◀──── 这个事务能看到的世界 ────►
 
 ──┬──────────┬─────────────────┬───────────┬──────► 时间
-   已提交老古董   正在跑的事务们      最新已分配
-                (在 xip[] 里)        但未提交
-                                  ↑
-                                 xmax
-   ↑                              ↑
-  xmin                  xmax 是 latestCompletedXid + 1
+   │          │                 │           │
+   │ 已提交   │  正在跑的事务们  │ 最新已分配 │
+   │ 的老古董 │  (在 xip[] 里)   │ 但未提交  │
+   │          │                 │      ↑    │
+   └──────────┴─────────────────┴──────xmax
+              ↑
+             xmin
+
+  xmin = 最早仍在运行的 XID（比它早的都已结束）
+  xmax = 最新已分配的 XID = latestCompletedXid + 1
 ```
 
-判定一条记录 xmin 是否可见，三步走：
+注意 `xmin` 落在「已提交的老古董」与「正在跑的事务们」的**分界处**——它的含义是
+「最早仍在运行的那个 XID」，不是「已提交区间的起点」。比 `xmin` 小的 XID 要么已提交、
+要么已回滚。
+
+判定一条记录 xmin 是否可见，四步走：
 
 ```text
 1. xmin < snapshot.xmin    ──> 老古董，一定可见
@@ -372,22 +385,35 @@ HeapTupleSatisfiesMVCC(HeapTuple htup, Snapshot snapshot, Buffer buffer)
 
 光说不练假把式。我们让两个事务对一行数据同时动刀，看快照如何保护彼此。
 
+**会话 1**：
+
 ```sql
--- 会话 1                                 -- 会话 2
 BEGIN;
 SELECT pg_snapshot_xmin(pg_current_snapshot());
--- 假设此时 xmin=500, xmax=510,
--- xip={505, 508}
-                                           BEGIN;
-                                           UPDATE account
-                                             SET balance = 200
-                                             WHERE id = 1;
-                                           -- XID=508，写入了 v2
-                                           -- 但还没提交
+-- 假设此刻快照为 xmin=500, xmax=510, xip={505, 508}
+```
+
+**会话 2**（与上面并发执行）：
+
+```sql
+BEGIN;
+UPDATE account
+  SET balance = 200
+  WHERE id = 1;
+-- XID=508，写入了 v2
+-- 但还没提交
+```
+
+**会话 1**（继续）：
+
+```sql
 SELECT balance FROM account
   WHERE id = 1;
 COMMIT;
 ```
+
+> 图里的 `xmin=500, xmax=510, xip={505, 508}` 是**示意值**，实际值取决于你库里
+> 当时的并发事务。现场看真实值：`SELECT pg_current_snapshot();`
 
 **会话 1 看到的元组状态**：
 
@@ -416,7 +442,9 @@ COMMIT;
 
 ## 不同隔离级别下的 MVCC 行为
 
-PG 一共支持 4 种隔离级别（`src/backend/storage/ipc/procarray.c` 和 `src/backend/commands/variable.c` 决定默认值）：
+PG 支持 SQL 标准的 4 个隔离级别名，但 Read Uncommitted 被当作 Read Committed 处理，
+所以**实际只有 3 种并发语义**（见下表）。默认隔离级别由 GUC `default_transaction_isolation`
+决定，它定义在 `src/backend/utils/misc/guc_tables.c`：
 
 | 隔离级别 | 何时拍快照 | 看到的版本 |
 | --- | --- | --- |
@@ -504,7 +532,9 @@ HeapTupleSatisfiesVacuum(HeapTuple htup, TransactionId OldestXmin, Buffer buffer
 
 关键概念：
 
-- **`OldestXmin`**：当前所有活跃事务里**最早开始**的那个 XID。比它更老的 xmax，就意味着**没有人在看这个版本了**，可以放心回收。
+- **`OldestXmin`**：当前**仍在运行**的事务里 XID 最小的那个（按**分配顺序**，不是按事务开始时间）。比它更老的 xmax，就意味着**没有人在看这个版本了**，可以放心回收。它由 `src/backend/commands/vacuum.c` 的 `vacuum_get_cutoffs()` 算出：
+  `cutoffs->OldestXmin = GetOldestNonRemovableTransactionId(rel);`，再传给
+  `vacuumlazy.c` 里的 `HeapTupleSatisfiesVacuum(&tuple, vacrel->cutoffs.OldestXmin, ...)`
 - **dead_after**：被 xmax 干掉之后，要等到 xmax ≥ OldestXmin 才算"真的死透了"。
 
 回到我们的图书馆比喻：借书卡上写的是"最后归还日"。只要还有人说"我还没还书"，旧版本就不能动。等到所有人都还完了，再清理。
@@ -529,6 +559,28 @@ HeapTupleSatisfiesVacuum(HeapTuple htup, TransactionId OldestXmin, Buffer buffer
 HOT 由 `src/backend/access/heap/heapam.c` 的 `heap_update` 配合 `rewrite_heap_dead_tuple` 处理。
 
 ---
+
+### 怎么亲眼看到版本链
+
+前面讲的 `t_xmin` / `t_xmax` / 提示位全是图上的符号。用 `pageinspect` 可以把真实的
+字节抠出来看：
+
+```sql
+CREATE EXTENSION pageinspect;
+
+-- 看第 0 页上的每一个 tuple
+SELECT lp, lp_off, lp_flags, t_xmin, t_xmax, t_ctid, t_infomask
+  FROM heap_page_items(get_raw_page('account', 0))
+ WHERE lp_off > 0;
+
+-- 对照前面的图：XMAX_COMMITTED 等提示位就是 t_infomask 里的那几位
+SELECT lp, (t_infomask & 256) <> 0 AS xmax_committed
+  FROM heap_page_items(get_raw_page('account', 0));
+```
+
+（`heap_page_items` 返回的 `t_xmin` / `t_xmax` 是 32 位的 `xid`；若要喂给
+`pg_xact_status`，需显式转成 `xid8`，即 `pg_xact_status(t_xmin::xid8)`——
+`pg_xact_status` 从 PG 13 起收的是 `xid8`，两者之间没有隐式转换。）
 
 ## 提示位（Hint Bits）：让下一次判更快
 

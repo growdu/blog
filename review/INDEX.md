@@ -23,7 +23,7 @@
 
 | 记录 | 支柱 | 状态 | 信号 | 待确认 | 批次 |
 | --- | --- | --- | --- | --- | --- |
-| [postgresql-mvcc](database/postgresql-mvcc.md) | database | 建议中 | 0 | 5 | 试点 |
+| [postgresql-mvcc](database/postgresql-mvcc.md) | database | 已合入 | 0 | 1 | 试点 |
 | [postgresql-logical-replication-worker-model](database/postgresql-logical-replication-worker-model.md) | database | 已合入 | 0 | 1 | 试点 |
 | [06-heap-and-mvcc](db/postgresql/learning-path/06-heap-and-mvcc.md) | db | 已合入 | 0 | 2 | 试点 |
 | [checkpoint机制浅析](pgsql/checkpoint机制浅析.md) | pgsql | 已合入 | 0 | 0 | 试点 |

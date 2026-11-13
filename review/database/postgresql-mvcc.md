@@ -5,7 +5,7 @@
 - 目标读者：用过 PostgreSQL、但说不清并发下「我读到的到底是哪一版数据」的开发者
 - 一句话定位：沿着 PostgreSQL 17 源码，把 MVCC 从「一行数据怎么变成一串分身」讲到「你读到的那个版本是怎么被判定可见的」
 - 核心判断：MVCC 的可见性判定只依赖两个数——快照里的 `xmin`/`xmax`——加上事务自己的 `xip` 名单；理解了这两个数，就理解了为什么读写互不阻塞
-- 审校状态：建议中
+- 审校状态：已合入
 
 ## 优先修改
 
@@ -49,11 +49,25 @@
 
 ## 事实待核
 
-- L419 隔离级别默认值的源码出处：文中写 `src/backend/commands/variable.c`，但 `default_transaction_isolation` 是 GUC，更可能定义在 `src/backend/utils/misc/guc_tables.c`。需对照 `~/cwork/postgresql` 确认后再改，不能凭印象改
-- L273-295 `GetSnapshotData()` 代码片段：文中摘录的片段省略了不少分支（真实实现里还有 `xip` 数组的 `maxProcs` 上限处理、以及 `serializable` 快照的特殊路径）。需确认这段是删减示意还是原文摘录；若是前者，应明确标注「已删减」
-- L505-508 `OldestXmin` 的来源：文中未标 `HeapTupleSatisfiesVacuum` 的 `OldestXmin` 参数由谁算出。需补 `src/backend/commands/vacuum.c` 里的 `GetOldestNonRemovableTransactionId()` 作为出处
-- L473 「PG 的 RR 已经能防住脏读、不可重复读、幻读」：结论在 PG 成立（靠的是整事务不换的快照，而不是锁），但同一句又说「代价是没有像 ANSI SQL 那样加间隙锁」，因果容易被读反。改写时要把「防住幻读靠快照、因此并发 INSERT 不会被阻塞只会看不见」摆正
-- L11 与 L640 的 `~/cwork/postgresql/...` 是作者本机绝对路径，发布出去读者点不开。需确认是否统一改成 upstream 路径或仓库内相对路径
+- [x] **隔离级别默认值的源码出处** —— 核实确认初稿的怀疑成立。`default_transaction_isolation`
+  定义在 `src/backend/utils/misc/guc_tables.c:4820`，**不在** `src/backend/commands/variable.c`
+  （那个文件处理的是 `SET`/`RESET` 语句本身）。正文已改
+- [x] **`GetSnapshotData()` 的代码片段** —— 核实：**位置正确**（PG 17 仍在
+  `src/backend/storage/ipc/procarray.c:2177`），片段内容也属实
+  （`xmax = XidFromFullTransactionId(latest_completed)` → `TransactionIdAdvance(xmax)`
+  → `xip[count++] = xid`，分别在 procarray.c:2250/2251/2326）。但它是**删减示意**——
+  真实实现还有 `xip`/`subxip` 数组的分配、`replication_slot_xmin` 特殊处理、
+  `suboverflowed` 标记等。正文已标注「已删减」
+- [x] **`OldestXmin` 的来源** —— 核实确认初稿的怀疑成立。`src/backend/commands/vacuum.c:1120`
+  的 `vacuum_get_cutoffs()` 里 `cutoffs->OldestXmin = GetOldestNonRemovableTransactionId(rel);`，
+  再由 `vacuumlazy.c:1750` 传给 `HeapTupleSatisfiesVacuum(&tuple, vacrel->cutoffs.OldestXmin, ...)`。
+  正文已补上这条链路
+- [x] **「RR 能防住幻读」的因果** —— 结论在 PG 成立：防住幻读靠的是**整事务不换的快照**，
+  而不是锁；正因如此，并发 INSERT 在 RR 下**不会被阻塞、只是看不见**。原文同段又说
+  「没有加间隙锁」，因果容易读反。正文已把因果摆正
+- [不适用] **`~/cwork/postgresql/...` 本机绝对路径** —— 仍待核。它是作者的源码工作目录，
+  作为「源码入口」信息有价值，但发布出去读者点不开。**本次未改动**——
+  这属于路径风格问题，与本轮的事实修正无关
 
 ## 可补的技术证据或产物
 
@@ -64,4 +78,19 @@
 
 ## 已确认的改动
 
-- 无（阶段 A 只出记录，未改动 `docs/`）
+- 「判定一条记录 xmin 是否可见，**三步走**」改为「**四步走**」（正文列的是 4 条）
+- 快照时间线 ASCII 图重画：`xmin` 的箭头从「已提交老古董」区间内移到
+  **「已提交的老古董」与「正在跑的事务们」的分界处**，并补图注说明
+  「xmin = 最早仍在运行的 XID，比它早的都已结束」
+- 「两个事务的赛跑」的 SQL 拆成**会话 1 / 会话 2 / 会话 1** 三段独立代码块，
+  示意值改为显式注释「假设此刻快照为 …」，并补一句现场看真实值的
+  `SELECT pg_current_snapshot();`
+- 隔离级别首句改写：说明 PG 支持 4 个级别名但 Read Uncommitted 等同 RC、
+  **实际只有 3 种并发语义**；源码出处改为 `src/backend/utils/misc/guc_tables.c`
+- `OldestXmin` 的解释改为「当前**仍在运行**的事务里 XID 最小的那个（按**分配顺序**，
+  不是按事务开始时间）」，并补上 `vacuum_get_cutoffs()` →
+  `GetOldestNonRemovableTransactionId()` → `HeapTupleSatisfiesVacuum()` 的完整链路
+- VACUUM 之后新增「怎么亲眼看到版本链」小节：给 `pageinspect` 的
+  `heap_page_items()` 查询与提示位位的解读，并注明 `pg_xact_status` 需要 `::xid8`
+- 开头补「本文回答四个问题」路线 + **版本说明（PostgreSQL 17）**
+- `GetSnapshotData()` 代码块标注「已删减」
