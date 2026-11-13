@@ -34,7 +34,8 @@
 **Interfaces:**
 - Consumes: 无（本仓库第一批工具）
 - Produces:
-  - `derive_identity(path: Path) -> tuple[str, str]` → `(pillar, slug)`
+  - `derive_identity(path: Path, docs_root: Path = DOCS_ROOT) -> tuple[str, str]` → `(pillar, slug)`
+    （`docs_root` 可传临时目录，让规则能在临时树上被测）
   - `parse_blocks(lines: list[str]) -> list[Block]`
   - `load_doc(path: Path) -> Doc`
   - `collect_files(paths: list[str]) -> list[Path]`
@@ -96,7 +97,7 @@ def test_derive_identity_from_page_bundle(tmp_path):
     path = tmp_path / "database" / "postgresql-mvcc" / "index.md"
     path.parent.mkdir(parents=True)
     path.write_text("# t\n", encoding="utf-8")
-    pillar, slug = module.derive_identity(path)
+    pillar, slug = module.derive_identity(path, tmp_path)
     assert slug == "postgresql-mvcc"
     assert pillar == "database"
 
@@ -106,7 +107,7 @@ def test_derive_identity_from_single_file(tmp_path):
     path = tmp_path / "database" / "pg-dont-do-this.md"
     path.parent.mkdir(parents=True)
     path.write_text("# t\n", encoding="utf-8")
-    pillar, slug = module.derive_identity(path)
+    pillar, slug = module.derive_identity(path, tmp_path)
     assert (pillar, slug) == ("database", "pg-dont-do-this")
 
 
@@ -115,7 +116,7 @@ def test_derive_identity_keeps_nested_path(tmp_path):
     path = tmp_path / "db" / "postgresql" / "xxx.md"
     path.parent.mkdir(parents=True)
     path.write_text("# t\n", encoding="utf-8")
-    pillar, slug = module.derive_identity(path)
+    pillar, slug = module.derive_identity(path, tmp_path)
     assert (pillar, slug) == ("db", "postgresql/xxx")
 
 
@@ -323,15 +324,18 @@ class Doc:
 RULES: list = []
 
 
-def derive_identity(path: Path) -> tuple[str, str]:
+def derive_identity(path: Path, docs_root: Path = DOCS_ROOT) -> tuple[str, str]:
     """Derive ``(pillar, slug)`` from a docs/-relative path.
 
     ``docs/database/postgresql-mvcc/index.md`` -> ``("database", "postgresql-mvcc")``
     ``docs/database/pg-dont-do-this.md``      -> ``("database", "pg-dont-do-this")``
     ``docs/db/postgresql/xxx.md``             -> ``("db", "postgresql/xxx")``
+
+    ``docs_root`` exists so the rule can be exercised on a temporary tree
+    instead of the repository's own ``docs/``.
     """
     try:
-        rel = path.resolve().relative_to(DOCS_ROOT.resolve())
+        rel = path.resolve().relative_to(docs_root.resolve())
     except ValueError:
         return "", path.stem
     parts = list(rel.parts)
