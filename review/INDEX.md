@@ -13,7 +13,8 @@
 | 支柱 | `docs/` 下的一级目录 |
 | 状态 | 待审 → 审校中 → 建议中 → 已确认 → 已合入 |
 | 信号 | 检查器给出的 warn 级信号条数（0~19，是「命中了几条规则」） |
-| 待确认 | 「事实待核」里还没销掉的条目数 |
+| 待确认 | 「事实待核」里还没销掉的条目数——状态为「已合入」时必须是 0 |
+| 不阻塞 | 标了「不适用」的条目数：事实本身还没核实，但本次改动没碰它，不卡合并 |
 | 批次 | 试点 / 1 / 2 … |
 
 **信号为 0 不等于文章没问题**——检查器只出机械信号，技术深度、定位、语气这类
@@ -21,10 +22,10 @@
 
 ## 进度
 
-| 记录 | 支柱 | 状态 | 信号 | 待确认 | 批次 |
-| --- | --- | --- | --- | --- | --- |
-| [postgresql-mvcc](database/postgresql-mvcc.md) | database | 已合入 | 0 | 1 | 试点 |
-| [postgresql-logical-replication-worker-model](database/postgresql-logical-replication-worker-model.md) | database | 已合入 | 0 | 1 | 试点 |
-| [06-heap-and-mvcc](db/postgresql/learning-path/06-heap-and-mvcc.md) | db | 已合入 | 0 | 2 | 试点 |
-| [checkpoint机制浅析](pgsql/checkpoint机制浅析.md) | pgsql | 已合入 | 0 | 0 | 试点 |
-| [分布式一致性协议](cluster/分布式一致性协议.md) | cluster | 已合入 | 0 | 2 | 试点 |
+| 记录 | 支柱 | 状态 | 信号 | 待确认 | 不阻塞 | 批次 |
+| --- | --- | --- | --- | --- | --- | --- |
+| [postgresql-mvcc](database/postgresql-mvcc.md) | database | 已合入 | 0 | 0 | 1 | 试点 |
+| [postgresql-logical-replication-worker-model](database/postgresql-logical-replication-worker-model.md) | database | 已合入 | 0 | 0 | 1 | 试点 |
+| [06-heap-and-mvcc](db/postgresql/learning-path/06-heap-and-mvcc.md) | db | 已合入 | 0 | 0 | 2 | 试点 |
+| [checkpoint机制浅析](pgsql/checkpoint机制浅析.md) | pgsql | 已合入 | 0 | 0 | 0 | 试点 |
+| [分布式一致性协议](cluster/分布式一致性协议.md) | cluster | 已合入 | 0 | 0 | 2 | 试点 |
