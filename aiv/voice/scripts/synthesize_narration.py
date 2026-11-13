@@ -14,6 +14,10 @@
   python3 scripts/synthesize_narration.py --script 字幕.md --out narration.mp3
 
 依赖 mcode-tools CLI（mcode-tools-master skill）。
+
+多音字：送进引擎前会按 `pronunciation.py` 的读音表做等音替换
+（当前是「行锁」→「航锁」，因为这个音色把词首的「行」一律念成 xíng）。
+口播稿本身不改，念出来的仍是「行锁」——见 `pronunciation.py` 的实测表。
 """
 from __future__ import annotations
 
@@ -22,6 +26,9 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from pronunciation import PRONUNCIATION_SUBSTITUTIONS, apply_substitutions  # noqa: E402
 
 # 定稿参数 —— 与规范文档 §2.2 一致
 VOICE_ID = "Chinese (Mandarin)_Radio_Host"
@@ -93,7 +100,13 @@ def main() -> int:
         text = "".join(body)
 
     out = Path(args.out)
-    res = synthesize(text, out.name, args.emotion, args.pitch, args.speed)
+    spoken = apply_substitutions(text)
+    if spoken != text:
+        hits = [f"{w}→{r}" for w, r in PRONUNCIATION_SUBSTITUTIONS.items() if w in text]
+        print(f"读音替换（只改送进引擎的文本，口播稿不动）：{', '.join(hits)}")
+    # 旁本：把真正送进引擎的文本留一份下来，出片后可核对「念的到底是哪版」
+    out.with_suffix(".spoken.txt").write_text(spoken + "\n", encoding="utf-8")
+    res = synthesize(spoken, out.name, args.emotion, args.pitch, args.speed)
     if res.get("code") != 0:
         print(f"合成失败：{res}", file=sys.stderr)
         return 1

@@ -140,6 +140,30 @@ CASES: list[dict] = [
         "new": "PostgreSQL 在 MVCC 之上加了行锁，性能提升 2 到 5 倍。",
         "test": "tests/test_episode_boundaries.py::test_new_episodes_do_not_reuse_the_ep01_benchmark[ep06]",
     },
+    {
+        "name": "把「行锁」从读音替换表里删掉",
+        "file": "voice/scripts/pronunciation.py",
+        "old": '    "行锁": "航锁",   # 行锁 → 航锁：航 是无歧义的 háng，声母 [x]、韵母 [ɑŋ]、阳平，与目标读音一致\n',
+        "new": "",
+        "test": "tests/test_voice_pronunciation.py::test_the_misread_word_is_mapped_to_a_substitute",
+    },
+    {
+        "name": "把「一行」的替换改成不分词（会误伤「每一行」）",
+        "file": "voice/scripts/pronunciation.py",
+        "old": '    if wrong == "一行":\n'
+               '        pattern = re.compile(f"(?<![{_COMPOUND_PREFIX}]){re.escape(wrong)}")\n'
+               '        return pattern.sub(right, text)\n'
+               '    return text.replace(wrong, right)\n',
+        "new": '    return text.replace(wrong, right)\n',
+        "test": "tests/test_voice_pronunciation.py::test_the_compound_words_are_left_alone",
+    },
+    {
+        "name": "口播稿里塞进一个没实测过读音的「行」字词",
+        "file": "字幕-行锁.md",
+        "old": "PostgreSQL 在 MVCC 之上加了行锁，一共 4 种模式。",
+        "new": "PostgreSQL 在 MVCC 之上加了行锁，行首也有锁，一共 4 种模式。",
+        "test": "tests/test_voice_pronunciation.py::test_every_hang_word_in_every_script_is_measured",
+    },
 ]
 
 

@@ -52,7 +52,7 @@ BGM := $(ROOT)/music/tracks/series-bed-01.wav
 BUILD := $(ROOT)/build/$(EP)
 OUT := $(ROOT)/out/$(EP).mp4
 
-.PHONY: all test validate align brand render compose probe persona bgm mix-verify topics clean
+.PHONY: all test validate align brand render compose probe persona bgm mix-verify topics pronunciation clean
 
 all: validate brand render compose
 
@@ -86,6 +86,11 @@ bgm:
 # 选题库检查：结构、口径、句数字数、数字出处
 topics:
 	$(PY) -m pyv.cli topics check
+
+# 多音字读音验收：确认「行锁」确实念 xíng、「航锁」确实念 háng
+# （要联网合成探针；判据见 voice/scripts/pronunciation.py）
+pronunciation:
+	$(PY) ../voice/scripts/check_pronunciation.py --calibrate
 
 # 成片级验收：稳态 duck 深度、旁白/BGM 电平差、真峰值、旁白增益（规范 §5.7）
 mix-verify:
