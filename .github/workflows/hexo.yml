@@ -204,6 +204,15 @@ jobs:
   build-github-pages:
     name: Build for GitHub Pages
     runs-on: ubuntu-latest
+    # Serialize after the growdu.cn build.  Both jobs used to create the
+    # Gitalk issues concurrently: each listed the existing issues, each
+    # saw the post as missing, and each created its own copy -> 182
+    # duplicate issue pairs.  With `needs` the second job runs after the
+    # first one finished creating them and simply skips them.
+    # `always()` keeps the fallback: if the server build fails, the
+    # Pages build (and its issue pass) still runs.
+    needs: build
+    if: ${{ always() }}
     steps:
       - uses: actions/checkout@v7
         with:

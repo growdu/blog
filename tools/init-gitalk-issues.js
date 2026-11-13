@@ -76,11 +76,14 @@ async function main() {
   const posts = findGitalkPosts('public');
   console.log('Found ' + posts.length + ' posts with gitalk');
 
-  // Collect existing Gitalk issue labels
+  // Collect existing Gitalk issue labels.
+  // state=all: a *closed* issue still owns its p<hash> label.  With
+  // state=open the closed ones were invisible here, so every deploy
+  // re-created them and the comment thread was silently restarted.
   const existing = new Set();
   let page = 1;
   while (true) {
-    const r = await gh('/repos/' + REPO + '/issues?labels=Gitalk&state=open&per_page=100&page=' + page);
+    const r = await gh('/repos/' + REPO + '/issues?labels=Gitalk&state=all&per_page=100&page=' + page);
     if (!r.ok || !Array.isArray(r.data) || r.data.length === 0) break;
     for (const issue of r.data) {
       for (const label of issue.labels || []) {
@@ -111,6 +114,12 @@ async function main() {
     if (r.ok) {
       created++;
       if (created % 50 === 0) console.log('  created ' + created + ' issues so far...');
+    } else if (r.status === 422) {
+      // 422 = the label/title was rejected (e.g. another job created the
+      // very same issue a moment ago).  Treat it as "already there" --
+      // the post does have an issue, which is all we wanted.
+      skipped++;
+      console.log('  SKIPPED (duplicate): "' + post.title + '" (' + post.id + ')');
     } else {
       failed++;
       console.error('  FAILED: "' + post.title + '" (' + post.id + '): ' + (r.data.message || 'unknown'));
@@ -119,6 +128,13 @@ async function main() {
   }
 
   console.log('Done: created=' + created + ' skipped=' + skipped + ' failed=' + failed + ' total=' + posts.length);
+  // A missing issue means the post renders without a comment box.  That
+  // used to pass silently (the step exited 0), so the gap was invisible
+  // until someone noticed the comment area was gone.
+  if (failed > 0) {
+    console.error('ERROR: ' + failed + ' issue(s) could not be created');
+    process.exit(1);
+  }
 }
 
 main().catch(function (e) {
