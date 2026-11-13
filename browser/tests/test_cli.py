@@ -89,6 +89,9 @@ def test_submit_takes_a_screenshot_after_the_click(tmp_path, package_dir,
         def __init__(self, target_page):
             self.page = target_page
 
+        def grant_clipboard(self, origin):
+            return True
+
         def __enter__(self):
             return self
 

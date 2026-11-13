@@ -344,3 +344,32 @@ def test_submit_still_works_once_the_video_is_processed(
 
     assert url == "https://channels.weixin.qq.com/platform/post/fixture-1"
     assert page.evaluate("() => window.__clicks()") == 1
+
+
+# -- 取公开链接 -------------------------------------------------------------
+
+def test_collect_published_url_reads_it_out_of_the_clipboard(page, list_selectors):
+    """链接是从分享菜单的「复制视频链接」里抄回来的。
+
+    **菜单里三项**：复制视频ID / 下载视频二维码 / 复制视频链接。
+    点错第一项抄回来的是视频ID，不是链接。
+    """
+    flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
+                        ChannelsConfig.load(list_selectors))
+    flow.open_content_list()
+    page.context.grant_permissions(["clipboard-read", "clipboard-write"],
+                                   origin=page.url)
+
+    url = flow.collect_published_url("两个事务改同一行")
+
+    assert url == "https://weixin.qq.com/sph/fixture-1"
+
+
+def test_collect_published_url_gives_up_instead_of_inventing_one(page, list_selectors,
+                                                               monkeypatch):
+    """剪贴板里没有链接就返回 None——不能编一个出来。"""
+    flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
+                        ChannelsConfig.load(list_selectors))
+    monkeypatch.setattr(PageDriver, "clipboard_text", lambda self: "")
+
+    assert flow.collect_published_url("两个事务改同一行") is None

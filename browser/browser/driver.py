@@ -345,3 +345,64 @@ class PageDriver:
         target.parent.mkdir(parents=True, exist_ok=True)
         self.page.screenshot(path=str(target), full_page=full_page)
         return target
+
+    def click_visible(self, selector: Selector) -> None:
+        """点第一个**看得见**的匹配元素。
+
+        **为什么不能直接用 click()**：页面常把同一份 DOM 渲染两遍
+        （一份藏在折叠面板里），`click()` 拿 `.first` 可能是看不见的那份，
+        于是干等超时。挨个试，碰到的第一个看得见的就点它。
+        """
+        candidates = _as_list(selector)
+        for candidate in candidates:
+            for frame in self._frames():
+                try:
+                    locator = frame.locator(candidate)
+                    count = locator.count()
+                except Exception:
+                    continue
+                for index in range(count):
+                    item = locator.nth(index)
+                    try:
+                        if not item.is_visible():
+                            continue
+                        item.click(timeout=self.timeout_ms)
+                        return
+                    except Exception:
+                        continue
+        raise self._fail(
+            f"页面上没有**看得见**的元素可以点：{', '.join(candidates)}",
+            candidates, "click-visible")
+
+    def hover(self, selector: Selector) -> None:
+        """悬停在某个元素上。
+
+        **为什么需要**：视频号助手左边的导航默认是收起来的，
+        子菜单要 hover 父项才展开——不 hover 就点不到「视频」。
+        """
+        candidates = _as_list(selector)
+        for candidate in candidates:
+            for frame in self._frames():
+                try:
+                    locator = frame.locator(candidate)
+                    if locator.count() == 0:
+                        continue
+                    locator.first.hover(timeout=self.timeout_ms)
+                    return
+                except Exception:
+                    continue
+        raise self._fail(
+            f"页面上找不到可以悬停的元素：{', '.join(candidates)}",
+            candidates, "hover")
+
+    def clipboard_text(self) -> str:
+        """读剪贴板里的文字。
+
+        **要先授权**：页面上下文得拿到 `clipboard-read` 权限，
+        否则读出来是空的（不是报错）。
+        """
+        try:
+            value = self.page.evaluate("() => navigator.clipboard.readText()")
+        except Exception as error:
+            raise self._fail(f"读剪贴板失败：{error}", [], "clipboard")
+        return (value or "").strip()

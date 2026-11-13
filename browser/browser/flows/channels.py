@@ -308,6 +308,63 @@ class ChannelsFlow:
             "topic_chips_in_page": topic_count,
         }
 
+    # -- 内容列表（取公开链接） ------------------------------------------------
+
+    def open_content_list(self) -> None:
+        """进「内容管理 → 视频」列表。
+
+        **列表渲染在 iframe 里**（`micro/content/iframe/post-card.html`），
+        主文档看不到行——所以定位一律跨 frame。
+
+        左边的导航默认是收起来的，子菜单要**先 hover 父项**才展开，
+        不 hover 就点不到「视频」。
+        """
+        entry = self.config.maybe("list", "entry_item")
+        if not entry:
+            raise FlowError(
+                "选择器表里没有 list.entry_item。\n"
+                "跑 `python3 -m browser.cli probe` 看内容管理页的结构，"
+                "把「视频」那个入口的选择器填进 browser/selectors/channels.json。"
+            )
+        # 不在助手页面上的话先回去——列表是助手里的一个视图
+        if "/platform" not in (self.driver.page.url or ""):
+            self.driver.page.goto(self.config.entry_url, wait_until="domcontentloaded")
+        for parent in self.config.maybe("list", "nav_parent"):
+            try:
+                self.driver.hover(parent)
+            except ActionError:
+                continue
+        self.driver.click_visible(entry)
+
+    def collect_published_url(self, row_text: str) -> str | None:
+        """从内容列表里把这一条作品的公开链接取出来。
+
+        **发表成功时平台不给链接**——链接在内容列表那一行的分享菜单里：
+        「复制视频链接」把链接写进剪贴板，再读回来。
+
+        两处必须精确（2026-11-13 实测踩过）：
+
+        1. 分享菜单里是三项：**复制视频ID / 下载视频二维码 / 复制视频链接**。
+           用模糊匹配（`text=复制`）会命中第一项「复制视频ID」，
+           抄回来的是 ID 不是链接。
+        2. 列表行里显示的是**简介**，不是短标题——
+           所以 `row_text` 要给简介里那段文字，给短标题可能找不到行。
+
+        取不到就返回 None，**不猜、不编**。
+        """
+        share = [t.format(row_text=row_text)
+                 for t in self.config.need("list", "share_button")]
+        if not self.driver.exists(share):
+            # 这一行不在眼前（多半是还没进列表）——先进列表
+            self.open_content_list()
+        self.driver.click_visible(share)
+        self.driver.click_visible(self.config.need("list", "copy_link_item"))
+
+        link = self.driver.clipboard_text()
+        if not link.startswith("http"):
+            return None
+        return link
+
     def prepare(self, plan: PublishPlan, *, cover: Path | None = None) -> dict:
         """把发布包里的东西都填进页面，**停在发表之前**。
 

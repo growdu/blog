@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>假内容列表</title></head>
+<body>
+  <!--
+    模仿视频号助手的「内容管理 → 视频」列表（结构照 2026-11-13 实测的真页面）。
+
+    真页面的关键结构：
+      .post-feed-item                      一行
+        .post-title                       行里显示的是**简介**，不是短标题
+        .time-label                       发表时间
+        .bandage                          状态标签（如「已声明原创」）
+        .opr-item-wrap .more-actions      这一行的「分享」入口
+          → 弹层里三项：复制视频ID / 下载视频二维码 / 复制视频链接
+
+    列表渲染在 iframe 里（micro/content/iframe/post-card.html），
+    真站上这一页是**点导航里的「视频」才进去的**——这里用同一个入口模拟。
+  -->
+  <ul class="finder-ui-desktop-menu">
+    <li class="finder-ui-desktop-sub-menu__item">视频</li>
+    <li class="finder-ui-desktop-sub-menu__item">草稿箱</li>
+  </ul>
+
+  <div id="list" style="display:none">
+    <div class="post-feed-item">
+      <div class="post-title">两个事务改同一行 谁先谁后</div>
+      <div class="posted-info">
+        <span class="time-label">2026年11月13日 14:49</span>
+        <div class="bandage"><span>已声明原创</span></div>
+        <div class="opr-item-wrap">
+          <div class="opr-item">
+            <div class="weui-desktop-popover__wrp more-action">
+              <span class="weui-desktop-popover__target"><div class="more-actions">分享</div></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="weui-desktop-popover__wrp" id="menu" style="display:none;">
+    <div class="weui-desktop-popover__item">复制视频ID</div>
+    <div class="weui-desktop-popover__item">下载视频二维码</div>
+    <div class="weui-desktop-popover__item">复制视频链接</div>
+  </div>
+
+  <script>
+    var list = document.getElementById('list');
+    var menu = document.getElementById('menu');
+
+    // 点导航里的「视频」才进列表（真站是这个行为）
+    document.querySelector('.finder-ui-desktop-sub-menu__item').addEventListener('click', function () {
+      list.style.display = '';
+    });
+
+    // 点这一行的「分享」才弹菜单
+    document.querySelector('.post-feed-item .more-actions').addEventListener('click', function () {
+      menu.style.display = '';
+    });
+
+    // 「复制视频链接」把链接写进剪贴板
+    Array.prototype.forEach.call(
+      document.querySelectorAll('.weui-desktop-popover__item'), function (item) {
+        item.addEventListener('click', function () {
+          if (item.textContent.trim() !== '复制视频链接') return;
+          navigator.clipboard.writeText('https://weixin.qq.com/sph/fixture-1');
+        });
+      });
+  </script>
+</body>
+</html>

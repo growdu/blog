@@ -69,6 +69,7 @@ def repo_root() -> Path:
 
 
 PROCESSING_PAGE = FIXTURES / "post-processing.html"
+LIST_PAGE = FIXTURES / "post-list.html"
 
 
 def _selectors_for(page_path: Path, target: Path, *, timeouts: dict | None = None) -> Path:
@@ -92,3 +93,46 @@ def processing_selectors(tmp_path):
         PROCESSING_PAGE, tmp_path / "processing-selectors.json",
         timeouts={"publish_ready_ms": 5000, "publish_effect_ms": 1500},
     )
+
+
+@pytest.fixture
+def fixture_server():
+    """把 fixtures 目录用本地 HTTP 伺服起来。
+
+    **为什么不用 file://**：剪贴板 API 只在「安全上下文」里可用，
+    而 file:// 是不透明来源——权限授不上，写剪贴板也会被拒。
+    127.0.0.1 算安全上下文，所以测剪贴板得走 http。
+    """
+    import functools
+    import http.server
+    import threading
+
+    class Quiet(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, *args):  # 别把测试日志刷满
+            pass
+
+    handler = functools.partial(Quiet, directory=str(FIXTURES))
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        yield f"http://127.0.0.1:{server.server_port}"
+    finally:
+        server.shutdown()
+        server.server_close()
+
+
+@pytest.fixture
+def list_selectors(tmp_path, fixture_server):
+    """指向假的内容列表页（取公开链接用）。"""
+    raw = json.loads(SELECTORS.read_text(encoding="utf-8"))
+    raw["entry_url"] = f"{fixture_server}/post-list.html"
+    raw["selectors"]["list"] = {
+        "entry_item": [".finder-ui-desktop-sub-menu__item:has-text('视频')"],
+        "share_button": [".post-feed-item:has-text('{row_text}') "
+                         ".opr-item-wrap .more-actions"],
+        "copy_link_item": [":text-is('复制视频链接')"],
+    }
+    target = tmp_path / "list-selectors.json"
+    target.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+    return target

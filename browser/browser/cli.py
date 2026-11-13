@@ -195,6 +195,17 @@ def cmd_prepare(args: argparse.Namespace) -> int:
     return 0
 
 
+def _row_text(plan) -> str:
+    """内容列表那一行里会出现的文字。
+
+    **列表行显示的是简介，不是短标题**（实测 2026-11-13）——
+    拿短标题去常常找不到行，所以给简介里那一段；简介空了就退回短标题。
+    """
+    if plan.description:
+        return plan.description[:20]
+    return plan.title[:20]
+
+
 def cmd_submit(args: argparse.Namespace) -> int:
     episode = args.episode
     plan = _load_plan(episode, args.package)
@@ -202,6 +213,8 @@ def cmd_submit(args: argparse.Namespace) -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     with _open_session(args) as session:
+        # 取公开链接要读剪贴板——权限得先授上（只给这一个站点）
+        session.grant_clipboard("https://channels.weixin.qq.com")
         filled = _prepare(session, plan, args)
         shot = out_dir / "submit.png"
         session.page.screenshot(path=str(shot), full_page=True)
@@ -231,6 +244,17 @@ def cmd_submit(args: argparse.Namespace) -> int:
         )
         try:
             url = flow.submit()
+            if not url:
+                # 平台不在成功页给链接——去内容列表那一行的分享菜单里取
+                # （「复制视频链接」把链接写进剪贴板，再读回来）。
+                # **取链接失败不影响「已经发出去了」这个事实**——
+                # 那时候该做的是回填快照，不是重发。
+                try:
+                    url = flow.collect_published_url(_row_text(plan))
+                except (channels_flow.FlowError, ActionError) as error:
+                    print(f"WARN 取链接失败（{error}）——"
+                          "稿子已经发出去了，手动回填链接即可，别重发。",
+                          file=sys.stderr)
         finally:
             # 点完「发表」再拍一张。**出事的时候，现场证据全看这张图**——
             # 2026-11-13 那次截图拍在点击之前，结果「点了没反应」一点痕迹都没留。

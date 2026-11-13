@@ -38,6 +38,13 @@
       "agree_checkbox": [".declare-original-dialog input[type=checkbox]"],
       "confirm_button": [".declare-original-dialog button:has-text('声明原创')"],
       "cancel_button": [".declare-original-dialog button:has-text('取消')"]
+    },
+    "list": {
+      "_note": "内容管理 → 视频 列表。**列表行渲染在 iframe 里**（micro/content/iframe/post-card.html），主文档看不到行。行里显示的是**简介**，不是短标题——找行要给简介里那段文字。分享菜单里三项：复制视频ID / 下载视频二维码 / 复制视频链接，**必须精确匹配**（2026-11-13 实测：模糊匹配会抄回视频ID）。",
+      "entry_item": [".finder-ui-desktop-sub-menu__item:has-text('视频')"],
+      "nav_parent": [".finder-ui-desktop-menu__sub__wrp"],
+      "share_button": [".post-feed-item:has-text('{row_text}') .opr-item-wrap .more-actions"],
+      "copy_link_item": [":text-is('复制视频链接')"]
     }
   }
 }

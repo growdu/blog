@@ -45,14 +45,19 @@ class SessionConfig:
     viewport_height: int = 960
     locale: str = "zh-CN"
     timezone: str = "Asia/Shanghai"
+    # 开了这个端口，别人就能用 CDP 挂到这个浏览器上（见 BrowserSession.attach）。
+    # 端口用 0 = 让系统随机挑一个空闲端口。
+    remote_debugging_port: int | None = None
 
     @classmethod
-    def build(cls, profile_dir=None, headless=False, slow_mo=0) -> "SessionConfig":
+    def build(cls, profile_dir=None, headless=False, slow_mo=0,
+              remote_debugging_port=None) -> "SessionConfig":
         return cls(
             profile_dir=Path(profile_dir).expanduser().resolve() if profile_dir
             else default_profile_dir(),
             headless=headless,
             slow_mo=slow_mo,
+            remote_debugging_port=remote_debugging_port,
         )
 
 
@@ -70,6 +75,7 @@ class BrowserSession:
         self._playwright = None
         self._context = None
         self._page = None
+        self._attached = False
 
     # -- 生命周期 ------------------------------------------------------------
 
@@ -77,6 +83,9 @@ class BrowserSession:
         sync_playwright = pw.import_playwright()
         self.config.profile_dir.mkdir(parents=True, exist_ok=True)
         self._playwright = sync_playwright().start()
+        args = []
+        if self.config.remote_debugging_port is not None:
+            args.append(f"--remote-debugging-port={self.config.remote_debugging_port}")
         self._context = self._playwright.chromium.launch_persistent_context(
             user_data_dir=str(self.config.profile_dir),
             headless=self.config.headless,
@@ -87,6 +96,7 @@ class BrowserSession:
                 "width": self.config.viewport_width,
                 "height": self.config.viewport_height,
             },
+            args=args or None,
         )
         # 持久化上下文自带一个空白页；用它，不额外开页。
         self._page = (self._context.pages or [None])[0]
@@ -94,9 +104,54 @@ class BrowserSession:
             self._page = self._context.new_page()
         return self
 
+    @classmethod
+    def attach(cls, cdp_url: str = "http://127.0.0.1:9333") -> "BrowserSession":
+        """挂到一个**已经在跑**的浏览器上。
+
+        **为什么要有这个。** 视频号助手的登录态很脆（实测 2026-11-13：
+        本机微信授权后能用一阵，过一会儿就被踢掉）。如果每个脚本都自己开
+        浏览器，就得反复重新授权；更糟的是，改一行脚本代码就得把浏览器
+        重启一遍，登录态可能当场作废。
+
+        所以：**浏览器用 `--remote-debugging-port` 起一次，脚本用 CDP 挂上去。**
+        脚本随便重启，浏览器一直开着，登录态一直在。
+
+        挂上来的会话 `close()` **不会关掉浏览器**——那是别人的东西。
+        """
+        sync_playwright = pw.import_playwright()
+        self = cls(SessionConfig.build())
+        self._playwright = sync_playwright().start()
+        browser = self._playwright.chromium.connect_over_cdp(cdp_url)
+        contexts = browser.contexts
+        if not contexts:
+            raise RuntimeError(f"那个浏览器上还没有上下文：{cdp_url}")
+        self._context = contexts[0]
+        self._attached = True
+        self._page = (self._context.pages or [None])[0]
+        if self._page is None:
+            self._page = self._context.new_page()
+        return self
+
+    def grant_clipboard(self, origin: str) -> bool:
+        """允许读剪贴板（只对这一个站点）。
+
+        取公开链接要靠「复制视频链接」把链接写进剪贴板、再读回来。
+        不授权的话读出来是空的——**不报错**，所以更得主动授权。
+        """
+        try:
+            self.context.grant_permissions(
+                ["clipboard-read", "clipboard-write"], origin=origin)
+            return True
+        except Exception:
+            return False
+
     def close(self) -> None:
         if self._context is not None:
-            self._context.close()
+            if self._attached:
+                # 挂上来的浏览器是常驻的，**不能关**——只断开自己的连接。
+                pass
+            else:
+                self._context.close()
             self._context = None
         if self._playwright is not None:
             self._playwright.stop()
@@ -104,6 +159,11 @@ class BrowserSession:
         self._page = None
 
     def __enter__(self) -> "BrowserSession":
+        # attach() 造出来的会话已经就绪了，别再 start() 一次——
+        # Playwright 的同步 API 一个进程只能有一个实例，
+        # 再 start 一次会直接报「inside the asyncio loop」。
+        if self._page is not None:
+            return self
         return self.start()
 
     def __exit__(self, exc_type, exc, tb) -> None:
