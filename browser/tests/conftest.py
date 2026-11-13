@@ -55,8 +55,8 @@ def package_dir(tmp_path):
     (root / "description.txt").write_text("MVCC 只管读和写。", encoding="utf-8")
     (root / "topics.txt").write_text("#PostgreSQL #行锁", encoding="utf-8")
     (root / "video.mp4").write_bytes(b"\x00\x00\x00\x18ftypmp42" + b"\x00" * 64)
-    (root / "cover-16x9.jpg").write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 64)
-    (root / "cover-9x16.jpg").write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 64)
+    (root / "cover-4x3.jpg").write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 64)
+    (root / "cover-3x4.jpg").write_bytes(b"\xff\xd8\xff\xe0" + b"\x00" * 64)
     (root / "meta.json").write_text(
         json.dumps({"episode": "ep01", "status": "packaged"}, ensure_ascii=False),
         encoding="utf-8")

@@ -97,8 +97,9 @@ def load_plan(package_dir: Path) -> PublishPlan:
     topics = parse_topics(_read_text(root / "topics.txt", required=False))
 
     video = root / "video.mp4"
-    cover = root / "cover-16x9.jpg"
-    cover_alt = root / "cover-9x16.jpg"
+    # 视频号的两个封面槽位（实测 2026-11-13）：分享卡片 4:3、个人主页卡片 3:4
+    cover = root / "cover-4x3.jpg"
+    cover_alt = root / "cover-3x4.jpg"
 
     if not title:
         raise PlanError(f"发布包里没有标题：{root / 'title.txt'}")

@@ -1,12 +1,20 @@
-"""封面：从成片里抽一帧，裁成两个尺寸。
+"""封面：从成片里抽一帧，做成视频号要的两个尺寸。
 
-**为什么出两张。** 公开口径对「横版视频的封面会不会被裁」互相矛盾：
-一说视频号封面比例是竖版 6:7（1080×1260）与横版 16:9（1080×608），
-一说朋友圈卡片、聊天窗口、主页、发现页全部以 9:16 竖屏展示封面，
-传 16:9 会被裁左右或加黑边。
+**为什么是这两个尺寸。** 2026-11-13 在视频号助手的投稿页实测：
+上传完视频，「封面预览」下面明摆着**两个槽位**——
 
-既然是人工发布，两张都给、让人在真实界面上看一眼，
-比赌哪个口径对更省事（规格 §6.1.2）。
+| 槽位 | 比例 | 用在哪 |
+| --- | --- | --- |
+| 个人主页卡片 | **3:4** | 主页 |
+| 分享卡片 | **4:3** | 朋友圈、聊天 |
+
+公开口径里的 6:7 / 1080×1260 / 16:9 / 9:16 **一个都不对**（规格 §6.1.2）。
+传 16:9 的图进 4:3 的槽位会被居中裁掉左右两边——实测传的 1080×608，
+左右各少一块，画面里的字被切掉。
+
+**为什么留白而不是裁。** AIV 的画面是内容很满的幻灯片：标题贴着左边缘，
+四个色块铺满整宽。居中裁切会切掉字。所以按「等比缩放 + 白底留白」做——
+内容一点不少，代价是 3:4 那张上下留白比较多。
 """
 from __future__ import annotations
 
@@ -15,9 +23,9 @@ from pathlib import Path
 
 from PIL import Image
 
-# 视频号封面尺寸
-COVER_16X9 = (1080, 608)
-COVER_9X16 = (1080, 1920)
+# 视频号的两个封面槽位（实测 2026-11-13）
+COVER_4X3 = (1080, 810)      # 分享卡片：朋友圈、聊天
+COVER_3X4 = (1080, 1440)     # 个人主页卡片：主页
 # 品牌背景是白色，留白就用白色，视觉上不突兀。
 PADDING_COLOR = (255, 255, 255)
 
@@ -40,33 +48,40 @@ def extract_frame(video: str | Path, at: float, out_path: str | Path) -> Path:
     return out
 
 
-def fit_cover(image: Image.Image, size: tuple[int, int]) -> Image.Image:
-    """按目标比例居中裁切再缩放——不拉伸变形。"""
+def fit_inside(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """等比缩放到刚好装进目标框——不裁切、不拉伸变形。"""
     target_width, target_height = size
     src_width, src_height = image.size
-    scale = max(target_width / src_width, target_height / src_height)
-    crop_width = min(src_width, max(1, round(target_width / scale)))
-    crop_height = min(src_height, max(1, round(target_height / scale)))
-    left = (src_width - crop_width) // 2
-    top = (src_height - crop_height) // 2
-    cropped = image.crop((left, top, left + crop_width, top + crop_height))
-    return cropped.resize(size, Image.LANCZOS)
+    scale = min(target_width / src_width, target_height / src_height)
+    new_size = (max(1, round(src_width * scale)), max(1, round(src_height * scale)))
+    return image.resize(new_size, Image.LANCZOS)
+
+
+def letterbox(image: Image.Image, size: tuple[int, int]) -> Image.Image:
+    """把画面等比缩放后居中放进目标尺寸的画布，多余的地方留白。
+
+    **为什么留白而不是裁。** 见模块开头：成片是内容很满的幻灯片，
+    裁左右会把字切掉。少一点画面总比少一半字强。
+    """
+    canvas = Image.new("RGB", size, PADDING_COLOR)
+    inner = fit_inside(image, size)
+    canvas.paste(inner, ((size[0] - inner.width) // 2, (size[1] - inner.height) // 2))
+    return canvas
 
 
 def make_covers(video: str | Path, at: float, out_dir: str | Path) -> dict[str, Path]:
-    """抽一帧，裁成横版与竖框版两张封面。"""
+    """抽一帧，做成分享卡片（4:3）与个人主页卡片（3:4）两张封面。"""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     raw = extract_frame(video, at, out_dir / "_frame.png")
     with Image.open(raw) as frame:
         image = frame.convert("RGB")
-        wide = fit_cover(image, COVER_16X9)
-        wide_path = out_dir / "cover-16x9.jpg"
-        wide.save(wide_path, quality=92)
+        share = letterbox(image, COVER_4X3)
+        share_path = out_dir / "cover-4x3.jpg"
+        share.save(share_path, quality=92)
 
-        canvas = Image.new("RGB", COVER_9X16, PADDING_COLOR)
-        canvas.paste(wide, (0, (COVER_9X16[1] - COVER_16X9[1]) // 2))
-        tall_path = out_dir / "cover-9x16.jpg"
-        canvas.save(tall_path, quality=92)
+        profile = letterbox(image, COVER_3X4)
+        profile_path = out_dir / "cover-3x4.jpg"
+        profile.save(profile_path, quality=92)
     raw.unlink(missing_ok=True)
-    return {"16x9": wide_path, "9x16": tall_path}
+    return {"4x3": share_path, "3x4": profile_path}

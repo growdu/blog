@@ -72,17 +72,18 @@ def _checklist(episode: str, copy: contract.ChannelsCopy,
         f"| 视频 | `video.mp4`（{info.duration:.1f} s，{info.width}×{info.height}） |",
         f"| 标题 | {copy.title}（{len(copy.title)} 字） |",
         f"| 话题 | {topics or '（无）'} |",
-        "| 封面 | `cover-16x9.jpg`（信息流若裁切则换 `cover-9x16.jpg`） |",
+        "| 封面 | `cover-4x3.jpg`（分享卡片）/ `cover-3x4.jpg`（个人主页卡片） |",
         "| 原创声明 | 勾选 |",
         "",
         "## 步骤",
         "",
         "- [ ] 打开视频号助手 → 发布视频",
         "- [ ] 上传 `video.mp4`",
-        "- [ ] 粘贴标题与简介，补上 # 话题",
-        "- [ ] 选封面（先试 `cover-16x9.jpg`，被裁就换 `cover-9x16.jpg`）",
-        "- [ ] 勾选「原创声明」",
-        "- [ ] 发布",
+        "- [ ] 粘贴短标题与简介，补上 # 话题",
+        "- [ ] 选封面（分享卡片用 `cover-4x3.jpg`，个人主页卡片用 `cover-3x4.jpg`；"
+        "也可以直接用平台自动生成的那两张）",
+        "- [ ] 勾选「声明原创」",
+        "- [ ] 发表",
         "- [ ] 回填链接："
         f"`python -m channels.cli mark published {episode} --url \"<链接>\"`",
         "",
@@ -189,7 +190,7 @@ def build_package(episode: str, meta: epmeta.EpisodeMeta, video: str | Path,
             link.unlink()
         link.symlink_to(video_path.resolve())
 
-        names = ("video.mp4", "cover-16x9.jpg", "cover-9x16.jpg",
+        names = ("video.mp4", "cover-4x3.jpg", "cover-3x4.jpg",
                  "title.txt", "description.txt", "topics.txt", "publish.md")
         files = {name: target / name for name in names}
 

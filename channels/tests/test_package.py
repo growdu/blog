@@ -13,7 +13,7 @@ from channels import package, snapshot, state
 
 def test_build_package_writes_every_file(meta, video, tmp_path):
     result = package.build_package("ep01", meta, video, tmp_path / "out")
-    for name in ("video.mp4", "cover-16x9.jpg", "cover-9x16.jpg",
+    for name in ("video.mp4", "cover-4x3.jpg", "cover-3x4.jpg",
                  "title.txt", "description.txt", "topics.txt", "publish.md"):
         assert name in result.files, f"发布包缺 {name}"
         assert result.files[name].exists()

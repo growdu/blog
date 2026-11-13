@@ -154,7 +154,7 @@ def test_prepare_uploads_the_cover_when_one_is_given(page, fixture_selectors, pa
     flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
                         ChannelsConfig.load(fixture_selectors))
     flow.prepare(plan, cover=plan.cover)
-    assert page.eval_on_selector("#cover-file", "el => el.files[0].name") == "cover-16x9.jpg"
+    assert page.eval_on_selector("#cover-file", "el => el.files[0].name") == "cover-4x3.jpg"
 
 
 def test_prepare_refuses_a_package_without_a_video(page, fixture_selectors, package_dir):
