@@ -37,7 +37,7 @@ UNMEASURED_ITEMS = {
     "正文里的**外链图片**能不能显示": ("未测",),
     "**零封面**能不能发": ("未测",),
     "平台自动生成的**摘要**": ("未测",),
-    "发表后有没有审核 / 审核要多久": ("未到达", "未测"),
+    "发表后有没有审核 / 审核要多久": ("未观察", "未测", "未到达"),
     "正文图片**张数上限**": ("未测",),
 }
 
@@ -119,17 +119,70 @@ def test_the_paragraph_threshold_is_recorded(repo_root):
     assert "1 处段落字数过多" in text, "试点记录里没有平台告警的原文"
 
 
-def test_the_7050_blocker_is_recorded_with_its_control(repo_root):
+def test_the_7050_facts_are_recorded_with_their_control(repo_root):
     """7050 与它的对照实验必须一起留着。
 
     只有「保存失败」没有「最小草稿也失败」，下一个人会以为是自己这篇文章
     的问题，然后去改稿子——改到天亮也修不好一个账号侧的问题。
+
+    注意这条守的是**事实**，不是「7050 挡住了发表」那个结论——
+    那个结论是错的（§R2.F 已改正），由下面两条守着。
     """
     text = _text(repo_root)
 
     assert "7050" in text, "试点记录里没有 7050 这个码"
     assert "最小草稿" in text, "试点记录里没有「最小草稿也失败」这条对照"
     assert "与内容无关" in text, "试点记录里没有把 7050 与内容区分开的结论"
+
+
+def test_the_save_and_publish_branches_are_recorded(repo_root):
+    """**保存与发表是两个分支**，这条必须写清楚。
+
+    2026-11-13 之前，这份文档写的是「7050 → 发不出去」——
+    然后 14:05 和 14:11 两篇文章都发成功了。错因是把同一个接口的
+    ``save=0`` 与 ``save=1`` 当成了一件事。
+
+    这条断言守的是「别再合并这两个分支」：编辑器一直报「保存失败」，
+    脚本报红，但发表走的是另一个分支，通着。
+    """
+    text = _text(repo_root)
+
+    assert "save=0" in text, "试点记录里没有存草稿那个分支的标志 save=0"
+    assert "save=1" in text, "试点记录里没有发表那个分支的标志 save=1"
+    assert "预览确认发布" in text, "试点记录里没有「预览确认发布」这个面板"
+    assert "确认发布" in text, "试点记录里没有面板里的「确认发布」这一步"
+    assert "不等于「发不出去」" in text, (
+        "试点记录里没有把「保存失败 ≠ 发不出去」这条写出来——"
+        "2026-11-13 就是因为漏了它，白发了两篇"
+    )
+
+
+def test_the_publish_result_is_recorded(repo_root):
+    """**发表成功了**——这件事必须留在文档里。
+
+    文档要是还写着「未到达」，下一个人会以为这篇还没发，
+    于是再发一遍（这次就是这么变成两篇的）。
+    """
+    text = _text(repo_root)
+
+    assert "14:05" in text, "试点记录里没有第一次发表的时间"
+    assert "14:11" in text, "试点记录里没有第二次发表的时间"
+    assert "93" in text, "试点记录里没有发完之后的账号内容数"
+
+
+def test_the_dry_run_trap_is_recorded(repo_root):
+    """「拦请求当干跑」这条坑必须留着。
+
+    排查时试着拦下发布请求再点按钮，想让它发不出去——
+    其中一次**照样发出来了**。平台还有别的通道能把 save=1 送出去。
+
+    不记这条，下一个人还会用同一招，然后莫名多出一篇。
+    """
+    text = _text(repo_root)
+
+    assert "拦请求" in text, "试点记录里没有「拦请求做干跑」这件事"
+    assert "不可靠" in text, "试点记录里没有把「拦请求当干跑」标成不可靠"
+
 
 
 def test_the_title_limit_is_not_claimed_as_save_verified(repo_root):

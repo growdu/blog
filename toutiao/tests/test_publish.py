@@ -273,6 +273,43 @@ def test_the_checklist_says_the_footer_must_stay_plain_text(tmp_path):
     assert "不是超链接" in lines[0]
 
 
+def test_the_checklist_says_the_publish_is_two_steps(tmp_path):
+    """清单要写清「发表」是**两步**，不是点一下就完事。
+
+    2026-11-13 在真实后台实测：点「预览并发布」**只弹「预览确认发布」面板**，
+    面板里的「确认发布」才是真的发表。清单原来只写「- [ ] 发表」，
+    照着做的人点完第一下就以为发出去了，文章其实还在面板里没出去。
+    """
+    site, posts = _site(tmp_path)
+    result = write_package(_article(), CAP, tmp_path / "out", posts, "https://growdu.cn")
+    lines = [
+        line for line in _readme(result).splitlines()
+        if line.startswith("- [ ] 发表")
+    ]
+    assert len(lines) == 1, lines
+    assert "预览并发布" in lines[0]
+    assert "预览确认发布" in lines[0]
+    assert "确认发布" in lines[0]
+
+
+def test_the_checklist_says_a_failed_autosave_is_not_a_failed_publish(tmp_path):
+    """清单要说明「保存失败」不是「没发出去」，并且别让人重发。
+
+    同一天实测到的第二个坑：编辑器底部一直显示「保存失败」，
+    那是**自动存草稿**那个分支被平台拒了（save=0），发表走的是另一个分支，通着。
+    不写清楚，操作的人会以为没发成功——2026-11-13 就这么**重发成了两篇**。
+    """
+    site, posts = _site(tmp_path)
+    result = write_package(_article(), CAP, tmp_path / "out", posts, "https://growdu.cn")
+    lines = [
+        line for line in _readme(result).splitlines()
+        if "保存失败" in line
+    ]
+    assert len(lines) == 1, lines
+    assert "自动存草稿" in lines[0]
+    assert "别" in lines[0] and "重发" in lines[0]
+
+
 def test_write_package_refuses_a_tier_it_does_not_serve(tmp_path):
     """档位不是 manual —— 出包这一步不接，得当场拒绝。
 
