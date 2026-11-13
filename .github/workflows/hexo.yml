@@ -78,9 +78,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: '22'
-          # 缓存 npm 下载：build 要在两次推送之间跑完才有机会落地，
-          # 装依赖占掉的时间越少越好。
-          cache: npm
       - name: Install Hexo dependencies
         run: npm install
       - name: Security audit
@@ -267,9 +264,6 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: '22'
-          # 缓存 npm 下载：build 要在两次推送之间跑完才有机会落地，
-          # 装依赖占掉的时间越少越好。
-          cache: npm
       - name: Install Hexo dependencies
         run: npm install
       - name: Configure GitHub Pages build

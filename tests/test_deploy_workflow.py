@@ -37,6 +37,7 @@ Nothing here talks to the network: these are contract tests over a file.
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -193,3 +194,40 @@ def test_workflow_triggers_on_push_to_master() -> None:
     assert re.search(r"^on:", text, re.M), "工作流没有 on: 触发器"
     assert re.search(r"^\s*push:", text, re.M), "工作流不由 push 触发"
     assert re.search(r"^\s*-\s*master\s*$", text, re.M), "push 触发器里没有 master 分支"
+
+
+def _is_tracked(path: str) -> bool:
+    """这个文件在 git 里吗（跟踪着）？"""
+    try:
+        proc = subprocess.run(
+            ["git", "ls-files", "--error-unmatch", path],
+            cwd=REPO, capture_output=True, text=True,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return proc.returncode == 0
+
+
+def test_the_npm_cache_is_never_used_without_a_tracked_lockfile() -> None:
+    """``cache: npm`` 需要 lockfile **在仓库里**，否则整个 build 挂掉。
+
+    2026-11-13 实测：给 setup-node 加上 ``cache: npm`` 之后，
+    setup-node 直接报「Dependencies lock file is not found」——
+    本仓库的 ``package-lock.json`` 被 ``.gitignore`` 挡掉了，
+    **本地有、仓库里没有**。于是每一个 run 都在 build 的第一步就红了，
+    而且报的是「锁文件找不到」，跟「缓存」八竿子打不着，很难第一眼联想到。
+
+    所以这条不是「缓存好不好」的问题，是「用了缓存的前提满足没有」。
+    """
+    text = _workflow_text()
+    # 不管用不用缓存，依赖总得装——否则 build 根本跑不起来。
+    assert re.search(r"npm (install|ci)", text), "工作流里没有装依赖的步骤"
+
+    if "cache: npm" not in text:
+        return  # 没开 npm 缓存，这条前提不适用
+
+    assert _is_tracked("package-lock.json"), (
+        "workflow 用了 cache: npm，但 package-lock.json 不在仓库里"
+        "（本仓库把它 gitignore 了）——setup-node 会直接失败，"
+        "每个 run 都在 build 第一步就红"
+    )
