@@ -12,12 +12,16 @@
 6. 「已合入」的记录不能还留着没销掉的待核事实；
 7. docs/ 下不得出现审校记录——docs/ 会被 sync-hexo.py 发布成站点文章，
    内部流程漏到线上就是事故。
+8. 契约检查本身不能依赖本机 git 配置——GitHub runner 和开发机的 git
+   环境并不相同，本地全绿不代表 CI 全绿。
 """
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -41,6 +45,19 @@ TEMPLATE_SECTIONS = (
 
 INDEX_ROW_RE = re.compile(r"^\|\s*\[([^\]]+)\]\(([^)]+)\)\s*\|(.*)\|\s*$")
 
+# GitHub runner 的 git 环境：没有开发者的全局 git 配置，core.quotePath
+# 取默认值（true）。开发机常常把它关掉，于是同一个提交在两台机器上
+# 报出来的路径文本不一样——本地绿、CI 红就是这么来的。
+CI_LIKE_GIT_ENV = {
+    "GIT_CONFIG_GLOBAL": os.devnull,
+    "GIT_CONFIG_COUNT": "1",
+    "GIT_CONFIG_KEY_0": "core.quotePath",
+    "GIT_CONFIG_VALUE_0": "true",
+}
+
+# 子进程标记：契约检查会在子进程里再跑一遍自己，没有这个标记就会无限递归。
+CHILD_MARKER = "REVIEW_RECORDS_CONTRACT_CHILD"
+
 
 def record_files() -> list[Path]:
     return sorted(p for p in REVIEW_ROOT.rglob("*.md")
@@ -63,9 +80,20 @@ def parse_record(path: Path) -> dict:
     return info
 
 
-def git(*args: str) -> str:
-    result = subprocess.run(["git", *args], cwd=REPO_ROOT,
-                            capture_output=True, text=True)
+def git(*args: str, extra_env: dict[str, str] | None = None) -> str:
+    """Run git and return its stdout, decoded as UTF-8.
+
+    The encoding is pinned on purpose: ``text=True`` follows the machine
+    locale, and a runner with a POSIX locale would mangle the Chinese
+    paths this file is about.  ``extra_env`` lets a caller reproduce a
+    different machine's git configuration.
+    """
+    env = os.environ.copy()
+    if extra_env:
+        env.update(extra_env)
+    result = subprocess.run(["git", *args], cwd=REPO_ROOT, env=env,
+                            capture_output=True, encoding="utf-8",
+                            errors="replace")
     return result.stdout
 
 
@@ -97,6 +125,24 @@ def merged_commit_for(slug: str) -> list[str]:
         if subject.strip() == f"docs(review): {slug}":
             shas.append(sha)
     return shas
+
+
+def changed_paths(sha: str, *, extra_env: dict[str, str] | None = None) -> list[str]:
+    """The raw paths a commit touched.
+
+    ``git show --name-only`` C-quotes non-ASCII pathnames unless
+    ``core.quotePath`` is false -- and that setting lives in the
+    machine's git config: a developer often has it off, a CI runner
+    keeps the default (true).  The same commit then reports
+    ``docs/cluster/分布式一致性协议.md`` on one machine and
+    ``"docs/cluster/\\350\\276\\205..."`` on the other, so comparing the
+    record's path against that output matches on one machine and not on
+    the other.  ``-z`` pins the output to raw bytes with NUL separators,
+    independent of any git configuration.
+    """
+    out = git("show", "--name-only", "--pretty=format:", "-z", sha,
+              extra_env=extra_env)
+    return [p for p in out.split("\0") if p]
 
 
 def test_records_live_under_a_reviewed_pillar():
@@ -154,8 +200,7 @@ def test_merged_record_has_a_matching_commit():
         assert shas, f"{slug} 标了已合入，但没有 docs(review): {slug} 提交"
         touched = False
         for sha in shas:
-            names = git("show", "--name-only", "--pretty=format:", sha)
-            if info["source"] in names:
+            if info["source"] in changed_paths(sha):
                 touched = True
         assert touched, f"{slug} 的合入提交没有改动 {info['source']}"
 
@@ -191,3 +236,43 @@ def test_docs_tree_has_no_review_leakage():
     records = [p for p in DOCS_ROOT.rglob("*.md")
                if p.name.startswith("审校") or "审校记录" in p.name]
     assert not records, f"docs/ 下出现了审校记录: {records}"
+
+
+def test_changed_paths_are_raw_even_when_git_quotes_non_ascii_paths():
+    """单元：取「提交改了哪些文件」不能受 git 的路径转义影响。
+
+    ``git show --name-only`` 默认把非 ASCII 路径 C 转义成
+    ``"docs/cluster/\\350\\276\\205..."``，除非 ``core.quotePath`` 是 false。
+    那是**每台机器自己的** git 配置：开发机常关掉，CI runner 保持默认。
+    两边对同一个提交给出的文本不同，路径比对必然一边成一边败。
+    """
+    chinese = [p for p in record_files()
+               if not p.stem.isascii() and parse_record(p)["source"]]
+    assert chinese, "没有中文路径的记录，测不到路径转义这个坑"
+    record = chinese[0]
+    info = parse_record(record)
+    shas = merged_commit_for(record.stem)
+    assert shas, f"{record.stem} 找不到对应的合入提交"
+    paths = changed_paths(shas[0], extra_env=CI_LIKE_GIT_ENV)
+    assert info["source"] in paths, (
+        f"{info['source']} 不在提交的改动列表里：{paths}")
+
+
+def test_contract_file_passes_in_a_ci_like_git_environment():
+    """集成：把整套契约检查放进「像 CI runner 一样」的 git 环境里再跑一遍。
+
+    CI runner 没有开发者的全局 git 配置，core.quotePath 取默认 true；
+    开发机常常关掉它。这条测试把两者拉平：契约检查在 CI 样的环境里
+    也必须全绿。否则就是「本地绿、CI 红」，而 CI 红了没人看得到原因。
+    """
+    if os.environ.get(CHILD_MARKER) == "1":
+        pytest.skip("子进程里不再递归跑这份契约")
+    env = os.environ.copy()
+    env[CHILD_MARKER] = "1"
+    env.update(CI_LIKE_GIT_ENV)
+    result = subprocess.run(
+        [sys.executable, "-m", "pytest", "tests/test_review_records.py", "-q"],
+        cwd=REPO_ROOT, capture_output=True, encoding="utf-8", errors="replace",
+        env=env,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
