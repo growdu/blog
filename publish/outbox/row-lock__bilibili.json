@@ -4,9 +4,9 @@
   "kind": "video",
   "package_dir": "bilibili/out/row-lock",
   "platform": "bilibili",
-  "published_url": null,
-  "reason": "B站 ARC_BASE 权限未开通，已出包待人工上传",
-  "status": "packaged",
+  "published_url": "https://www.bilibili.com/video/BV1NBWv6qECn",
+  "reason": "人工发布后回填",
+  "status": "published",
   "title": "两个事务改同一行，谁先谁后：PostgreSQL 行锁的 4 种模式与兼容性矩阵",
-  "updated_at": "2026-11-13T01:13:19+00:00"
+  "updated_at": "2026-11-13T03:42:39+00:00"
 }

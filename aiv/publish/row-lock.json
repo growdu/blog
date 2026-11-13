@@ -12,7 +12,7 @@
     "title": "两个事务改同一行，谁先谁后：PostgreSQL 行锁的 4 种模式与兼容性矩阵",
     "description": "MVCC 只管读和写，写和写之间它管不了：两个事务改同一行，后写的会覆盖先写的。PostgreSQL 在 MVCC 之上加了一层行锁，4 种模式从弱到强，KEY SHARE 最弱、EXCLUSIVE 最强；冲不冲突看一张 4×4 矩阵。锁藏在元组头的 t_infomask 与 xmax 里，多事务锁同一行交给 MultiXact。\n\n这一期讲的是上游 PostgreSQL 的公开机制，不是某厂商的私有扩展；画面上的位定义与矩阵是源码定义，不是实测数据。\n\n完整版与引用见 growdu.cn",
     "tags": ["PostgreSQL", "数据库", "源码", "行锁", "MVCC"],
-    "tid": 231,
+    "tid": 230,
     "copyright": 1,
     "no_reprint": 1
   }
