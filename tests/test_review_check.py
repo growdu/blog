@@ -265,3 +265,123 @@ def test_dep_04_counts_tradeoff_wording_beyond_comparison(tmp_path):
     module = load_tool()
     module.check_doc(doc)
     assert doc.depth["DEP-04"] > 0
+
+
+# --- STR / MET 规则 --------------------------------------------------------
+
+
+def test_str_04_accepts_a_sibling_article_link(tmp_path):
+    module = load_tool()
+    pillar = tmp_path / "database"
+    (pillar / "postgresql-mvcc").mkdir(parents=True)
+    (pillar / "postgresql-mvcc" / "index.md").write_text("# t\n", encoding="utf-8")
+    (pillar / "pg-dont-do-this").mkdir()
+    (pillar / "pg-dont-do-this" / "index.md").write_text("# t\n", encoding="utf-8")
+    doc = module.load_doc(pillar / "postgresql-mvcc" / "index.md")
+    doc.text = "见 [同系列](./pg-dont-do-this/index.html)\n"
+    doc.lines = doc.text.split("\n")
+    doc.blocks = module.parse_blocks(doc.lines)
+    assert module.rule_str_04(doc) == []
+
+
+def test_str_04_flags_a_link_to_a_missing_article(tmp_path):
+    module = load_tool()
+    pillar = tmp_path / "database"
+    (pillar / "postgresql-mvcc").mkdir(parents=True)
+    (pillar / "postgresql-mvcc" / "index.md").write_text("# t\n", encoding="utf-8")
+    doc = module.load_doc(pillar / "postgresql-mvcc" / "index.md")
+    doc.text = "见 [不存在的](./no-such-article/index.html)\n"
+    doc.lines = doc.text.split("\n")
+    doc.blocks = module.parse_blocks(doc.lines)
+    signals = module.rule_str_04(doc)
+    assert len(signals) == 1
+    assert signals[0].rule == "STR-04"
+
+
+def test_str_04_ignores_image_paths(tmp_path):
+    """图片不是文章链接：图片路径散落在别处，判成断链就是误报。"""
+    module = load_tool()
+    pillar = tmp_path / "database"
+    (pillar / "postgresql-mvcc").mkdir(parents=True)
+    (pillar / "postgresql-mvcc" / "index.md").write_text("# t\n", encoding="utf-8")
+    doc = module.load_doc(pillar / "postgresql-mvcc" / "index.md")
+    doc.text = "![图](./images/somewhere-else/heap.png)\n"
+    doc.lines = doc.text.split("\n")
+    doc.blocks = module.parse_blocks(doc.lines)
+    assert module.rule_str_04(doc) == []
+
+
+def test_met_01_flags_a_missing_author_table(tmp_path):
+    doc = make_doc(tmp_path, "# 标题\n\n正文。\n")
+    signals = load_tool().rule_met_01(doc)
+    assert len(signals) == 1
+    assert signals[0].rule == "MET-01"
+
+
+def test_met_01_accepts_the_author_table(tmp_path):
+    text = ("# 标题\n\n| 编写人 | 编写内容 | 编写时间 |\n| --- | --- | --- |\n"
+            "| growdu | 初稿 | 2026-08-20 |\n\n正文。\n")
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_met_01(doc) == []
+
+
+def test_str_02_flags_a_missing_opening_positioning(tmp_path):
+    doc = make_doc(tmp_path, "# 标题\n\n正文开始了。\n\n第二段。\n\n第三段。\n")
+    signals = load_tool().rule_str_02(doc)
+    assert len(signals) == 1
+    assert signals[0].rule == "STR-02"
+
+
+def test_str_02_accepts_a_positioning_sentence(tmp_path):
+    """回归：「本文会沿着源码拆给你看」也是定位句，不能当成没有定位。"""
+    text = (
+        "# 标题\n\n"
+        "先讲个场景。\n\n"
+        "PostgreSQL 选择了一条路。\n\n"
+        "本文会沿着 src/backend/access/heap/ 的源码，把这条链路一步步拆给你看。\n"
+    )
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_str_02(doc) == []
+
+
+def test_str_03_accepts_a_reference_section(tmp_path):
+    """回归：结尾的「参考资料」是标题+列表，只看段落会全判成没有产物。"""
+    text = (
+        "# 标题\n\n"
+        "正文讲完了。\n\n"
+        "## 参考资料\n\n"
+        "- PostgreSQL 17 源码：src/backend/access/heap/heapam.c\n"
+    )
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_str_03(doc) == []
+
+
+def test_parse_blocks_skips_leading_front_matter():
+    """回归：51 篇文章带 YAML front matter，它不是正文段落。"""
+    module = load_tool()
+    lines = [
+        "---",
+        'title: "PostgreSQL 目录快照源码级深度拆解"',
+        "date: 2026-10-27 10:00:00",
+        "---",
+        "",
+        "# 正文标题",
+        "",
+        "真正的第一段。",
+    ]
+    blocks = module.parse_blocks(lines)
+    kinds = [b.kind for b in blocks]
+    assert kinds == ["heading", "paragraph"]
+    assert blocks[1].text == "真正的第一段。"
+
+
+def test_str_02_accepts_a_later_positioning_sentence(tmp_path):
+    """回归：「本文的目的就是把这 7 个维度讲透」—— 讲 字在 20 字开外。"""
+    text = (
+        "# 标题\n\n"
+        "上一篇我们列了清单。\n\n"
+        "那么问题来了——为什么有的数据库能脱颖而出？\n\n"
+        "答案藏在这 7 个维度里。本文的目的就是把这 7 个维度讲透。\n"
+    )
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_str_02(doc) == []

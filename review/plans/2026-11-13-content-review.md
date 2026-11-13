@@ -263,7 +263,9 @@ LIST_RE = re.compile(r"^\s*(?:[-*+]|\d+\.)\s+")
 TABLE_RE = re.compile(r"^\s*\|.*\|\s*$")
 QUOTE_RE = re.compile(r"^\s*>")
 IMAGE_RE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
-LINK_RE = re.compile(r"(?<!\!)\[[^\]]*\]\([^)]*\)")
+# 链接与图片的区别在 ``!`` 上，而 ``!`` 出现在 ``[`` **之前**——
+# 用 ``(?<!\!)`` 挂在 ``]`` 前面是拦不住图片的，只能把 ``!`` 收进捕获组。
+LINK_RE = re.compile(r"(!?)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 
 
 @dataclass
@@ -351,10 +353,20 @@ def derive_identity(path: Path, docs_root: Path = DOCS_ROOT) -> tuple[str, str]:
 
 
 def parse_blocks(lines: list[str]) -> list[Block]:
-    """Split markdown source lines into typed blocks."""
+    """Split markdown source lines into typed blocks.
+
+    A leading YAML front matter block (``---`` ... ``---``) is metadata,
+    not prose -- 51 of the 282 reviewed articles have one -- so it is
+    skipped instead of being parsed as paragraphs.
+    """
     blocks: list[Block] = []
     i = 0
     total = len(lines)
+    if lines and lines[0].strip() == "---":
+        j = 1
+        while j < total and lines[j].strip() != "---":
+            j += 1
+        i = j + 1
     while i < total:
         raw = lines[i]
         line_no = i + 1
@@ -489,7 +501,7 @@ def to_report(doc: Doc) -> dict:
             "code_blocks": sum(1 for b in doc.blocks if b.kind == CODE),
             "tables": sum(1 for b in doc.blocks if b.kind == TABLE),
             "images": len(IMAGE_RE.findall(doc.text)),
-            "links": len(LINK_RE.findall(doc.text)),
+            "links": sum(1 for m in LINK_RE.finditer(doc.text) if m.group(1) != "!"),
         },
         "depth": doc.depth,
         "depth_ok": depth_ok,
@@ -1090,6 +1102,50 @@ def test_met_01_accepts_the_author_table(tmp_path):
     assert load_tool().rule_met_01(doc) == []
 
 
+def test_parse_blocks_skips_leading_front_matter():
+    """回归：51 篇文章带 YAML front matter，它不是正文段落。"""
+    module = load_tool()
+    lines = [
+        "---",
+        'title: "PostgreSQL 目录快照源码级深度拆解"',
+        "date: 2026-10-27 10:00:00",
+        "---",
+        "",
+        "# 正文标题",
+        "",
+        "真正的第一段。",
+    ]
+    blocks = module.parse_blocks(lines)
+    kinds = [b.kind for b in blocks]
+    assert kinds == ["heading", "paragraph"]
+    assert blocks[1].text == "真正的第一段。"
+
+
+def test_str_02_accepts_a_later_positioning_sentence(tmp_path):
+    """回归：「本文的目的就是把这 7 个维度讲透」—— 讲 字在 20 字开外。"""
+    text = (
+        "# 标题\n\n"
+        "上一篇我们列了清单。\n\n"
+        "那么问题来了——为什么有的数据库能脱颖而出？\n\n"
+        "答案藏在这 7 个维度里。本文的目的就是把这 7 个维度讲透。\n"
+    )
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_str_02(doc) == []
+
+
+def test_str_04_ignores_image_paths(tmp_path):
+    """图片不是文章链接：图片路径散落在别处，判成断链就是误报。"""
+    module = load_tool()
+    pillar = tmp_path / "database"
+    (pillar / "postgresql-mvcc").mkdir(parents=True)
+    (pillar / "postgresql-mvcc" / "index.md").write_text("# t\n", encoding="utf-8")
+    doc = module.load_doc(pillar / "postgresql-mvcc" / "index.md")
+    doc.text = "![图](./images/somewhere-else/heap.png)\n"
+    doc.lines = doc.text.split("\n")
+    doc.blocks = module.parse_blocks(doc.lines)
+    assert module.rule_str_04(doc) == []
+
+
 def test_str_02_flags_a_missing_opening_positioning(tmp_path):
     doc = make_doc(tmp_path, "# 标题\n\n正文开始了。\n\n第二段。\n\n第三段。\n")
     signals = load_tool().rule_str_02(doc)
@@ -1110,11 +1166,16 @@ Expected: FAIL —— `AttributeError: ... has no attribute 'rule_str_04'`
 ```python
 # --- 结构、产物与元信息 -----------------------------------------------------
 
-POSITIONING_WORDS = ("本文回答", "本文要解决", "本文解决", "本文讲", "为什么", "难题")
-TAKEAWAY_WORDS = ("清单", "检查表", "下一步", "下一篇", "延伸阅读", "系列", "相关阅读", "总结")
+POSITIONING_RE = re.compile(
+    r"本文.{0,20}(回答|解决|讲|介绍|将|会|带|拆|说|帮你)"
+    r"|这篇文章|为什么|难题|先说"
+)
+TAKEAWAY_WORDS = ("清单", "检查表", "决策表", "排查", "下一步", "下一篇", "延伸阅读",
+                   "相关阅读", "参考资料", "同系列", "前文", "总结", "小结", "要点")
 
 # 图片不是文章链接：``![]()`` 必须排除，否则图片路径会被判成断链。
-MD_LINK_RE = re.compile(r"(?<!\!)\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+# ``!`` 在 ``[`` 之前而不是 ``]`` 之前，所以只能把 ``!`` 收进捕获组来区分。
+MD_LINK_RE = re.compile(r"(!?)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 
 
 def rule_str_01(doc: Doc) -> list[Signal]:
@@ -1127,23 +1188,25 @@ def rule_str_01(doc: Doc) -> list[Signal]:
 
 def rule_str_02(doc: Doc) -> list[Signal]:
     """The opening does not say what problem the article solves."""
-    paragraphs = doc.paragraphs()[:3]
-    for block in paragraphs:
-        if any(word in block.text for word in POSITIONING_WORDS):
+    for block in doc.paragraphs()[:5]:
+        if POSITIONING_RE.search(block.text):
             return []
         if block.text.rstrip().endswith("？"):
             return []
-    return [Signal("STR-02", "info", 1, "", "开头 3 段没有说明文章解决什么问题")]
+    return [Signal("STR-02", "info", 1, "", "开头 5 段没有说明文章解决什么问题")]
 
 
 def rule_str_03(doc: Doc) -> list[Signal]:
-    """The ending leaves the reader with nothing to carry away."""
-    paragraphs = doc.paragraphs()
-    tail = paragraphs[-5:]
-    for block in tail:
+    """The ending leaves the reader with nothing to carry away.
+
+    The tail is inspected as *blocks*, not paragraphs: the takeaway is
+    usually a heading plus a list（「参考资料」「同系列前文」「排查清单」）,
+    and looking at paragraphs only would miss every one of them.
+    """
+    for block in doc.blocks[-8:]:
         if any(word in block.text for word in TAKEAWAY_WORDS):
             return []
-    return [Signal("STR-03", "info", 1, "", "结尾没有可带走的产物（清单/下一步/下一篇）")]
+    return [Signal("STR-03", "info", 1, "", "结尾没有可带走的产物（清单/参考资料/下一篇）")]
 
 
 def _link_target_exists(target: str, post_dir: Path) -> bool:
@@ -1165,11 +1228,9 @@ def _link_target_exists(target: str, post_dir: Path) -> bool:
     if candidate.is_file():
         return True
     if target.endswith((".html", ".htm")):
-        md = candidate.with_suffix(".md")
-        if md.is_file():
+        if candidate.with_suffix(".md").is_file():
             return True
-        bundle = candidate.parent / "index.md"
-        return bundle.is_file()
+        return (candidate.parent / "index.md").is_file()
     return False
 
 
@@ -1178,7 +1239,9 @@ def rule_str_04(doc: Doc) -> list[Signal]:
     post_dir = doc.path.parent
     hits = []
     for match in MD_LINK_RE.finditer(doc.text):
-        raw = match.group(1)
+        if match.group(1) == "!":
+            continue  # 图片
+        raw = match.group(2)
         if raw.startswith(("http://", "https://", "//", "#", "mailto:", "data:")):
             continue
         if not raw.startswith(("./", "../")):
@@ -1203,10 +1266,7 @@ def rule_str_04(doc: Doc) -> list[Signal]:
 
 def rule_str_05(doc: Doc) -> list[Signal]:
     """Wrong capitalisation of the product name."""
-    hits = []
-    for number, line in enumerate(doc.lines, 1):
-        if "Postgresql" in line:
-            hits.append(number)
+    hits = [number for number, line in enumerate(doc.lines, 1) if "Postgresql" in line]
     if not hits:
         return []
     return [Signal("STR-05", "info", hits[0], doc.excerpt(hits[0]),
@@ -1227,16 +1287,14 @@ def rule_met_02(doc: Doc) -> list[Signal]:
         return []
     return [Signal("MET-02", "info", 1, "", "缺少 H1 标题")]
 
-
 RULES.extend([rule_str_01, rule_str_02, rule_str_03, rule_str_04,
-              rule_str_05, rule_met_01, rule_met_02])
 ```
 
 - [ ] **Step 4: 跑测试确认它绿**
 
 Run: `python3 -m pytest tests/test_review_check.py -q`
 
-Expected: PASS（24 passed）。
+Expected: PASS（31 passed）。
 
 - [ ] **Step 5: 跑真实文章看信号合不合理**
 Run:

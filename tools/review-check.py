@@ -48,7 +48,9 @@ LIST_RE = re.compile(r"^\s*(?:[-*+]|\d+\.)\s+")
 TABLE_RE = re.compile(r"^\s*\|.*\|\s*$")
 QUOTE_RE = re.compile(r"^\s*>")
 IMAGE_RE = re.compile(r"!\[[^\]]*\]\([^)]*\)")
-LINK_RE = re.compile(r"(?<!\!)\[[^\]]*\]\([^)]*\)")
+# 链接与图片的区别在 ``!`` 上，而 ``!`` 出现在 ``[`` **之前**——
+# 用 ``(?<!\!)`` 挂在 ``]`` 前面是拦不住图片的，只能把 ``!`` 收进捕获组。
+LINK_RE = re.compile(r"(!?)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 
 
 @dataclass
@@ -340,6 +342,134 @@ def rule_dep_00(doc: Doc) -> list[Signal]:
 RULES.extend([rule_dep_01, rule_dep_02, rule_dep_03, rule_dep_04, rule_dep_05, rule_dep_00])
 
 
+# --- 结构、产物与元信息 -----------------------------------------------------
+
+POSITIONING_RE = re.compile(
+    r"本文.{0,20}(回答|解决|讲|介绍|将|会|带|拆|说|帮你)"
+    r"|这篇文章|为什么|难题|先说"
+)
+TAKEAWAY_WORDS = ("清单", "检查表", "决策表", "排查", "下一步", "下一篇", "延伸阅读",
+                   "相关阅读", "参考资料", "同系列", "前文", "总结", "小结", "要点")
+
+# 图片不是文章链接：``![]()`` 必须排除，否则图片路径会被判成断链。
+# ``!`` 在 ``[`` 之前而不是 ``]`` 之前，所以只能把 ``!`` 收进捕获组来区分。
+MD_LINK_RE = re.compile(r"(!?)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
+
+
+def rule_str_01(doc: Doc) -> list[Signal]:
+    """Fewer than three second-level sections."""
+    count = sum(1 for b in doc.blocks if b.kind == HEADING and b.level == 2)
+    if count >= 3:
+        return []
+    return [Signal("STR-01", "info", 1, "", f"二级章节只有 {count} 个（< 3）")]
+
+
+def rule_str_02(doc: Doc) -> list[Signal]:
+    """The opening does not say what problem the article solves."""
+    for block in doc.paragraphs()[:5]:
+        if POSITIONING_RE.search(block.text):
+            return []
+        if block.text.rstrip().endswith("？"):
+            return []
+    return [Signal("STR-02", "info", 1, "", "开头 5 段没有说明文章解决什么问题")]
+
+
+def rule_str_03(doc: Doc) -> list[Signal]:
+    """The ending leaves the reader with nothing to carry away.
+
+    The tail is inspected as *blocks*, not paragraphs: the takeaway is
+    usually a heading plus a list（「参考资料」「同系列前文」「排查清单」）,
+    and looking at paragraphs only would miss every one of them.
+    """
+    for block in doc.blocks[-8:]:
+        if any(word in block.text for word in TAKEAWAY_WORDS):
+            return []
+    return [Signal("STR-03", "info", 1, "", "结尾没有可带走的产物（清单/参考资料/下一篇）")]
+
+
+def _link_target_exists(target: str, post_dir: Path) -> bool:
+    """Whether a relative article link points at something that exists.
+
+    The resolution rule mirrors ``tools/sync-hexo.py:rewrite_links``:
+    resolve the link as written against the post's own directory, and if
+    that misses, fall back to the sibling directory one level up -- the
+    publisher does the same, so ``./b/index.html`` inside
+    ``docs/database/a/index.md`` means ``docs/database/b/``.
+
+    Only existence is checked here; producing the permalink would need
+    git lookups, and the review only needs to know the target is there.
+    """
+    candidate = (post_dir / target).resolve()
+    if candidate.is_dir():
+        return any((candidate / name).is_file()
+                   for name in ("index.md", "index.html", "index.htm", "_index.md"))
+    if candidate.is_file():
+        return True
+    if target.endswith((".html", ".htm")):
+        if candidate.with_suffix(".md").is_file():
+            return True
+        return (candidate.parent / "index.md").is_file()
+    return False
+
+
+def rule_str_04(doc: Doc) -> list[Signal]:
+    """Relative links that point at nothing."""
+    post_dir = doc.path.parent
+    hits = []
+    for match in MD_LINK_RE.finditer(doc.text):
+        if match.group(1) == "!":
+            continue  # 图片
+        raw = match.group(2)
+        if raw.startswith(("http://", "https://", "//", "#", "mailto:", "data:")):
+            continue
+        if not raw.startswith(("./", "../")):
+            continue
+        target = raw.split("#", 1)[0].split("?", 1)[0]
+        if not target:
+            continue
+        # 先按写法解析，再回退兄弟目录——两步都不中才算断链。
+        if _link_target_exists(target, post_dir):
+            continue
+        if _link_target_exists(target.lstrip("./"), post_dir.parent):
+            continue
+        line = doc.text[: match.start()].count("\n") + 1
+        hits.append((line, target))
+    if not hits:
+        return []
+    line = hits[0][0]
+    detail = f"{len(hits)} 个相对链接指向不存在的文章: " + \
+             "、".join(f"L{ln} {target}" for ln, target in hits[:6])
+    return [Signal("STR-04", "warn", line, doc.excerpt(line), detail)]
+
+
+def rule_str_05(doc: Doc) -> list[Signal]:
+    """Wrong capitalisation of the product name."""
+    hits = [number for number, line in enumerate(doc.lines, 1) if "Postgresql" in line]
+    if not hits:
+        return []
+    return [Signal("STR-05", "info", hits[0], doc.excerpt(hits[0]),
+                   f"{len(hits)} 行把 PostgreSQL 写成了 Postgresql")]
+
+
+def rule_met_01(doc: Doc) -> list[Signal]:
+    """The article is missing its author table."""
+    for block in doc.blocks:
+        if block.kind == TABLE and "编写人" in block.text:
+            return []
+    return [Signal("MET-01", "info", 1, "", "缺少「编写人 / 编写内容 / 编写时间」信息表")]
+
+
+def rule_met_02(doc: Doc) -> list[Signal]:
+    """The article is missing its H1 title."""
+    if any(b.kind == HEADING and b.level == 1 for b in doc.blocks):
+        return []
+    return [Signal("MET-02", "info", 1, "", "缺少 H1 标题")]
+
+
+RULES.extend([rule_str_01, rule_str_02, rule_str_03, rule_str_04,
+              rule_str_05, rule_met_01, rule_met_02])
+
+
 def derive_identity(path: Path, docs_root: Path = DOCS_ROOT) -> tuple[str, str]:
     """Derive ``(pillar, slug)`` from a docs/-relative path.
 
@@ -367,10 +497,20 @@ def derive_identity(path: Path, docs_root: Path = DOCS_ROOT) -> tuple[str, str]:
 
 
 def parse_blocks(lines: list[str]) -> list[Block]:
-    """Split markdown source lines into typed blocks."""
+    """Split markdown source lines into typed blocks.
+
+    A leading YAML front matter block (``---`` ... ``---``) is metadata,
+    not prose -- 51 of the 282 reviewed articles have one -- so it is
+    skipped instead of being parsed as paragraphs.
+    """
     blocks: list[Block] = []
     i = 0
     total = len(lines)
+    if lines and lines[0].strip() == "---":
+        j = 1
+        while j < total and lines[j].strip() != "---":
+            j += 1
+        i = j + 1
     while i < total:
         raw = lines[i]
         line_no = i + 1
@@ -505,7 +645,7 @@ def to_report(doc: Doc) -> dict:
             "code_blocks": sum(1 for b in doc.blocks if b.kind == CODE),
             "tables": sum(1 for b in doc.blocks if b.kind == TABLE),
             "images": len(IMAGE_RE.findall(doc.text)),
-            "links": len(LINK_RE.findall(doc.text)),
+            "links": sum(1 for m in LINK_RE.finditer(doc.text) if m.group(1) != "!"),
         },
         "depth": doc.depth,
         "depth_ok": depth_ok,
