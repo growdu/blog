@@ -1,0 +1,51 @@
+name: AIV pipeline
+
+# 这条流水线不许只在 macOS 上绿。
+#
+# macOS 自带 PingFang SC，Linux 上没有——过去「换台机器跑一遍」根本跑不起来，
+# 于是跨平台这件事一直只是嘴上说说。这个工作流在 ubuntu 上真跑一遍：
+# 装开源中文字体、装依赖、跑全部测试。
+#
+# 已知差异：逐像素基准是按 PingFang SC 抓的，Linux 上字体不同，
+# 那条守卫会**跳过并说明原因**（不是红，也不是假装绿）。
+
+on:
+  push:
+    paths:
+      - "aiv/**"
+      - ".github/workflows/aiv-pipeline.yml"
+  pull_request:
+    paths:
+      - "aiv/**"
+  workflow_dispatch:
+
+concurrency:
+  group: aiv-pipeline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Linux 上跑测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 装系统依赖
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            ffmpeg fontconfig fonts-noto-cjk make \
+            python3-cairo python3-numpy python3-pil python3-scipy python3-pytest
+          fc-cache -f
+
+      - name: 装 pip 依赖（系统包装不上的兜底）
+        run: python3 -m pip install --user --upgrade pip
+             && python3 -m pip install --user -r aiv/pipeline/requirements.txt
+
+      - name: 确认字体解析到了开源中文字体
+        working-directory: aiv/pipeline
+        run: python3 -m pyv.cli doctor
+
+      - name: 跑测试
+        working-directory: aiv/pipeline
+        run: python3 -m pytest tests/ -q

@@ -4,7 +4,9 @@
 
 技术图示一律由代码绘制（cairo + ffmpeg），不交给模型生成；
 形象是 3D 静帧 + 位移/缩放/淡入，文字用真实字体在 cairo 阶段渲染。
-**入库的是事实**（规范、契约、台账、代码），**产物不入库**（图像与音频留本机）。
+**入库的是事实**（规范、契约、台账、代码），**产物不入库**（成片、片段、时间轴、发布包留本机）。
+**出片必需的输入也入库**（旁白、曲库、形象素材、品牌片）——没有它们就出不了片，
+不入库就等于每次换机器都要重新搬一遍。见[上机指南.md](上机指南.md)。
 
 ## 目录
 
@@ -15,7 +17,7 @@
 | `character/` | 3D 小象形象：生成、加眼镜、铭牌盖章（`scripts/`） |
 | `brand/` | 品牌片头/片尾：渲染与配乐（`scripts/`） |
 | `voice/` | 旁白音色与合成（`scripts/`） |
-| `music/` | 背景音乐曲库：授权台账（入库）+ 曲库文件（不入库） |
+| `music/` | 背景音乐曲库：授权台账 + 曲库文件（授权 CC0-1.0，都入库） |
 
 ## 规范
 
@@ -84,15 +86,30 @@ make topics       # python -m pyv.cli topics check
 
 ```bash
 cd aiv/pipeline
+make doctor      # 环境自检：这台机器缺什么、怎么补（换机器先跑这个）
 make test        # 全量测试
 make persona     # 按《人格规范》检查口播稿
 make topics      # 按《选题库》的规则检查选题
 make bgm         # 按《背景音乐规范》检查曲库台账
 ```
 
-出片链路（`align → validate → brand → render → compose`）还需要
-`storyboard_<期号>.json`（时间轴，由旁白算出来）和旁白音频，两者都是本机素材，不入库；
-入库的是 `contracts/` 里的视觉分镜契约——它决定**画面上写什么**。
+出片链路（`align → validate → brand → render → compose`）需要旁白音频
+（`narration_<期号>.mp3`，**已入库**）与视觉分镜契约（`contracts/<期号>.json`，
+已入库）——契约决定**画面上写什么**，旁白决定**什么时候出现**。
+时间轴 `storyboard_<期号>.json` 由 `align` 从旁白算出来，是产物，不入库。
+
+### 换一台机器
+
+macOS 与 Linux 都能跑。一台干净的 Linux 机器上：
+
+```bash
+sudo bash aiv/pipeline/scripts/bootstrap_linux.sh   # 装依赖
+cd aiv/pipeline && make doctor                       # 自检
+```
+
+唯一的差异是**字体**：macOS 用 `PingFang SC`，Linux 用开源的 `Noto Sans CJK SC`
+（PingFang 是 Apple 授权字体，不能随仓库分发），所以同一段文字的**像素不同**，
+文案与版式规则一致。详见[上机指南.md](上机指南.md)。
 
 ## 换一期
 
@@ -114,10 +131,13 @@ make EP=csn-total-ordering all         # validate → brand → render → compo
 
 | 入库 | 不入库（留本机） |
 | --- | --- |
-| `contracts/<期号>.json` 视觉分镜契约 | `narration_<期号>.mp3` 旁白 |
-| `字幕-<主题>.md` 口播稿与字幕表 | `storyboard_<期号>.json` 时间轴 |
-| `pipeline/pyv/scenes/*.py` 场景代码 | `build/<期号>/*.mp4` 片段 |
-| | `out/<期号>.mp4` 成片 |
+| `contracts/<期号>.json` 视觉分镜契约 | `storyboard_<期号>.json` 时间轴 |
+| `字幕-<主题>.md` 口播稿与字幕表 | `build/<期号>/*.mp4` 片段 |
+| `pipeline/pyv/scenes/*.py` 场景代码 | `out/<期号>.mp4` 成片 |
+| `narration_<期号>.mp3` 旁白（**出片必需**） | 发布包 |
+| `music/tracks/*.wav` 曲库（**出片必需**） | |
+| `character/growdu_character_2k_nobg.png` 立绘（**出片必需**） | |
+| `brand/clips/*.mp4`、`brand/audio/*_mix.wav` 品牌片与音轨 | |
 
 ## 发布到博客的那一份
 

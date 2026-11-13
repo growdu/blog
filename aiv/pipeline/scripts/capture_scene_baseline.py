@@ -29,6 +29,7 @@ PIPELINE_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PIPELINE_ROOT))
 
 from pyv import contract as contract_mod  # noqa: E402
+from pyv import fonts  # noqa: E402
 from pyv.palette import COLORS, hex_to_rgb  # noqa: E402
 
 TIMES = (0.0, 0.45, 0.9)
@@ -40,6 +41,8 @@ NOTE = (
     "测试就变成「看本机有没有图」。"
     "抓取方式：cairo ARGB32 1920×1080，刷 COLORS['bg'] 底色，"
     "对整帧字节取 sha256；形象以 character.Mascot._load 强制降级为 none。"
+    "**基准绑在字体上**——capture.font 记着抓的时候用的字体族名，"
+    "换字体后这条基准不适用于当前机器，测试会跳过并说明原因。"
     "重抓脚本：pipeline/scripts/capture_scene_baseline.py"
 )
 
@@ -92,6 +95,9 @@ def main() -> None:
             "times": list(TIMES),
             "mascot": "none",
             "captured_from": _captured_from(),
+            # 基准**绑在字体上**：换一款字体，同一段文字的像素就不同。
+            # 记下来，测试才知道什么时候这条基准不适用于当前机器。
+            "font": fonts.font_family(),
         },
         "frames": frames,
     }
