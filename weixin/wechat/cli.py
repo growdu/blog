@@ -34,6 +34,7 @@ from . import brand as brand_module
 from . import collection as collection_module
 from . import cover as cover_module
 from . import digest as digest_module
+from . import material as material_module
 from . import mermaid as mermaid_module
 from . import notify as notify_module
 from . import publish as publish_module
@@ -385,8 +386,23 @@ def _fetch_external_images(client, result):
     return urls, failures, first_prepared
 
 
-def _upload_cover(client, result, args, external_prepared=None, card=None):
-    """Upload the cover image and return ``(media_id, crop_percent_list)``.
+@dataclass(frozen=True)
+class CoverUpload:
+    """The cover of one part, as it was sent to WeChat."""
+
+    media_id: str
+    crop_percent_list: list
+    #: The content of the image, so the material can be looked up.
+    digest: str
+    #: True when the media id came from the cache -- a cached material
+    #: may have been deleted in the WeChat backend, and that is the one
+    #: case a refused draft can be recovered from.
+    from_cache: bool
+
+
+def _upload_cover(client, result, args, external_prepared=None, card=None,
+                  cache=None, use_cache=True) -> CoverUpload:
+    """Upload the cover image and return what was sent to WeChat.
 
     WeChat requires a cover, so there is always an answer:
 
@@ -406,6 +422,13 @@ def _upload_cover(client, result, args, external_prepared=None, card=None):
     The card is drawn only when it is going to be used -- an article
     with a picture of its own keeps that picture -- and a machine that
     cannot draw one falls through to the cover that ships here.
+
+    The cover is uploaded as a **permanent** material, and every
+    refresh used to upload it again: each upload left another copy in
+    the material library, 2129 materials for 320 distinct covers after
+    the first refresh cycle.  A permanent material can be used by any
+    number of drafts, so the media id is looked up in
+    :class:`wechat.material.MaterialCache` first.
     """
     if args.cover:
         resolved = _resolve_asset(args.cover, args.posts_dir)
@@ -421,8 +444,17 @@ def _upload_cover(client, result, args, external_prepared=None, card=None):
         prepared = external_prepared
     else:
         prepared = assets_module.prepare_image(card or DEFAULT_COVER)
+    digest = hashlib.sha1(prepared.data).hexdigest()
+    crop_list = assets_module.cover_crop_list(prepared.width, prepared.height)
+    media_id = cache.get(digest) if (cache is not None and use_cache) else None
+    if media_id:
+        return CoverUpload(media_id=media_id, crop_percent_list=crop_list,
+                           digest=digest, from_cache=True)
     media_id = client.upload_cover(prepared.data, prepared.filename)
-    return media_id, assets_module.cover_crop_list(prepared.width, prepared.height)
+    if cache is not None and use_cache:
+        cache.put(digest, media_id)
+    return CoverUpload(media_id=media_id, crop_percent_list=crop_list,
+                       digest=digest, from_cache=False)
 
 
 def _cover_card(post, part, args):
@@ -874,8 +906,8 @@ def _draft_part(client, store, post, part, fingerprint, args) -> DraftResult:
             external_urls, fallback=EXTERNAL_IMAGE_FALLBACK, html=html)
 
     card = _cover_card(post, part, args)
-    cover_media_id, crop_list = _upload_cover(client, result, args, external_prepared,
-                                               card)
+    cache = material_module.MaterialCache(Path(args.out_dir) / "materials.json")
+    cover = _upload_cover(client, result, args, external_prepared, card, cache)
 
     # Every part describes itself: the same summary on every row of the
     # draft box would tell the reader nothing.
@@ -893,14 +925,31 @@ def _draft_part(client, store, post, part, fingerprint, args) -> DraftResult:
         "digest": digest,
         "content": html,
         "content_source_url": args.source_url.rstrip("/") + post.permalink,
-        "thumb_media_id": cover_media_id,
+        "thumb_media_id": cover.media_id,
         "need_open_comment": 0,
         "only_fans_can_comment": 0,
-        "cover_info": {"crop_percent_list": crop_list},
+        "cover_info": {"crop_percent_list": cover.crop_percent_list},
     }
 
-    state, action = _create_draft(client, store, part.key, fingerprint, article,
-                                   parts=part.total)
+    try:
+        state, action = _create_draft(client, store, part.key, fingerprint, article,
+                                       parts=part.total)
+    except publish_module.WeChatError as error:
+        if error.errcode != material_module.INVALID_MEDIA_ID or not cover.from_cache:
+            raise
+        # The permanent material the cover points at was deleted in the
+        # WeChat backend.  Forget it, upload the cover again and send
+        # the draft once more -- only the cover is sent again, the
+        # pictures of the body are left alone.
+        print("封面素材已失效（{}），重新上传后重试".format(error.errcode),
+              file=sys.stderr)
+        cache.forget(cover.digest)
+        again = _upload_cover(client, result, args, external_prepared, card,
+                              cache, use_cache=False)
+        article["thumb_media_id"] = again.media_id
+        article["cover_info"] = {"crop_percent_list": again.crop_percent_list}
+        state, action = _create_draft(client, store, part.key, fingerprint, article,
+                                       parts=part.total)
     return DraftResult(
         state=state,
         action=action,

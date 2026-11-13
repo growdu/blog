@@ -13,6 +13,8 @@ from wechat import notify as notify_module
 from wechat import split as split_module
 from wechat.cli import (_docs_changed, _drop_batch_lock, _fingerprint,
                        _render_parts, _take_batch_lock, main)
+from wechat.assets import prepare_image
+from wechat.material import MaterialCache
 from wechat.posts import CONTENT_LIMIT, load_post
 
 SAMPLE = """---
@@ -69,6 +71,9 @@ class _Handler(BaseHTTPRequestHandler):
     # Titles the fake server should reject, so a batch can be tested
     # against an article that fails.
     fail_titles = set()
+    # Media ids that no longer exist -- a material the user deleted in
+    # the WeChat backend.
+    stale_materials = set()
     # Titles the fake server should answer to draft/update with a WAF
     # page, the way the real API does when the body carries a SQL
     # pattern.
@@ -103,8 +108,16 @@ class _Handler(BaseHTTPRequestHandler):
         elif path.endswith("/draft/add"):
             article = json.loads(body)["articles"][0]
             title = article.get("title", "")
-            if title in _Handler.fail_titles:
+            if article.get("thumb_media_id") in _Handler.stale_materials:
                 self._json({"errcode": 40007, "errmsg": "invalid media_id"})
+                return
+            if title in _Handler.fail_titles:
+                # 45003 is what WeChat answers when a title is refused.
+                # It is deliberately **not** 40007: that one means
+                # "invalid media_id", and the pipeline reads it as
+                # "the cover material was deleted" and uploads the
+                # cover again.
+                self._json({"errcode": 45003, "errmsg": "title size out of limit"})
                 return
             _Handler.drafts.append(article)
             self._json({"media_id": "DRAFT_ID"})
@@ -1776,3 +1789,83 @@ def test_the_digest_carries_the_original_title_when_the_title_was_shortened(
     article = payload["articles"][0]
     assert article["digest"].startswith("一个很长很长的主标题部分")
     assert len(article["digest"]) <= 120
+
+
+# --- the cover material is uploaded once ----------------------------------
+
+
+def _cover_png(tmp_path):
+    path = tmp_path / "cover.png"
+    _write_png(path)
+    return path
+
+
+def test_the_same_cover_is_uploaded_once(tmp_path, server, monkeypatch):
+    """Every refresh used to upload the cover of every part again.
+
+    Each upload leaves another copy in the material library, so the
+    library grew by one material per part per run -- 2129 materials for
+    320 distinct covers after the first refresh cycle.
+    """
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+    posts_dir = _batch_posts(tmp_path, count=2)
+    cover = _cover_png(tmp_path)
+
+    code = main(["batch", "--cover", str(cover)]
+                + _args(posts_dir, tmp_path / "out", server=server))
+
+    assert code == 0
+    assert _Handler.calls.count("/cgi-bin/material/add_material") == 1
+
+
+def test_a_cover_material_that_was_deleted_is_uploaded_again(tmp_path, server,
+                                                              monkeypatch):
+    """The user cleans the material library up and one of the materials
+    we cached is gone.  The draft is refused; the cover is sent again."""
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+    posts_dir = tmp_path / "source" / "_posts"
+    target = posts_dir / "database" / "demo.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(SAMPLE_NO_IMAGE, encoding="utf-8")
+    cover = _cover_png(tmp_path)
+    out_dir = tmp_path / "out"
+
+    prepared = prepare_image(cover)
+    digest = hashlib.sha1(prepared.data).hexdigest()
+    MaterialCache(out_dir / "materials.json").put(digest, "STALE_ID")
+    _Handler.stale_materials = {"STALE_ID"}
+
+    code = main(["publish", "database/demo", "--cover", str(cover)]
+                + _args(posts_dir, out_dir, server=server))
+
+    assert code == 0
+    assert _Handler.drafts[0]["thumb_media_id"] == "COVER_ID"
+    assert _Handler.calls.count("/cgi-bin/material/add_material") == 1
+
+
+def test_a_refused_draft_is_not_retried_when_the_cover_was_just_uploaded(
+        tmp_path, server, monkeypatch):
+    """40007 means the media id is invalid.
+
+    When the cover was uploaded a moment ago it cannot be the stale
+    one, so uploading it again would only cost another upload and
+    another refused draft.
+    """
+    monkeypatch.setenv("WX_APPID", "appid")
+    monkeypatch.setenv("WX_APPSECRET", "secret")
+    posts_dir = tmp_path / "source" / "_posts"
+    target = posts_dir / "database" / "demo.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(SAMPLE_NO_IMAGE, encoding="utf-8")
+    cover = _cover_png(tmp_path)
+    # The material that was just uploaded is refused.
+    _Handler.stale_materials = {"COVER_ID"}
+
+    code = main(["publish", "database/demo", "--cover", str(cover)]
+                + _args(posts_dir, tmp_path / "out", server=server))
+
+    assert code != 0
+    assert _Handler.calls.count("/cgi-bin/material/add_material") == 1
+    assert _Handler.calls.count("/cgi-bin/draft/add") == 1
