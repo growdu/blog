@@ -1,5 +1,11 @@
-# 本目录只入库代码与契约，媒体产物一律不入库。
-# 媒体资产（旁白、素材、成片）保留在本机，Design 与本地流水线都直接引用它们。
+# 本目录入库的是「代码 + 契约 + 出片必需的最小素材集」。
+#
+# 产物（成片、片段、时间轴、发布包）一律不入库——它们由本机的素材算出来，
+# 跟着本机的素材走。
+#
+# 但**出片必需的输入**要入库：另一台机器（尤其是 Linux）clone 完就能
+# 直接出片，不用从 macOS 上搬文件、不用重新下载、不用重新合成。
+# 白名单在文件末尾，规则是「先全拦，再逐个放行」。
 
 # 媒体文件
 *.mp4
@@ -35,3 +41,28 @@ __pycache__/
 
 # macOS
 .DS_Store
+
+# ---------------------------------------------------------------- 放行清单
+#
+# 下面这些是「换台机器要跑出片就必须有」的东西。删掉任何一条，
+# `aiv/pipeline/tests/test_assets_are_tracked.py` 会变红。
+
+# 旁白（六期）。没有它就对齐不了、渲染不了。
+!narration_*.mp3
+
+# 定标参照稿：音色参数（pitch/speed）是相对它标定的。
+!ddl-voiceover.mp3
+
+# 形象原型（重新生成主形象的唯一来源）+ 透明底主形象（合成进画面用这个）。
+!growdu2.jpeg
+!character/growdu_character_2k_nobg.png
+
+# 品牌片头片尾与成品音轨（缺了也能出片，只是成片不带品牌片）。
+!brand/clips/growdu_intro_3s_1080p.mp4
+!brand/clips/growdu_outro_3s_1080p.mp4
+!brand/audio/intro_mix.wav
+!brand/audio/outro_mix.wav
+
+# 曲库（台账里登记的两首，授权 CC0-1.0）。bed 是正文铺底，motif 是片头片尾闭环。
+!music/tracks/series-bed-01.wav
+!music/tracks/series-motif-01.wav
