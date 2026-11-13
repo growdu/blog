@@ -48,6 +48,10 @@ AIV = BRAND.parent
 ASSETS = BRAND / "assets"
 CLIPS = BRAND / "clips"
 
+# 字体族名统一由流水线解析（macOS PingFang SC / Linux Noto Sans CJK SC）
+sys.path.insert(0, str(AIV / "pipeline"))
+from pyv import fonts  # noqa: E402
+
 W, H = 1920, 1080
 FPS = 24
 DURATION = 2.833          # 68 帧 ≈ 2.833 秒，留出淡出余量
@@ -66,7 +70,7 @@ OUTRO_SUBTITLE = "Growdu · 把踩过的坑写成方法"
 INTRO_NARRATION = "欢迎来到 growdu，深入数据库。"
 OUTRO_NARRATION = "下次卡住的时候，记得回来。"
 
-FONT = "PingFang SC"
+FONT = fonts.font_family()
 WHITE = (1.0, 1.0, 1.0)
 AMBER = (245 / 255, 166 / 255, 35 / 255)
 DEEP = (43 / 255, 76 / 255, 126 / 255)

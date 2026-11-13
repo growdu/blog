@@ -3,6 +3,7 @@ import json
 import cairo
 import numpy as np
 
+from pyv import fonts
 from pyv import subtitle
 from pyv.timeline import Storyboard
 
@@ -53,7 +54,7 @@ def test_build_ass_has_one_dialogue_per_subtitle_event(tmp_path):
     assert ass.count("Dialogue:") == 2
     assert "PlayResX: 1920" in ass
     assert "PlayResY: 1080" in ass
-    assert "PingFang SC" in ass
+    assert fonts.font_family() in ass
 
 
 def test_build_ass_uses_event_timecodes(tmp_path):

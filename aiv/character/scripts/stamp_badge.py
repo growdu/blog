@@ -40,7 +40,11 @@ AIV = HERE.parent.parent                     # aiv
 CHAR_DIR = AIV / "character"
 BRAND_ASSETS = AIV / "brand" / "assets"
 
-FONT = "PingFang SC"
+# 字体族名统一由流水线解析（macOS PingFang SC / Linux Noto Sans CJK SC）
+sys.path.insert(0, str(AIV / "pipeline"))
+from pyv import fonts  # noqa: E402
+
+FONT = fonts.font_family()
 TEXT = "growdu"
 TEXT_COLOR = (0x1B, 0x2A, 0x47)          # 深藏蓝，跟字幕主色一致
 TEXT_WIDTH_RATIO = 0.76                  # 文字宽度占铭牌宽度的比例

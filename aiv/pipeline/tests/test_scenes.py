@@ -3,6 +3,8 @@ import importlib
 import cairo
 import pytest
 
+from pyv import fonts
+
 SCENE_MODULES = [
     "pyv.scenes.s01_intro",
     "pyv.scenes.s02_serial",
@@ -152,7 +154,7 @@ def test_scene_source_has_no_banned_words(name):
 def _glyph_pixels(ch: str, size: int = 40) -> bytes:
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size * 2, size * 2)
     ctx = cairo.Context(surface)
-    ctx.select_font_face("PingFang SC", cairo.FONT_SLANT_NORMAL,
+    ctx.select_font_face(fonts.font_family(), cairo.FONT_SLANT_NORMAL,
                          cairo.FONT_WEIGHT_NORMAL)
     ctx.set_font_size(size)
     ctx.set_source_rgb(0, 0, 0)
@@ -169,7 +171,7 @@ def _is_missing_glyph(ch: str) -> bool:
 
 @pytest.mark.parametrize("name", SCENE_MODULES)
 def test_every_character_in_scene_source_is_renderable(name, monkeypatch):
-    """PingFang SC 缺字形时会静默画成豆腐块，必须提前拦住。"""
+    """当前字体缺字形时会静默画成豆腐块，必须提前拦住。"""
     module = importlib.import_module(name)
     original = module.text
     drawn: list[str] = []
@@ -189,7 +191,7 @@ def test_every_character_in_scene_source_is_renderable(name, monkeypatch):
             if ch.isspace():
                 continue
             assert not _is_missing_glyph(ch), (
-                f"{name} 画的字符 {ch!r} 不在 PingFang SC 里，会渲染成豆腐块"
+                f"{name} 画的字符 {ch!r} 不在当前字体里，会渲染成豆腐块"
             )
 
 

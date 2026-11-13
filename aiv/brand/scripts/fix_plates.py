@@ -27,13 +27,53 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-PLATES = os.path.join(ROOT, "assets", "plates")
+# 底板目录：现在是 brand/plates/，早期版本在 brand/assets/plates/。
+# 两个都认，免得脚本因为目录挪过家就直接崩。
+PLATES = next((d for d in (os.path.join(ROOT, "plates"),
+                            os.path.join(ROOT, "assets", "plates"))
+               if os.path.isdir(d)), os.path.join(ROOT, "plates"))
 BACKUP = os.path.join(PLATES, "original")
 
-AVENIR = "/System/Library/Fonts/Avenir Next.ttc"
-HIRAGINO = "/System/Library/Fonts/Hiragino Sans GB.ttc"
-AV_HEAVY, AV_BOLD, AV_MEDIUM = 8, 0, 5
-HG_W6 = 2
+
+def pick_font(candidates):
+    """挑一款存在的字体文件。
+
+    candidates 是 (路径, 索引) 列表——macOS 的 .ttc 是字体集合，
+    索引选字重；Linux 的替代品是单字体文件，索引恒为 0。
+
+    找不到就报错并给出安装命令，不要静默画成豆腐块。
+    """
+    for path, index in candidates:
+        if os.path.exists(path):
+            return path, index
+    raise RuntimeError(
+        "找不到需要的字体文件，候选："
+        + " / ".join(path for path, _ in candidates)
+        + "。装一套字体即可（Debian/Ubuntu: "
+        "apt-get install -y fonts-dejavu-core fonts-noto-cjk）"
+    )
+
+
+# 拉丁字标用 Avenir Next（macOS 自带），Linux 上退到 DejaVu Sans；
+# 中文用 Hiragino Sans GB（macOS 自带），Linux 上退到 Noto Sans CJK SC。
+# **字形因此不同**：Linux 上修复出来的底板与 macOS 版不是逐像素一致。
+AVENIR_HEAVY = pick_font([
+    ("/System/Library/Fonts/Avenir Next.ttc", 8),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 0),
+])
+AVENIR_BOLD = pick_font([
+    ("/System/Library/Fonts/Avenir Next.ttc", 0),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0),
+])
+AVENIR_MEDIUM = pick_font([
+    ("/System/Library/Fonts/Avenir Next.ttc", 5),
+    ("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 0),
+])
+CJK_W6 = pick_font([
+    ("/System/Library/Fonts/Hiragino Sans GB.ttc", 2),
+    ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 0),
+    ("/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc", 0),
+])
 
 # 渲染时 zoompan 会放大约 6%，画面边缘约 3% 会被裁掉，文字右侧留到 1840 以内
 MARGIN = 1840
@@ -233,12 +273,12 @@ def fix_intro(path):
     probe = ImageDraw.Draw(Image.new("RGB", (8, 8)))
     items = []
 
-    f_wm, size = fit_font(AVENIR, AV_HEAVY, "Growdu", MARGIN - 1112, 230)
+    f_wm, size = fit_font(AVENIR_HEAVY[0], AVENIR_HEAVY[1], "Growdu", MARGIN - 1112, 230)
     bb = probe.textbbox((0, 0), "Growdu", font=f_wm)
     items.append((lambda d, c: draw_tracked(d, (1112, 396 - bb[1]), "Growdu", f_wm, c), white))
     print("  字标字号 %d" % size)
 
-    f_tag, size = fit_font(AVENIR, AV_MEDIUM, "Database · Knowledge · Growth",
+    f_tag, size = fit_font(AVENIR_MEDIUM[0], AVENIR_MEDIUM[1], "Database · Knowledge · Growth",
                            MARGIN - 1078, 90, tracking=2)
     bb = probe.textbbox((0, 0), "D", font=f_tag)
     items.append((lambda d, c: draw_tracked(d, (1078, 596 - bb[1]),
@@ -248,7 +288,7 @@ def fix_intro(path):
     pill = (995, 696, MARGIN, 830)
     items.append((lambda d, c: draw_pill(d, pill, c, width=3), cyan))
     w_txt, g_txt = "深入数据库 · 分享", "技术之美"
-    f_cn, size = fit_font(HIRAGINO, HG_W6, w_txt + g_txt, pill[2] - pill[0] - 100, 90)
+    f_cn, size = fit_font(CJK_W6[0], CJK_W6[1], w_txt + g_txt, pill[2] - pill[0] - 100, 90)
     bb = probe.textbbox((0, 0), "深", font=f_cn)
     total = text_width(probe, w_txt, f_cn) + text_width(probe, g_txt, f_cn)
     tx = pill[0] + (pill[2] - pill[0] - total) / 2
@@ -284,7 +324,7 @@ def fix_outro(path):
     latin, cjk = "Growdu · ", "与你一起，探索数据库的无边世界"
     best = None
     for size in range(84, 30, -1):
-        fl, fc = font(AVENIR, size, AV_BOLD), font(HIRAGINO, size, HG_W6)
+        fl, fc = font(AVENIR_BOLD[0], size, AVENIR_BOLD[1]), font(CJK_W6[0], size, CJK_W6[1])
         if text_width(probe, latin, fl) + text_width(probe, cjk, fc) <= MARGIN - 870:
             best = (fl, fc, size)
             break
@@ -302,12 +342,12 @@ def fix_outro(path):
     pad_l, pad_r, icon_gap = 30, 34, 18
     icon = 52
     specs = [
-        ("growdu.cn", "globe", AVENIR, AV_MEDIUM),
-        ("订阅关注", "play", HIRAGINO, HG_W6),
-        ("点赞支持", "thumb", HIRAGINO, HG_W6),
+        ("growdu.cn", "globe", AVENIR_MEDIUM, 0),
+        ("订阅关注", "play", CJK_W6, 0),
+        ("点赞支持", "thumb", CJK_W6, 0),
     ]
-    f_btn = font(HIRAGINO, 40, HG_W6)
-    f_lat = font(AVENIR, 40, AV_MEDIUM)
+    f_btn = font(CJK_W6[0], 40, CJK_W6[1])
+    f_lat = font(AVENIR_MEDIUM[0], 40, AVENIR_MEDIUM[1])
     widths = []
     for label, kind, fpath, idx in specs:
         f = f_lat if kind == "globe" else f_btn

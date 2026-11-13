@@ -5,7 +5,8 @@ import math
 
 import cairo
 
-from pyv.palette import FONT_FAMILY, hex_to_rgb
+from pyv import fonts
+from pyv.palette import hex_to_rgb
 
 
 def _set_source(ctx: cairo.Context, color: str, alpha: float = 1.0) -> None:
@@ -62,7 +63,7 @@ def text(ctx: cairo.Context, s: str, x: float, y: float, size: float,
     """绘制一行文字，anchor 取 left / center / right。"""
     _set_source(ctx, color, alpha)
     ctx.select_font_face(
-        FONT_FAMILY,
+        fonts.font_family(),
         cairo.FONT_SLANT_NORMAL,
         cairo.FONT_WEIGHT_BOLD if bold else cairo.FONT_WEIGHT_NORMAL,
     )

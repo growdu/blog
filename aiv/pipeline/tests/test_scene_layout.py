@@ -18,6 +18,7 @@ import cairo
 import pytest
 
 from pyv import align
+from pyv import fonts
 from pyv import contract as contract_mod
 from pyv import subtitle as subtitle_mod
 from pyv.inkbox import ink_bottom
@@ -49,7 +50,7 @@ def _subtitle_band_top() -> float:
     """
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1920, 1080)
     ctx = cairo.Context(surface)
-    ctx.select_font_face("PingFang SC")
+    ctx.select_font_face(fonts.font_family())
     ctx.set_font_size(subtitle_mod.BURN_FONT_SIZE)
     ascent = ctx.font_extents()[0]
     baseline = 1080 - subtitle_mod.BURN_MARGIN_V - ctx.font_extents()[1]

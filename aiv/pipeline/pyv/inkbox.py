@@ -15,13 +15,15 @@ from __future__ import annotations
 
 import cairo
 
+from pyv import fonts
+
 
 def _render(text: str, x: float, baseline: float, size: float,
             width: int = 1920, height: int = 1080,
-            font: str = "PingFang SC"):
+            font: str | None = None):
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
     ctx = cairo.Context(surface)
-    ctx.select_font_face(font)
+    ctx.select_font_face(font or fonts.font_family())
     ctx.set_font_size(size)
     ctx.move_to(x, baseline)
     ctx.show_text(text)
@@ -31,7 +33,7 @@ def _render(text: str, x: float, baseline: float, size: float,
 
 def ink_bottom(text: str, x: float, baseline: float, size: float,
                width: int = 1920, height: int = 1080,
-               font: str = "PingFang SC") -> float:
+               font: str | None = None) -> float:
     """这行字最下面那点墨迹的纵坐标。没有墨就返回 baseline。"""
     surface = _render(text, x, baseline, size, width, height, font)
     data = surface.get_data()
@@ -48,7 +50,7 @@ def ink_bottom(text: str, x: float, baseline: float, size: float,
 
 def ink_columns(text: str, x: float, baseline: float, size: float,
                 width: int = 1920, height: int = 1080,
-                font: str = "PingFang SC") -> list[tuple[int, int, int]]:
+                font: str | None = None) -> list[tuple[int, int, int]]:
     """每一列的墨迹上下沿。列号是画面横坐标。没有墨的列不出现。"""
     surface = _render(text, x, baseline, size, width, height, font)
     data = surface.get_data()

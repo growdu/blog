@@ -61,7 +61,7 @@ python -m pyv.cli bgm brand-check   # 校验：首尾相接 / 曲子指纹 / 能
 ```
 AI 生成的纯环境背景（无角色、无文字、无 Logo）
   + canonical 小象姿态图（透明底 PNG，代码合成）
-  + 真实字体绘制的文字（cairo + PingFang SC）
+  + 真实字体绘制的文字（cairo + 跨平台解析的中文字体）
   → rawvideo 管道 → ffmpeg 编码 → 混入成品音轨
 ```
 
@@ -75,7 +75,8 @@ AI 生成的纯环境背景（无角色、无文字、无 Logo）
 
 铭牌的 `growdu` 也不是模型写的：`render_brand.py` 渲染前会自动调
 `character/scripts/stamp_badge.py` 给姿态素材盖一次章——刷白铭牌，再用
-`PingFang SC` 写上 `growdu`。幂等，重复渲染结果一致。
+当前字体写上 `growdu`（字体族名由 `pipeline/pyv/fonts.py` 解析，macOS 是
+`PingFang SC`，Linux 退到 `Noto Sans CJK SC`）。幂等，重复渲染结果一致。
 
 ### 为什么不用 H3 视频生成
 

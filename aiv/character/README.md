@@ -66,7 +66,8 @@ python3 scripts/stamp_badge.py <png> ...  # 处理指定文件
 1. **铭牌必须显示 `growdu`，但文字不能由模型生成。** 模型生成的中英文会乱码
    （`growdu` 可能变成 `giowdu`、`grawdu`），所以生成后统一跑一遍
    `stamp_badge.py`：自动定位铭牌（按「被深藏蓝马甲围住的那块白」，
-   不硬编码坐标）→ 刷成纯白 → 用 `PingFang SC` 写上 `growdu`。
+   不硬编码坐标）→ 刷成纯白 → 用当前字体写上 `growdu`（字体族名由
+   `pipeline/pyv/fonts.py` 跨平台解析：macOS `PingFang SC`，Linux `Noto Sans CJK SC`）。
    文字来源从「模型碰运气」变成「代码确定」。
 
    这与 `brand/scripts/fix_plates.py` 是同一类问题的同一套解法：所有文字都用

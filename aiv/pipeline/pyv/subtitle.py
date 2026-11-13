@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import cairo
 
-from pyv.palette import FONT_FAMILY, hex_to_rgb
+from pyv import fonts
+from pyv.palette import hex_to_rgb
 from pyv.timeline import SubtitleEvent, SubtitleStyle, Storyboard, display_width
 
 MAX_WIDTH = 14.0
@@ -68,7 +69,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,{FONT_FAMILY},{BURN_FONT_SIZE},{_ass_color(style.primary)},{_ass_color(style.primary)},{_ass_color(style.outline)},&H00000000,0,1,{BURN_OUTLINE:.0f},0,2,80,80,{BURN_MARGIN_V},1
+Style: Default,{fonts.font_family()},{BURN_FONT_SIZE},{_ass_color(style.primary)},{_ass_color(style.primary)},{_ass_color(style.outline)},&H00000000,0,1,{BURN_OUTLINE:.0f},0,2,80,80,{BURN_MARGIN_V},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -121,7 +122,7 @@ def draw_event(ctx: cairo.Context, text: str, style: SubtitleStyle,
     outline = max(0.6, BURN_OUTLINE * scale)
 
     ctx.select_font_face(
-        FONT_FAMILY, cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL
+        fonts.font_family(), cairo.FONT_SLANT_NORMAL, cairo.FONT_WEIGHT_NORMAL
     )
     ctx.set_font_size(font_size)
     descent = ctx.font_extents()[1]  # pycairo 返回 (ascent, descent, height, ...)

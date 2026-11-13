@@ -32,17 +32,9 @@ def test_assert_font_available_passes_on_this_machine():
     palette.assert_font_available()
 
 
-def test_assert_font_available_raises_when_font_missing(monkeypatch):
-    monkeypatch.setattr(palette, "_font_paths", lambda: [])
-    monkeypatch.setattr(palette, "_resolved_width", lambda family, sample="并行解码": 100.0)
-    with pytest.raises(RuntimeError, match="PingFang"):
-        palette.assert_font_available()
+def test_assert_font_available_is_delegated_to_the_fonts_module():
+    """字体解析归 `pyv.fonts` 管（跨平台挑字体），palette 只做转发。"""
+    from pyv import fonts
 
-
-def test_assert_font_available_accepts_resolvable_family_without_file(monkeypatch):
-    monkeypatch.setattr(palette, "_font_paths", lambda: [])
-    monkeypatch.setattr(
-        palette, "_resolved_width",
-        lambda family, sample="并行解码": 100.0 if family.startswith("__") else 155.0,
-    )
-    palette.assert_font_available()
+    assert palette.assert_font_available.__module__ == "pyv.palette"
+    assert fonts.assert_font_available is not palette.assert_font_available

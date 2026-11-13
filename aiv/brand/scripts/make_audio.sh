@@ -1,13 +1,20 @@
 #!/usr/bin/env bash
 # 生成与片头/片尾画面匹配的音频：中文旁白 + 环境氛围配乐 + 提示音
 #
+# ⚠️ **macOS 专有**：依赖 macOS 自带的 `say`（合成中文童声）。
+#    Linux 上跑不了——这不是出片链路的必需步骤：
+#    现行做法是 `make_audio_brand.py`（纯 ffmpeg，跨平台），
+#    它切 `brand/brand_windows.json` 里的 motif 窗口混音，
+#    旁白用已入库的 `brand/audio/voice_intro.mp3` / `voice_outro.mp3`。
+#    本脚本只用于「重新做一套 macOS 童声版旁白」，属于历史路径。
+#
 # 产物（model/audio/ 下）：
 #   intro_voice.wav  片头旁白
 #   outro_voice.wav  片尾旁白
 #   intro_mix.wav    片头成品音轨（旁白 + 配乐）
 #   outro_mix.wav    片尾成品音轨（旁白 + 配乐）
 #
-# 依赖：macOS 自带 say（中文语音 Tingting）、FFmpeg。
+# 依赖：macOS 自带 say（中文语音）、FFmpeg。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
