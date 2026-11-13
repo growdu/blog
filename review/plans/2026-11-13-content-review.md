@@ -1504,7 +1504,9 @@ def test_merged_record_has_no_open_facts():
         text = path.read_text(encoding="utf-8")
         section = text.split("## 事实待核", 1)[1].split("##", 1)[0]
         open_items = [line for line in section.split("\n")
-                      if line.strip().startswith("- ") and not line.strip().startswith("- [x]")]
+                      if line.strip().startswith("- ")
+                      and not line.strip().startswith("- [x]")
+                      and not line.strip().startswith("- [不适用]")]
         assert not open_items, f"{path.name} 仍留着未核实的待核事实: {open_items}"
 
 

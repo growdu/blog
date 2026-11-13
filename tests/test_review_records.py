@@ -142,6 +142,15 @@ def test_merged_record_has_a_matching_commit():
 
 
 def test_merged_record_has_no_open_facts():
+    """已合入的记录不能还留着「与本次改动相关」的未核事实。
+
+    三种写法算销掉：
+    - ``- [x] ...``   已核实，依据写在条目里
+    - ``- [不适用] ...`` 该事实涉及的正文本次没改，原文保留，不构成合入阻塞
+    - 空段落          没有待核事实
+
+    仍算未销掉的是普通的 ``- ...`` 条目。
+    """
     for path in record_files():
         info = parse_record(path)
         if info["status"] != "已合入":
@@ -149,7 +158,9 @@ def test_merged_record_has_no_open_facts():
         text = path.read_text(encoding="utf-8")
         section = text.split("## 事实待核", 1)[1].split("##", 1)[0]
         open_items = [line for line in section.split("\n")
-                      if line.strip().startswith("- ") and not line.strip().startswith("- [x]")]
+                      if line.strip().startswith("- ")
+                      and not line.strip().startswith("- [x]")
+                      and not line.strip().startswith("- [不适用]")]
         assert not open_items, f"{path.name} 仍留着未核实的待核事实: {open_items}"
 
 
