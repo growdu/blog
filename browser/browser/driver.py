@@ -218,6 +218,55 @@ class PageDriver:
         except Exception as error:
             raise self._fail(f"读勾选状态失败：{error}", candidates, "checked")
 
+    def is_visible(self, selector: Selector) -> bool:
+        """元素在不在**并且看得见**。
+
+        `exists()` 只数 DOM 里有没有——隐藏的成功提示也算「有」。
+        判断「事情有没有发生」要用这个。
+        """
+        candidates = _as_list(selector)
+        for candidate in candidates:
+            for frame in self._frames():
+                try:
+                    if frame.locator(candidate).first.is_visible():
+                        return True
+                except Exception:
+                    continue
+        return False
+
+    def is_enabled(self, selector: Selector) -> bool:
+        """这个元素现在**点得动**吗。
+
+        **Playwright 自带的 is_enabled() 在这里不够用。** 它只认
+        `disabled` 属性与 `aria-disabled`；而视频号的「发表」两样都没有——
+        视频还在平台处理时，它只是**换成了灰色样式**（类名带 disabled）。
+
+        于是 Playwright 觉得它可点，`click()` 正常返回，
+        而平台什么也不做：**事件派发出去了，稿件没发出去**，
+        而且日志里看不出任何异常（2026-11-13 实测，EP06 第一次投稿丢在这里）。
+
+        所以这里额外看三样：类名里带 disabled、`pointer-events: none`、
+        以及不可见（display:none / visibility:hidden）。
+        """
+        candidates = _as_list(selector)
+        locator = self._locator(selector)
+        try:
+            return bool(locator.evaluate(
+                """(el) => {
+                    if (el.disabled === true) return false;
+                    if (el.getAttribute('aria-disabled') === 'true') return false;
+                    const cls = (el.getAttribute('class') || '').toLowerCase();
+                    if (cls.indexOf('disabled') >= 0) return false;
+                    const style = window.getComputedStyle(el);
+                    if (style.pointerEvents === 'none') return false;
+                    if (style.display === 'none' || style.visibility === 'hidden') {
+                        return false;
+                    }
+                    return true;
+                }"""))
+        except Exception as error:
+            raise self._fail(f"读可点状态失败：{error}", candidates, "enabled")
+
     def body_text(self) -> str:
         """主文档 + 所有 frame 的可见文字，拼成一段。
 

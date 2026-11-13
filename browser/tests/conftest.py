@@ -66,3 +66,29 @@ def package_dir(tmp_path):
 @pytest.fixture
 def repo_root() -> Path:
     return REPO_ROOT
+
+
+PROCESSING_PAGE = FIXTURES / "post-processing.html"
+
+
+def _selectors_for(page_path: Path, target: Path, *, timeouts: dict | None = None) -> Path:
+    """把测试夹具的选择器表指向另一个假页面。"""
+    raw = json.loads(SELECTORS.read_text(encoding="utf-8"))
+    raw["entry_url"] = page_path.as_uri()
+    if timeouts:
+        raw["timeouts"] = timeouts
+    target.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+    return target
+
+
+@pytest.fixture
+def processing_selectors(tmp_path):
+    """指向「视频还在平台处理中」的假页面。
+
+    超时调得很短：这一页面的等待逻辑在真实站上要等几分钟，
+    测试里等几分钟没意义——要验的是「等」这个动作发生了，不是等了多久。
+    """
+    return _selectors_for(
+        PROCESSING_PAGE, tmp_path / "processing-selectors.json",
+        timeouts={"publish_ready_ms": 5000, "publish_effect_ms": 1500},
+    )

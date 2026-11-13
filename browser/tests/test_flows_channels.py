@@ -233,3 +233,114 @@ def test_submit_reports_no_url_instead_of_inventing_one(page, fixture_selectors,
     flow.prepare(plan)
 
     assert flow.submit() is None
+
+
+# -- 视频还在处理中 ---------------------------------------------------------
+
+def _with_mode(selectors_path, mode: str):
+    """把夹具页面切到另一种模式（ready / never / dead）。"""
+    raw = json.loads(selectors_path.read_text(encoding="utf-8"))
+    raw["entry_url"] = f"{raw['entry_url']}?mode={mode}"
+    selectors_path.write_text(json.dumps(raw, ensure_ascii=False), encoding="utf-8")
+    return selectors_path
+
+
+def test_a_hidden_link_is_not_mistaken_for_the_published_url(page, fixture_selectors, package_dir):
+    """**藏着的**链接不算「取到了链接」。
+
+    Playwright 的 inner_text() 对 display:none 的元素返回的是 textContent，
+    所以一条还没显示出来的链接也会被读出来——读出来就以为发布成功了，
+    可页面上其实什么都没发生（2026-11-13 那次就是这样蒙混过去的）。
+    """
+    plan = load_plan(package_dir)
+    flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
+                        ChannelsConfig.load(fixture_selectors))
+    flow.prepare(plan)
+
+    assert flow.read_published_url() is None
+
+
+def test_prepare_waits_until_the_publish_button_is_actually_clickable(
+        page, processing_selectors, package_dir):
+    """上传完了 ≠ 平台处理完了。
+
+    处理完之前「发表」是灰的。填完表不能就这么点——得等它能点。
+    """
+    import time
+
+    plan = load_plan(package_dir)
+    flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
+                        ChannelsConfig.load(processing_selectors))
+
+    started = time.monotonic()
+    flow.prepare(plan)
+    waited = time.monotonic() - started
+
+    # 假页面 1.2 秒后才把按钮变可点——等到了才算等到了
+    assert waited >= 1.0
+    assert page.eval_on_selector("#publish", "el => el.className") == \
+        "weui-desktop-btn weui-desktop-btn_primary"
+
+
+def test_prepare_refuses_to_go_on_while_the_video_is_still_processing(
+        page, processing_selectors, package_dir):
+    """按钮一直灰着就该报错——不能让流程带着一个点不动的按钮往下走。"""
+    _with_mode(processing_selectors, "never")
+
+    plan = load_plan(package_dir)
+    flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
+                        ChannelsConfig.load(processing_selectors))
+
+    with pytest.raises(FlowError) as error:
+        flow.prepare(plan)
+    assert "发表" in str(error.value)
+
+
+def test_submit_never_clicks_a_gray_publish_button(page, processing_selectors, package_dir):
+    """按钮没变可点之前，一次都不许点。
+
+    2026-11-13 实测的坑：Playwright 点一个「只是样式变灰」的按钮，
+    click() 正常返回，平台却什么也没做——稿件根本没发出去，
+    而日志里看不出任何异常。
+    """
+    _with_mode(processing_selectors, "never")
+
+    plan = load_plan(package_dir)
+    flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
+                        ChannelsConfig.load(processing_selectors))
+
+    with pytest.raises(FlowError):
+        flow.prepare(plan)
+    assert page.evaluate("() => window.__clicks()") == 0
+
+
+def test_submit_fails_loudly_when_the_click_had_no_effect(
+        page, processing_selectors, package_dir):
+    """点得动，但点了页面什么反应也没有——要报错，不能装作成功。"""
+    _with_mode(processing_selectors, "dead")
+
+    plan = load_plan(package_dir)
+    flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
+                        ChannelsConfig.load(processing_selectors))
+    flow.prepare(plan)
+
+    with pytest.raises(FlowError) as error:
+        flow.submit()
+    message = str(error.value)
+    assert "没反应" in message
+    # 报错要告诉人下一步怎么办：先核实，别急着重发
+    assert "核实" in message
+
+
+def test_submit_still_works_once_the_video_is_processed(
+        page, processing_selectors, package_dir):
+    """等完了以后该发还是要发——这条是防「修成永远发不出去」的。"""
+    plan = load_plan(package_dir)
+    flow = ChannelsFlow(PageDriver(page, timeout_ms=3000),
+                        ChannelsConfig.load(processing_selectors))
+    flow.prepare(plan)
+
+    url = flow.submit()
+
+    assert url == "https://channels.weixin.qq.com/platform/post/fixture-1"
+    assert page.evaluate("() => window.__clicks()") == 1

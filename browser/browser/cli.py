@@ -229,9 +229,20 @@ def cmd_submit(args: argparse.Namespace) -> int:
                        shot_dir=Path(args.shot_dir) if args.shot_dir else None),
             _config_or_default(args),
         )
-        url = flow.submit()
+        try:
+            url = flow.submit()
+        finally:
+            # 点完「发表」再拍一张。**出事的时候，现场证据全看这张图**——
+            # 2026-11-13 那次截图拍在点击之前，结果「点了没反应」一点痕迹都没留。
+            shot_after = out_dir / "submit-after.png"
+            try:
+                session.page.screenshot(path=str(shot_after), full_page=True)
+            except Exception:
+                shot_after = None
 
     print()
+    if shot_after:
+        print(f"点完发表的截图：{shot_after}")
     if not url:
         print("WARN 没能自动取到发布链接。")
         print(f"     请手动复制链接，然后跑：")

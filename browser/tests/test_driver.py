@@ -91,3 +91,43 @@ def test_screenshot_writes_a_file(page, driver, tmp_path):
     target = driver.screenshot(tmp_path / "shot.png")
     assert target.is_file()
     assert target.stat().st_size > 0
+
+
+# -- 可点性 -----------------------------------------------------------------
+
+def test_is_enabled_is_true_for_a_normal_button(page, driver):
+    page.set_content("<button id='b'>发表</button>")
+    assert driver.is_enabled("#b") is True
+
+
+def test_is_enabled_is_false_for_the_disabled_attribute(page, driver):
+    page.set_content("<button id='b' disabled>发表</button>")
+    assert driver.is_enabled("#b") is False
+
+
+def test_is_enabled_is_false_for_a_disabled_class(page, driver):
+    """视频号的「发表」在视频处理完之前只是**样式变灰**。
+
+    它没有 disabled 属性——只有类名带着 disabled。
+    Playwright 自带的 is_enabled() 会说它可点，于是 click()「成功」，
+    而平台什么也不做：事件派发出去了，稿件没发出去（2026-11-13 实测）。
+    """
+    page.set_content(
+        "<button id='b' class='weui-desktop-btn weui-desktop-btn_disabled'>发表</button>")
+    assert driver.is_enabled("#b") is False
+
+
+def test_is_enabled_is_false_when_pointer_events_are_off(page, driver):
+    page.set_content("<button id='b' style='pointer-events:none'>发表</button>")
+    assert driver.is_enabled("#b") is False
+
+
+def test_is_enabled_is_false_when_aria_disabled_is_set(page, driver):
+    page.set_content("<button id='b' aria-disabled='true'>发表</button>")
+    assert driver.is_enabled("#b") is False
+
+
+def test_is_enabled_says_so_when_the_element_is_not_there(page, driver):
+    with pytest.raises(ActionError) as error:
+        driver.is_enabled("#missing")
+    assert "#missing" in str(error.value)

@@ -12,7 +12,7 @@
 分开是因为「发表」是不可逆的外部可见动作：填错了、发出去就收不回来。
 `prepare` 跑完会留下截图与一份「填了什么」的清单，人能自己看一眼再决定发不发。
 
-**实测拿到的三条平台规则**（都写进了代码，不是写在注释里）：
+**实测拿到的四条平台规则**（都写进了代码，不是写在注释里）：
 
 1. **短标题有独立输入框**（`填写短标题有机会获得更多流量`），
    与描述框分开——所以 `text_layout = "separate"`。
@@ -20,6 +20,10 @@
    （`<span class="hl topic">`），不需要点「#话题」按钮去搜索。
 3. **短标题不收中文逗号**。原话：「标题包含特殊字符，符号仅支持书名号、引号、
    冒号、加号、问号、百分号、摄氏度，逗号可用空格代替」。
+4. **「发表」在视频处理完之前是灰的**。上传完成后平台还要处理视频
+   （转码、取封面），这期间按钮点不动——而且它**没有 `disabled` 属性**，
+   只是样式变灰。于是 Playwright 的 click() 正常返回，平台却什么也不做：
+   **事件派发出去了，稿件没发出去**（2026-11-13 实测，EP06 第一次投稿丢在这里）。
 
 **还有一条实测出来的麻烦**：勾「声明原创」会弹一个「原创权益」弹窗，
 要在弹窗里再勾一次同意、再点一次「声明原创」，主勾选框才算真的勾上。
@@ -67,6 +71,10 @@ class ChannelsConfig:
     entry_url: str = "https://channels.weixin.qq.com/platform/post/create"
     text_layout: str = "separate"      # "separate"（有独立标题框）/ "combined"（只有一个描述框）
     selectors: dict = field(default_factory=dict)
+    # 等「发表」按钮变可点，最多等多久（毫秒）。真实站上视频处理要几分钟，给得宽。
+    publish_ready_ms: int = 900_000
+    # 点完「发表」，最多等多久看页面有没有反应（毫秒）。这一步要么很快有反应，要么就是没反应。
+    publish_effect_ms: int = 60_000
 
     @classmethod
     def load(cls, path: Path | None = None) -> "ChannelsConfig":
@@ -80,10 +88,15 @@ class ChannelsConfig:
             raw = json.loads(target.read_text(encoding="utf-8"))
         except json.JSONDecodeError as error:
             raise FlowError(f"选择器表读不出来：{error}") from error
+        timeouts = raw.get("timeouts") or {}
         return cls(
             entry_url=str(raw.get("entry_url") or cls.entry_url),
             text_layout=str(raw.get("text_layout") or "separate"),
             selectors=raw.get("selectors") or {},
+            publish_ready_ms=int(timeouts.get("publish_ready_ms",
+                                              cls.publish_ready_ms)),
+            publish_effect_ms=int(timeouts.get("publish_effect_ms",
+                                               cls.publish_effect_ms)),
         )
 
     def need(self, group: str, key: str) -> list[str]:
@@ -161,6 +174,37 @@ class ChannelsFlow:
         self.driver.wait_for(selector, state="attached", timeout_ms=60000)
         self.driver.upload(selector, path)
         self.driver.wait_for_text_gone("取消上传", timeout_ms=300000)
+
+    def wait_publish_ready(self, *, timeout_ms: int | None = None) -> None:
+        """等「发表」按钮真的点得动。
+
+        **上传完了 ≠ 平台处理完了。** 实测 2026-11-13：上传完成后平台还要
+        处理视频（转码、取封面），这期间「发表」是灰的。灰按钮没有
+        `disabled` 属性，Playwright 的 click() 会正常返回，平台却什么也不做——
+        **稿件根本没发出去**，日志里也看不出任何异常。
+
+        所以这里轮询到按钮真的可点为止；等不到就报错，
+        绝不带着一个点不动的按钮往下走。
+        """
+        import time
+
+        selector = self.config.need("post", "submit_button")
+        limit = timeout_ms if timeout_ms is not None else self.config.publish_ready_ms
+        deadline = time.monotonic() + limit / 1000
+        while True:
+            try:
+                if self.driver.is_enabled(selector):
+                    return
+            except ActionError:
+                pass  # 按钮还没渲染出来，继续等
+            if time.monotonic() >= deadline:
+                raise FlowError(
+                    f"等了 {limit // 1000} 秒，「发表」按钮还是点不动——"
+                    "视频可能还在平台处理中，或者处理失败了。\n"
+                    "这种按钮点了也不会发出去，所以这里不点。"
+                    "先去内容管理页看这条视频的状态，再决定要不要重发。"
+                )
+            time.sleep(2)
 
     def fill_text(self, title: str, description: str, topics: list[str]) -> None:
         """填文案。
@@ -274,6 +318,9 @@ class ChannelsFlow:
 
         self.open_entry()
         self.upload_video(plan.video)
+        # 上传完了平台还要处理视频。处理完之前「发表」是灰的——
+        # 点了也不会发出去，所以这里先等它真的可点。
+        self.wait_publish_ready()
         self.fill_text(plan.title, plan.description, plan.topics)
 
         filled = {
@@ -299,44 +346,90 @@ class ChannelsFlow:
     def submit(self) -> str | None:
         """点「发表」，等结果。
 
-        返回发布后的链接；**取不到就返回 None**，由调用方决定怎么办——
-        不猜、不编。
-        """
-        self.driver.click(self.config.need("post", "submit_button"))
+        返回发布后的链接。三种结局：
 
-        marker = self.config.maybe("post", "published_marker")
-        if marker:
-            try:
-                self.driver.wait_for(marker, timeout_ms=60000)
-            except ActionError:
-                pass
+        - 拿到链接 → 返回链接；
+        - 确实有反应、但没拿到链接 → 返回 None，交给人手动回填；
+        - **点了没反应** → 抛 FlowError。
 
-        # 发表后页面会跳转/弹提示，链接不一定立刻就有——轮询一会儿。
-        return self._poll_for_url()
-
-    def _poll_for_url(self, *, timeout_ms: int = 30000) -> str | None:
-        """等链接出现。
-
-        发表后视频号助手会跳到内容列表，公开链接有时候在提示里、
-        有时候在列表项上。挨个等、等不到就说「没有」，不编一个出来。
+        最后一条是 2026-11-13 实测踩出来的坑：那次点了「发表」，
+        页面其实什么都没发生（视频还在处理，按钮是灰的），
+        而代码只返回 None，看起来像「只是没拿到链接」。
+        **静默返回 None 会让人以为只差一个链接，其实稿件压根没发出去。**
         """
         import time
 
-        deadline = time.monotonic() + timeout_ms / 1000
+        selector = self.config.need("post", "submit_button")
+        if not self.driver.is_enabled(selector):
+            raise FlowError(
+                "「发表」按钮点不动——视频可能还在平台处理中。\n"
+                "这种按钮点了也不会发出去，所以这里不点。"
+                "先等平台处理完，或者去内容管理页看这条视频的状态。"
+            )
+
+        before_url = self.driver.page.url
+        self.driver.click(selector)
+
+        deadline = time.monotonic() + self.config.publish_effect_ms / 1000
+        reacted = False
         while True:
-            url = self._read_published_url()
+            url = self.read_published_url()
             if url:
                 return url
+            if self._has_effect(before_url, selector):
+                reacted = True
             if time.monotonic() >= deadline:
-                return None
-            time.sleep(2)
+                break
+            time.sleep(1)
 
-    def _read_published_url(self) -> str | None:
+        if reacted:
+            # 发出去了，只是链接没拿到——交给人手动回填
+            return None
+        raise FlowError(
+            "点了「发表」，但页面没反应——既没有成功提示，URL 也没变。\n"
+            "稿件很可能没发出去。**先到内容管理页核实**，确认没发再重发；"
+            "别直接重发，可能已经发出去了。"
+        )
+
+    def _has_effect(self, before_url: str, submit_selector: list[str]) -> bool:
+        """点了之后，页面有反应吗。
+
+        四样都算反应：
+
+        1. 选择器表里说的「成功标记」出现了（且看得见）；
+        2. 「成功提示」（toast）出现了；
+        3. 页面 URL 变了（跳到内容列表或成功页）；
+        4. **「发表」自己变灰了**——平台开始处理这次发表了。
+           （点之前它是可点的，否则这里根本不会点。）
+        """
+        for key in ("published_marker", "published_notice"):
+            for candidate in self.config.maybe("post", key):
+                try:
+                    if self.driver.is_visible(candidate):
+                        return True
+                except ActionError:
+                    continue
+        try:
+            if not self.driver.is_enabled(submit_selector):
+                return True
+        except ActionError:
+            return True  # 按钮没了 = 页面已经变了
+        try:
+            return self.driver.page.url != before_url
+        except Exception:  # pragma: no cover - 页面已关
+            return False
+
+    def read_published_url(self) -> str | None:
         """从页面上把发布链接读出来。
+
+        **只看得见的东西才算。** Playwright 的 `inner_text()` 对
+        `display:none` 的元素返回的是 textContent——也就是说，
+        一条**还藏着的**链接也会被读出来。读出来就以为「发布成功了」，
+        可页面上其实什么都没发生（2026-11-13 那次就是这样蒙混过去的）。
 
         三层尝试，从确定到碰运气：
 
-        1. 选择器表里明确指定的文本框 / 输入框；
+        1. 选择器表里明确指定的文本框 / 输入框（且看得见）；
         2. 页面上按特征匹配的链接（`published_url_contains`）；
         3. 都没有 → 返回 None，**不猜、不编**。
         """
@@ -344,6 +437,8 @@ class ChannelsFlow:
             candidates = self.config.maybe("post", key)
             for candidate in candidates:
                 try:
+                    if not self.driver.is_visible(candidate):
+                        continue
                     if key.endswith("_input"):
                         value = self.driver.value_of(candidate)
                     else:

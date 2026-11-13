@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>假投稿页（视频处理中）</title></head>
+<body>
+  <!--
+    模仿视频号投稿页的**「视频还在平台处理中」**状态。
+
+    2026-11-13 实测：上传完之后，平台要先处理完视频，
+    这期间「发表」按钮是**灰的**——但它**没有 disabled 属性**，
+    只是类名从 primary 换成了 disabled。所以 Playwright 的 click
+    会「成功」返回，而平台什么也不做：事件派发出去了，稿件没发出去。
+
+    这个假页面用 query 参数控制三种情况：
+
+      （默认）    1.2 秒后变可点（模拟平台处理完）
+      ?never=1   一直灰着（模拟平台卡住）
+      ?dead=1    可点了，但点了什么也不发生（模拟事件被吞）
+
+    窗口上记着点击次数，用来断言「代码到底点没点」。
+  -->
+  <input id="video-file" type="file" accept="video/mp4,video/x-m4v,video/*">
+  <input id="title" type="text" placeholder="填写短标题有机会获得更多流量">
+  <div id="desc" contenteditable="" data-placeholder="添加描述" class="input-editor"></div>
+  <input id="cover-file" type="file" accept="image/jpeg,image/jpg,image/png">
+
+  <div class="declare-original-checkbox">
+    <label class="ant-checkbox-wrapper">
+      <span class="ant-checkbox"><input type="checkbox" class="ant-checkbox-input" value=""></span>
+      <span>声明后，作品将展示原创标记。</span>
+    </label>
+  </div>
+
+  <div class="declare-original-dialog">
+    <div class="weui-desktop-dialog__wrp" style="display: none;">
+      <div class="weui-desktop-dialog">
+        <div class="weui-desktop-dialog__hd"><h3 class="weui-desktop-dialog__title">原创权益</h3></div>
+        <div class="weui-desktop-dialog__bd">
+          <label class="ant-checkbox-wrapper">
+            <span class="ant-checkbox"><input type="checkbox" class="ant-checkbox-input agree"></span>
+            <span>我已阅读并同意《原创声明须知》和《使用条款》。</span>
+          </label>
+        </div>
+        <div class="weui-desktop-dialog__ft">
+          <button type="button" class="weui-desktop-btn weui-desktop-btn_default">取消</button>
+          <button type="button" class="weui-desktop-btn weui-desktop-btn_primary">声明原创</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button id="publish" type="button" class="weui-desktop-btn weui-desktop-btn_disabled">发表</button>
+  <div id="done" style="display:none">发表成功</div>
+  <div id="link" style="display:none">https://channels.weixin.qq.com/platform/post/fixture-1</div>
+
+  <script>
+    var editor = document.getElementById('desc');
+    editor.addEventListener('input', function () {
+      var parts = editor.innerText.split(/(#[^\s#]+)/g);
+      var html = parts.map(function (p) {
+        if (p.charAt(0) === '#' && p.length > 1) {
+          return '<span class="hl topic" data-type="topic">' + p + '</span>';
+        }
+        return p;
+      }).join('');
+      if (html !== editor.innerHTML) editor.innerHTML = html;
+    });
+
+    var main = document.querySelector('.declare-original-checkbox input[type=checkbox]');
+    var dlg = document.querySelector('.declare-original-dialog .weui-desktop-dialog__wrp');
+    var agree = document.querySelector('.declare-original-dialog .agree');
+    main.addEventListener('change', function () {
+      if (main.checked) dlg.style.display = '';
+    });
+    document.querySelector('.declare-original-dialog button.weui-desktop-btn_primary')
+      .addEventListener('click', function () {
+        if (agree.checked) { main.checked = true; }
+        dlg.style.display = 'none';
+      });
+
+    var publish = document.getElementById('publish');
+    var clicks = 0;
+    window.__clicks = function () { return clicks; };
+
+    var params = new URLSearchParams(location.search);
+    var mode = params.get('mode') || 'ready';
+
+    if (mode === 'ready' || mode === 'dead') {
+      // 平台处理完视频之后，按钮才变可点。
+      setTimeout(function () {
+        publish.className = 'weui-desktop-btn weui-desktop-btn_primary';
+      }, 1200);
+    }
+
+    publish.addEventListener('click', function () {
+      clicks++;
+      // 按钮还灰着的时候，平台什么也不做——**事件派发了，稿件没发出去**。
+      if (publish.className.indexOf('disabled') >= 0) return;
+      if (mode === 'dead') return;
+      document.getElementById('done').style.display = '';
+      document.getElementById('link').style.display = '';
+    });
+  </script>
+</body>
+</html>
