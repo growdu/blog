@@ -117,11 +117,11 @@ python3 tools/review-check.py docs/database docs/db docs/pgsql docs/cluster \
 
 | 编号 | 判据 | 严重级 |
 |---|---|---|
-| `AIF-01` | 连接词密度 > 2 次/千字。词表：首先、其次、最后、此外、值得注意的是、总而言之、综上所述、总的来说、事实上 | warn |
-| `AIF-02` | 空泛评价词命中且**所在段落无证据支撑**（段落内无代码块/表格/数字）。词表：高效、全面、显著、至关重要、强大、极大、非常好、行业领先、完美 | warn |
-| `AIF-03` | 正文单段 > 200 字，且段内无代码块、表格、列表 | warn |
+| `AIF-01` | **以连接词开头的段落**占比 > 15%（词表：首先、其次、最后、此外、值得注意的是、总而言之、综上所述、总的来说、事实上）。只认段首——句中出现的「最后」不是结构连接词 | warn |
+| `AIF-02` | 空泛评价词命中且**所在段落无证据支撑**（段落内无数字，且其后紧邻的块不是代码块/表格）。词表：高效、全面、显著、至关重要、强大、极大、非常好、行业领先、完美 | warn |
+| `AIF-03` | 正文单段 > 200 字（代码块、表格、列表是独立块，不计入段落长度） | warn |
 | `AIF-04` | 结尾 3 段出现泛化收尾语：希望本文、本文到此结束、以上就是、让我们一起、随着…的发展 | warn |
-| `AIF-05` | 近似重复句：长度 ≥ 12 字的句子，两两相似度 ≥ 0.85（分桶比较，避免 O(n²)） | warn |
+| `AIF-05` | 近似重复句：长度 ≥ 12 字的句子，两两相似度 ≥ 0.85（按长度分桶比较，避免 O(n²)） | warn |
 
 #### 技术深度（对应 README「技术深度检查」五要素的机械代理）
 
@@ -144,7 +144,7 @@ python3 tools/review-check.py docs/database docs/db docs/pgsql docs/cluster \
 | `STR-01` | `## ` 二级章节数 < 3 | info |
 | `STR-02` | 开头 3 段无问题定位句（含「本文回答 / 本文要解决 / 为什么」或疑问句） | info |
 | `STR-03` | 结尾 5 段无可带走产物（清单、检查表、下一步、下一篇、延伸阅读、系列） | info |
-| `STR-04` | 相对链接目标文件不存在（`](./x.md)` / `](./x/)`） | warn |
+| `STR-04` | 相对链接指向的文章不存在。**解析规则必须与发布器一致**：`tools/sync-hexo.py:rewrite_links` 先按写法解析（相对本文所在目录），解析不到再回退到兄弟目录——`docs/database/a/index.md` 里的 `./b/index.html` 指的是 `docs/database/b/`。检查器只判**存在性**，不生成 permalink（生成要跑 git，慢且无必要） | warn |
 | `STR-05` | 术语大小写不一致（`Postgresql` 这类错误变体） | info |
 
 #### 元信息
@@ -168,7 +168,7 @@ python3 tools/review-check.py docs/database docs/db docs/pgsql docs/cluster \
   "depth_ok": true,
   "signals": [
     {"rule": "AIF-01", "severity": "warn", "line": 42,
-     "excerpt": "首先我们来看…", "detail": "连接词密度 3.4/千字（阈值 2）"}
+     "excerpt": "首先我们来看…", "detail": "3/20 段落以连接词开头（15%）"}
   ]
 }
 ```
@@ -176,6 +176,9 @@ python3 tools/review-check.py docs/database docs/db docs/pgsql docs/cluster \
 字段约定：`line` 为 1 基行号；`excerpt` 截断到 120 字符；
 `pillar`/`slug` 由路径推导（`docs/<pillar>/<slug>/index.md` → pillar=`<pillar>`、slug=`<slug>`；
 `docs/<pillar>/<slug>.md` → slug=`<slug>`）。
+
+**每条规则对每篇文档最多产生 1 个信号**，全部命中位置写进 `detail`。
+这样 INDEX 的「信号」列就是「命中了几条规则」（0~19），而不是被重复句数量灌水。
 
 ---
 
@@ -191,6 +194,9 @@ python3 tools/review-check.py docs/database docs/db docs/pgsql docs/cluster \
 
 规则：`<支柱>/<相对路径去后缀>.md`。四支柱中仅 `_index` 跨支柱重名，
 按此映射天然不冲突。
+
+**`_index.md` 不纳入审校范围**：它是支柱目录页（分类索引），不是一篇技术文章，
+不按「技术深度五要素」审。
 
 ### 5.2 记录内容
 
@@ -286,7 +292,7 @@ python3 tools/review-check.py docs/database docs/db docs/pgsql docs/cluster \
 | 批次 | 内容 | 提交 |
 |---|---|---|
 | 0 | spec（本文） | `docs(review): 内容审校落地方案（设计）` |
-| 1 | 检查器 + 单元/集成测试 | `feat(review): 审校信号检查器` |
+| 1 | 检查器 + 单元/集成测试 | 拆 4 个 task：`feat(review): 审校检查器骨架` / `…加 AI 味信号` / `…加技术深度要素` / `…加结构与元信息` |
 | 2 | 契约测试 + INDEX 骨架 + 队列排序 | `feat(review): 审校记录契约与进度索引` |
 | 3 | 试点审校 5 篇（database / db / pgsql / cluster / logical-replication 各 1） | **每篇一个** `docs(review): 记录 <slug>` |
 | 4 | 支柱放量（按系列分批，每批 10~15 篇） | **每篇一个** `docs(review): 记录 <slug>` |
