@@ -19,17 +19,32 @@
 
 ## 一、一句话答案
 
-> **不需要**。一个 subscription 永远**只有一个 apply worker**。分区表再加多少叶子，都不增加 apply worker。
->
-> 真正能"摊到 N 个 worker"的是**初始同步阶段**的 tablesync worker——但每个 tablesync worker 只对应当前 `pg_subscription_rel` 里的一行。同步完就退出，**不会常驻**。
+**不需要**。一个 subscription 永远**只有一个 apply worker**。分区表再加多少叶子，都不增加 apply worker。
+
+真正能"摊到 N 个 worker"的是**初始同步阶段**的 tablesync worker——但每个 tablesync worker 只对应当前 `pg_subscription_rel` 里的一行。同步完就退出，**不会常驻**。
 
 下面我们把 PG 的 worker 类型、资源限制、状态机、分区表的依赖关系一步步拆给你看。
 
+### 同系列
+
+本文是「PostgreSQL 逻辑复制」系列的一篇，系列里还有：
+
+- 机制：[端到端全链路](./postgresql-logical-replication-end-to-end-flow/index.html) ·
+  [worker 模型（本文）](./postgresql-logical-replication-worker-model/index.html) ·
+  [订阅选项详解](./postgresql-logical-replication-options/index.html) ·
+  [DDL 与 DML 的顺序保证](./postgresql-logical-replication-ddl-dml-ordering/index.html)
+- 分区表：[分区表 INSERT 的完整路径](./postgresql-logical-replication-partitioned-insert-flow/index.html) ·
+  [带分区表的逻辑复制](./postgresql-logical-replication-with-partitioned-tables/index.html) ·
+  [按分区根发布](./postgresql-logical-replication-publish-via-partition-root/index.html)
+- 工程化：[Docker 一键搭建](./postgresql-logical-replication-docker-setup/index.html) ·
+  [监控](./postgresql-logical-replication-monitoring/index.html) ·
+  [吞吐量基准](./postgresql-logical-replication-throughput-benchmark/index.html)
+
 ---
 
-## 二、三种 worker 类型
+## 二、三种 worker 类型（外加一个 Launcher）
 
-`src/include/replication/worker_internal.h:31`：
+`src/include/replication/worker_internal.h` 的 `LogicalRepWorkerType`：
 
 ```c
 typedef enum
@@ -40,6 +55,11 @@ typedef enum
     WORKERTYPE_PARALLEL_APPLY    /* 大事务并行应用（PG 16+） */
 } LogicalRepWorkerType;
 ```
+
+**注意区分**：枚举里只有**三种** worker 类型，而下面那张表列了**四种**——
+多出来的 Launcher **不是** `LogicalRepWorkerType` 的成员，它是常驻的调度进程，
+负责监控 `pg_subscription` 并按需拉起 apply worker。把它和三种 worker 并列，
+容易让人以为枚举里漏了一个值。
 
 ```mermaid
 flowchart TB
@@ -60,11 +80,11 @@ flowchart TB
   classDef parallel fill:#fef9c3,stroke:#a16207,color:#000
 ```
 
-四种 worker 的分工：
+各角色分工（Launcher 单独标出）：
 
-| 类型 | 数量 | 寿命 | 任务 |
-| --- | --- | --- | --- |
-| Launcher | 1 个/集群 | 常驻 | 监控 `pg_subscription`，按需拉起 apply worker |
+| 类型 | 是 `LogicalRepWorkerType` 成员？ | 数量 | 寿命 | 任务 |
+| --- | --- | --- | --- | --- |
+| Launcher | **否**（独立的调度进程） | 1 个/集群 | 常驻 | 监控 `pg_subscription`，按需拉起 apply worker |
 | Apply worker | 1 个/订阅 | 订阅 enabled 时常驻 | streaming WAL、应用 INSERT/UPDATE/DELETE/TRUNCATE 到本地 |
 | Tablesync worker | ≤ `max_sync_workers_per_subscription` 个/订阅 | **短命**：COPY 完即退出 | 对单张 `pg_subscription_rel` 行做初始 COPY |
 | Parallel apply worker | ≤ `max_parallel_apply_workers_per_subscription` 个/订阅 | 处理单条大事务时临时存在 | 把一个事务内的多个 change 分担给多个 worker 并行 apply |
@@ -75,7 +95,7 @@ flowchart TB
 
 ## 三、worker 的全局资源限制
 
-`src/backend/replication/logical/launcher.c:50`：
+`src/backend/replication/logical/launcher.c` 的 `max_logical_replication_workers`：
 
 ```c
 int         max_logical_replication_workers = 4;
@@ -633,51 +653,56 @@ SELECT count(*) FROM pg_subscription_rel WHERE srsubstate IN ('i', 'd');
 
 ---
 
-## 十、修改指南：要加新 worker 类型 / 改变 worker 关系时碰哪些文件
+## 十、设计取舍：为什么 PG 是这么设计的
 
-### 10.1 加一种新 worker 类型（比如 per-leaf apply worker）
+worker 模型看起来「浪费」——明明分区表有 N 个 leaf，却只起 1 个 apply worker。
+这不是没做完，是**故意的**，代价与收益要一起看：
 
-理论上"每个 leaf 一个 apply worker"会让分区表的并行度更高，但**目前 PG 没有**。
+- **为什么 apply worker 不并行到 leaf？** 并行 apply 要处理同一事务内 change 的
+  依赖顺序。PG 16 的 parallel apply 是**按事务拆分**（只有大事务才拆），拆出来的
+  worker 各自负责一段 change，但它们仍要等同一个事务提交点。跨 leaf 再拆一层，
+  事务一致性的证明会难得多——这正是第 12 节那个「per-leaf apply worker」feature
+  一直没合进 PG 的原因。
+- **为什么 tablesync 按 `pg_subscription_rel` 行分批，而不是按分区表分？** 按行分批
+  的好处是每一批的复制起点是一个明确的 LSN，恢复/重建时不会因为分区表被拆成
+  N 个 COPY 任务而出现恢复点漂移。代价是：分区表越大，初始同步的批次数越多。
+- **共享配额带来的排障陷阱**：`max_logical_replication_workers` 是**所有 worker 类型
+  共用的一个池**（默认 4）。一次初始同步如果同时有 4 张大表的 tablesync 在跑，
+  就把池占满了——此时新的 apply worker 起不来，复制看起来「卡住不动」。
+  排查时先看 `pg_stat_subscription` 里 apply worker 的状态，再看
+  `max_logical_replication_workers` 是否被 tablesync 吃光。
 
-如果要改：
+### 怎么看见 worker 在跑
 
-1. `src/include/replication/worker_internal.h`：在 `LogicalRepWorkerType` 枚举加新值（如 `WORKERTYPE_LEAF_APPLY`）。
-2. `src/backend/replication/logical/launcher.c`：
-   - `logicalrep_worker_launch` 加新分支。
-   - `max_logical_replication_workers` 资源限制（加新 GUC）。
-3. `src/backend/replication/logical/worker.c`：
-   - `apply_handle_tuple_routing` 改成"分发到 leaf worker"而不是本地 routing。
-4. `src/backend/executor/execPartition.c`：可能需要给 leaf worker 共享 `PartitionTupleRouting`（用 DSM）。
+| 视图 | 看什么 |
+| --- | --- |
+| `pg_stat_subscription` | 每个订阅的 worker 状态、已提交/已写入位点、lag |
+| `pg_stat_progress_subscription` | 初始同步阶段 tablesync 的 COPY 进度（每个分区一行） |
+| `pg_stat_replication` | publisher 端的复制位点与滞后 |
+| `pg_stat_activity` | apply worker 的当前查询与等待事件 |
 
-> 这是 PG 邮件列表上被反复讨论的 feature，但一直没合进来——主要是**正确性**问题：跨 worker 的事务一致性难以保证。
+```sql
+-- 订阅状态与滞后
+SELECT subname, subenabled, subworker,
+       pid, received_lsn, latest_end_lsn,
+       pg_size_pretty(pg_wal_lsn_diff(pg_current_wal_lsn(), received_lsn)) AS lag
+FROM pg_stat_subscription;
 
-### 10.2 让 partitions 共享一个 apply worker 的现有"作弊"
+-- 初始同步进度（只有 tablesync 阶段有行）
+SELECT * FROM pg_stat_progress_subscription;
 
-PG 16 引入 `streaming = parallel` + parallel apply worker，已经在某种程度上"摊到了多 worker"——但每个 worker 处理的是**单事务的不同 change**，不是不同 leaf。所以分区表的 cross-partition 事务还是单线程处理。
-
-### 10.3 让 tablesync worker 并行 COPY 多张 leaf
-
-目前 `copy_table` 一次只 COPY 一张表（在 `LogicalRepSyncTableStart` 里依次处理）。如果改成"同一 tablesync worker 内 fork 多个 worker 并行 COPY 不同 leaf"，需要：
-
-1. tablesync worker 内置 background worker 拉起逻辑。
-2. 共享 DSM 持有 origin / replication progress。
-3. 错误处理：单个 leaf COPY 失败不影响其它 leaf。
-
-目前没实现。挂法 A 已经通过 `COPY (SELECT FROM ONLY parent)` 在**单表上**拿到了并行度（分区裁剪 + 并行 scan），所以这个优化空间不大。
-
-### 10.4 在 Babelfish 里加 T-SQL 风格的 per-leaf sync 状态
-
-Babelfish 当前 `sys.dm_repl_schemas` / `MSreplication_objects` 等视图是空壳。如果要补：
-
-1. 新建 Babelfish metadata 表记录"每个 leaf 的 sync 状态"。
-2. 在 `run_tablesync_worker` 完成后插入状态。
-3. 在 `apply_handle_tuple_routing` 内每 routing 一次也更新一下"这个 leaf 被 used 了多少次"。
-
-这是个大工作，建议作为 Babelfish 4.x 路线图。
-
----
+-- 各类 worker 各占多少配额
+SELECT count(*) FILTER (WHERE backend_type = 'walsender')  AS walsender,
+       count(*) FILTER (WHERE backend_type LIKE '%apply%') AS applyish
+FROM pg_stat_activity;
+```
 
 ## 十一、结语
+
+先把因果摆到前面，后面那张表才是证据：
+
+**apply worker 唯一常驻 → 所以 worker 数与分区数无关 → 所以分区表的并行化被交给了
+内核的 partition routing，而不是靠堆 worker。**
 
 | 维度 | 结论 |
 | --- | --- |
@@ -696,3 +721,49 @@ worker 数 = 1 (apply) + min(N, max_sync_workers_per_subscription) (tablesync, �
 ```
 
 加新 leaf 不会增加稳态 worker 数，只会在初始同步阶段触发一次性的额外 tablesync worker。这就是 PG 逻辑复制能"在分区表上线性扩展"的根本原因——它把分区表的并行化问题**留给了内核的 partition routing**，而不是堆 worker。
+
+---
+
+## 十二、修改指南：要加新 worker 类型 / 改变 worker 关系时碰哪些文件
+
+### 12.1 加一种新 worker 类型（比如 per-leaf apply worker）
+
+理论上"每个 leaf 一个 apply worker"会让分区表的并行度更高，但**目前 PG 没有**。
+
+如果要改：
+
+1. `src/include/replication/worker_internal.h`：在 `LogicalRepWorkerType` 枚举加新值（如 `WORKERTYPE_LEAF_APPLY`）。
+2. `src/backend/replication/logical/launcher.c`：
+   - `logicalrep_worker_launch` 加新分支。
+   - `max_logical_replication_workers` 资源限制（加新 GUC）。
+3. `src/backend/replication/logical/worker.c`：
+   - `apply_handle_tuple_routing` 改成"分发到 leaf worker"而不是本地 routing。
+4. `src/backend/executor/execPartition.c`：可能需要给 leaf worker 共享 `PartitionTupleRouting`（用 DSM）。
+
+> 这是 PG 邮件列表上被反复讨论的 feature，但一直没合进来——主要是**正确性**问题：跨 worker 的事务一致性难以保证。
+
+### 12.2 让 partitions 共享一个 apply worker 的现有"作弊"
+
+PG 16 引入 `streaming = parallel` + parallel apply worker，已经在某种程度上"摊到了多 worker"——但每个 worker 处理的是**单事务的不同 change**，不是不同 leaf。所以分区表的 cross-partition 事务还是单线程处理。
+
+### 12.3 让 tablesync worker 并行 COPY 多张 leaf
+
+目前 `copy_table` 一次只 COPY 一张表（在 `LogicalRepSyncTableStart` 里依次处理）。如果改成"同一 tablesync worker 内 fork 多个 worker 并行 COPY 不同 leaf"，需要：
+
+1. tablesync worker 内置 background worker 拉起逻辑。
+2. 共享 DSM 持有 origin / replication progress。
+3. 错误处理：单个 leaf COPY 失败不影响其它 leaf。
+
+目前没实现。挂法 A 已经通过 `COPY (SELECT FROM ONLY parent)` 在**单表上**拿到了并行度（分区裁剪 + 并行 scan），所以这个优化空间不大。
+
+### 12.4 在 Babelfish 里加 T-SQL 风格的 per-leaf sync 状态
+
+Babelfish 当前 `sys.dm_repl_schemas` / `MSreplication_objects` 等视图是空壳。如果要补：
+
+1. 新建 Babelfish metadata 表记录"每个 leaf 的 sync 状态"。
+2. 在 `run_tablesync_worker` 完成后插入状态。
+3. 在 `apply_handle_tuple_routing` 内每 routing 一次也更新一下"这个 leaf 被 used 了多少次"。
+
+这是个大工作，建议作为 Babelfish 4.x 路线图。
+
+---

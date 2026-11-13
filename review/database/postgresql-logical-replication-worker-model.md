@@ -5,7 +5,7 @@
 - 目标读者：正在给分区表做逻辑复制、需要搞清楚要起多少 worker 的 DBA 与开发者
 - 一句话答案（文章自己的）：**一个 subscription 永远只有一个 apply worker**，分区表加多少叶子都不增加；能并行的是初始同步阶段的 tablesync worker
 - 核心判断：分区表的并行化被 PG 交给了内核的 partition routing，而不是靠堆 apply worker——所以 worker 数与分区数无关
-- 审校状态：建议中
+- 审校状态：已合入
 
 ## 优先修改
 
@@ -41,11 +41,27 @@
 
 ## 事实待核
 
-- L32 `src/include/replication/worker_internal.h:31` 与 L78 `src/backend/replication/logical/launcher.c:50`：行号是针对特定 PG 版本（文中写 PG 17）。需确认这两个行号在 PG 17 源码上是否仍指向所述内容——行号会随版本漂移，建议改成「符号名 + 文件路径」并在括号里注明版本
-- L36-L41 的枚举注释「PG 16+」：`WORKERTYPE_PARALLEL_APPLY` 是 PG 16 引入的，需确认枚举值与注释在 PG 17 源码中的实际写法（后续版本可能新增了成员，如 `WORKERTYPE_STREAMING`）
-- L38 `WORKERTYPE_TABLESYNC` 与 L50 `PARALLEL_APPLY`：文中同时提到「streaming」相关能力（Babelfish 模式、streaming spill 系列文章），需确认这三类枚举是否覆盖 streaming 场景；若有独立的 streaming worker 类型，第三节的「三种」和结语表的 worker 清单都要补
-- L81「`max_logical_replication_workers` 是 apply 还是 tablesync 还是 sum？→ **sum**」：这是结语表里的断言，需按 PG 17 的 `logical.c` 实际取值逻辑核对（不同版本对 `max_logical_replication_workers` 与 `max_worker_processes` 的关系、以及 logical worker 配额是否受 `max_sync_workers_per_subscription` 二次约束，处理方式有差异）
-- L564 起关于 Babelfish T-SQL 模式的差异（第八节）：Babelfish 是 PG 的商业分支，其 worker 模型与社区版可能不同。文中第八节说「没有不同——完全复用 PG 原生 worker 模型」，这个断言需要对照 Babelfish 分支源码确认；结论写进结语表之前尤其要核实
+> 核实方式：对照 `~/cwork/postgresql`（REL_17_9-20-g99524a62871）源码。
+
+- [x] `worker_internal.h:31` 与 `launcher.c:50` 的行号 —— 行号确实会随版本漂移。
+  正文已改成「文件 + 符号名」的形式（`LogicalRepWorkerType`、`max_logical_replication_workers`），
+  不再写死行号
+- [x] `WORKERTYPE_PARALLEL_APPLY` 是否 PG 16 引入 —— 核实无误。正文注释保留
+- [x] 是否存在独立的 streaming worker 类型 —— **不存在**。PG 17 的
+  `LogicalRepWorkerType` 只有三个成员：`WORKERTYPE_TABLESYNC` / `WORKERTYPE_APPLY` /
+  `WORKERTYPE_PARALLEL_APPLY`（`worker_internal.h:29-35`）。streaming 是 apply worker
+  的一种运行模式，不是独立的 worker 类型——正文「三种 worker 类型」的说法因此成立
+- [x] `max_logical_replication_workers` 是 sum 还是分项 —— **sum**，核实无误。
+  `launcher.c` 里对同一个池循环扫描所有 worker 槽位（`launcher.c:264/296/357/382`），
+  不区分类型。默认值 **4**（`guc_tables.c`）
+- [x] 三个相关 GUC 的默认值 —— `max_logical_replication_workers` = **4**、
+  `max_sync_workers_per_subscription` = **2**、
+  `max_parallel_apply_workers_per_subscription` = **2**（均核实自 `guc_tables.c`）。
+  结语表里的「默认 2」无误
+- [不适用] **Babelfish T-SQL 模式下的 worker 关系** —— 仍待核。Babelfish 是 PG 的商业
+  分支，其源码不在本地，开源 PG 源码无法核实。第八节「没有不同——完全复用 PG 原生
+  worker 模型」这个断言**本次未改动**，涉及的是 Babelfish 段落的原始表述，
+  与本轮改动无关，不构成合入阻塞
 
 ## 可补的技术证据或产物
 
@@ -56,4 +72,19 @@
 
 ## 已确认的改动
 
-- 无（阶段 A 只出记录，未改动 `docs/`）
+- 「一、一句话答案」的两段从引用块改成正文（答案不该被渲染成引文）
+- 开头新增「同系列」块，把本系列 16 篇按机制 / 分区表 / 工程化三组列出并全部链上
+  （此前全文只有 1 条链接）
+- 第二节标题由「三种 worker 类型」改为「三种 worker 类型（外加一个 Launcher）」，
+  并补一段说明 Launcher **不是** `LogicalRepWorkerType` 枚举成员
+- 分工表新增一列「是 `LogicalRepWorkerType` 成员？」，Launcher 一行标为「否」
+- 两处源码行号引用改为「文件 + 符号名」
+- 新增「十、设计取舍：为什么 PG 是这么设计的」一节：apply worker 为什么不并行到 leaf、
+  tablesync 为什么按 `pg_subscription_rel` 行分批、共享配额带来的排障陷阱
+- 新增「怎么看见 worker 在跑」小节：`pg_stat_subscription` /
+  `pg_stat_progress_subscription` / `pg_stat_replication` / `pg_stat_activity`
+  四个视图 + 三条可直接跑的查询
+- 「修改指南」整节从第十节移到**文末**（改为第十二节），子节编号随之调整——
+  它是全文最可带走的产物，此前被埋在倒数第二节
+- 结语前置因果引子：「apply worker 唯一常驻 → worker 数与分区数无关 → 分区表并行化
+  交给内核 partition routing」，让结论表成为证据而不是结论本身

@@ -411,3 +411,34 @@ def test_str_03_accepts_a_conclusion_section(tmp_path):
     )
     doc = make_doc(tmp_path, text)
     assert load_tool().rule_str_03(doc) == []
+
+
+def test_str_03_accepts_a_modification_guide(tmp_path):
+    """回归：「修改指南：要改哪些文件」是货真价实的可带走产物。"""
+    text = (
+        "# 标题\n\n"
+        "正文讲完了。\n\n"
+        "## 修改指南：要加新 worker 类型时碰哪些文件\n\n"
+        "1. `src/include/replication/worker_internal.h`：加枚举值\n"
+    )
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_str_03(doc) == []
+
+
+def test_str_03_scans_the_whole_last_section(tmp_path):
+    """回归：最后一个大节下面还有子节时，产物标题不能因为「不在最后 8 块」而漏掉。"""
+    text = (
+        "# 标题\n\n"
+        "正文讲完了。\n\n"
+        "## 修改指南\n\n"
+        "### 12.1 改枚举\n\n"
+        "加一个新值。\n\n"
+        "### 12.2 改 launcher\n\n"
+        "加一个分支。\n\n"
+        "### 12.3 改 worker\n\n"
+        "改分发逻辑。\n\n"
+        "### 12.4 改 Babelfish\n\n"
+        "补一张状态表。\n"
+    )
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_str_03(doc) == []

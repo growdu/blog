@@ -350,7 +350,7 @@ POSITIONING_RE = re.compile(
 )
 TAKEAWAY_WORDS = ("清单", "检查表", "决策表", "排查", "下一步", "下一篇", "延伸阅读",
                    "相关阅读", "参考资料", "同系列", "前文", "总结", "小结", "要点",
-                   "结语", "结论")
+                   "结语", "结论", "修改指南", "源码入口")
 
 # 图片不是文章链接：``![]()`` 必须排除，否则图片路径会被判成断链。
 # ``!`` 在 ``[`` 之前而不是 ``]`` 之前，所以只能把 ``!`` 收进捕获组来区分。
@@ -391,11 +391,17 @@ def rule_str_02(doc: Doc) -> list[Signal]:
 def rule_str_03(doc: Doc) -> list[Signal]:
     """The ending leaves the reader with nothing to carry away.
 
-    The tail is inspected as *blocks*, not paragraphs: the takeaway is
-    usually a heading plus a list（「参考资料」「同系列前文」「排查清单」）,
-    and looking at paragraphs only would miss every one of them.
+    The tail is inspected as the *last section* -- everything from the
+    final H2 onwards -- not a fixed number of blocks: the takeaway is
+    usually a heading plus a list（「参考资料」「同系列前文」「修改指南」
+    「排查清单」), and a fixed window would miss it whenever the last
+    section has subsections of its own.
     """
-    for block in doc.blocks[-8:]:
+    start = 0
+    for index, block in enumerate(doc.blocks):
+        if block.kind == HEADING and block.level == 2:
+            start = index
+    for block in doc.blocks[start:]:
         if any(word in block.text for word in TAKEAWAY_WORDS):
             return []
     return [Signal("STR-03", "info", 1, "", "结尾没有可带走的产物（清单/参考资料/下一篇）")]
