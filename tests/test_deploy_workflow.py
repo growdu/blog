@@ -48,10 +48,6 @@ _JOB_KEY = re.compile(r"^  ([A-Za-z0-9_-]+):\s*$")
 # ``timeout-minutes`` sits at four-space indentation, right under the job key.
 _TIMEOUT = re.compile(r"^    timeout-minutes:\s*([0-9]+)\s*$", re.M)
 _NEEDS = re.compile(r"^    needs:\s*(.*)$", re.M)
-# ``ssh -p PORT ...``.  Deliberately does not match ``ssh-keyscan -T 10 -p``,
-# which is a different program (and does not authenticate).
-_SSH_CALL = re.compile(r"ssh -p ")
-
 REQUIRED_JOBS = {"build", "deploy-server", "build-github-pages", "deploy-github-pages"}
 
 
@@ -142,16 +138,38 @@ def test_concurrency_keeps_the_running_run_and_collapses_the_queue() -> None:
 
 
 def test_ssh_calls_are_non_interactive() -> None:
-    """ssh must never wait for input: waiting == job hangs == queue stalls."""
-    lines = [line for line in _workflow_text().splitlines() if _SSH_CALL.search(line)]
-    assert len(lines) >= 3, (
-        f"只认出 {len(lines)} 处 ssh 调用（期望至少 3：rsync 的 -e、"
-        "切 symlink、清理旧 release），扫描多半没生效"
+    """ssh must never wait for input: waiting == job hangs == queue stalls.
+
+    The options now live in one shared ``SSH_OPTS`` variable, so the check
+    is on the *effective* command: the variable must carry both switches,
+    and every ssh invocation must go through it.  A bare ``ssh -p ...``
+    somewhere would silently lose the switches, so those are rejected too.
+    """
+    text = _workflow_text()
+    code = "\n".join(
+        line for line in text.splitlines()
+        if not line.strip().startswith("#")
     )
-    for line in lines:
-        stripped = line.strip()
-        assert "BatchMode=yes" in line, f"这处 ssh 会去等密码提示：{stripped}"
-        assert "ConnectTimeout=" in line, f"这处 ssh 没有连接超时：{stripped}"
+
+    opts = re.search(r'SSH_OPTS="([^"]*)"', code)
+    assert opts, "找不到 SSH_OPTS 定义"
+    switches = opts.group(1)
+    assert "BatchMode=yes" in switches, (
+        f"SSH_OPTS 里没有 BatchMode=yes：{switches}"
+        "——认证失败会变成「等密码提示」，整个 job 挂死"
+    )
+    assert "ConnectTimeout=" in switches, f"SSH_OPTS 里没有连接超时：{switches}"
+
+    # 小写 "ssh " 后面必须跟空白：这样不会误匹配 ssh-keyscan。
+    calls = [line for line in code.splitlines() if re.search(r"(?:^|[^\w-])ssh\s", line)]
+    assert len(calls) >= 4, (
+        f"只认出 {len(calls)} 处 ssh 调用（期望至少 4：取上一个 release、"
+        "rsync 的 -e、切 symlink、清理旧 release），扫描多半没生效"
+    )
+    for line in calls:
+        assert "${SSH_OPTS}" in line, (
+            f"这处 ssh 绕过了 SSH_OPTS，会丢掉非交互选项：{line.strip()}"
+        )
 
 
 def test_known_hosts_is_verified_before_use() -> None:
@@ -206,6 +224,31 @@ def _is_tracked(path: str) -> bool:
     except (OSError, subprocess.SubprocessError):
         return False
     return proc.returncode == 0
+
+
+def test_the_deploy_only_transfers_what_changed() -> None:
+    """部署不能每次都全量重传。
+
+    每次部署都往新的时间戳目录里全量传 167MB / 2400 个文件，站点滞后
+    多久就完全取决于跨太平洋链路的快慢——2026-11-13 同一条命令跑出过
+    38 秒、也跑出过 20 分钟还没完。``--link-dest`` 让没变的文件走硬链接，
+    只有变化的那几个过网络，链路再慢也无所谓。
+
+    这条盯的是「选项还在不在」，所以只认代码、不认注释。
+    """
+    text = _workflow_text()
+    step = re.search(
+        r"- name: Deploy via rsync\n(.*?)(?=\n      - name:|\n  [a-zA-Z-]+:)", text, re.S
+    )
+    assert step, "工作流里找不到 Deploy via rsync 步骤"
+    code = "\n".join(
+        line for line in step.group(1).splitlines()
+        if not line.strip().startswith("#")
+    )
+    assert "--link-dest" in code, (
+        "rsync 没有 --link-dest——每次部署都要全量传一遍，"
+        "站点滞后多久全看跨太平洋链路的脸色"
+    )
 
 
 def test_the_npm_cache_is_never_used_without_a_tracked_lockfile() -> None:

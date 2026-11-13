@@ -224,19 +224,38 @@ jobs:
           set -euo pipefail
           TIMESTAMP=$(date -u +%Y%m%d%H%M%S)
           REMOTE="${DEPLOY_USER}@${DEPLOY_HOST}"
+          REL_DIR=/var/www/blog/releases
+          SSH_OPTS="-p ${DEPLOY_PORT} -o BatchMode=yes -o ConnectTimeout=20"
+          # 上一个 release 目录：没变的文件**直接硬链接**过去，不过网络。
+          #
+          # 每次部署都往新的时间戳目录里全量传 167MB / 2400 个文件，
+          # 于是站点滞后多久完全取决于跨太平洋链路的快慢：
+          # 2026-11-13 实测同一条命令跑出过 38 秒、也跑出过 20 分钟还没完。
+          # 硬链接之后只有变化的那几个文件过网络，链路再慢也无所谓，
+          # 顺带省掉服务器上重复的一份磁盘。
+          PREV=$(ssh ${SSH_OPTS} "${REMOTE}" \
+            "ls -1dt ${REL_DIR}/*/ 2>/dev/null | head -1" || true)
+          LINK_OPT=""
+          if [ -n "${PREV}" ]; then
+            LINK_OPT="--link-dest=${PREV}"
+            echo "link-dest: ${PREV}（没变的文件走硬链接）"
+          else
+            echo "没有可链接的上一个 release，本次全量传输"
+          fi
           # 1. rsync 到新的 release 目录
-          rsync -avz --delete \
-            -e "ssh -p ${DEPLOY_PORT} -o BatchMode=yes -o ConnectTimeout=20" \
+          rsync -avz --delete ${LINK_OPT} \
+            -e "ssh ${SSH_OPTS}" \
             ./public/ \
-            "${REMOTE}:/var/www/blog/releases/${TIMESTAMP}/"
+            "${REMOTE}:${REL_DIR}/${TIMESTAMP}/"
           # 2. 原子切换 symlink
-          ssh -p ${DEPLOY_PORT} -o BatchMode=yes -o ConnectTimeout=20 "${REMOTE}" "
-            ln -sfn /var/www/blog/releases/${TIMESTAMP} /var/www/blog/current.new && \
+          ssh ${SSH_OPTS} "${REMOTE}" "
+            ln -sfn ${REL_DIR}/${TIMESTAMP} /var/www/blog/current.new && \
             mv -Tf /var/www/blog/current.new /var/www/blog/current
           "
           # 3. 清理 7 天前的旧 release（保留最近 10 个）
-          ssh -p ${DEPLOY_PORT} -o BatchMode=yes -o ConnectTimeout=20 "${REMOTE}" "
-            cd /var/www/blog/releases && \
+          #    硬链接的文件不受影响：删掉一个链接，另一个链接还在。
+          ssh ${SSH_OPTS} "${REMOTE}" "
+            cd ${REL_DIR} && \
             ls -1t | tail -n +11 | xargs -r rm -rf
           "
           echo "Deployed: ${TIMESTAMP}"
