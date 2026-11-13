@@ -149,6 +149,31 @@ def test_cli_reports_missing_path():
     assert "路径不存在" in result.stderr
 
 
+# 审校过的正文合入后，段落不该又长回去——AIF-03 盯的就是「单段 > 200 字」。
+# 改文章时把两段并回一段，这条测试会报出来：审校完的稿子不能带新债。
+REVIEWED_ARTICLES = (
+    "docs/database/postgresql-mvcc/index.md",
+    "docs/database/postgresql-logical-replication-worker-model/index.md",
+    "docs/db/postgresql/learning-path/06-heap-and-mvcc.md",
+    "docs/pgsql/checkpoint机制浅析.md",
+    "docs/cluster/分布式一致性协议.md",
+)
+
+
+def test_reviewed_articles_have_no_long_paragraph_signal():
+    """集成：已合入审校的文章不该再被 AIF-03 命中。"""
+    for rel in REVIEWED_ARTICLES:
+        result = subprocess.run(
+            [sys.executable, str(TOOL), str(REPO_ROOT / rel), "--json"],
+            capture_output=True, text=True, cwd=REPO_ROOT,
+        )
+        assert result.returncode == 0, result.stderr
+        payload = json.loads(result.stdout)
+        hits = [s for s in payload["docs"][0]["signals"]
+                if s["rule"] == "AIF-03" and s["severity"] == "warn"]
+        assert not hits, f"{rel} 还有超长段落：{hits}"
+
+
 # --- AIF 规则 -------------------------------------------------------------
 
 

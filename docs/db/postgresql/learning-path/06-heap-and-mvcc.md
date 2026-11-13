@@ -343,6 +343,7 @@ postgres=# VACUUM (FREEZE, VERBOSE) t;
 **别把 `cmin` / `cmax` 当成 hint bit**：提示位在 `t_infomask` 里，而 `cmin` / `cmax`
 是「虚拟字段」——它们和 `xvac` 共用同一个物理字段 `t_field3`，只在插入/删除事务
 自己的生命周期内有意义，且离开那个后端就无法解释（见 `combocid.c`）。
+
 所以日常排查用不上它们（`HeapTupleHeaderGetCmin` 至今仍在用，只是不该拿它们当提示位看）。
 
 ## 6.11 与 InnoDB 对照（重要）
