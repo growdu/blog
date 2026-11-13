@@ -4,9 +4,9 @@
   "kind": "video",
   "package_dir": "channels/out/row-lock",
   "platform": "channels",
-  "published_url": null,
-  "reason": "视频号无公开发布接口，已出包待人工上传",
-  "status": "packaged",
+  "published_url": "https://weixin.qq.com/sph/A2aTnjw7V",
+  "reason": "人工发布后回填",
+  "status": "published",
   "title": "两个事务改同一行 谁先谁后",
-  "updated_at": "2026-11-13T04:27:14+00:00"
+  "updated_at": "2026-11-13T06:56:29+00:00"
 }
