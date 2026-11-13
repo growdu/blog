@@ -38,9 +38,12 @@ jobs:
             python3-cairo python3-numpy python3-pil python3-scipy python3-pytest
           fc-cache -f
 
-      - name: 装 pip 依赖（系统包装不上的兜底）
-        run: python3 -m pip install --user --upgrade pip
-             && python3 -m pip install --user -r aiv/pipeline/requirements.txt
+      - name: 确认 Python 依赖可用
+        run: |
+          # 系统包装的版本与发行版一起走，最稳；只有在装不上时才退回 pip。
+          # 不无条件跑 pip：它会把 apt 的 numpy 升到 2.x，和 apt 的 scipy 打架。
+          python3 -c "import cairo, numpy, PIL, scipy, pytest" || \
+            python3 -m pip install --break-system-packages -r aiv/pipeline/requirements.txt
 
       - name: 确认字体解析到了开源中文字体
         working-directory: aiv/pipeline
