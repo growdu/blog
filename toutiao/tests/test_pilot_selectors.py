@@ -125,11 +125,15 @@ def test_no_local_paths_leaked_into_the_repository(repo_root):
         return  # git 问不到，不当成「泄漏」
 
     forbidden = ("/tmp/tt-browser", "toutiao-publisher", "Library/Application Support")
+    this_file = Path(__file__).resolve()
     for relative in result.stdout.split():
         if not relative.endswith((".py", ".md", ".toml", ".json", ".txt")):
             continue
         path = repo_root / relative
         if not path.is_file():
+            continue
+        # 这个文件自己就写着这些标记——扫自己等于自己绊自己。
+        if path.resolve() == this_file:
             continue
         text = path.read_text(encoding="utf-8", errors="ignore")
         for marker in forbidden:
