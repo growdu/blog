@@ -306,9 +306,30 @@ class ChannelsFlow:
 
         marker = self.config.maybe("post", "published_marker")
         if marker:
-            self.driver.wait_for(marker, timeout_ms=60000)
+            try:
+                self.driver.wait_for(marker, timeout_ms=60000)
+            except ActionError:
+                pass
 
-        return self._read_published_url()
+        # 发表后页面会跳转/弹提示，链接不一定立刻就有——轮询一会儿。
+        return self._poll_for_url()
+
+    def _poll_for_url(self, *, timeout_ms: int = 30000) -> str | None:
+        """等链接出现。
+
+        发表后视频号助手会跳到内容列表，公开链接有时候在提示里、
+        有时候在列表项上。挨个等、等不到就说「没有」，不编一个出来。
+        """
+        import time
+
+        deadline = time.monotonic() + timeout_ms / 1000
+        while True:
+            url = self._read_published_url()
+            if url:
+                return url
+            if time.monotonic() >= deadline:
+                return None
+            time.sleep(2)
 
     def _read_published_url(self) -> str | None:
         """从页面上把发布链接读出来。
