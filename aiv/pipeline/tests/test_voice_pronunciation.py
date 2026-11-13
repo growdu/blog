@@ -38,13 +38,12 @@ from pronunciation import (  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 
+from pyv import episodes as episodes_mod
+
+
 SCRIPTS = {
-    "ep01": "字幕-并行解码.md",
-    "ep02": "字幕-CSN全序.md",
-    "ep03": "字幕-WAL顺序.md",
-    "ep04": "字幕-并行apply.md",
-    "ep05": "字幕-结构化DDL.md",
-    "ep06": "字幕-行锁.md",
+    episodes_mod.EP_NUMBERS[ep]: episodes_mod.EPISODES[ep]
+    for ep in episodes_mod.EPISODE_ORDER
 }
 
 

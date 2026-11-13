@@ -1,0 +1,20 @@
+# 出片流水线的第三方依赖。
+#
+# Linux 上**优先用系统包**——pip 编译 pycairo 需要 cairo 的开发头文件，
+# 自己编译容易踩坑：
+#
+#   sudo apt-get install -y python3-cairo python3-numpy python3-pil \
+#                          python3-scipy python3-pytest
+#
+# 系统包装不上时再走 pip：
+#
+#   pip install -r aiv/pipeline/requirements.txt
+#
+# 版本写的是**下界**不是钉死：pycairo 得跟着系统的 cairo 走，钉死版本
+# 反而在 Linux 上装不上。真正的版本约束由 `make doctor` 现场检查。
+
+pycairo>=1.20
+numpy>=1.21
+Pillow>=9.0
+scipy>=1.7
+pytest>=7.0

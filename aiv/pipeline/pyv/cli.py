@@ -160,6 +160,13 @@ def cmd_topics(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_doctor(args: argparse.Namespace) -> int:
+    """环境自检：这台机器缺什么、怎么补。"""
+    from pyv import doctor
+
+    return doctor.main()
+
+
 def cmd_bgm(args: argparse.Namespace) -> int:
     """背景音乐检查：单条曲子 / 台账 / 混音参数 / 成片混音。"""
     from pyv import bgm
@@ -397,6 +404,9 @@ def main(argv: list[str] | None = None) -> int:
     p_topics_check.add_argument("--library", default=None,
                                 help="选题库文件，默认 aiv/选题库.md")
     p_topics_check.set_defaults(func=cmd_topics)
+
+    p_doctor = sub.add_parser("doctor", help="环境自检：这台机器能不能跑出片")
+    p_doctor.set_defaults(func=cmd_doctor)
 
     p_bgm = sub.add_parser("bgm")
     bgm_sub = p_bgm.add_subparsers(dest="bgm_command", required=True)

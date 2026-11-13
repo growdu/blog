@@ -1,6 +1,7 @@
 # 出片流水线（按期可切）
 #
 #   make test      跑全部测试
+#   make doctor    环境自检：这台机器缺什么、怎么补（先跑这个）
 #   make validate  校验 storyboard 契约（时间码、字幕宽度、禁止词、字体）
 #   make align     重新按旁白对齐生成 storyboard
 #   make brand     套上品牌片头/片尾（brand/clips/*.mp4）
@@ -23,7 +24,9 @@
 # 换期时忘了换稿会当场报错，而不是静悄悄地拿上一期的稿子出片。
 
 ROOT := ..
-PY := python
+# Python 解释器：Linux 上常常只有 python3，没有 python。
+# 想指定别的解释器就 `make PY=/path/to/python3 ...`。
+PY ?= $(shell command -v python3 >/dev/null 2>&1 && echo python3 || echo python)
 
 EP ?= pg-parallel-decode
 
@@ -52,12 +55,16 @@ BGM := $(ROOT)/music/tracks/series-bed-01.wav
 BUILD := $(ROOT)/build/$(EP)
 OUT := $(ROOT)/out/$(EP).mp4
 
-.PHONY: all test validate align brand render compose probe persona bgm mix-verify topics pronunciation clean
+.PHONY: all test doctor validate align brand render compose probe persona bgm mix-verify topics pronunciation clean
 
 all: validate brand render compose
 
 test:
 	$(PY) -m pytest tests/ -q
+
+# 环境自检：缺什么报什么，并给出可执行的修复命令
+doctor:
+	$(PY) -m pyv.cli doctor
 
 validate:
 	$(PY) -m pyv.cli validate --storyboard $(STORYBOARD)

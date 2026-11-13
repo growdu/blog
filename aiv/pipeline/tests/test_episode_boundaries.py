@@ -25,13 +25,13 @@ from pyv import topics as topics_mod
 
 ROOT = Path(__file__).resolve().parents[2]
 
+from pyv import episodes as episodes_mod
+
+
+#: 期号标签（ep01…）→ EP 号。登记表在 pyv/episodes.py。
 EPISODES = {
-    "ep01": ("字幕-并行解码.md", "pg-parallel-decode.json"),
-    "ep02": ("字幕-CSN全序.md", "csn-total-ordering.json"),
-    "ep03": ("字幕-WAL顺序.md", "wal-interleave.json"),
-    "ep04": ("字幕-并行apply.md", "parallel-apply.json"),
-    "ep05": ("字幕-结构化DDL.md", "structured-ddl.json"),
-    "ep06": ("字幕-行锁.md", "row-lock.json"),
+    episodes_mod.EP_NUMBERS[ep]: (episodes_mod.EPISODES[ep], f"{ep}.json")
+    for ep in episodes_mod.EPISODE_ORDER
 }
 
 

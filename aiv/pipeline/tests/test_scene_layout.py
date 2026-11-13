@@ -27,13 +27,12 @@ from pyv.scenes import s04_spill
 ROOT = Path(__file__).resolve().parents[2]
 SCENES_DIR = Path(s04_spill.__file__).parent
 
+from pyv import episodes as episodes_mod
+
+
 EPISODES = {
-    "pg-parallel-decode": ("字幕-并行解码.md", "pg-parallel-decode.json"),
-    "csn-total-ordering": ("字幕-CSN全序.md", "csn-total-ordering.json"),
-    "wal-interleave": ("字幕-WAL顺序.md", "wal-interleave.json"),
-    "parallel-apply": ("字幕-并行apply.md", "parallel-apply.json"),
-    "structured-ddl": ("字幕-结构化DDL.md", "structured-ddl.json"),
-    "row-lock": ("字幕-行锁.md", "row-lock.json"),
+    ep: (episodes_mod.EPISODES[ep], f"{ep}.json")
+    for ep in episodes_mod.EPISODE_ORDER
 }
 
 # 场景说明画在画面高度的几分之几处。EP01 定下来的规矩是 0.86。

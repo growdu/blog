@@ -14,16 +14,19 @@ from pathlib import Path
 PIPELINE = Path(__file__).resolve().parents[1]
 MAKEFILE = PIPELINE / "Makefile"
 
-# 已登记的期号 → (口播稿, 契约)。Makefile 里多登记或少登记一期，
-# 这张表都得跟着改——两边的漂移由下面两条测试抓住。
+from pyv import episodes as episodes_mod
+
+
+# 已登记的期号 → (口播稿, 契约)。登记表在 pyv/episodes.py；
+# Makefile 里另有一份（shell 读不了 Python 模块），两边的漂移由下面
+# 那两条测试抓住。
 KNOWN_EPS = {
-    "pg-parallel-decode": ("字幕-并行解码.md", "pg-parallel-decode.json"),
-    "csn-total-ordering": ("字幕-CSN全序.md", "csn-total-ordering.json"),
-    "wal-interleave": ("字幕-WAL顺序.md", "wal-interleave.json"),
-    "parallel-apply": ("字幕-并行apply.md", "parallel-apply.json"),
-    "structured-ddl": ("字幕-结构化DDL.md", "structured-ddl.json"),
-    "row-lock": ("字幕-行锁.md", "row-lock.json"),
+    ep: (episodes_mod.EPISODES[ep], f"{ep}.json")
+    for ep in episodes_mod.EPISODE_ORDER
 }
+
+#: 只看口播稿（Makefile 里登记的就是它）
+KNOWN_EPS_SCRIPTS = {ep: script for ep, (script, _) in KNOWN_EPS.items()}
 
 
 def _make(*args):
@@ -46,6 +49,16 @@ def test_makefile_registers_exactly_the_known_eps():
         re.findall(r"ifeq\s+\(\$\(EP\),([^)]+)\)", text)
     )
     assert registered == set(KNOWN_EPS)
+
+
+def test_makefile_points_each_ep_at_the_registered_script():
+    """Makefile 里的口播稿路径必须与登记表一致——两处漂移就出错片。"""
+    text = MAKEFILE.read_text(encoding="utf-8")
+    found = dict(
+        re.findall(r"ifeq\s+\(\$\(EP\),([^)]+)\)\s*\nSCRIPT\s*:=\s*\$\(ROOT\)/(.+?)\n",
+                   text)
+    )
+    assert found == KNOWN_EPS_SCRIPTS
 
 
 def test_each_registered_ep_resolves_its_own_files():
