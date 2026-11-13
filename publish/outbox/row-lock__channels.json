@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "row-lock",
+  "kind": "video",
+  "package_dir": "channels/out/row-lock",
+  "platform": "channels",
+  "published_url": null,
+  "reason": "视频号无公开发布接口，已出包待人工上传",
+  "status": "packaged",
+  "title": "两个事务改同一行，谁先谁后",
+  "updated_at": "2026-11-13T01:13:19+00:00"
+}
