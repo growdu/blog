@@ -4,7 +4,7 @@
   "url": "https://growdu.cn/2026/11/12/life/aiv/",
   "cover_at": 17.0,
   "channels": {
-    "title": "DDL 同步，为什么不能发 SQL 文本",
+    "title": "DDL 同步 为什么不能发 SQL 文本",
     "description": "DDL 写进 WAL、解码出来原样发给订阅端，听着最省事。但社区讨论下来它有 4 条做不到的事——订阅端只拿到文本，就没法判断这条命令到底做了什么。方向是拆成带语义的结构化对象。",
     "topics": ["逻辑复制", "DDL", "PostgreSQL", "数据库内核"]
   },

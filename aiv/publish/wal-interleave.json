@@ -4,7 +4,7 @@
   "url": "https://growdu.cn/2026/11/12/life/aiv/",
   "cover_at": 20.0,
   "channels": {
-    "title": "WAL 交错着写，事务要整组还原",
+    "title": "WAL 交错着写 事务要整组还原",
     "description": "WAL 是操作级记录，一行只写一个动作。6 条记录可能来自 3 个并发事务，交错着写。订阅端要的是「一个事务一整组」——靠 WAL 里的事务号归并进 ReorderBuffer，一个事务一个槽，攒到提交记录出现才整组发出。",
     "topics": ["逻辑复制", "WAL", "PostgreSQL", "数据库内核"]
   },

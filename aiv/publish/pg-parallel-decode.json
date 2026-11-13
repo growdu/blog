@@ -4,7 +4,7 @@
   "url": "https://growdu.cn/2026/11/12/life/aiv/",
   "cover_at": 16.0,
   "channels": {
-    "title": "32 核机器，解码只占 1 核",
+    "title": "32 核机器 解码只占 1 核",
     "description": "默认发布端只有一个解码线程，串行处理。PostgreSQL 18 把它拆成 reader 协调 + 多 worker，32 核机器上不再只用 1 核。",
     "topics": ["PostgreSQL", "逻辑复制", "数据库内核"]
   },
