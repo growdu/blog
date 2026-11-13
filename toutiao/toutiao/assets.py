@@ -3,7 +3,13 @@
 Toutiao will not render an external image: every picture has to be uploaded
 into the editor by hand.  That is why the Toutiao version keeps at most
 three of them.  This module does the part a machine can do -- convert to
-webp, squeeze under the size cap, crop a cover to 3:4.
+webp, squeeze under the size cap, crop a cover to the platform's ratio.
+
+The ratio itself is **not** written down here: it comes from the capability
+declaration (``limits.cover_ratio`` / ``limits.cover_min_pixels``), so a
+platform rule change is a TOML edit and never a code edit.  As of the
+2026-11-13 measurement that ratio is 452:352 -- a **landscape** cover, not
+the portrait 3:4 an earlier guess assumed.
 
 Only local images are handled.  A remote URL is never fetched: the package
 must not depend on the network, and the uploader has to download such a
@@ -244,7 +250,7 @@ def _cover_box(width: int, height: int, target_width: int, target_height: int) -
     The crop is an exact multiple of the ratio -- ``target_width * k`` by
     ``target_height * k`` -- because rounding the crop size instead leaves
     an off-by-one ratio behind: a 640x960 picture cropped to 640x853 is
-    2560:2559, not 3:4.
+    2560:2559, not 640:480.
     """
     scale = min(width // target_width, height // target_height)
     crop_width = target_width * scale
@@ -259,9 +265,9 @@ def _cover_plan(size, ratio: str) -> tuple:
 
     ``can_make_cover()`` and ``make_cover()`` both go through this, so the
     two can never disagree about whether a picture can be a cover: the
-    crop is what counts, because a 3:4 crop of a wide picture throws away
-    part of its width and the leftover can fall under the platform
-    minimum even when the source cleared it.
+    crop is what counts, because cropping a wide picture to a portrait
+    ratio throws away part of its width and the leftover can fall under
+    the platform minimum even when the source cleared it.
     """
     target_width, target_height = _parse_ratio(ratio)
     return _cover_box(size[0], size[1], target_width, target_height)
@@ -283,8 +289,8 @@ def can_make_cover(src: Path, ratio: str, min_pixels: tuple) -> bool:
 def make_cover(src: Path, dst: Path, ratio: str, min_pixels: tuple) -> PreparedImage:
     """Crop the centre of ``src`` to ``ratio`` and save it as webp.
 
-    The cover has to clear the platform minimum *after* the crop: a 3:4
-    crop of a small picture is smaller than the picture.
+    The cover has to clear the platform minimum *after* the crop: cropping
+    a small picture makes it smaller than the picture.
 
     The picture handed in is the webp that ``prepare_image()`` produced --
     cropping the original would work on a file the platform never sees,

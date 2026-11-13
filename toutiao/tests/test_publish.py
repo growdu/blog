@@ -19,7 +19,7 @@ import re
 import pytest
 from PIL import Image
 
-from toutiao.assets import make_cover
+from toutiao.assets import can_make_cover, make_cover
 from toutiao.capability import default_capability_path, load_capability
 from toutiao.contract import ToutiaoArticle, slice_post
 from toutiao.mdparse import load_post
@@ -559,8 +559,8 @@ def test_the_cover_is_cut_from_the_converted_webp(tmp_path):
     """封面裁的是已转好的 webp，不是原始 PNG。
 
     限额调到 2500 字节，prepare_image 会把这张 2400×1800 的图缩一半：
-    缩过的 webp（1200×900）裁 3:4 是 675×900，裁原图则是 1350×1800 ——
-    两者不一样，这条才有鉴别力。默认 5MB 下原图根本不会被压缩，
+    缩过的 webp（1200×900）按实测比例 452:352 裁是 904×704，裁原图则是
+    2260×1760 —— 两者不一样，这条才有鉴别力。默认限额下原图根本不会被压缩，
     两者裁出来逐字节相同，这条会恒真。
     """
     site, posts = _site_with_image(tmp_path, (2400, 1800), "big.png")
@@ -570,11 +570,16 @@ def test_the_cover_is_cut_from_the_converted_webp(tmp_path):
     )
     assert (result.package_dir / "cover.webp").is_file()
     expected = tmp_path / "expected.webp"
-    make_cover(result.package_dir / "images" / "01.webp", expected, "3:4", (600, 800))
+    make_cover(
+        result.package_dir / "images" / "01.webp",
+        expected,
+        CAP.limits.cover_ratio,
+        CAP.limits.cover_min_pixels,
+    )
     assert (result.package_dir / "cover.webp").read_bytes() == expected.read_bytes()
     with Image.open(expected) as cover:
-        # 缩过的 webp 裁出来是 675×900；裁原图会是 1350×1800
-        assert cover.size == (675, 900)
+        # 缩过的 webp 裁出来是 904×704；裁原图会是 2260×1760
+        assert cover.size == (904, 704)
 
 
 def test_the_cover_comes_from_the_first_image_that_can_be_cropped(tmp_path):
@@ -589,7 +594,12 @@ def test_the_cover_comes_from_the_first_image_that_can_be_cropped(tmp_path):
     result = write_package(article, CAP, tmp_path / "out", posts, "https://growdu.cn")
     assert (result.package_dir / "cover.webp").is_file()
     expected = tmp_path / "expected.webp"
-    make_cover(result.package_dir / "images" / "02.webp", expected, "3:4", (600, 800))
+    make_cover(
+        result.package_dir / "images" / "02.webp",
+        expected,
+        CAP.limits.cover_ratio,
+        CAP.limits.cover_min_pixels,
+    )
     assert (result.package_dir / "cover.webp").read_bytes() == expected.read_bytes()
 
 
@@ -673,16 +683,28 @@ def test_a_local_picture_that_never_became_a_file_is_not_called_uncroppable(
 def test_the_cover_decision_follows_the_converted_webp(tmp_path):
     """压不进上限时 prepare_image 会把图缩一半 —— 封面判定必须跟着 webp 走。
 
-    这张 1200×900 的图在 800 字节的限额下会被缩成 600×450：裁原图是
-    675×900（合规），裁缩过的 webp 是 336×448（不合规）。判定拿原图
-    判就会多出一个平台根本没见过的封面。
+    这张 1200×600 的图在 800 字节的限额下会被缩成 600×300：按实测比例
+    452:352 裁原图是 452×352（刚好合规），裁缩过的 webp 是 0×0
+    （高度 300 不到下限 352，根本裁不出来）。判定拿原图判就会多出一个
+    平台根本没见过的封面。
     """
-    site, posts = _site_with_image(tmp_path, (1200, 900), "wide.png")
+    site, posts = _site_with_image(tmp_path, (1200, 600), "wide.png")
     article = _article(body="【图1】\n\n段落。", images=("images/wide.png",))
     result = write_package(
         article, _cap_with_image_bytes(800), tmp_path / "out", posts, "https://growdu.cn"
     )
     assert result.status == "packaged"
+
+    # 前提：原图裁得出来，缩过的 webp 裁不出来 —— 两者必须真的不同。
+    assert can_make_cover(
+        site / "images" / "wide.png", CAP.limits.cover_ratio, CAP.limits.cover_min_pixels
+    )
+    assert not can_make_cover(
+        result.package_dir / "images" / "01.webp",
+        CAP.limits.cover_ratio,
+        CAP.limits.cover_min_pixels,
+    )
+
     assert not (result.package_dir / "cover.webp").exists()
     readme = _readme(result)
     assert "裁不出合规封面" in _cover_line(readme)
