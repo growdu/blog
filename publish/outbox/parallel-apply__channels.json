@@ -5,8 +5,8 @@
   "package_dir": "channels/out/parallel-apply",
   "platform": "channels",
   "published_url": null,
-  "reason": "视频号无公开发布接口，已出包待人工上传",
-  "status": "packaged",
+  "reason": "已存草稿，待人工发表",
+  "status": "drafted",
   "title": "发布端并行了 订阅端还在排队",
-  "updated_at": "2026-11-13T07:23:36+00:00"
+  "updated_at": "2026-11-13T08:49:55+00:00"
 }
