@@ -259,40 +259,40 @@ def _scene_frame_hash(module_name: str, params: dict, t: float) -> str:
     return hashlib.sha256(bytes(surface.get_data())).hexdigest()
 
 
-def _baseline_font() -> str:
-    """基准是在哪款字体下抓的。"""
-    return json.loads(BASELINE.read_text(encoding="utf-8"))["capture"].get("font", "")
+@pytest.fixture
+def baseline_frames():
+    """基准指纹里的逐帧哈希。
 
+    基准**绑在字体上**：换一款字体，同一段文字的像素就不同，比出来的是
+    噪声不是信号。跨平台时（macOS 的 PingFang SC vs Linux 的 Noto Sans CJK SC）
+    必然对不上，而这条守卫本来要盯的是「有没有手滑改到画面」，不是
+    「两台机器的字体一不一样」——所以字体不一致时跳过并说明原因。
 
-def _skip_when_font_differs() -> None:
-    """基准是**绑在字体上**的：换一款字体，同一段文字的像素就不同。
-
-    跨平台时（macOS 的 PingFang SC vs Linux 的 Noto Sans CJK SC）必然对不上，
-    这时候这条守卫**测不出任何东西**——它本来要盯的是「有没有手滑改到画面」，
-    不是「两台机器的字体一不一样」。所以这里跳过并说明，而不是让它红。
-
-    基准平台（macOS + PingFang SC）上这条守卫照常跑。
+    做成 fixture 而不是每次手动调一次：**要跟基准比像素的测试必须伸手要它**，
+    于是「忘了加守卫」这件事不会再发生（跨平台 CI 第一次就抓到了这种漏）。
     """
+    data = json.loads(BASELINE.read_text(encoding="utf-8"))
     from pyv import fonts
 
-    baseline_font = _baseline_font()
+    baseline_font = data["capture"].get("font", "")
     current = fonts.font_family()
     if baseline_font and baseline_font != current:
         pytest.skip(
             f"基准是在「{baseline_font}」下抓的，当前机器是「{current}」——"
-            f"跨字体像素本来就不同，这条守卫在这里测不出东西"
+            f"跨字体像素本来就不同，这条基准在这里测不出东西"
         )
+    return data["frames"]
 
 
-def test_contract_driven_rendering_is_pixel_identical(contract, monkeypatch):
+def test_contract_driven_rendering_is_pixel_identical(contract, monkeypatch,
+                                                      baseline_frames):
     """契约化之后，画面必须与改造前一模一样。
 
     基准指纹是「文案还写死在场景代码里」时抓的。把文案搬进契约最容易出的
     事故就是顺手把画面也改了——而画面变了不会有任何报错，只有逐像素比对能发现。
     """
     _without_mascot(monkeypatch)
-    _skip_when_font_differs()
-    baseline = json.loads(BASELINE.read_text(encoding="utf-8"))["frames"]
+    baseline = baseline_frames
     for segment in contract.segments:
         for t in (0.0, 0.45, 0.9):
             key = f"{segment.renderer}@{t}"
@@ -303,7 +303,8 @@ def test_contract_driven_rendering_is_pixel_identical(contract, monkeypatch):
             )
 
 
-def test_pixel_baseline_excludes_local_mascot_asset(contract, monkeypatch):
+def test_pixel_baseline_excludes_local_mascot_asset(contract, monkeypatch,
+                                                    baseline_frames):
     """基准指纹里不含本机的形象素材。
 
     基准必须与形象素材无关：素材一改（重新生成形象）基准就红，等于把测试
@@ -326,4 +327,4 @@ def test_pixel_baseline_excludes_local_mascot_asset(contract, monkeypatch):
                   if s.renderer == "pyv.scenes.s01_intro")
     key = "pyv.scenes.s01_intro@0.45"
     assert _scene_frame_hash("pyv.scenes.s01_intro", params, 0.45) \
-        == baseline["frames"][key]
+        == baseline_frames[key]
