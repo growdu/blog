@@ -51,6 +51,7 @@ _JS = r"""
     title: attr(el, 'title'),
     role: attr(el, 'role'),
     accept: attr(el, 'accept'),
+    href: attr(el, 'href'),
     contenteditable: attr(el, 'contenteditable'),
     text: ((el.innerText || '') + ' ' + (el.value || '')).trim().slice(0, 100),
     value: (el.value || '').slice(0, 100),
@@ -74,8 +75,28 @@ _JS = r"""
 
 
 def dump_structure(page) -> dict:
-    """在 page 上执行探测脚本，返回结构化结果。"""
-    return page.evaluate(_JS)
+    """在 page 上执行探测脚本，返回结构化结果。
+
+    **子 frame 也要探。** 视频号助手把登录二维码放在
+    `open.weixin.qq.com` 的 iframe 里；投稿页的编辑器同样可能不在主文档里。
+    只探主文档会漏掉真正要操作的那些元素。
+    """
+    dump = page.evaluate(_JS)
+    frames = []
+    for frame in page.frames:
+        if frame == page.main_frame:
+            continue
+        try:
+            inner = frame.evaluate(_JS)
+        except Exception:
+            continue  # frame 正在导航／跨域，下一轮再试
+        frames.append({
+            "url": frame.url,
+            "name": frame.name,
+            "nodes": inner.get("nodes") or [],
+        })
+    dump["frame_nodes"] = frames
+    return dump
 
 
 def render_text(dump: dict, *, only_visible: bool = False) -> str:
@@ -92,22 +113,30 @@ def render_text(dump: dict, *, only_visible: bool = False) -> str:
     lines.append("")
     lines.append("== 元素 ==")
     for node in dump.get("nodes") or []:
-        if only_visible and not node.get("visible"):
-            continue
-        bits = [node.get("tag") or "?"]
-        for key in ("type", "name", "id", "cls", "placeholder", "aria", "role", "accept"):
-            value = node.get(key)
-            if value:
-                bits.append(f"{key}={value}")
-        if node.get("contenteditable"):
-            bits.append(f"contenteditable={node['contenteditable']}")
-        if node.get("text"):
-            bits.append(f"text={node['text']!r}")
-        if not node.get("visible"):
-            bits.append("(不可见)")
-        lines.append("  " + "  ".join(bits))
-        lines.append(f"      → {node.get('suggested')}")
+        lines.extend(_render_node(node, only_visible))
+    for frame in dump.get("frame_nodes") or []:
+        lines.append("")
+        lines.append(f"== frame {frame.get('url')} ==")
+        for node in frame.get("nodes") or []:
+            lines.extend(_render_node(node, only_visible))
     return "\n".join(lines)
+
+
+def _render_node(node: dict, only_visible: bool) -> list[str]:
+    if only_visible and not node.get("visible"):
+        return []
+    bits = [node.get("tag") or "?"]
+    for key in ("type", "name", "id", "cls", "placeholder", "aria", "role", "accept", "href"):
+        value = node.get(key)
+        if value:
+            bits.append(f"{key}={value}")
+    if node.get("contenteditable"):
+        bits.append(f"contenteditable={node['contenteditable']}")
+    if node.get("text"):
+        bits.append(f"text={node['text']!r}")
+    if not node.get("visible"):
+        bits.append("(不可见)")
+    return ["  " + "  ".join(bits), f"      → {node.get('suggested')}"]
 
 
 def save(dump: dict, path: Path) -> Path:
@@ -116,3 +145,34 @@ def save(dump: dict, path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(dump, ensure_ascii=False, indent=2), encoding="utf-8")
     return path
+
+
+# 判断「是不是已经进了后台」用的一组关键词。
+# **这是启发式，不是判据。** 它的唯一用途是让人（和看日志的人）
+# 知道该等还是该扫——真正的判据是页面结构本身。
+LOGGED_IN_HINTS = ("发表视频", "发布视频", "内容管理", "发表动态", "首页")
+
+
+def looks_logged_in(dump: dict) -> bool:
+    """页面上有没有「已经登录进后台」的迹象。
+
+    只用于**提示**，不用来放行任何写操作——判断错了顶多让人多等一会儿。
+    """
+    texts = [node.get("text") or "" for node in (dump.get("nodes") or [])]
+    blob = " ".join(texts)
+    return any(hint in blob for hint in LOGGED_IN_HINTS)
+
+
+def summarize(dump: dict) -> str:
+    """一行字的页面概览，给轮询时打印用。"""
+    nodes = dump.get("nodes") or []
+    visible = [n for n in nodes if n.get("visible")]
+    files = [n for n in visible if n.get("type") == "file"]
+    # 「输入框」不含文件框——文件框是另一个东西，混在一起数会让人以为少了一个
+    boxes = [n for n in visible
+             if n.get("tag") in ("input", "textarea") and n.get("type") != "file"]
+    buttons = [n for n in visible if n.get("tag") == "button" or n.get("role") == "button"]
+    state = "像是已进后台" if looks_logged_in(dump) else "像是还在登录页"
+    return (f"{state}  url={dump.get('url')}  可见元素={len(visible)} "
+            f"输入框={len(boxes)} 文件框={len(files)} 按钮={len(buttons)}")
+

@@ -49,3 +49,28 @@ def test_save_writes_json(page, tmp_path):
     target = probe.save(dump, tmp_path / "structure.json")
     assert target.is_file()
     assert "\"id\"" in target.read_text(encoding="utf-8")
+
+
+def test_looks_logged_in_notices_the_publish_entry():
+    dump = {"nodes": [{"text": "发表视频", "visible": True}]}
+    assert probe.looks_logged_in(dump) is True
+
+
+def test_looks_logged_in_stays_quiet_on_a_login_page():
+    dump = {"nodes": [{"text": "微信扫码登录", "visible": True}]}
+    assert probe.looks_logged_in(dump) is False
+
+
+def test_summarize_counts_the_controls():
+    dump = {
+        "url": "https://example.com/",
+        "nodes": [
+            {"tag": "input", "type": "file", "visible": True, "text": ""},
+            {"tag": "textarea", "visible": True, "text": ""},
+            {"tag": "input", "type": "file", "visible": False, "text": ""},
+        ],
+    }
+    summary = probe.summarize(dump)
+    assert "可见元素=2" in summary
+    assert "文件框=1" in summary
+    assert "输入框=1" in summary

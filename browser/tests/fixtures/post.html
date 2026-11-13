@@ -5,23 +5,81 @@
   <!--
     本地假投稿页，只用于测试浏览器执行层。
 
-    它模仿视频号助手投稿页的**结构**（一个视频文件框、一个描述框、
-    一个封面框、一个原创声明勾选框、一个发表按钮），不模仿它的样式与文案。
-    测试用的是 fixtures/channels-selectors.json 里的选择器，
-    与真站的选择器各走各的——真站的选择器改了，这张假页面不用改。
+    它模仿视频号助手投稿页的**结构**，不模仿它的样式与文案：
+    一个视频文件框、独立的短标题框、contenteditable 描述框、
+    封面文件框、两层「声明原创」（主勾选框 + 弹窗里的同意框）、发表按钮。
+
+    测试用 fixtures/channels-selectors.json 里的选择器，与真站的选择器各走各的
+    ——真站的选择器改了，这张假页面不用改。
 
     「发表成功」与链接默认隐藏，点发表才显示——这样「取链接」这一步
     测的是「先等成功、再读链接」的顺序，而不是碰巧读到。
   -->
-  <input id="video-file" type="file" accept="video/*">
-  <input id="title" type="text" placeholder="填写标题">
-  <textarea id="desc" placeholder="填写描述"></textarea>
-  <input id="cover-file" type="file" accept="image/*">
-  <label><input id="original" type="checkbox">原创声明</label>
-  <button id="publish" type="button">发表</button>
+  <input id="video-file" type="file" accept="video/mp4,video/x-m4v,video/*">
+  <input id="title" type="text" placeholder="填写短标题有机会获得更多流量">
+  <div id="desc" contenteditable="" data-placeholder="添加描述" class="input-editor"></div>
+  <input id="cover-file" type="file" accept="image/jpeg,image/jpg,image/png">
+
+  <div class="declare-original-checkbox">
+    <label class="ant-checkbox-wrapper">
+      <span class="ant-checkbox"><input type="checkbox" class="ant-checkbox-input" value=""></span>
+      <span>声明后，作品将展示原创标记。</span>
+    </label>
+  </div>
+
+  <div class="declare-original-dialog">
+    <div class="weui-desktop-dialog__wrp" style="display: none;">
+      <div class="weui-desktop-dialog">
+        <div class="weui-desktop-dialog__hd"><h3 class="weui-desktop-dialog__title">原创权益</h3></div>
+        <div class="weui-desktop-dialog__bd">
+          <label class="ant-checkbox-wrapper">
+            <span class="ant-checkbox"><input type="checkbox" class="ant-checkbox-input agree"></span>
+            <span>我已阅读并同意《原创声明须知》和《使用条款》。</span>
+          </label>
+        </div>
+        <div class="weui-desktop-dialog__ft">
+          <button type="button" class="weui-desktop-btn weui-desktop-btn_default">取消</button>
+          <button type="button" class="weui-desktop-btn weui-desktop-btn_primary">声明原创</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button id="publish" type="button" class="weui-desktop-btn weui-desktop-btn_primary">发表</button>
   <div id="done" style="display:none">发表成功</div>
   <div id="link" style="display:none">https://channels.weixin.qq.com/platform/post/fixture-1</div>
+
   <script>
+    // 模仿真站的编辑器：在描述框里打 #话题 会被自动变成真话题
+    // （<span class="hl topic" data-type="topic">）。
+    var editor = document.getElementById('desc');
+    var rewriting = false;
+    editor.addEventListener('input', function () {
+      if (rewriting) return;
+      rewriting = true;
+      var parts = editor.innerText.split(/(#[^\s#]+)/g);
+      var html = parts.map(function (p) {
+        if (p.charAt(0) === '#' && p.length > 1) {
+          return '<span class="hl topic" data-type="topic">' + p + '</span>';
+        }
+        return p;
+      }).join('');
+      if (html !== editor.innerHTML) editor.innerHTML = html;
+      rewriting = false;
+    });
+
+    // 勾主勾选框 → 弹「原创权益」；弹窗里勾同意 → 点「声明原创」→ 主框才算勾上。
+    var main = document.querySelector('.declare-original-checkbox input[type=checkbox]');
+    var dlg = document.querySelector('.declare-original-dialog .weui-desktop-dialog__wrp');
+    var agree = document.querySelector('.declare-original-dialog .agree');
+    main.addEventListener('change', function () {
+      if (main.checked) dlg.style.display = '';
+    });
+    document.querySelector('.declare-original-dialog button.weui-desktop-btn_primary')
+      .addEventListener('click', function () {
+        if (agree.checked) { main.checked = true; }
+        dlg.style.display = 'none';
+      });
     document.getElementById('publish').addEventListener('click', function () {
       document.getElementById('done').style.display = '';
       document.getElementById('link').style.display = '';

@@ -1,7 +1,7 @@
 {
   "_note": "测试专用选择器，指向 tests/fixtures/post.html。与真站的选择器无关。",
   "entry_url": "file://FIXTURE/post.html",
-  "text_layout": "combined",
+  "text_layout": "separate",
   "selectors": {
     "login": {
       "logged_in_marker": []
@@ -11,11 +11,17 @@
       "title_input": ["#title"],
       "description_input": ["#desc"],
       "cover_input": ["#cover-file"],
-      "original_checkbox": ["#original"],
+      "original_checkbox": [".declare-original-checkbox input[type=checkbox]"],
+      "topic_chip": ["span.hl.topic[data-type='topic']"],
       "submit_button": ["#publish"],
       "published_marker": ["#done"],
       "published_url_text": ["#link"],
       "published_url_input": []
+    },
+    "original_dialog": {
+      "agree_checkbox": [".declare-original-dialog input.agree"],
+      "confirm_button": [".declare-original-dialog button.weui-desktop-btn_primary"],
+      "cancel_button": [".declare-original-dialog button.weui-desktop-btn_default"]
     }
   }
 }

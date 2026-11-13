@@ -80,20 +80,40 @@ class PageDriver:
         return ActionError(message, selectors=selectors, url=self._url(),
                            shot=self._shot(tag))
 
+    def _frames(self):
+        """主文档 + 所有子 frame。
+
+        **为什么不能只看主文档。** 视频号助手的投稿页是「主文档放上传区、
+        micro frame 放表单」的结构，而且**同一个上传框有时挂在主文档、
+        有时挂在 frame 里**（实测两次实测落在不同地方）。
+        只在主文档里找，就会出现「明明页面上有这个框，代码却说找不到」。
+        所以定位一律跨 frame 找。
+        """
+        frames = [self.page.main_frame]
+        for frame in self.page.frames:
+            if frame != self.page.main_frame:
+                frames.append(frame)
+        return frames
+
     def _locator(self, selector: Selector):
-        """返回第一个能解析到的 locator；一个都解析不到就抛 ActionError。"""
+        """返回第一个能解析到的 locator；一个都解析不到就抛 ActionError。
+
+        顺序是「先候选选择器、后 frame」：更具体的候选选择器优先，
+        免得一个宽泛的选择器在某个 frame 里先撞上不相干的元素。
+        """
         candidates = _as_list(selector)
         if not candidates:
             raise ActionError("没给选择器")
         last_error = None
         for candidate in candidates:
-            try:
-                locator = self.page.locator(candidate)
-                if locator.count() > 0:
-                    return locator.first
-            except Exception as error:  # 选择器语法错等
-                last_error = error
-                continue
+            for frame in self._frames():
+                try:
+                    locator = frame.locator(candidate)
+                    if locator.count() > 0:
+                        return locator.first
+                except Exception as error:  # 选择器语法错等
+                    last_error = error
+                    continue
         detail = f"（最后一个错误：{last_error}）" if last_error else ""
         raise self._fail(
             f"页面上找不到任何匹配的元素：{', '.join(candidates)}{detail}",
@@ -108,23 +128,24 @@ class PageDriver:
         candidates = _as_list(selector)
         limit = timeout_ms if timeout_ms is not None else self.timeout_ms
         for candidate in candidates:
-            try:
-                self.page.locator(candidate).first.wait_for(
-                    state=state, timeout=limit)
-                return
-            except Exception:
-                continue
+            for frame in self._frames():
+                try:
+                    frame.locator(candidate).first.wait_for(state=state, timeout=limit)
+                    return
+                except Exception:
+                    continue
         raise self._fail(
             f"等了 {limit} ms，元素没等到「{state}」状态", candidates, "wait")
 
     def exists(self, selector: Selector) -> bool:
-        """元素在不在（不抛异常）。"""
+        """元素在不在（不抛异常）。跨 frame 找。"""
         for candidate in _as_list(selector):
-            try:
-                if self.page.locator(candidate).count() > 0:
-                    return True
-            except Exception:
-                continue
+            for frame in self._frames():
+                try:
+                    if frame.locator(candidate).count() > 0:
+                        return True
+                except Exception:
+                    continue
         return False
 
     def fill(self, selector: Selector, text: str) -> None:
@@ -149,20 +170,9 @@ class PageDriver:
         if not target.is_file():
             raise ActionError(f"要上传的文件不存在：{target}")
         candidates = _as_list(selector)
+        locator = self._locator(selector)
         try:
-            locator = self.page.locator(candidates[0])
-            if locator.count() == 0:
-                # 候选挨个试
-                for candidate in candidates[1:]:
-                    alt = self.page.locator(candidate)
-                    if alt.count() > 0:
-                        locator = alt
-                        break
-                else:
-                    raise self._fail("找不到文件上传框", candidates, "upload-missing")
             locator.set_input_files(str(target))
-        except ActionError:
-            raise
         except Exception as error:
             raise self._fail(f"上传失败：{error}", candidates, "upload")
 
@@ -193,6 +203,92 @@ class PageDriver:
             return (locator.input_value() or "").strip()
         except Exception as error:
             raise self._fail(f"读值失败：{error}", candidates, "value")
+
+    def is_checked(self, selector: Selector) -> bool:
+        """勾选框当前是不是勾上了。
+
+        **读的是 DOM 的 checked，不是「看起来是勾上的」。** 视频号的
+        「声明原创」有两层勾选（主勾选框 + 弹窗里的同意框），
+        视觉上勾着不等于状态真的落下了。
+        """
+        candidates = _as_list(selector)
+        locator = self._locator(selector)
+        try:
+            return bool(locator.is_checked())
+        except Exception as error:
+            raise self._fail(f"读勾选状态失败：{error}", candidates, "checked")
+
+    def body_text(self) -> str:
+        """主文档 + 所有 frame 的可见文字，拼成一段。
+
+        上传完成后要等「取消上传」这类提示消失，才知道处理完了。
+        """
+        parts: list[str] = []
+        for frame in self._frames():
+            try:
+                parts.append(frame.evaluate(
+                    "() => document.body ? document.body.innerText : ''") or "")
+            except Exception:
+                continue
+        return "\n".join(parts)
+
+    def wait_for_text_gone(self, text: str, *, timeout_ms: int = 120000,
+                           interval: float = 1.0) -> None:
+        """等到页面里不再出现某段文字。
+
+        用来判断「上传/转码处理完了」——平台处理中会挂一个「取消上传」的按钮，
+        它消失才算完。没等就往下填表，表单可能还锁着。
+        """
+        import time
+
+        deadline = time.monotonic() + timeout_ms / 1000
+        while time.monotonic() < deadline:
+            if text not in self.body_text():
+                return
+            time.sleep(interval)
+        raise self._fail(
+            f"等了 {timeout_ms} ms，「{text}」还在页面上（处理可能没结束）",
+            [text], "text-gone")
+
+    def count(self, selector: Selector) -> int:
+        """数一数有多少个元素匹配。跨 frame 求和。"""
+        total = 0
+        for candidate in _as_list(selector):
+            for frame in self._frames():
+                try:
+                    total += frame.locator(candidate).count()
+                except Exception:
+                    continue
+        return total
+
+    def links(self, *, containing: str = "") -> list[str]:
+        """页面上所有 http 链接（可按子串过滤）。跨 frame。
+
+        **兜底用的。** 平台的「分享」弹层常常把链接藏在图标菜单里，
+        DOM 路径又深又脆；与其一条条猜选择器，不如把页面上的链接捞出来
+        按特征挑。
+        """
+        found: list[str] = []
+        for frame in self._frames():
+            try:
+                hrefs = frame.evaluate(
+                    """(needle) => Array.from(document.querySelectorAll('a[href]'))
+                        .map(a => a.href)
+                        .filter(h => h && h.startsWith('http')
+                                 && (!needle || h.includes(needle)))""",
+                    containing,
+                )
+            except Exception:
+                continue
+            found.extend(hrefs or [])
+        # 去重但保持顺序
+        seen: set[str] = set()
+        unique: list[str] = []
+        for href in found:
+            if href not in seen:
+                seen.add(href)
+                unique.append(href)
+        return unique
 
     def screenshot(self, path: Path | str, *, full_page: bool = True) -> Path:
         """截图存盘，返回路径。"""

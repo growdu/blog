@@ -18,7 +18,7 @@ def test_a_missing_profile_is_a_warning_not_a_failure(tmp_path):
     profile = [f for f in findings if f.item == "profile"]
     assert profile
     assert profile[0].level == "warn"
-    assert "login" in profile[0].fix
+    assert "probe" in profile[0].fix
 
 
 def test_an_existing_profile_with_cookies_is_reported_as_logged_in(tmp_path):

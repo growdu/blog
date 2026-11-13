@@ -1,26 +1,35 @@
 {
-  "_note": "视频号助手的页面结构。**这些是探测出来的，不是猜的**——先跑 `python3 -m browser.cli probe`，照着探出来的结构填这里。候选按顺序试，挨个不中就换下一个。",
+  "_note": "视频号助手的页面结构。**这些是探测出来的，不是猜的**——2026-11-13 用真实账号（growdu）探过投稿页。页面改版时重新跑 `python3 -m browser.cli probe`，照着探出来的结构改这张表。候选按顺序试，挨个不中就换下一个。",
 
-  "entry_url": "https://channels.weixin.qq.com/platform",
+  "entry_url": "https://channels.weixin.qq.com/platform/post/create",
 
-  "_text_layout_note": "视频号的文案表单有两种可能：separate = 有独立标题框与描述框；combined = 只有一个描述框，标题是它的第一行。以 probe 看到的为准。",
-  "text_layout": "combined",
+  "_text_layout_note": "实测：视频号**有独立的短标题框**与描述框，所以是 separate。描述框是 contenteditable，在里面打 #话题 会被编辑器自动变成真话题（<span class=\"hl topic\">），不用点「#话题」按钮。",
+  "text_layout": "separate",
 
   "selectors": {
     "login": {
-      "logged_in_marker": [],
-      "logged_out_marker": []
+      "_note": "登录后左侧导航会带上 current 类；没登录时页面里是 qrconnect 的 iframe。",
+      "logged_in_marker": ["a.finder-ui-desktop-menu__link_current"],
+      "logged_out_marker": ["iframe[src*='qrconnect']"]
     },
     "post": {
-      "video_file_input": [],
-      "title_input": [],
-      "description_input": [],
-      "cover_input": [],
-      "original_checkbox": [],
-      "submit_button": [],
+      "video_file_input": ["input[type=file][accept*='video']"],
+      "title_input": ["input[placeholder='填写短标题有机会获得更多流量']"],
+      "description_input": ["div.input-editor[data-placeholder='添加描述']"],
+      "cover_input": ["input[type=file][accept*='image']"],
+      "original_checkbox": [".declare-original-checkbox input[type=checkbox]"],
+      "topic_chip": ["span.hl.topic[data-type='topic']"],
+      "submit_button": ["button.weui-desktop-btn_primary:has-text('发表')"],
       "published_marker": [],
       "published_url_text": [],
-      "published_url_input": []
+      "published_url_input": [],
+      "published_url_contains": ["weixin.qq.com/sph", "channels.weixin.qq.com/web/pages/feed", "finder.video.qq.com"]
+    },
+    "original_dialog": {
+      "_note": "勾「声明原创」会弹出「原创权益」弹窗：要再勾一次同意、再点弹窗里的「声明原创」，主勾选框才真的算勾上。",
+      "agree_checkbox": [".declare-original-dialog input[type=checkbox]"],
+      "confirm_button": [".declare-original-dialog button:has-text('声明原创')"],
+      "cancel_button": [".declare-original-dialog button:has-text('取消')"]
     }
   }
 }

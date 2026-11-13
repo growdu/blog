@@ -61,7 +61,9 @@ def test_upload_without_any_input_says_so(page, driver, tmp_path):
     target.write_bytes(b"\x00")
     with pytest.raises(ActionError) as error:
         driver.upload("#f", target)
-    assert "找不到文件上传框" in str(error.value)
+    message = str(error.value)
+    assert "找不到" in message
+    assert "#f" in message
 
 
 def test_wait_for_times_out_with_a_readable_message(page, driver):

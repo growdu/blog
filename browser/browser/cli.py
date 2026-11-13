@@ -18,6 +18,7 @@ import json
 import shlex
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 from browser import doctor, probe
@@ -79,6 +80,13 @@ def cmd_probe(args: argparse.Namespace) -> int:
     """打开视频号助手，等人扫码，然后把页面结构 dump 出来。
 
     **这一步不需要任何选择器**——所以它能用来「先探页面，再填选择器」。
+
+    两种等待方式：
+
+    - 默认：在终端里等回车（人在终端前，适合本地手动操作）。
+    - `--watch`：每 `--interval` 秒探一次，最多 `--timeout` 秒，
+      每次都把最新结构覆盖写到 out 目录里——**不用守着终端**，
+      别人（比如另一个会话）随时能读最新的一份。
     """
     out_dir = Path(args.out) if args.out else DEFAULT_OUT / "probe"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -89,17 +97,38 @@ def cmd_probe(args: argparse.Namespace) -> int:
             _config_or_default(args),
         )
         flow.open_entry()
-        print("== 视频号助手已打开 ==")
-        print("请在弹出的浏览器窗口里用微信扫码登录。")
-        print("登录完成后回到这个终端，按回车继续（Ctrl-C 取消）。")
-        try:
-            input()
-        except (EOFError, KeyboardInterrupt):
-            print("\n取消。", file=sys.stderr)
-            return 1
+        print("== 视频号助手已打开 ==", flush=True)
 
-        dump = probe.dump_structure(session.page)
-        json_path = probe.save(dump, out_dir / "structure.json")
+        if args.watch:
+            print(f"请在弹出的浏览器窗口里用微信扫码登录。")
+            print(f"每 {args.interval} 秒探一次，最多等 {args.watch_timeout} 秒。", flush=True)
+            deadline = time.monotonic() + args.watch_timeout
+            dump = probe.dump_structure(session.page)
+            while True:
+                probe.save(dump, out_dir / "structure.json")
+                (out_dir / "structure.txt").write_text(
+                    probe.render_text(dump), encoding="utf-8")
+                print(probe.summarize(dump), flush=True)
+                if probe.looks_logged_in(dump):
+                    break
+                if time.monotonic() >= deadline:
+                    print("超时了——页面看起来还停在登录页。", file=sys.stderr)
+                    break
+                time.sleep(args.interval)
+                dump = probe.dump_structure(session.page)
+        else:
+            print("请在弹出的浏览器窗口里用微信扫码登录。")
+            print("登录完成后回到这个终端，按回车继续（Ctrl-C 取消）。")
+            try:
+                input()
+            except (EOFError, KeyboardInterrupt):
+                print("\n取消。", file=sys.stderr)
+                return 1
+            dump = probe.dump_structure(session.page)
+            probe.save(dump, out_dir / "structure.json")
+            (out_dir / "structure.txt").write_text(
+                probe.render_text(dump), encoding="utf-8")
+
         shot = out_dir / "structure.png"
         try:
             session.page.screenshot(path=str(shot), full_page=True)
@@ -109,7 +138,8 @@ def cmd_probe(args: argparse.Namespace) -> int:
     print()
     print(probe.render_text(dump))
     print()
-    print(f"原始数据：{json_path}")
+    print(f"原始数据：{out_dir / 'structure.json'}")
+    print(f"可读版本：{out_dir / 'structure.txt'}")
     if shot:
         print(f"截图：{shot}")
     print(f"照着上面的 suggested 填：{DEFAULT_SELECTORS}")
@@ -122,12 +152,15 @@ def _config_or_default(args: argparse.Namespace) -> channels_flow.ChannelsConfig
 
 
 def _prepare(session, plan, args) -> dict:
+    cover = Path(args.cover).expanduser().resolve() if getattr(args, "cover", None) else None
+    if cover is not None and not cover.is_file():
+        raise PlanError(f"指定的封面不存在：{cover}")
     flow = channels_flow.ChannelsFlow(
         PageDriver(session.page, timeout_ms=args.timeout,
                    shot_dir=Path(args.shot_dir) if args.shot_dir else None),
         _config_or_default(args),
     )
-    return flow.prepare(plan)
+    return flow.prepare(plan, cover=cover)
 
 
 def cmd_prepare(args: argparse.Namespace) -> int:
@@ -254,6 +287,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_probe = sub.add_parser("probe", help="打开视频号助手，扫码，dump 页面结构")
     add_common(p_probe)
     p_probe.add_argument("--out", default=None, help="探测结果存哪")
+    p_probe.add_argument("--watch", action="store_true",
+                          help="持续轮询页面并覆盖写结果（不用守着终端按回车）")
+    p_probe.add_argument("--interval", type=int, default=3, help="轮询间隔（秒）")
+    p_probe.add_argument("--watch-timeout", type=int, default=600,
+                          help="持续轮询最多等多久（秒）")
     p_probe.set_defaults(func=cmd_probe)
 
     p_prepare = sub.add_parser("prepare", help="上传 + 填表 + 截图，不发表")
@@ -261,6 +299,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_prepare.add_argument("episode")
     p_prepare.add_argument("--package", default=None, help="发布包目录")
     p_prepare.add_argument("--out", default=None, help="产物目录")
+    p_prepare.add_argument("--cover", default=None,
+                          help="要上传的封面图；不给就用平台自动生成的封面")
     p_prepare.set_defaults(func=cmd_prepare)
 
     p_submit = sub.add_parser("submit", help="上传 + 填表 + 截图 + 发表")
@@ -268,6 +308,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_submit.add_argument("episode")
     p_submit.add_argument("--package", default=None, help="发布包目录")
     p_submit.add_argument("--out", default=None, help="产物目录")
+    p_submit.add_argument("--cover", default=None,
+                          help="要上传的封面图；不给就用平台自动生成的封面")
     p_submit.add_argument("--yes", action="store_true",
                           help="跳过发表前的确认（无人值守时用）")
     p_submit.add_argument("--mark-cmd", default=None,
