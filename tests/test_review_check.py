@@ -385,3 +385,29 @@ def test_str_02_accepts_a_later_positioning_sentence(tmp_path):
     )
     doc = make_doc(tmp_path, text)
     assert load_tool().rule_str_02(doc) == []
+
+
+def test_str_02_accepts_positioning_in_a_quote_block(tmp_path):
+    """回归：定位写在 `> 目标：…` 引用块里，不能当成没有定位。"""
+    text = "# 标题\n\n> 目标：理解 PostgreSQL 堆表的页面布局与 MVCC 可见性。\n\n正文。\n"
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_str_02(doc) == []
+
+
+def test_str_02_accepts_positioning_written_as_analysis(tmp_path):
+    """回归：「本文主要分析下…」也是定位句。"""
+    text = "# 标题\n\n上期讲过 WAL。本文主要分析下 checkpoint 机制。\n"
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_str_02(doc) == []
+
+
+def test_str_03_accepts_a_conclusion_section(tmp_path):
+    """回归：结尾的「结语 + 结论表」是产物，不能判成没有。"""
+    text = (
+        "# 标题\n\n"
+        "正文讲完了。\n\n"
+        "## 结语\n\n"
+        "| 维度 | 结论 |\n| --- | --- |\n| 一个订阅几个 worker | 1 个 |\n"
+    )
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_str_03(doc) == []

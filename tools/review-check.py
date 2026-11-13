@@ -345,11 +345,12 @@ RULES.extend([rule_dep_01, rule_dep_02, rule_dep_03, rule_dep_04, rule_dep_05, r
 # --- 结构、产物与元信息 -----------------------------------------------------
 
 POSITIONING_RE = re.compile(
-    r"本文.{0,20}(回答|解决|讲|介绍|将|会|带|拆|说|帮你)"
-    r"|这篇文章|为什么|难题|先说"
+    r"本文.{0,20}(回答|解决|讲|介绍|将|会|带|拆|说|帮你|分析|浅析|梳理)"
+    r"|本文是|这篇文章|为什么|难题|先说|目标[：:]"
 )
 TAKEAWAY_WORDS = ("清单", "检查表", "决策表", "排查", "下一步", "下一篇", "延伸阅读",
-                   "相关阅读", "参考资料", "同系列", "前文", "总结", "小结", "要点")
+                   "相关阅读", "参考资料", "同系列", "前文", "总结", "小结", "要点",
+                   "结语", "结论")
 
 # 图片不是文章链接：``![]()`` 必须排除，否则图片路径会被判成断链。
 # ``!`` 在 ``[`` 之前而不是 ``]`` 之前，所以只能把 ``!`` 收进捕获组来区分。
@@ -365,8 +366,21 @@ def rule_str_01(doc: Doc) -> list[Signal]:
 
 
 def rule_str_02(doc: Doc) -> list[Signal]:
-    """The opening does not say what problem the article solves."""
-    for block in doc.paragraphs()[:5]:
+    """The opening does not say what problem the article solves.
+
+    Quoted blocks and headings count: several articles put their
+    positioning in a ``> 目标：…`` quote or in a 「一句话答案」 section
+    rather than in a plain paragraph.
+    """
+    seen = 0
+    for block in doc.blocks:
+        if block.kind == HEADING and block.level == 1:
+            continue  # the title is not positioning
+        if block.kind not in (PARAGRAPH, QUOTE, HEADING):
+            continue
+        seen += 1
+        if seen > 5:
+            break
         if POSITIONING_RE.search(block.text):
             return []
         if block.text.rstrip().endswith("？"):
