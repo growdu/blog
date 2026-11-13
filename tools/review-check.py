@@ -25,6 +25,7 @@
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import re
 import sys
@@ -106,6 +107,149 @@ class Doc:
 
 # 规则注册表：每个任务往里追加自己的规则函数。
 RULES: list = []
+
+
+# --- AI 味信号 -------------------------------------------------------------
+#
+# 对应 review/README.md 的「常见 AI 味信号」一节。每条规则只标位置，
+# 不下结论——连接词多不等于文风差，得看上下文。
+
+CONNECTORS = ("首先", "其次", "最后", "此外", "值得注意的是",
+              "总而言之", "综上所述", "总的来说", "事实上")
+CONNECTOR_RATIO = 0.15
+
+VAGUE_WORDS = ("高效", "全面", "显著", "至关重要", "强大", "极大",
+               "非常好", "行业领先", "完美")
+LONG_PARAGRAPH = 200
+
+GENERIC_ENDINGS = ("希望本文", "本文到此结束", "以上就是", "让我们一起")
+GENERIC_ENDING_RE = re.compile(r"随着.{0,20}的发展")
+
+SENTENCE_SPLIT_RE = re.compile(r"[。！？!?；;]")
+DUPLICATE_THRESHOLD = 0.85
+DUPLICATE_MIN_LEN = 12
+DUPLICATE_MIN_CJK = 15
+CJK_RE = re.compile(r"[\u4e00-\u9fff]")
+
+
+def _paragraphs_with_index(doc: Doc) -> list[tuple[int, Block]]:
+    return [(index, b) for index, b in enumerate(doc.blocks) if b.kind == PARAGRAPH]
+
+
+def rule_aif_01(doc: Doc) -> list[Signal]:
+    """Paragraphs that open with a structural connector.
+
+    Only the paragraph start counts: 「最后」 inside a sentence is not a
+    structural connector, and counting it would drown the signal in noise.
+    """
+    paragraphs = doc.paragraphs()
+    if not paragraphs:
+        return []
+    hits = []
+    for block in paragraphs:
+        for word in CONNECTORS:
+            if block.text.startswith(word):
+                hits.append((block.line, word))
+                break
+    ratio = len(hits) / len(paragraphs)
+    if ratio <= CONNECTOR_RATIO:
+        return []
+    line = hits[0][0]
+    detail = f"{len(hits)}/{len(paragraphs)} 段落以连接词开头（{ratio:.0%}）: " + \
+             "、".join(f"L{ln} {word}" for ln, word in hits[:8])
+    return [Signal("AIF-01", "warn", line, doc.excerpt(line), detail)]
+
+
+def rule_aif_02(doc: Doc) -> list[Signal]:
+    """Empty praise with nothing backing it up."""
+    hits = []
+    for index, block in _paragraphs_with_index(doc):
+        for word in VAGUE_WORDS:
+            if word not in block.text:
+                continue
+            has_number = re.search(r"\d", block.text) is not None
+            next_kind = doc.blocks[index + 1].kind if index + 1 < len(doc.blocks) else ""
+            supported = has_number or next_kind in (CODE, TABLE)
+            if not supported:
+                hits.append((block.line, word))
+    if not hits:
+        return []
+    line = hits[0][0]
+    detail = f"{len(hits)} 处空泛评价无证据支撑: " + \
+             "、".join(f"L{ln} {word}" for ln, word in hits[:8])
+    return [Signal("AIF-02", "warn", line, doc.excerpt(line), detail)]
+
+
+def rule_aif_03(doc: Doc) -> list[Signal]:
+    """Paragraphs long enough to hide several claims in one breath."""
+    hits = [(b.line, len(b.text)) for b in doc.paragraphs() if len(b.text) > LONG_PARAGRAPH]
+    if not hits:
+        return []
+    line = hits[0][0]
+    detail = f"{len(hits)} 段超过 {LONG_PARAGRAPH} 字: " + \
+             "、".join(f"L{ln}({size}字)" for ln, size in hits[:8])
+    return [Signal("AIF-03", "warn", line, doc.excerpt(line), detail)]
+
+
+def rule_aif_04(doc: Doc) -> list[Signal]:
+    """The closing paragraph that says nothing."""
+    paragraphs = doc.paragraphs()
+    if not paragraphs:
+        return []
+    tail = paragraphs[-3:]
+    hits = []
+    for block in tail:
+        for word in GENERIC_ENDINGS:
+            if word in block.text:
+                hits.append((block.line, word))
+                break
+        else:
+            if GENERIC_ENDING_RE.search(block.text):
+                hits.append((block.line, "随着…的发展"))
+    if not hits:
+        return []
+    line = hits[0][0]
+    detail = "结尾出现泛化收尾语: " + "、".join(f"L{ln} {word}" for ln, word in hits)
+    return [Signal("AIF-04", "warn", line, doc.excerpt(line), detail)]
+
+
+def rule_aif_05(doc: Doc) -> list[Signal]:
+    """Sentences that say the same thing twice.
+
+    Only sentences written in Chinese prose count.  Code-introduction
+    lines like 「事务 XID=200 执行：」 and 「事务 XID=300 执行：」 are
+    93% identical but are parallel structure, not redundancy -- flagging
+    them would bury the real finding under noise.
+    """
+    sentences = []
+    for block in doc.paragraphs():
+        for piece in SENTENCE_SPLIT_RE.split(block.text):
+            piece = piece.strip()
+            if len(piece) < DUPLICATE_MIN_LEN:
+                continue
+            if len(CJK_RE.findall(piece)) < DUPLICATE_MIN_CJK:
+                continue
+            sentences.append((block.line, piece))
+    buckets: dict[int, list[tuple[int, str]]] = {}
+    for line, sentence in sentences:
+        buckets.setdefault(len(sentence) // 5, []).append((line, sentence))
+    pairs = []
+    for group in buckets.values():
+        for i in range(len(group)):
+            for j in range(i + 1, len(group)):
+                a, b = group[i][1], group[j][1]
+                similarity = difflib.SequenceMatcher(None, a, b).ratio()
+                if similarity >= DUPLICATE_THRESHOLD:
+                    pairs.append((group[i][0], group[j][0], similarity))
+    if not pairs:
+        return []
+    line = pairs[0][0]
+    detail = f"{len(pairs)} 对近似重复句: " + \
+             "、".join(f"L{a}~L{b}({sim:.2f})" for a, b, sim in pairs[:5])
+    return [Signal("AIF-05", "warn", line, doc.excerpt(line), detail)]
+
+
+RULES.extend([rule_aif_01, rule_aif_02, rule_aif_03, rule_aif_04, rule_aif_05])
 
 
 def derive_identity(path: Path, docs_root: Path = DOCS_ROOT) -> tuple[str, str]:

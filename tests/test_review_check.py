@@ -147,3 +147,80 @@ def test_cli_reports_missing_path():
     )
     assert result.returncode == 1
     assert "路径不存在" in result.stderr
+
+
+# --- AIF 规则 -------------------------------------------------------------
+
+
+def test_aif_01_flags_paragraphs_opening_with_connectors(tmp_path):
+    text = "\n\n".join([
+        "首先看第一件事。",
+        "其次看第二件事。",
+        "最后看第三件事。",
+        "此外还有补充。",
+        "这段是正常叙述，不带连接词开头。",
+    ]) + "\n"
+    doc = make_doc(tmp_path, text)
+    signals = load_tool().rule_aif_01(doc)
+    assert len(signals) == 1
+    assert signals[0].rule == "AIF-01"
+    assert signals[0].severity == "warn"
+
+
+def test_aif_01_ignores_connectors_used_inside_a_sentence(tmp_path):
+    text = "\n\n".join([
+        "这个方案最后落地了。",
+        "他首先想到的是数据。",
+        "这是一段普通叙述。",
+    ]) + "\n"
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_aif_01(doc) == []
+
+
+def test_aif_02_flags_praise_without_evidence(tmp_path):
+    doc = make_doc(tmp_path, "PostgreSQL 的性能非常显著。\n")
+    signals = load_tool().rule_aif_02(doc)
+    assert len(signals) == 1
+    assert signals[0].rule == "AIF-02"
+
+
+def test_aif_02_accepts_praise_backed_by_a_number(tmp_path):
+    doc = make_doc(tmp_path, "PostgreSQL 的性能提升了 30%。\n")
+    assert load_tool().rule_aif_02(doc) == []
+
+
+def test_aif_03_flags_a_long_paragraph(tmp_path):
+    doc = make_doc(tmp_path, "长" * 250 + "\n")
+    signals = load_tool().rule_aif_03(doc)
+    assert len(signals) == 1
+    assert signals[0].rule == "AIF-03"
+
+
+def test_aif_04_flags_generic_ending(tmp_path):
+    text = "第一段讲清楚机制。\n\n第二段讲清楚取舍。\n\n希望本文对你有帮助。\n"
+    doc = make_doc(tmp_path, text)
+    signals = load_tool().rule_aif_04(doc)
+    assert len(signals) == 1
+    assert signals[0].rule == "AIF-04"
+
+
+def test_aif_05_flags_near_duplicate_sentences(tmp_path):
+    text = (
+        "在并发场景下，写入会阻塞另一个事务的读取操作。\n\n"
+        "在并发场景下，写入会阻塞另一个事务的读取行为。\n"
+    )
+    doc = make_doc(tmp_path, text)
+    signals = load_tool().rule_aif_05(doc)
+    assert len(signals) == 1
+    assert signals[0].rule == "AIF-05"
+
+
+def test_aif_05_ignores_parallel_code_introduction_lines(tmp_path):
+    """回归：「事务 XID=200 执行：」和「事务 XID=300 执行：」是并列结构，不是冗余。"""
+    text = (
+        "事务 XID=200 执行：\n\n"
+        "```sql\nDELETE FROM account WHERE id = 1;\n```\n\n"
+        "事务 XID=300 执行：\n"
+    )
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_aif_05(doc) == []

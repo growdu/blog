@@ -654,6 +654,17 @@ def test_aif_04_flags_generic_ending(tmp_path):
     assert signals[0].rule == "AIF-04"
 
 
+def test_aif_05_ignores_parallel_code_introduction_lines(tmp_path):
+    """回归：「事务 XID=200 执行：」和「事务 XID=300 执行：」是并列结构，不是冗余。"""
+    text = (
+        "事务 XID=200 执行：\n\n"
+        "```sql\nDELETE FROM account WHERE id = 1;\n```\n\n"
+        "事务 XID=300 执行：\n"
+    )
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_aif_05(doc) == []
+
+
 def test_aif_05_flags_near_duplicate_sentences(tmp_path):
     text = (
         "在并发场景下，写入会阻塞另一个事务的读取操作。\n\n"
@@ -692,6 +703,8 @@ GENERIC_ENDING_RE = re.compile(r"随着.{0,20}的发展")
 SENTENCE_SPLIT_RE = re.compile(r"[。！？!?；;]")
 DUPLICATE_THRESHOLD = 0.85
 DUPLICATE_MIN_LEN = 12
+DUPLICATE_MIN_CJK = 15
+CJK_RE = re.compile(r"[\u4e00-\u9fff]")
 
 
 def _paragraphs_with_index(doc: Doc) -> list[tuple[int, Block]]:
@@ -776,13 +789,22 @@ def rule_aif_04(doc: Doc) -> list[Signal]:
 
 
 def rule_aif_05(doc: Doc) -> list[Signal]:
-    """Sentences that say the same thing twice."""
+    """Sentences that say the same thing twice.
+
+    Only sentences written in Chinese prose count.  Code-introduction
+    lines like 「事务 XID=200 执行：」 and 「事务 XID=300 执行：」 are
+    93% identical but are parallel structure, not redundancy -- flagging
+    them would bury the real finding under noise.
+    """
     sentences = []
     for block in doc.paragraphs():
         for piece in SENTENCE_SPLIT_RE.split(block.text):
             piece = piece.strip()
-            if len(piece) >= DUPLICATE_MIN_LEN:
-                sentences.append((block.line, piece))
+            if len(piece) < DUPLICATE_MIN_LEN:
+                continue
+            if len(CJK_RE.findall(piece)) < DUPLICATE_MIN_CJK:
+                continue
+            sentences.append((block.line, piece))
     buckets: dict[int, list[tuple[int, str]]] = {}
     for line, sentence in sentences:
         buckets.setdefault(len(sentence) // 5, []).append((line, sentence))
@@ -811,7 +833,7 @@ RULES.extend([rule_aif_01, rule_aif_02, rule_aif_03, rule_aif_04, rule_aif_05])
 
 Run: `python3 -m pytest tests/test_review_check.py -q`
 
-Expected: PASS（16 passed）。
+Expected: PASS（17 passed）。
 
 - [ ] **Step 5: 提交**
 
