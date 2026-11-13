@@ -24,3 +24,4 @@
 | 记录 | 支柱 | 状态 | 信号 | 待确认 | 批次 |
 | --- | --- | --- | --- | --- | --- |
 | [postgresql-mvcc](database/postgresql-mvcc.md) | database | 建议中 | 0 | 5 | 试点 |
+| [postgresql-logical-replication-worker-model](database/postgresql-logical-replication-worker-model.md) | database | 建议中 | 0 | 5 | 试点 |
