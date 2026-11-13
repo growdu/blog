@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>创作中心 - 哔哩哔哩弹幕视频网</title>
+<style>
+  body { font-family: sans-serif; padding: 16px; }
+  .menu { display: none; list-style: none; padding: 0; }
+  .menu.open { display: block; }
+  .menu li { padding: 4px 8px; cursor: pointer; }
+  #notice { color: #c00; margin-top: 8px; }
+  .label-item-v2-container { display: inline-block; margin-right: 4px; }
+  .bcc-dialog__wrap-mask { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); }
+  .bcc-dialog__wrap-mask.open { display: block; }
+  .bcc-dialog { background: #fff; padding: 16px; margin: 40px auto; width: 420px; }
+</style>
+</head>
+<body>
+<h1>视频投稿</h1>
+
+<!-- 上传框：display:none，和真实站一样 -->
+<div class="bcc-upload-wrapper">
+  <input id="video-file" type="file" accept=".mp4,.flv,.avi,.wmv,.mov,.webm" multiple style="display: none;">
+</div>
+<div id="upload-state">点击上传或将视频拖拽到此区域</div>
+
+<!-- 真实站：上传完成后平台会弹这个通知权限询问框，带遮罩挡着整页 -->
+<div class="videoup-notification-dialog bcc-dialog__wrap-mask">
+  <div class="bcc-dialog">
+    <div class="vp-nd-b">member.bilibili.com想要</div>
+    <div class="bcc-dialog__footer">
+      <button type="button" class="bcc-button vp-nd-f bcc-button--primary small" id="notification-ok">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- 真实站：定时发布弹窗这类通用弹窗，底部有「取消」 -->
+<div class="bcc-dialog__wrap-mask" id="generic-dialog">
+  <div class="bcc-dialog">
+    <div class="bcc-dialog__body">定时发布时间不可用，请重新选择</div>
+    <div class="bcc-dialog__footer">
+      <button type="button" class="bcc-button bcc-button--default large" id="generic-cancel">取消</button>
+      <button type="button" class="bcc-button bcc-button--primary large" id="generic-ok">确认</button>
+    </div>
+  </div>
+</div>
+
+<form id="post-form" style="display: none;">
+  <div class="video-title-content">
+    <input id="title" type="text" class="input-val" placeholder="请输入稿件标题" style="width: 400px;">
+  </div>
+
+  <div class="desc-text-wrp">
+    <div class="editor ql-container">
+      <div id="desc" class="ql-editor" contenteditable="true"></div>
+    </div>
+  </div>
+
+  <div class="tag-container">
+    <div class="tag-input-wrp">
+      <div class="tag-pre-wrp" id="tag-list"></div>
+      <div class="input-instance">
+        <input id="tags" type="text" class="input-val" placeholder="按回车键Enter创建标签" style="width: 300px;">
+      </div>
+    </div>
+  </div>
+
+  <div class="video-human-type">
+    <div class="selector-container">
+      <div class="select-controller">
+        <p class="select-item-cont">人工智能</p>
+        <svg class="selebox-box-v2-drop-icon"><use xlink:href="#x"></use></svg>
+      </div>
+      <div class="drop-list-v2-container human-type-list" style="display: none;">
+        <div class="drop-list-v2-content-wrp">
+          <div title="影视" class="drop-list-v2-item"><p class="item-cont-main">影视</p></div>
+          <div title="人工智能" class="drop-list-v2-item"><p class="item-cont-main">人工智能</p></div>
+          <div title="科技数码" class="drop-list-v2-item"><p class="item-cont-main">科技数码</p></div>
+          <div title="知识" class="drop-list-v2-item"><p class="item-cont-main">知识</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="statement-main">
+    <div class="bcc-select">
+      <div class="bcc-select-input-wrap">
+        <input type="text" readonly placeholder="请选择符合您视频内容的创作声明" class="bcc-select-input-inner" id="statement">
+      </div>
+      <div class="bcc-select-list-wrap" style="display: none;">
+        <ul class="bcc-select-option-list">
+          <li class="bcc-option"><span>内容无需标注</span></li>
+          <li class="bcc-option"><span>含AI生成内容</span></li>
+          <li class="bcc-option"><span>内容为转载</span></li>
+          <div class="option-divider"></div>
+          <div class="auth-title">是否添加内容授权声明（非必选）</div>
+          <div class="auth-content"><span class="option-text">内容为自制：未经作者允许，禁止转载</span></div>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <input type="hidden" id="copyright-state" value="">
+
+  <div class="cover">
+    <div class="cover-slot">
+      <div class="cover-empty">
+        <div class="cover-empty-pill"><span class="add-text">添加封面</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 真实站：封面不是两个 input，是一个「封面制作」弹层 -->
+  <div class="cover-editor bcc-dialog__wrap-mask">
+    <div class="bcc-dialog">
+      <div class="bcc-upload cover-upload">
+        <div class="bcc-upload-wrapper">
+          <input type="file" accept="image/png, image/jpeg" style="display: none;">
+        </div>
+      </div>
+      <div class="cover-editor-content">
+        <div class="cover-editor-content-right">
+          <div class="cover-editor-button cover-editor-content-right-bottom">
+            <div class="button button" id="cover-cancel">取消</div>
+            <div class="button submit button submit" id="cover-done">完成</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 真实站：第一次点「完成」会问「16:9 没改，要不要同步 4:3 的改动」 -->
+  <div class="videoup-confirm-modal bcc-dialog__wrap-mask">
+    <div class="bcc-dialog">
+      <div class="bcc-dialog__body">
+        检测到个人空间封面（16:9）未修改。是否将「4:3封面」的改动同步到「16:9封面」？
+      </div>
+      <div class="bcc-dialog__footer">
+        <button type="button" class="bcc-button button bcc-button--default large" id="cover-sync-skip">不同步，手动编辑</button>
+        <button type="button" class="bcc-button button bcc-button--primary large" id="cover-sync-ok">确认同步</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="form">
+    <div class="title">
+      <span class="label">更多设置 <span class="des">（含声明与权益、视频元素、互动管理等）</span></span>
+    </div>
+    <div class="setting" style="display: none;">
+      <div class="setting-label subtitle-setting-wrp">
+        <span class="setting-label-title">字幕设置</span>
+        <div class="up">
+          <button type="button" class="bcc-button button bcc-button--blueLine small" id="subtitle-upload">上传字幕</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <span class="submit-draft" id="draft-button">存草稿</span>
+  <span class="submit-add" id="publish-button">立即投稿</span>
+</form>
+
+<!-- 真实站：「上传字幕」点开是这样一个弹窗（不是系统文件框） -->
+<div class="subtitle-dialog bcc-dialog__wrap-mask">
+  <div class="bcc-dialog">
+    <div class="bcc-dialog__header">上传字幕 <span>支持srt格式</span></div>
+    <div class="bcc-dialog__body">
+      <select class="bcc-select-input-inner"><option>中文</option></select>
+      <button type="button" class="bcc-button button bcc-button--primary small" id="subtitle-pick">+ 上传文件</button>
+    </div>
+    <div class="bcc-dialog__footer">
+      <button type="button" class="bcc-button bcc-button--default large" id="subtitle-cancel">取消</button>
+      <button type="button" class="bcc-button bcc-button--primary large" id="subtitle-confirm" disabled>确认</button>
+    </div>
+  </div>
+</div>
+
+<div id="notice"></div>
+<div class="bcc-toast" id="toast" style="display: none;">草稿保存成功</div>
+
+<script>
+  const $ = (sel) => document.querySelector(sel);
+
+  function openMenu(menuId) {
+    document.querySelectorAll('.menu').forEach(m => m.classList.remove('open'));
+    $('#' + menuId).classList.add('open');
+  }
+
+  // -- 分区（真实站：点 <p class=select-item-cont> 那行字才展开） ------------
+  const partitionTrigger = $('.video-human-type p.select-item-cont');
+  const partitionList = $('.human-type-list');
+  partitionTrigger.addEventListener('click', () => {
+    partitionList.style.display = partitionList.style.display === 'none' ? 'block' : 'none';
+  });
+  document.querySelectorAll('.human-type-list .drop-list-v2-item').forEach(item => {
+    item.addEventListener('click', () => {
+      partitionTrigger.textContent = item.textContent.trim();
+      partitionList.style.display = 'none';
+      // 真实站：换分区会换掉自带的推荐标签
+      renderTags(['生活记录', '记录', '剪辑']);
+    });
+  });
+
+  // -- 创作声明 + 内容授权（同一个下拉，中间一条分隔线） ------------------
+  const statement = $('#statement');
+  const statementList = $('.bcc-select-list-wrap');
+  statement.addEventListener('click', () => {
+    statementList.style.display = statementList.style.display === 'none' ? 'block' : 'none';
+  });
+  document.querySelectorAll('.bcc-select-list-wrap li.bcc-option').forEach(item => {
+    item.addEventListener('click', () => {
+      statement.value = item.textContent.trim();
+      statementList.style.display = 'none';
+    });
+  });
+  document.querySelectorAll('.bcc-select-list-wrap .auth-content').forEach(item => {
+    item.addEventListener('click', () => {
+      $('#copyright-state').value = item.textContent.trim();
+      statementList.style.display = 'none';
+    });
+  });
+
+  // -- 标签：回车落成芯片；芯片上带一个删除按钮 --------------------------
+  function renderTags(list) {
+    const wrap = $('#tag-list');
+    wrap.innerHTML = '';
+    list.forEach(tag => {
+      const chip = document.createElement('div');
+      chip.className = 'label-item-v2-container';
+      chip.innerHTML = '<p class="label-item-v2-content"></p>' +
+        '<svg class="close"><use xlink:href="#x"></use></svg>';
+      chip.querySelector('p').textContent = tag;
+      chip.querySelector('svg.close').addEventListener('click', () => chip.remove());
+      wrap.appendChild(chip);
+    });
+  }
+  $('#tags').addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const raw = $('#tags').value.trim();
+    if (!raw) return;
+    const chip = document.createElement('div');
+    chip.className = 'label-item-v2-container';
+    chip.innerHTML = '<p class="label-item-v2-content"></p>' +
+      '<svg class="close"><use xlink:href="#x"></use></svg>';
+    chip.querySelector('p').textContent = raw;
+    chip.querySelector('svg.close').addEventListener('click', () => chip.remove());
+    $('#tag-list').appendChild(chip);
+    $('#tags').value = '';
+  });
+
+  // -- 封面：点「添加封面」开弹层，传完图「完成」才可点 ------------------
+  $('.cover-empty-pill').addEventListener('click', () => {
+    $('.cover-editor').classList.add('open');
+    window.__coverSynced = false;
+    $('#cover-done').dataset.disabled = '1';
+  });
+  $('.cover-editor input[type=file]').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    // 测试用开关：模拟「平台没收好这张图」——传完也不让「完成」可点
+    if (!window.__coverStuck) {
+      delete $('#cover-done').dataset.disabled;
+    }
+    $('#cover-done').dataset.file = file.name;
+  });
+  // 真实站：点「完成」→ 若 16:9 没同步就问要不要同步；同步完还要再点一次「完成」
+  $('#cover-done').addEventListener('click', async () => {
+    if ($('#cover-done').dataset.disabled === '1') return;
+    if (!window.__coverSynced) {
+      $('.videoup-confirm-modal').classList.add('open');
+      return;
+    }
+    // 真实站：封面上传是点最后那次「完成」时才发出去的
+    const resp = await fetch('/bfs/archive/cover.jpg', { method: 'POST', body: 'cover' });
+    if (!resp.ok) return;
+    $('.cover-editor').classList.remove('open');
+    const slot = $('.cover .cover-empty');
+    slot.innerHTML = '<div class="cover-preview">' + ($('#cover-done').dataset.file || '封面') + '</div>';
+  });
+  $('#cover-sync-ok').addEventListener('click', () => {
+    window.__coverSynced = true;
+    $('.videoup-confirm-modal').classList.remove('open');
+  });
+  $('#cover-sync-skip').addEventListener('click', () => {
+    $('.videoup-confirm-modal').classList.remove('open');
+  });
+  $('#cover-cancel').addEventListener('click', () => $('.cover-editor').classList.remove('open'));
+
+  // -- 更多设置 → 字幕设置 → 上传字幕（按钮弹系统文件框） -----------------
+  $('.form .title .label').addEventListener('click', () => {
+    const panel = $('.setting');
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  });
+  $('#subtitle-upload').addEventListener('click', () => {
+    // 真实站：点「上传字幕」开的是B站 自己的弹窗，不是系统文件框
+    $('.subtitle-dialog').classList.add('open');
+    $('#subtitle-confirm').disabled = true;
+  });
+  $('#subtitle-pick').addEventListener('click', () => {
+    // 弹窗里的「+ 上传文件」才弹系统文件框
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.srt';
+    input.style.display = 'none';
+    document.body.appendChild(input);
+    input.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      window.__subtitleFile = file.name;
+      $('#notice').textContent = '字幕已选择：' + file.name;
+      $('#subtitle-confirm').disabled = false;
+    });
+    input.click();
+  });
+  $('#subtitle-confirm').addEventListener('click', () => {
+    $('.subtitle-dialog').classList.remove('open');
+    $('#notice').textContent = '字幕已上传：' + (window.__subtitleFile || '');
+  });
+  $('#subtitle-cancel').addEventListener('click', () => {
+    $('.subtitle-dialog').classList.remove('open');
+  });
+
+  // -- 上传：把文件 POST 到 /ugcfxever/<name>.mp4，和真实站一个形状 ------
+  $('#video-file').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    $('#upload-state').textContent = '上传中…';
+    const resp = await fetch('/ugcfxever/' + file.name, { method: 'POST', body: file });
+    if (!resp.ok) {
+      // 真实站这里**什么都不显示**，页面回到「点击上传」的样子——
+      // 这正是不能只看页面判断成败的原因。
+      $('#upload-state').textContent = '点击上传或将视频拖拽到此区域';
+      return;
+    }
+    $('#upload-state').textContent = '上传完成';
+    $('#post-form').style.display = 'block';
+    // 真实站：上传完成后弹权限询问框 + 一个通用弹窗，都挡着整页
+    $('.videoup-notification-dialog').classList.add('open');
+    $('#generic-dialog').classList.add('open');
+  });
+
+  $('#notification-ok').addEventListener('click', () => {
+    $('.videoup-notification-dialog').classList.remove('open');
+  });
+  $('#generic-cancel').addEventListener('click', () => {
+    $('#generic-dialog').classList.remove('open');
+  });
+
+  $('#draft-button').addEventListener('click', () => {
+    $('#toast').style.display = 'block';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,55 @@
+{
+  "_note": "跑在本地假页面（fixtures/bilibili-post.html）上的选择器表，结构和 browser/selectors/bilibili.json 一一对应——**两边改了一边就要改另一边**，否则测的是另一套结构。",
+
+  "entry_url": "http://127.0.0.1:0/bilibili-post.html",
+
+  "timeouts": {
+    "upload_ready_ms": 15000,
+    "draft_effect_ms": 6000,
+    "cover_effect_ms": 6000
+  },
+
+  "selectors": {
+    "login": {
+      "logged_in_marker": ["h1"]
+    },
+
+    "post": {
+      "video_file_input": ["#video-file"],
+
+      "title_input": ["input[placeholder='请输入稿件标题']"],
+      "description_input": [".desc-text-wrp .ql-editor"],
+      "tags_input": [".tag-container input[placeholder*='按回车键']"],
+      "tag_chip": [".tag-pre-wrp .label-item-v2-container"],
+      "tag_chip_remove": [".tag-pre-wrp .label-item-v2-container svg.close"],
+
+      "partition_trigger": [".video-human-type p.select-item-cont"],
+      "partition_trigger_option": [".human-type-list .drop-list-v2-item:has-text(\"{text}\")"],
+
+      "creation_statement_trigger": ["input[placeholder*='创作声明']"],
+      "creation_statement_trigger_option": [".bcc-select-list-wrap li.bcc-option:has-text(\"{text}\")"],
+
+      "copyright_option": [".bcc-select-list-wrap .auth-content:has-text(\"{text}\")"],
+
+      "cover_button": [".cover .cover-empty-pill"],
+      "cover_dialog": [".cover-editor"],
+      "cover_input": [".cover-editor input[type=file][accept*='image']"],
+      "cover_confirm": [".cover-editor .cover-editor-content-right-bottom .button.submit"],
+      "cover_sync_modal": [".videoup-confirm-modal"],
+      "cover_sync_confirm": [".videoup-confirm-modal .bcc-button--primary"],
+
+      "more_settings_button": [".form .title .label:has-text('更多设置')"],
+      "subtitle_button": [".subtitle-setting-wrp button:has-text('上传字幕')"],
+      "subtitle_dialog": [".subtitle-dialog"],
+      "subtitle_file_button": [".subtitle-dialog #subtitle-pick"],
+      "subtitle_confirm": [".subtitle-dialog #subtitle-confirm"],
+      "subtitle_cancel": [".subtitle-dialog #subtitle-cancel"],
+
+      "notification_dismiss": [".videoup-notification-dialog .vp-nd-f"],
+      "dialog_cancel": [".bcc-dialog__wrap-mask:not(.cover-editor):visible .bcc-dialog__footer .bcc-button--default"],
+
+      "draft_button": [".submit-draft"],
+      "draft_notice": [".bcc-toast"]
+    }
+  }
+}

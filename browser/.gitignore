@@ -1,6 +1,10 @@
 # 浏览器 profile：里面是 cookie 与 localStorage，等同于凭据。
 # 契约 §7.5：token 与 secret 永不入库。绝不要提交这个目录。
 profile/
+# 每个平台一份 profile：视频号用 profile/，B站 用 profile-bilibili/。
+# **分开是有意的**——共用一份会互相锁住（同一个 user-data-dir 不能被两个
+# 浏览器同时用），登录态也会串。
+profile-*/
 
 # 本地产物：探测结果、截图、填表清单
 out/

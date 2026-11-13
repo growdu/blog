@@ -15,6 +15,9 @@
 
 from __future__ import annotations
 
+import os
+import sys
+import time
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -43,6 +46,63 @@ def _as_list(selector: Selector) -> list[str]:
     if isinstance(selector, str):
         return [selector]
     return [s for s in selector if s]
+
+
+class ResponseWatcher:
+    """盯某一条网络响应。
+
+    **为什么要自己封一个，而不是用 `page.expect_response`。**
+    实测 2026-11-13：响应**可能在触发它的那次调用还没返回时就到了**——
+    `expect_response` 的等待器会漏掉这种「调用期间到达」的事件，
+    于是白等满超时，而上传其实早就成功了。
+
+    用法是「**先挂上，再做动作**」：
+
+    ```python
+    watcher = driver.watch_response(lambda url: "/bfs/archive/" in url)
+    try:
+        click_something()
+        response = watcher.wait(timeout_ms=60000)
+    finally:
+        watcher.close()
+    ```
+
+    **`wait()` 的轮询必须用 Playwright 的调用来驱动。**
+    纯 `time.sleep()` 期间同步 API 根本不派发网络事件——
+    同一个坑，已经踩过三次了。
+    """
+
+    def __init__(self, page, matcher) -> None:
+        self.page = page
+        self.matcher = matcher
+        self.captured: list = []
+        page.on("response", self._on_response)
+
+    def _on_response(self, response) -> None:
+        try:
+            if self.matcher(response.url):
+                self.captured.append(response)
+        except Exception:  # noqa: BLE001 - 匹配失败不该拖垮流程
+            pass
+
+    def wait(self, *, timeout_ms: int = 60000):
+        """等一条匹配的响应。等不到返回 None。"""
+        deadline = time.monotonic() + timeout_ms / 1000
+        while time.monotonic() < deadline:
+            if self.captured:
+                return self.captured[-1]
+            try:
+                self.page.evaluate("() => 1")
+            except Exception:  # noqa: BLE001 - 页面正在跳转时可能失败
+                pass
+            time.sleep(0.1)
+        return None
+
+    def close(self) -> None:
+        try:
+            self.page.remove_listener("response", self._on_response)
+        except Exception:  # noqa: BLE001 - 页面关了也不该盖掉真正的错误
+            pass
 
 
 class PageDriver:
@@ -201,6 +261,92 @@ class PageDriver:
         except Exception as error:
             raise self._fail(f"文件选择框没出来：{error}", candidates, "chooser")
 
+    def js_click(self, selector: Selector) -> None:
+        """用 **DOM 级**的点击点一下（不走 Playwright 的命中测试）。
+
+        **什么时候要这个。** 页面上有互相盖着的浮层时，Playwright 的点击
+        会被上面那层拦下来（报 "… intercepts pointer events"）；
+        有些小图标（9×9 的「×」）也会被 Playwright 判成「不稳定」而超时。
+        DOM 级的事件派发直接触发元素自己的事件处理器，**不挑遮挡**。
+
+        **用 `dispatchEvent` 而不是 `el.click()`。** SVG 元素**没有**
+        `click()` 方法（只有 HTMLElement 有）——B站 标签芯片上的删除按钮
+        就是 `<svg class="close">`，调 `el.click()` 会直接抛
+        「c.click is not a function」。
+
+        代价是**绕过了 actionability 检查**（可见性、可点性都没验），
+        所以只在常规点击已经失败时当兜底用。
+        """
+        candidates = _as_list(selector)
+        for candidate in candidates:
+            for frame in self._frames():
+                try:
+                    locator = frame.locator(candidate)
+                    count = locator.count()
+                except Exception:
+                    continue
+                for index in range(count):
+                    item = locator.nth(index)
+                    try:
+                        item.evaluate(
+                            """(el) => el.dispatchEvent(
+                                new MouseEvent('click', {bubbles: true,
+                                                         cancelable: true,
+                                                         view: window}))""")
+                        return
+                    except Exception:
+                        continue
+        raise self._fail(
+            f"页面上没有能点开的元素：{', '.join(candidates)}", candidates, "js-click")
+
+    def press_key(self, selector: Selector, key: str, *,
+                  timeout_ms: int | None = None) -> None:
+        """按一个键，**发给这个元素自己**（先聚焦它）。
+
+        **为什么不用 `page.keyboard.press`。** 全局键盘事件发给的是
+        「当前焦点所在的那个元素」。而页面的输入框随时可能被重渲染、
+        焦点就丢了——那一下按键就落到了 body 上，什么都没发生。
+        `locator.press()` 会先聚焦目标元素再按键，稳得多。
+
+        B站 的标签就是这样：**填完不按对地方，回车就落不到标签上**。
+        """
+        candidates = _as_list(selector)
+        locator = self._locator(selector)
+        limit = timeout_ms if timeout_ms is not None else self.timeout_ms
+        try:
+            locator.press(key, timeout=limit)
+        except Exception as error:
+            raise self._fail(f"按键失败：{error}", candidates, "press")
+
+    def watch_response(self, matcher) -> ResponseWatcher:
+        """挂一个响应监听器（记得 `close()`）。"""
+        return ResponseWatcher(self.page, matcher)
+
+    def upload_and_watch_response(self, selector: Selector, path: Path | str,
+                                   matcher, *, timeout_ms: int = 60000):
+        """传文件，并盯住**这一次上传**的响应。返回匹配到的 Response。
+
+        **为什么不用 `expect_response`。** 实测 2026-11-13：响应
+        **可能在 `set_input_files` 还没返回时就到了**，
+        `expect_response` 的等待器会漏掉这种「调用期间到达」的事件，
+        于是白等满超时——而上传其实早就成功了。
+
+        所以改成：**先挂一个 `response` 监听器**，再传文件，
+        然后轮询等它被记下来。
+
+        **轮询必须用 Playwright 的调用来驱动。** 纯 `time.sleep()` 期间
+        同步 API 根本不派发网络事件（同一个坑，踩过三次了）。
+        """
+        target = Path(path)
+        if not target.is_file():
+            raise ActionError(f"要上传的文件不存在：{target}")
+        watcher = self.watch_response(matcher)
+        try:
+            self.upload(selector, target)
+            return watcher.wait(timeout_ms=timeout_ms)
+        finally:
+            watcher.close()
+
     def click(self, selector: Selector) -> None:
         """点一下。"""
         candidates = _as_list(selector)
@@ -272,25 +418,49 @@ class PageDriver:
 
         所以这里额外看三样：类名里带 disabled、`pointer-events: none`、
         以及不可见（display:none / visibility:hidden）。
+
+        **要逐个看所有匹配，不能只看第一个。** 页面常把同一份 DOM 渲染
+        两遍（一份是看不见的重复），`.first` 命中的可能正是那个看不见的——
+        于是明明有个蓝色可点的「完成」，判断出来却是「点不动」
+        （B站 的封面弹层就有一份隐藏的重复按钮，2026-11-13 实测）。
+        现在的口径是：**只要有一个看得见且可点的匹配，就算可点**。
         """
         candidates = _as_list(selector)
-        locator = self._locator(selector)
-        try:
-            return bool(locator.evaluate(
-                """(el) => {
-                    if (el.disabled === true) return false;
-                    if (el.getAttribute('aria-disabled') === 'true') return false;
-                    const cls = (el.getAttribute('class') || '').toLowerCase();
-                    if (cls.indexOf('disabled') >= 0) return false;
-                    const style = window.getComputedStyle(el);
-                    if (style.pointerEvents === 'none') return false;
-                    if (style.display === 'none' || style.visibility === 'hidden') {
-                        return false;
-                    }
-                    return true;
-                }"""))
-        except Exception as error:
-            raise self._fail(f"读可点状态失败：{error}", candidates, "enabled")
+        found = False
+        for candidate in candidates:
+            for frame in self._frames():
+                try:
+                    locator = frame.locator(candidate)
+                    count = locator.count()
+                except Exception:
+                    continue
+                for index in range(count):
+                    found = True
+                    item = locator.nth(index)
+                    try:
+                        if not item.is_visible():
+                            continue
+                        if item.evaluate(
+                            """(el) => {
+                                if (el.disabled === true) return false;
+                                if (el.getAttribute('aria-disabled') === 'true') return false;
+                                const cls = (el.getAttribute('class') || '').toLowerCase();
+                                if (cls.indexOf('disabled') >= 0) return false;
+                                const style = window.getComputedStyle(el);
+                                if (style.pointerEvents === 'none') return false;
+                                if (style.display === 'none' || style.visibility === 'hidden') {
+                                    return false;
+                                }
+                                return true;
+                            }"""):
+                            return True
+                    except Exception:
+                        continue
+        if not found:
+            raise self._fail(
+                f"页面上找不到任何匹配的元素：{', '.join(candidates)}",
+                candidates, "not-found")
+        return False
 
     def body_text(self) -> str:
         """主文档 + 所有 frame 的可见文字，拼成一段。
@@ -363,33 +533,6 @@ class PageDriver:
                 seen.add(href)
                 unique.append(href)
         return unique
-
-    def texts_of(self, selector: Selector) -> list[str]:
-        """页面上所有匹配元素的**可见**文本（跨 frame）。
-
-        **只收看得见的。** 隐藏的元素不算——列表页常把同一份 DOM
-        渲染两份（一份藏在折叠面板里），把隐藏的那份也算进来，
-        就会「找到」一条其实没显示出来的内容。
-        """
-        found: list[str] = []
-        for candidate in _as_list(selector):
-            for frame in self._frames():
-                try:
-                    items = frame.locator(candidate)
-                    count = items.count()
-                except Exception:
-                    continue
-                for index in range(count):
-                    item = items.nth(index)
-                    try:
-                        if not item.is_visible():
-                            continue
-                        text = (item.inner_text() or "").strip()
-                    except Exception:
-                        continue
-                    if text:
-                        found.append(text)
-        return found
 
     def texts_of(self, selector: Selector) -> list[str]:
         """页面上所有匹配元素的**可见**文本（跨 frame）。

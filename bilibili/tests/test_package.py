@@ -532,6 +532,89 @@ def test_the_phrases_distinguish_the_states():
     assert notify.phrase("published") == "已发布"
 
 
+def test_the_drafted_phrase_does_not_say_published():
+    """「已存草稿」和「已发布」是两件完全不同的事。
+
+    **含糊地说「已发布」是发布场景里最贵的一种 bug**——
+    用户以为视频发出去了，实际它还躺在草稿箱里，谁都看不见。
+    """
+    from bilibili import notify
+
+    phrase = notify.phrase("drafted")
+    assert "草稿" in phrase
+    assert "已发布" not in phrase
+    assert phrase != notify.phrase("published")
+
+
+def test_marking_drafted_keeps_it_unpublished(tmp_path, monkeypatch, make_video):
+    """标成 drafted：状态与快照都更新，但**没有公开链接**。"""
+    from pyv import epmeta
+
+    from bilibili import cli, snapshot
+
+    publish_dir = tmp_path / "publish"
+    publish_dir.mkdir()
+    (publish_dir / "ep02.json").write_text(json.dumps({
+        "episode": "ep02", "title": "x", "cover_at": 1.0,
+        "bilibili": {"title": "t", "description": "d", "tags": ["a"],
+                     "tid": 230, "copyright": 1, "no_reprint": 1},
+    }, ensure_ascii=False), encoding="utf-8")
+
+    aiv_root = tmp_path / "aiv"
+    aiv_root.joinpath("out").mkdir(parents=True)
+    make_video(aiv_root / "out" / "ep02.mp4")
+
+    monkeypatch.setattr(cli, "AIV_ROOT", aiv_root)
+    monkeypatch.setattr(epmeta, "PUBLISH_DIR", publish_dir)
+    monkeypatch.setattr(snapshot, "OUTBOX_DIR", tmp_path / "outbox")
+
+    out = tmp_path / "out"
+    assert cli.main(["package", "ep02", "--out", str(out)]) == 0
+    assert cli.main(["mark", "drafted", "ep02", "--out", str(out)]) == 0
+
+    state_data = json.loads((out / "state.json").read_text(encoding="utf-8"))
+    assert state_data["episodes"]["ep02"]["status"] == "drafted"
+    assert state_data["episodes"]["ep02"]["published_url"] is None
+
+    shot = json.loads((tmp_path / "outbox" / "ep02__bilibili.json")
+                      .read_text(encoding="utf-8"))
+    assert shot["status"] == "drafted"
+    assert shot["published_url"] is None
+
+
+def test_marking_published_without_a_url_is_refused(tmp_path, monkeypatch, capsys,
+                                                     make_video):
+    """没有公开链接就不许说「已发布」。
+
+    **「存了草稿」被人当成「发出去了」是最贵的错**，
+    所以这条命令必须拒绝没有 --url 的 published。
+    """
+    from pyv import epmeta
+
+    from bilibili import cli, snapshot
+
+    publish_dir = tmp_path / "publish"
+    publish_dir.mkdir()
+    (publish_dir / "ep02.json").write_text(json.dumps({
+        "episode": "ep02", "title": "x", "cover_at": 1.0,
+        "bilibili": {"title": "t", "description": "d", "tags": ["a"],
+                     "tid": 230, "copyright": 1, "no_reprint": 1},
+    }, ensure_ascii=False), encoding="utf-8")
+
+    aiv_root = tmp_path / "aiv"
+    aiv_root.joinpath("out").mkdir(parents=True)
+    make_video(aiv_root / "out" / "ep02.mp4")
+
+    monkeypatch.setattr(cli, "AIV_ROOT", aiv_root)
+    monkeypatch.setattr(epmeta, "PUBLISH_DIR", publish_dir)
+    monkeypatch.setattr(snapshot, "OUTBOX_DIR", tmp_path / "outbox")
+
+    out = tmp_path / "out"
+    assert cli.main(["package", "ep02", "--out", str(out)]) == 0
+    assert cli.main(["mark", "published", "ep02", "--out", str(out)]) == 2
+    assert "--url" in capsys.readouterr().err
+
+
 def test_a_failing_webhook_does_not_break_the_run(capsys):
     """通知推送失败只告警，不崩——发布本身不能被一条通知带崩。"""
     from bilibili import notify

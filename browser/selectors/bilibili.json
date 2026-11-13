@@ -1,0 +1,71 @@
+{
+  "_note": "B站创作中心投稿页的页面结构。**这些是 2026-11-13 用真实账号（growdu）在投稿页探测出来的，不是猜的**。页面改版时重新探一次，照着新结构改这张表。候选按顺序试，挨个不中就换下一个。",
+  "_how_to_probe": "用 `python3 -m browser.cli probe-bilibili`（常驻浏览器，端口 9335）打印当前页面的 DOM 结构；注意有些区域要先点开才在 DOM 里（更多设置面板、封面弹层、分区下拉）。",
+
+  "entry_url": "https://member.bilibili.com/platform/upload/video/frame",
+
+  "_timeouts_note": "upload_ready_ms：上传完成后平台还要转码、取封面，表单这时才解锁——真实站上要给得宽。draft_effect_ms：点完「存草稿」最多等多久看页面有没有反应。cover_effect_ms：传完封面等平台出预览的时间。",
+  "timeouts": {
+    "upload_ready_ms": 900000,
+    "draft_effect_ms": 60000,
+    "cover_effect_ms": 60000
+  },
+
+  "selectors": {
+    "login": {
+      "_note": "未登录时投稿页会跳到 passport.bilibili.com/login（URL 就变了），所以真正的判据是 URL；这里的元素标记只是兜底。",
+      "logged_in_marker": ["#app .bcc-nav", "text=稿件管理"]
+    },
+
+    "post": {
+      "_video_note": "实测 2026-11-13：投稿页上共有三个 file input——(1) upload 区里那个 display:none 的成片输入（accept=.mp4,.flv,…，multiple）；(2) 可见的「选择文件」按钮（同名同 accept，在 micro-app 里）；(3) 一个 accept=.txt 的（别的用途，不是成片）。**别用 accept*=video 匹配**——B站 的 accept 列表里没有 'video' 这个词。",
+      "video_file_input": [".bcc-upload-wrapper input[type=file]", "input[type=file][accept*='.mp4']"],
+
+      "_title_note": "标题框 class 是 input-val，但简介/标签框也用同一个 class，所以一律用**祖先容器**收窄：标题在 .video-title-content 里，标签在 .tag-container 里。",
+      "title_input": ["input[placeholder='请输入稿件标题']"],
+
+      "_description_note": "简介是 Quill 富文本（`div.ql-editor[contenteditable]`），不是 textarea。读当前值要用 inner_text；input_value() 对它无效。",
+      "description_input": [".desc-text-wrp .ql-editor"],
+
+      "_tags_note": "标签框在 .tag-container 里；**页面上会自带几个推荐标签**（跟着分区走，比如分区=人工智能时自动带「生活记录/记录/剪辑」），填之前要先删干净。标签是回车一个个落成芯片的，别把逗号分隔的一整串塞进去。",
+      "tags_input": [".tag-container input[placeholder*='按回车键']"],
+      "tag_chip": [".tag-pre-wrp .label-item-v2-container"],
+      "tag_chip_remove": [".tag-pre-wrp .label-item-v2-container svg.close"],
+
+      "_partition_note": "实测：投稿页跑的是「人选分区」灰测体系，下拉是 31 个扁平项（human_type2 id 1001–1031，「科技数码」=1012）。规格里写的二级分区「计算机技术」（tid=231）不可选。选「科技数码」投稿后落库成「科技 → 软件应用」，稿件接口回读 tid=230。**必须点 `<p class=select-item-cont>` 里的那行字**：点在 select-controller 的空白处只会聚焦，不会展开下拉。",
+      "partition_trigger": [".video-human-type p.select-item-cont"],
+      "partition_trigger_option": [".human-type-list .drop-list-v2-item:has-text(\"{text}\")"],
+
+      "_statement_note": "创作声明是 bcc-select 下拉：**同一个下拉里既有创作声明选项，也有内容授权选项**（中间用 .option-divider 分开，授权那段标题是「是否添加内容授权声明（非必选）」）。创作声明选项是 li.bcc-option，授权选项是 div.auth-content 里的 span.option-text。",
+      "creation_statement_trigger": ["input[placeholder*='创作声明']"],
+      "creation_statement_trigger_option": [".bcc-select-list-wrap li.bcc-option:has-text(\"{text}\")"],
+
+      "_copyright_note": "内容授权选「内容为自制：未经作者允许，禁止转载」（回读 copyright=1 + no_reprint=1）。它在创作声明那个下拉的**下半段**（.auth-content），要**重新打开下拉**再点——选完创作声明下拉会收起。",
+      "copyright_option": [".bcc-select-list-wrap .auth-content:has-text(\"{text}\")"],
+
+      "_cover_note": "封面不是两个 input，而是一个**弹层**：点「添加封面」(.cover-empty-pill) 打开「封面制作」弹层 (.cover-editor)，弹层里有一个 accept=image/png,image/jpeg 的隐藏 input，上传一张图后平台按 4:3（首页推荐）和 16:9（个人空间）两个比例裁。**「完成」要点两次**：第一次点会问「是否把 4:3 的改动同步到 16:9」（不同步的话 16:9 那张是全黑的，页面上看不出来），选「确认同步」之后弹层不会自己关，要再点一次「完成」。真正的「完成」按钮是 `div.button.submit`，不是 `button.bcc-button`——弹层里那个 `.bcc-dialog__footer` 里的同名按钮是隐藏的模板。封面上传接口是 `archive.biliimg.com/bfs/archive/<hash>.jpg`。",
+      "cover_button": [".cover .cover-empty-pill"],
+      "cover_dialog": [".cover-editor"],
+      "cover_input": [".cover-editor input[type=file][accept*='image']"],
+      "cover_confirm": [".cover-editor .cover-editor-content-right-bottom .button.submit"],
+      "cover_sync_modal": [".videoup-confirm-modal"],
+      "cover_sync_confirm": [".videoup-confirm-modal .bcc-button--primary"],
+
+      "_subtitle_note": "字幕入口在「更多设置」展开后的 `.setting` 面板里：`div.setting-label.subtitle-setting-wrp` → 「上传字幕」按钮。**点它开的是B站 自己的弹窗，不是系统文件框**：弹窗里有语言选择、「+ 上传文件」按钮（点了才弹系统文件框）和「取消 / 确认」——**「确认」在选文件之前是灰的，点不动**。单P稿件可以直接传 .srt（分P稿件不行，得去播放页传）。传完即生效，不用再去字幕管理页提交。",
+      "more_settings_button": [".form .title .label:has-text('更多设置')"],
+      "subtitle_button": [".subtitle-setting-wrp button:has-text('上传字幕')"],
+      "subtitle_dialog": [".bcc-dialog:has-text('上传字幕')"],
+      "subtitle_file_button": [".bcc-dialog:has-text('上传字幕') :text('上传文件')", "text=上传文件"],
+      "subtitle_confirm": [".bcc-dialog:has-text('上传字幕') :text('确认')"],
+      "subtitle_cancel": [".bcc-dialog:has-text('上传字幕') :text('取消')"],
+
+      "_dialog_note": "上传完成后平台会弹通知权限询问框挡在页面上（videoup-notification-dialog），不关掉它后面什么都点不动。",
+      "notification_dismiss": [".videoup-notification-dialog .vp-nd-f"],
+      "dialog_cancel": [".bcc-dialog__wrap-mask:not(.cover-editor):visible .bcc-dialog__footer .bcc-button--default"],
+
+      "_draft_note": "**只点「存草稿」，不点「立即投稿」**——后者会把视频公开出去，是不可逆的外部可见动作。存草稿按钮是个 span（不是 button），class=.submit-draft。",
+      "draft_button": [".submit-draft"],
+      "draft_notice": [".bcc-toast", ".toast", "[class*='toast']"]
+    }
+  }
+}

@@ -1,7 +1,8 @@
 """发布计划：把「发布包」读成一份结构化的「要往页面上填什么」。
 
 **为什么不在这里读元数据 JSON。** 元数据（`aiv/publish/<EP>.json`）是
-**文案的事实**，发布包（`channels/out/<EP>/`）是**已经按平台限额裁好的产物**。
+**文案的事实**，发布包（`channels/out/<EP>/`、`bilibili/out/<EP>/`）是
+**已经按平台限额裁好的产物**。
 浏览器该填的是后者——标题多少字、简介带不带话题、封面选哪张，
 出包的时候都定过了。这里只负责把定好的东西读出来，不再做判断。
 
@@ -76,6 +77,84 @@ def parse_topics(raw: str) -> list[str]:
         if token:
             tokens.append(token)
     return tokens
+
+
+@dataclass
+class BilibiliPlan:
+    """一期内容在 B站 上的发布计划。
+
+    **B站 的包结构与视频号不一样**（实测 2026-11-13）：
+
+    | 项 | 视频号 | B站 |
+    | --- | --- | --- |
+    | 话题 | `topics.txt`，空格分隔 `#A #B` | `tags.txt`，**英文逗号分隔**（不带 `#`） |
+    | 封面 | `cover-4x3.jpg` + `cover-3x4.jpg` | `cover.jpg`（1146×717） |
+    | 字幕 | 无 | `subtitle.srt`（要传到「视频元素 → 字幕设置」） |
+
+    所以 B站 不能直接复用 `PublishPlan`——字段名与语义都不一样。
+    """
+
+    episode: str
+    package_dir: Path
+    title: str
+    description: str
+    tags: list[str] = field(default_factory=list)
+    video: Path | None = None
+    cover: Path | None = None
+    subtitle: Path | None = None
+    status: str = "packaged"
+    published_url: str | None = None
+
+    def tags_as_csv(self) -> str:
+        """标签拼成 B站 要的那一串：英文逗号分隔、**不带 # 号**。"""
+        return ",".join(self.tags)
+
+    def has_all_files(self) -> bool:
+        """该有的文件是不是都在（成片与封面是硬要求，字幕是加分项）。"""
+        return bool(
+            self.video and self.video.is_file()
+            and self.cover and self.cover.is_file()
+        )
+
+
+def load_bilibili_plan(package_dir: Path) -> BilibiliPlan:
+    """从 B站 发布包目录读出发布计划。"""
+    root = Path(package_dir)
+    if not root.is_dir():
+        raise PlanError(f"发布包目录不存在：{root}")
+
+    meta: dict = {}
+    meta_path = root / "meta.json"
+    if meta_path.is_file():
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as error:
+            raise PlanError(f"meta.json 读不出来：{error}") from error
+
+    title = _read_text(root / "title.txt")
+    description = _read_text(root / "description.txt", required=False)
+    # B站 的标签是逗号分隔的一串；parse_topics 也能吃逗号，顺手复用。
+    tags = parse_topics(_read_text(root / "tags.txt", required=False))
+
+    video = root / "video.mp4"
+    cover = root / "cover.jpg"
+    subtitle = root / "subtitle.srt"
+
+    if not title:
+        raise PlanError(f"发布包里没有标题：{root / 'title.txt'}")
+
+    return BilibiliPlan(
+        episode=str(meta.get("episode") or root.name),
+        package_dir=root,
+        title=title,
+        description=description,
+        tags=tags,
+        video=video if video.exists() else None,
+        cover=cover if cover.exists() else None,
+        subtitle=subtitle if subtitle.exists() else None,
+        status=str(meta.get("status") or "packaged"),
+        published_url=meta.get("published_url"),
+    )
 
 
 def load_plan(package_dir: Path) -> PublishPlan:

@@ -26,7 +26,7 @@ class BiliState:
     resource_id: str | None = None
     archive_state: int | None = None
     reject_reason: str = ""
-    status: str = "packaged"     # packaged | submitted | published | failed
+    status: str = "packaged"     # packaged | drafted | submitted | published | failed
     published_url: str | None = None
     updated_at: str | None = None
 
