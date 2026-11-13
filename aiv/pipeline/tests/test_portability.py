@@ -58,8 +58,11 @@ def _source_files() -> list[Path]:
 
 def test_macos_only_commands_are_declared_in_the_file_header():
     """用了 macOS 专有命令的脚本，必须在文件头写明「macOS 专有」。"""
+    files = _source_files()
+    # 防空跑：扫不到文件时，下面那个空列表断言会恒真通过
+    assert len(files) > 50, f"只扫到 {len(files)} 个文件，扫描范围不对"
     offenders: list[str] = []
-    for path in _source_files():
+    for path in files:
         source = path.read_text(encoding="utf-8", errors="replace")
         used = [
             command for command in MACOS_ONLY_COMMANDS
@@ -77,12 +80,26 @@ def test_macos_only_commands_are_declared_in_the_file_header():
 
 def test_no_source_hardcodes_a_user_home_path():
     """`/Users/<某人>/` 这样的绝对路径在别的机器上必然失效。"""
+    files = _source_files()
+    assert len(files) > 50, f"只扫到 {len(files)} 个文件，扫描范围不对"
     offenders: list[str] = []
     pattern = re.compile(r"/Users/[A-Za-z0-9_.-]+/")
-    for path in _source_files():
+    for path in files:
         if pattern.search(path.read_text(encoding="utf-8", errors="replace")):
             offenders.append(str(path.relative_to(REPO_ROOT)))
     assert offenders == []
+
+
+def _third_party_imports() -> set[str]:
+    """源码里用到的第三方 import（排除标准库与本地模块）。"""
+    imported: set[str] = set()
+    for path in _source_files():
+        source = path.read_text(encoding="utf-8", errors="replace")
+        for module in re.findall(r"(?m)^(?:import|from)\s+([A-Za-z0-9_]+)", source):
+            if module in STDLIB or module.startswith("_"):
+                continue
+            imported.add(module)
+    return imported
 
 
 def test_requirements_cover_every_third_party_import():
@@ -93,13 +110,10 @@ def test_requirements_cover_every_third_party_import():
         for line in requirements.splitlines()
         if line.strip() and not line.startswith("#")
     }
-    imported: set[str] = set()
-    for path in _source_files():
-        source = path.read_text(encoding="utf-8", errors="replace")
-        for module in re.findall(r"(?m)^(?:import|from)\s+([A-Za-z0-9_]+)", source):
-            if module in STDLIB or module.startswith("_"):
-                continue
-            imported.add(module)
+    imported = _third_party_imports()
+    # 防空跑：识别不到任何第三方 import 时，下面的 missing 断言会恒真通过
+    known = {"cairo", "numpy", "PIL", "scipy", "pytest"}
+    assert known <= imported, f"没识别出预期中的第三方 import：{sorted(imported)}"
     missing = sorted(
         THIRD_PARTY_PACKAGES[module]
         for module in imported
