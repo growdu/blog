@@ -276,6 +276,23 @@
   「See https://pagure.io/sanlock」；`https://pagure.io/sanlock/` 返回 200。
   （本条核对用的是 GitHub 镜像 `vjuranek/sanlock`，其描述为
   「Mirror of https://pagure.io/sanlock」，内容与 pagure 一致。）
+- [x] sanlock 版本 —— 镜像仓库 `vjuranek/sanlock` 的 `VERSION` 文件写的是
+  **3.8.0**（2026-11 核对）。正文「原理」一节写的是哪一版的行为，仍需作者指认。
+- [x] qdevice 的 disk / heuristic 模型还在不在 —— **先纠正问法**：
+  corosync 主仓 2.3.x 里**没有 qdevice 实现**。v2.3.0 与 v2.3.5 的
+  `qdevices/Makefile.am` 里 `SUBDIRS =` 为空（整个文件只有版权头 + 一个空的
+  `if BUILD_QDEVICES` 块），v2.3.7 的该文件只有 14 字节；qdevice 实现在
+  **独立项目 corosync-qdevice**（`github.com/corosync/corosync-qdevice`，
+  未归档，2026-11-12 仍有推送），其 tag 从 **v2.90.0** 起。
+  逐个 tag 核对 `qdevices/Makefile.am`：v2.90.0 / v2.91.0 / v2.92.0 的模型
+  文件清单都是 `qdevice-model.c` + `qdevice-model-net.c` +
+  `qdevice-model-type.h` —— **只有 net 模型，没有 disk 模型**；
+  而 **heuristics 那一整套还在**（`qdevice-heuristics.c` /
+  `-worker.c` / `-io.c` / `-instance.c` / `-mode.c` / `-exec-list.c` /
+  `-exec-result.c` / `-cmd.c` / `-result-notifier.c` 等约 20 个文件，
+  另有 `qdevice-net-heuristics.c`）。
+  → 结论：**disk 模型在 2.9x 已经没了，heuristics 模型还在**；
+  现场那个「qdisk」不是上游模型，只能是厂商补丁或自研。
 - [x] sanlock 的磁盘布局 —— 上游 `src/rindex_disk.h` 的布局注释：
   `rindex_header.rindex_offset` 是 rindex 头相对设备起点的位置，
   **必须是 area_size 的倍数**；
@@ -360,11 +377,8 @@
   `https://read01.com/0zdOno.html` 返回 **403**（对自动化请求拒绝，
   浏览器中是否可读未验证）；`https://cloud.tencent.com/developer/article/1651000`
   返回 200。
-- corosync 2.3.x 的 qdevice 是否还带 disk / heuristic 模型 —— 本轮核到
-  v2.3.6 的 `qdevices/Makefile.am` 结构与 2.4.x 不同，未逐项比对；
-  已知的是 2.4.x 起上游只剩 net 模型。现场用的是哪个版本需补。
-- 现场 qdisk（磁盘仲裁）的来源与维护状态 —— 既然上游 2.4.x 起就没有这个
-  模型，现场的 qdisk 只能是厂商补丁或自研；这决定结论第 3 条
+- 现场 qdisk（磁盘仲裁）的来源与维护状态 —— 既然上游已没有 disk 模型
+  （见本节已核条目），现场的 qdisk 只能是厂商补丁或自研；这决定结论第 3 条
   「先以现有 qdisk 实现功能」的可持续性，需作者说明。
 - 现场共享存储的**扇区大小**与打算使用的 **align_size** —— 直接决定
   max_hosts（4K 扇区 + 1M 对齐只有 250），需补。
@@ -377,8 +391,8 @@
 - 仲裁进程是否使用 **persistent resource lease** —— 按上游语义，
   不用 persistent lease 的话仲裁进程一崩租约就被自动释放，
   仲裁权会落到别的节点；这个选择需作者确认。
-- sanlock 版本 —— 上游最新版本号需确认（镜像仓库的 VERSION 文件未逐一核对），
-  正文「原理」一节写的是哪一版的行为需补。
+- 正文「原理」一节写的是哪一版 sanlock 的行为 —— 版本号已核到（见上），
+  但正文对应的是哪个版本仍需作者指认。
 
 ## 可补的技术证据或产物
 
