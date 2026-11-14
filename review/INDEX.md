@@ -29,7 +29,7 @@
 
 ## 进度
 
-已审 12 篇（首批试点：数据库内核四支柱 5 篇），批次 1 按信号密度新增 5 篇，
+已审 13 篇（首批试点：数据库内核四支柱 5 篇），批次 1 按信号密度新增 5 篇，
 批次 2 按信号密度清 cluster 支柱的 2 信号队列。
 范围扩到全树后按信号密度排序继续——排序依据见范围分类文档的「逐支柱分布」。
 
@@ -47,3 +47,4 @@
 | [Postgresql存储、索引及系统优化、主备切换](pgsql/replication/Postgresql存储、索引及系统优化、主备切换.md) | pgsql | 建议中 | 3 | 6 | 0 | 1 |
 | [corosync-down网卡仍处于多数派-1](cluster/corosync/corosync-down网卡仍处于多数派-1.md) | cluster | 建议中 | 2 | 6 | 0 | 2 |
 | [raft重要概念](cluster/raft/raft重要概念.md) | cluster | 建议中 | 2 | 4 | 0 | 2 |
+| [sanlock实现共享corosync共享存储仲裁](cluster/corosync/sanlock实现共享corosync共享存储仲裁.md) | cluster | 建议中 | 2 | 7 | 0 | 2 |
