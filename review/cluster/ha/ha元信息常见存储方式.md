@@ -196,7 +196,7 @@
       单点在哪 / 挂了会怎样 / 该形态适合什么场景），这张表本身就能复用；
       再链到同目录 `中移动数据库停库问题分析/index.md`、
       `调整corosync网络波动时间操作文档/index.md`，
-      以及 `docs/cluster/kingbase/tptc_improve.md`（伪主节点与 observer
+      以及 `docs/cluster/kingbase/tptc.md`（伪主节点与 observer
       那一套）。
     - 原因：README 的「一句话定位」「一份可带走的产物」「一条自然的内容路径」。
 
@@ -335,7 +335,7 @@
   （这套 HA 方案的元信息存在哪 → 它挂了会怎样 → 谁来兜底 →
   兜底本身是不是新的单点）；再链到同目录
   `中移动数据库停库问题分析/index.md`（一个真实的「quorum 判定 + 单点」
-  案例）与 `docs/cluster/kingbase/tptc_improve.md`。
+  案例）与 `docs/cluster/kingbase/tptc.md`。
 
 ## 已确认的改动
 

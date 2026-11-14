@@ -159,6 +159,7 @@ REVIEWED_ARTICLES = (
     "docs/cluster/分布式一致性协议.md",
     "docs/base/file.md",
     "docs/cluster/corosync/corosync-down网卡仍处于多数派/index.md",
+    "docs/cluster/kingbase/tptc.md",
 )
 
 
