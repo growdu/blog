@@ -1,3 +1,33 @@
+---
+episode: parallel-apply
+episode_no: 4
+series: 数据库内核机制
+episode_hook: "发布端并行了，订阅端还在排队；难的不是并行接收，而是判断哪两条事务不能同时应用"
+episode_subtitle: aiv/字幕-并行apply.md
+episode_duration_s: "35.424"
+episode_license: "PostgreSQL BSD"
+episode_sources:
+  - src/backend/catalog/pg_subscription.c
+  - src/backend/commands/subscriptioncmds.c
+  - src/backend/replication/logical/launcher.c
+  - src/backend/replication/logical/pgoutput_ddl.c
+  - src/backend/replication/logical/proto.c
+  - src/backend/replication/logical/relation.c
+  - src/backend/replication/logical/tablesync.c
+  - src/backend/replication/logical/worker.c
+  - src/backend/replication/pgoutput/pgoutput.c
+  - src/backend/utils/hook/hook.c
+  - src/catalog.c
+  - src/include/replication/logicalproto.h
+  - src/pl_handler.c
+  - src/pltsql_partition.c
+episode_repro:
+  - "ALTER PUBLICATION pub_orders ADD TABLE orders;"
+  - "ALTER PUBLICATION pub_orders ADD TABLE orders_p1;"
+  - "ALTER PUBLICATION pub_orders ADD TABLE orders_p2;"
+  - "DROP TABLE orders CASCADE;"
+---
+
 # PostgreSQL 逻辑复制：DDL 同步后如何启动 apply worker 同步 DML（分区表专题）
 
 | 编写人 | 编写内容 | 编写时间 |

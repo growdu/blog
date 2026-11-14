@@ -12,6 +12,35 @@ tags:
   - SELECT FOR UPDATE
 categories:
   - 数据库
+episode: row-lock
+episode_no: 6
+series: 数据库内核机制
+episode_hook: "MVCC 让读不挡写，但两个写会互相覆盖——行锁在它上面加了一层协调"
+episode_subtitle: aiv/字幕-行锁.md
+episode_duration_s: "35.172"
+episode_license: "PostgreSQL BSD"
+episode_sources:
+  - src/backend/access/heap/heapam.c
+  - src/backend/access/rmgrdesc/heapdesc.c
+  - src/backend/access/transam/multixact.c
+  - src/backend/executor/nodeLockRows.c
+  - src/backend/executor/nodeModifyTable.c
+  - src/backend/storage/ipc/procarray.c
+  - src/backend/storage/lmgr/lmgr.c
+  - src/backend/utils/adt/lockfuncs.c
+  - src/include/access/heapam.h
+  - src/include/access/heapam_xlog.h
+  - src/include/access/htup_details.h
+  - src/include/access/multixact.h
+  - src/include/access/xact.h
+  - src/include/nodes/lockoptions.h
+  - src/include/storage/lock.h
+episode_repro:
+  - "SELECT * FROM users WHERE id = 1 FOR UPDATE;"
+  - "SELECT * FROM users WHERE id = 1 FOR UPDATE NOWAIT;"
+  - "SELECT * FROM users WHERE id = 1 FOR UPDATE SKIP LOCKED;"
+  - "SELECT * FROM pg_locks WHERE locktype IN ('tuple', 'transactionid');"
+  - "UPDATE users SET name = 'X' WHERE id = 1;"
 ---
 
 

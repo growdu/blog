@@ -1,3 +1,43 @@
+---
+episode: pg-parallel-decode
+episode_no: 1
+series: 数据库内核机制
+episode_hook: "openGauss 把发布端拆成三层线程：reader 读 WAL，worker 池并行解码，walsender 收口输出"
+episode_subtitle: aiv/字幕-并行解码.md
+episode_duration_s: "32.436"
+episode_license: "PostgreSQL BSD · openGauss Mulan PSL v2"
+episode_sources:
+  - src/backend/access/heap/heapam.c
+  - src/backend/access/transam/xact.c
+  - src/backend/access/transam/xlog.c
+  - src/backend/access/transam/xloginsert.c
+  - src/backend/access/transam/xlogreader.c
+  - src/backend/libpq/pqcomm.c
+  - src/backend/postmaster/bgwriter.c
+  - src/backend/replication/libpqwalreceiver.c
+  - src/backend/replication/logical/decode.c
+  - src/backend/replication/logical/logical.c
+  - src/backend/replication/logical/proto.c
+  - src/backend/replication/logical/relation.h
+  - src/backend/replication/logical/reorderbuffer.h
+  - src/backend/replication/logical/snapbuild.c
+  - src/backend/replication/logical/snapbuild.h
+  - src/backend/replication/logical/worker.c
+  - src/backend/replication/slot.c
+  - src/backend/replication/walreceiver.c
+  - src/backend/replication/walsender.c
+  - src/backend/tcop/postgres.c
+  - src/include/access/xlogrecord.h
+  - src/include/replication/logicalproto.h
+  - src/include/utils/snapshot.h
+episode_repro:
+  - "INSERT INTO users VALUES (1, 'alice');"
+  - "SELECT * FROM users;"
+  - "SELECT pid, usename, application_name, client_addr, state, sent_lsn, write_lsn, flush_lsn, replay_lsn, sync_priority, sync_state FROM pg_stat_replication WHERE application_name LIKE 'sub_%';"
+  - "SELECT subname, pid, relid, received_lsn, last_msg_send_time, last_msg_receipt_time, latest_end_lsn, latest_end_time FROM pg_stat_subscription WHERE subname = 'sub_users';"
+  - "$ pg_waldump -p pg_wal -s 0/1B000000 -e 0/1C000000 | head -20"
+---
+
 # PostgreSQL 逻辑复制全链路：以一个真实事务为例，从 `INSERT` 到 `apply` 的源码级旅程
 
 | 编写人 | 编写内容 | 编写时间 |

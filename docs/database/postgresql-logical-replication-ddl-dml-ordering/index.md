@@ -1,3 +1,30 @@
+---
+episode: structured-ddl
+episode_no: 5
+series: 数据库内核机制
+episode_hook: "社区讨论的方向不是「把 DDL 当字符串发过去」，而是拆成带语义的结构化对象"
+episode_subtitle: aiv/字幕-结构化DDL.md
+episode_duration_s: "34.128"
+episode_license: "PostgreSQL BSD"
+episode_sources:
+  - src/backend/commands/tablecmds.c
+  - src/backend/replication/logical/logicalddl.c
+  - src/backend/replication/logical/reorderbuffer.c
+  - src/backend/replication/logical/worker.c
+  - src/backend/replication/pgoutput/pgoutput.c
+  - src/backend/tcop/utility.c
+  - src/include/catalog/pg_publication_sync.h
+  - src/include/nodes/parsenodes.h
+  - src/include/replication/logicalddl.h
+  - src/pltsql_partition.c
+episode_repro:
+  - "CREATE TABLE orders (id bigint, region text) PARTITION BY LIST (region);"
+  - "CREATE TABLE orders_cn PARTITION OF orders FOR VALUES IN ('CN');"
+  - "CREATE TABLE orders_us PARTITION OF orders FOR VALUES IN ('US');"
+  - "ALTER TABLE orders DETACH PARTITION orders_us CONCURRENTLY;"
+  - "SELECT pg_emit_logical_ddl('pub1', 'CREATE VIEW public.v1 AS SELECT * FROM public.t1');"
+---
+
 # PostgreSQL 逻辑复制支持 DDL 之后：DDL 与 DML 的时序难题（重点：分区表）
 
 | 编写人 | 编写内容 | 编写时间 |

@@ -21,6 +21,43 @@ tags:
   - SNAPSHOT_VERSION_MVCC
   - xmin_csn
   - 源码分析
+episode: csn-total-ordering
+episode_no: 2
+series: 数据库内核机制
+episode_hook: "并发提交的时间是乱的，但只要给每次 commit 分配一个单调递增的号，订阅端就能自己排好序"
+episode_subtitle: aiv/字幕-CSN全序.md
+episode_duration_s: "35.316"
+episode_license: "openGauss Mulan PSL v2"
+episode_sources:
+  - include/access/transam.h
+  - include/access/xact.h
+  - include/c.h
+  - src/gausskernel/storage/access/heap/heapam.c
+  - src/gausskernel/storage/access/heap/heapam_visibility.c
+  - src/gausskernel/storage/access/transam/csnlog.c
+  - src/gausskernel/storage/access/transam/transam.c
+  - src/gausskernel/storage/access/transam/twophase.c
+  - src/gausskernel/storage/access/transam/xact.c
+  - src/gausskernel/storage/access/transam/xlog.c
+  - src/gausskernel/storage/access/ustore/knl_uheap.c
+  - src/gausskernel/storage/ipc/procarray.c
+  - src/gausskernel/storage/replication/logical/logical_parse.c
+  - src/gausskernel/storage/replication/logical/parallel_decode.c
+  - src/gausskernel/storage/replication/logical/proto.c
+  - src/gausskernel/storage/replication/logical/reorderbuffer.c
+  - src/gausskernel/storage/replication/logical/snapbuild.c
+  - src/gausskernel/storage/replication/logical/tablesync.c
+  - src/gausskernel/storage/replication/logical/worker.c
+  - src/include/access/transam.h
+  - src/include/access/xact.h
+  - src/include/c.h
+  - src/include/utils/rel_gs.h
+  - src/include/utils/snapshot.h
+episode_repro:
+  - "SELECT * FROM pg_stat_slru WHERE name = 'csnlog';"
+  - "SELECT pg_get_committed_csn(xid); -- 通过 CSNLog 反查"
+  - "SELECT * FROM pg_stat_replication;"
+  - "SELECT * FROM pg_stat_subscription;"
 ---
 
 # openGauss 通过 CSN 保证全序的源码级深度分析:从 nextCommitSeqNo 原子计数到订阅端 CSN 校验

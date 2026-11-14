@@ -436,6 +436,162 @@ def test_speech_rate_constant_matches_the_six_episodes():
     assert "7.19" in row[3], f"EV-05 的依据栏必须写出语速 7.19，实为：{row[3]!r}"
 
 
+# --- 六期母稿的期号数据 ----------------------------------------------------
+
+# 六期属于**同一个系列**，期号是全局编号 EP01~EP06。
+#
+# 为什么不是按季编号：`aiv/选题库.md` 把 EP01~EP05 归第一季「机制族」、
+# EP06 起第二季「内核机制」，但**期号头显示的是 EP0X**——它必须与
+# 观众在 B站 / 视频号看到的口径一致，而那里用的是全局编号。
+# 按季编号会让 EP06 在站上显示成「EP01」，与已发出的内容对不上。
+#
+# 系列名取规格 §7.1 系列页的口径：「数据库内核机制」。
+EPISODE_SERIES = "数据库内核机制"
+
+# 六期母稿 front matter 里写的字幕稿路径。手写字面值。
+EPISODE_SUBTITLE = {
+    "pg-parallel-decode": "aiv/字幕-并行解码.md",
+    "csn-total-ordering": "aiv/字幕-CSN全序.md",
+    "wal-interleave": "aiv/字幕-WAL顺序.md",
+    "parallel-apply": "aiv/字幕-并行apply.md",
+    "structured-ddl": "aiv/字幕-结构化DDL.md",
+    "row-lock": "aiv/字幕-行锁.md",
+}
+
+# 钩子字数的区间（契约七 §4.3）。上界 65 = 实测最长 61 字 + 4 字余量。
+EPISODE_HOOK_MIN = 20
+EPISODE_HOOK_MAX = 65
+
+
+def _episode_fields(path: Path) -> dict:
+    """读母稿 front matter 里的期号字段。
+
+    **独立解析**，不 import 契约层：这个文件是规格漂移守卫，它得自己
+    从仓库现状把事实读出来。借契约层的解析器会让它变成自证。
+    """
+    text = path.read_text(encoding="utf-8")
+    match = re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL)
+    if not match:
+        return {}
+    fields: dict = {}
+    key = None
+    for raw in match.group(1).split("\n"):
+        if not raw.strip():
+            continue
+        if raw[:1] in (" ", "\t"):
+            stripped = raw.strip()
+            if key and stripped.startswith("- "):
+                fields.setdefault(key, []).append(stripped[2:].strip().strip('"'))
+            continue
+        head, sep, tail = raw.partition(":")
+        if not sep:
+            continue
+        key = head.strip()
+        value = tail.strip()
+        fields[key] = value.strip('"') if value else []
+    return fields
+
+
+def test_the_six_episode_drafts_declare_their_episode_fields():
+    """六篇母稿都要写齐 9 个期号字段，且值与事实一致。"""
+    for index, slug in enumerate(EPISODE_DRAFTS, start=1):
+        fields = _episode_fields(REPO / EPISODE_DRAFTS[slug])
+
+        assert fields.get("episode") == slug, f"{slug} 的 episode 字段写错了"
+        assert fields.get("episode_no") == str(index), (
+            f"{slug} 的 episode_no 应为 {index}，实为 {fields.get('episode_no')!r}"
+        )
+        assert fields.get("series") == EPISODE_SERIES
+        assert fields.get("episode_subtitle") == EPISODE_SUBTITLE[slug]
+        assert float(fields.get("episode_duration_s", "0")) == (
+            EPISODE_DURATION_S[slug]
+        ), f"{slug} 的时长与实测值不符"
+        assert fields.get("episode_license"), f"{slug} 缺出处与许可证"
+
+
+def test_the_six_episode_numbers_match_the_spec_label_order():
+    """期号头显示的 EP0X 必须与规格 §2.1 的期号标签一致。"""
+    for index, (slug, label) in enumerate(
+        zip(EPISODE_DRAFTS, EP_LABEL_ORDER), start=1
+    ):
+        fields = _episode_fields(REPO / EPISODE_DRAFTS[slug])
+        assert fields.get("episode_no") == str(index)
+        assert label == "EP{:02d}".format(index)
+
+
+def test_the_six_episodes_share_one_series_with_consecutive_numbers():
+    """一个系列，期号 1~6 连续——跳号会被观众当成「那期不见了」。"""
+    numbers = []
+    for slug in EPISODE_DRAFTS:
+        fields = _episode_fields(REPO / EPISODE_DRAFTS[slug])
+        assert fields.get("series") == EPISODE_SERIES
+        numbers.append(int(fields.get("episode_no", "0")))
+    assert sorted(numbers) == [1, 2, 3, 4, 5, 6]
+
+
+def test_the_six_episode_hooks_appear_in_their_subtitle_drafts():
+    """钩子必须**出现在该期口播稿里**——防止钩子与片子对不上。"""
+    for slug in EPISODE_DRAFTS:
+        fields = _episode_fields(REPO / EPISODE_DRAFTS[slug])
+        hook = fields.get("episode_hook", "")
+        subtitle = (REPO / fields.get("episode_subtitle", "")).read_text(
+            encoding="utf-8"
+        )
+        assert hook and hook in subtitle, (
+            f"{slug} 的钩子没出现在 {fields.get('episode_subtitle')} 里"
+        )
+
+
+def test_the_six_episode_hooks_fit_the_word_count_range():
+    """钩子字数落在契约七 §4.3 的区间里。"""
+    for slug in EPISODE_DRAFTS:
+        fields = _episode_fields(REPO / EPISODE_DRAFTS[slug])
+        hook = fields.get("episode_hook", "")
+        assert EPISODE_HOOK_MIN <= len(hook) <= EPISODE_HOOK_MAX, (
+            f"{slug} 的钩子 {len(hook)} 字，超出 {EPISODE_HOOK_MIN}~{EPISODE_HOOK_MAX}"
+        )
+
+
+def test_the_six_episode_source_lists_cover_every_path_in_the_draft():
+    """母稿正文里出现的每条源码路径都要在 ``episode_sources`` 里。
+
+    清单是从正文里挑出来的，**漏一条**就等于期号页少给读者一条线索。
+    """
+    for slug in EPISODE_DRAFTS:
+        fields = _episode_fields(REPO / EPISODE_DRAFTS[slug])
+        listed = set(fields.get("episode_sources", []))
+        in_body = set(SRC_PATH_RE.findall(_body_of(REPO / EPISODE_DRAFTS[slug])))
+        missing = in_body - listed
+        assert not missing, f"{slug} 的源码清单漏了 {sorted(missing)}"
+
+
+def test_the_six_episode_source_lists_meet_the_ev01_floor():
+    """EV-01 是**存量达标线**：六期母稿的源码清单全部满足。"""
+    for slug in EPISODE_DRAFTS:
+        fields = _episode_fields(REPO / EPISODE_DRAFTS[slug])
+        assert len(fields.get("episode_sources", [])) >= EV_SOURCE_PATH_MIN, (
+            f"{slug} 的源码路径只有 {len(fields.get('episode_sources', []))} 条，"
+            f"低于存量达标线 {EV_SOURCE_PATH_MIN}"
+        )
+
+
+def test_the_six_episode_repro_lists_are_not_empty():
+    """每期至少给出一条**可复制**的命令。
+
+    EV-03 对现有六期是豁免的（它们是 35 秒档），但「一条都没有」意味着
+    期号页的「源码与复现」区块是空的——那不是深度，是空话。
+    """
+    for slug in EPISODE_DRAFTS:
+        fields = _episode_fields(REPO / EPISODE_DRAFTS[slug])
+        commands = fields.get("episode_repro", [])
+        assert len(commands) >= 1, f"{slug} 没有可复制的命令"
+        for command in commands:
+            assert command.strip(), f"{slug} 有空的命令条目"
+            assert not command.startswith("--"), (
+                f"{slug} 的命令条目不该以注释开头：{command!r}"
+            )
+
+
 def test_draft_p90_constant_matches_the_docs_distribution():
     """EV-06 的 p90 必须等于 `docs/` 全树字数的实际 p90。"""
     lengths = sorted(

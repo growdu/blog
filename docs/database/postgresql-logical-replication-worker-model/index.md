@@ -1,3 +1,26 @@
+---
+episode: wal-interleave
+episode_no: 3
+series: 数据库内核机制
+episode_hook: "WAL 是操作级记录，几个事务交错着写；订阅端要的是「一个事务一整组」"
+episode_subtitle: aiv/字幕-WAL顺序.md
+episode_duration_s: "34.596"
+episode_license: "PostgreSQL BSD"
+episode_sources:
+  - src/backend/executor/execPartition.c
+  - src/backend/replication/logical/applyparallelworker.c
+  - src/backend/replication/logical/launcher.c
+  - src/backend/replication/logical/tablesync.c
+  - src/backend/replication/logical/worker.c
+  - src/include/replication/worker_internal.h
+episode_repro:
+  - "ALTER PUBLICATION pub_orders ADD TABLE orders; -- 父表"
+  - "ALTER SUBSCRIPTION sub_orders ADD TABLE orders_2024_h1;"
+  - "ALTER SUBSCRIPTION sub_orders ADD TABLE orders; -- 父表"
+  - "SHOW max_logical_replication_workers; -- 调整"
+  - "SELECT pid, type, subid, relid, state FROM pg_stat_activity WHERE backend_type LIKE '%logical%' OR query LIKE '%logical%' ORDER BY pid;"
+---
+
 # PostgreSQL 逻辑复制的 Worker 模型：一个 apply worker 撑全场，分区表也一样
 
 | 编写人 | 编写内容 | 编写时间 |
