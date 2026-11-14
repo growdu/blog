@@ -161,6 +161,7 @@ REVIEWED_ARTICLES = (
     "docs/cluster/corosync/corosync-down网卡仍处于多数派/index.md",
     "docs/cluster/kingbase/tptc.md",
     "docs/network/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md",
+    "docs/pgsql/replication/Postgresql存储、索引及系统优化、主备切换/index.md",
 )
 
 

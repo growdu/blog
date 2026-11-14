@@ -517,3 +517,203 @@ def test_only_one_ipv6_article_with_this_title():
             same.append(path.relative_to(REPO_ROOT).as_posix())
     assert same == ["docs/network/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md"], (
         f"全树有多篇同名文章：{same}")
+
+
+# --- PostgreSQL 存储、索引及系统优化、主备切换 -----------------------------
+
+PG_SWITCH = DOCS_ROOT / "pgsql/replication/Postgresql存储、索引及系统优化、主备切换/index.md"
+
+
+def test_the_pg_article_has_a_clean_title_and_a_visible_version_baseline():
+    """单元：H1 标题 + 编写信息表 + 显眼的版本基线块。
+
+    原文 H1 是「# 0 Postgresql存储…」——开头那个「0 」像是从别的文档
+    复制来的编号残留；版本声明是夹在一级标题与正文之间的一行红字，
+    读者多半会滑过去，而版本边界恰恰是这类参考手册最要命的东西。
+    """
+    text = article_text(PG_SWITCH)
+    assert text.startswith("# PostgreSQL存储、索引及系统优化、主备切换\n"), (
+        "正文开头不是去掉编号残留后的 H1")
+    assert "| 编写人 | 编写内容 | 编写时间 |" in text, "正文里没有编写信息表"
+    assert "> **版本基线**：本文以PostgreSQL 12为基线。" in text, (
+        "开头没有显眼的版本基线说明块")
+    assert "本文讲三件事：" in text, "开头没有一句话定位"
+
+
+def test_the_pg_article_section_numbers_never_collide():
+    """单元：章节编号不能撞号。
+
+    原文 `### 1.2` 出现两次、`#### 1.2.1/1.2.2/1.2.3` 各出现两次、
+    `##### 3.3.2.1` 与 `##### 3.3.2.5` 各出现两次——这种稿子里，
+    读者说的「见 1.2.2」指向两个地方，等于没说。
+    """
+    numbers = []
+    for line in article_text(PG_SWITCH).split("\n"):
+        match = re.match(r"^#{2,6}\s+([0-9]+(?:\.[0-9]+)*)\s", line)
+        if match:
+            numbers.append(match.group(1))
+    dupes = sorted({n for n in numbers if numbers.count(n) > 1})
+    assert not dupes, f"章节编号撞号了：{dupes}"
+
+
+def test_the_pg_article_heading_levels_line_up_with_their_numbers():
+    """单元：4.3.x 那一节的层级要齐平。
+
+    原文 `## 4.3.4` 用了 H2、`### 4.3.5` 用了 H3，而同级的
+    `#### 4.3.6` 是 H4——目录里它们会浮到不同层级，读者点进来不知道
+    自己到了哪一步。
+    """
+    text = article_text(PG_SWITCH)
+    for number in ("4.3.4", "4.3.5", "4.3.6"):
+        assert re.search(rf"^####\s+{number}\s", text, re.M), (
+            f"{number} 这一节的标题层级不对，应该是 H4")
+    assert not re.search(r"^#{2,3}\s+4\.3\.\d", text, re.M), (
+        "4.3.x 里又出现了 H2/H3 标题")
+
+
+def test_the_pg_article_reference_headings_are_named():
+    """单元：「reference」当标题，读者不知道里面是什么。
+
+    参考出处？还是本节小结？三处都改成「参考资料」。
+    """
+    text = article_text(PG_SWITCH)
+    assert not re.search(r"^#{2,6}\s+.*\breference\b", text, re.M | re.I), (
+        "正文里还有 reference 标题")
+    assert text.count("参考资料") >= 3, "三处 reference 没有都改成「参考资料」"
+
+
+def test_the_pg_article_standby_setup_uses_the_pg12_mechanism():
+    """单元：4.1.5 不能同时教两套互斥的做法。
+
+    原文 4.1.5 写的是 PG ≤ 11 的 recovery.conf 与 pg_start_backup()，
+    而同一节的 L1386 已经按 PG 12 写了——读者照 4.1.5 做就错。
+    """
+    text = article_text(PG_SWITCH)
+    section = text.split("#### 4.1.5")[1].split("### 4.2")[0]
+    assert "standby.signal" in section, "4.1.5 没写 PG 12 的 standby.signal"
+    assert "primary_conninfo" in section, "4.1.5 没写 primary_conninfo"
+    assert "restore_command" in section, "4.1.5 没写从归档取 WAL 的 restore_command"
+    assert "pg_backup_start" in section, (
+        "4.1.5 没标注 PG 15 起 pg_start_backup 改名为 pg_backup_start")
+
+
+def test_the_pg_article_basebackup_r_option_matches_pg12():
+    """单元：`-R` 在 PG 12 起不再生成 recovery.conf。
+
+    原文那句是 PG ≤ 11 的行为，连文章自己声明的 PG 12 基线都不符合。
+    """
+    text = article_text(PG_SWITCH)
+    assert "参数表示在备份中会生成standby.signal文件" in text, (
+        "正文没写 -R 会生成 standby.signal")
+    assert "postgresql.auto.conf" in text, (
+        "正文没写 -R 会把连接信息写进 postgresql.auto.conf")
+
+
+def test_the_pg_article_wal_keep_and_vacuum_defer_carry_version_marks():
+    """单元：两个跨版本改名的参数必须带版本标注。
+
+    `wal_keep_segments` 在 PG 13 改名 `wal_keep_size`（单位也变了）；
+    `vacuum_defer_cleanup_age` 在 PG 16 被移除。读者照着配会直接报错。
+    """
+    text = article_text(PG_SWITCH)
+    assert "#### 4.7.1 wal_keep_size参数的配置" in text, (
+        "4.7.1 的标题还写着跟正文不是一回事的 min_wal_size")
+    assert "wal_keep_segements" not in text, "参数名又拼错了"
+    assert "PostgreSQL 13起`wal_keep_segments`改名为`wal_keep_size`" in text, (
+        "wal_keep_size 的改名版本没标出来")
+    assert "复制槽" in text.split("#### 4.7.1")[1].split("#### 4.7.2")[0], (
+        "4.7.1 没补上比猜 wal_keep_size 更稳妥的复制槽")
+    section = text.split("#### 4.7.2")[1].split("### 4.8")[0]
+    assert "PostgreSQL 16" in section and "移除" in section, (
+        "4.7.2 没标出 PG 16 起该参数已被移除")
+    assert "hot_standby_feedback" in section, "4.7.2 没写替代方案"
+
+
+def test_the_pg_article_cmax_belongs_to_the_deleting_transaction():
+    """单元：删除元组的命令标识属于「删除方事务」。
+
+    原文两句长得几乎一样（检查器报 0.93 的近似重复句），但第二句把
+    删除说成了「插入事务」——它指的是删除发生在哪个事务里。
+    """
+    text = article_text(PG_SWITCH)
+    assert "删除该元组的命令在删除方事务中的命令标识" in text, (
+        "删除元组的命令标识又写回「插入事务」了")
+    assert "删除该元组的命令在插入事务中的命令标识" not in text, (
+        "删除元组的命令标识又写回「插入事务」了")
+
+
+def test_the_pg_article_spelling_and_typos_stay_fixed():
+    """单元：术语统一 + 三处错字。
+
+    官方写法是 PostgreSQL；「业内」「VACCUM」「它的的」是校对时抓到的错字。
+    """
+    text = article_text(PG_SWITCH)
+    assert "Postgresql" not in text, "正文里还有 Postgresql 的写法"
+    for wrong in ("业内", "VACCUM", "它的的"):
+        assert wrong not in text, f"错字「{wrong}」又出现了"
+
+
+def test_the_pg_article_has_the_preconditions_and_the_takeaways():
+    """单元：结尾要有可带走的产物（STR-03 盯的就是这个）。
+
+    原文以两个参数的说明结束：读者读完了带不走任何东西。
+    """
+    text = article_text(PG_SWITCH)
+    assert "| 要求 | 在哪配 | 漏了会怎样 |" in text, "开头没有前置条件清单表"
+    assert "### 4.8 主备切换巡检清单" in text, "结尾没有巡检清单"
+    assert "### 4.9 延伸阅读" in text, "结尾没有延伸阅读"
+
+
+def test_the_pg_article_extension_links_all_resolve():
+    """单元：延伸阅读的链接不能是死链。
+
+    bundle 里的相对链接按 bundle 自己的目录解析，所以 `../X.md` 指的是
+    bundle 所在目录的上一级。
+    """
+    text = article_text(PG_SWITCH)
+    section = text.split("### 4.9 延伸阅读")[1]
+    links = re.findall(r"\]\(([^)]+)\)", section)
+    assert len(links) >= 5, f"延伸阅读条目太少（{len(links)} 条）"
+    for link in links:
+        target = (PG_SWITCH.parent / link).resolve()
+        assert target.is_file(), f"延伸阅读的链接指向不存在的文件：{link}"
+
+
+def test_the_pg_article_html_attributes_are_not_broken():
+    """单元：HTML 属性的引号被换成中文弯引号，标签就不生效了。
+
+    `<font color=“red”>` 不是一个合法的属性值，红字就没了——而且
+    页面看上去一点异常都没有。
+    """
+    text = article_text(PG_SWITCH)
+    assert not re.search(r'=\s*“', text), "有 HTML 属性被写成了中文弯引号"
+
+
+def test_the_pg_article_keeps_only_the_intentional_warn_signal():
+    """集成：合入后只剩那一条刻意的平行示例。
+
+    原文是 3 条 warn（AIF-02 空泛评价 / AIF-03 超长段落 /
+    AIF-05 近似重复句）。剩下的 AIF-05 是「表」与「索引」两段刻意
+    平行句式，审校记录里写明**不要为了消信号去改**——所以这里把它
+    钉住：有人顺手把它「改顺」了，这条会红。
+    """
+    report = run_checker(PG_SWITCH)
+    warns = [s for s in report["signals"] if s["severity"] == "warn"]
+    assert [s["rule"] for s in warns] == ["AIF-05"], (
+        f"合入后的 warn 信号不对：{warns}")
+    infos = [s for s in report["signals"] if s["severity"] == "info"]
+    assert not infos, f"合入后还有 info 信号：{infos}"
+
+
+def test_only_one_pg_article_with_this_title():
+    """集成：站点上不能出现同标题的第二篇。"""
+    title = "PostgreSQL存储、索引及系统优化、主备切换"
+    same = []
+    for path in sorted(DOCS_ROOT.rglob("*.md")):
+        match = re.search(r"^#\s+(.*\S)\s*$",
+                          path.read_text(encoding="utf-8", errors="replace"), re.M)
+        if match and match.group(1).strip() == title:
+            same.append(path.relative_to(REPO_ROOT).as_posix())
+    assert same == [
+        "docs/pgsql/replication/Postgresql存储、索引及系统优化、主备切换/index.md",
+    ], f"全树有多篇同名文章：{same}"
