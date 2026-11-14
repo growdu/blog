@@ -21,6 +21,12 @@ from .titles import TITLE_LIMIT
 
 AUTHOR_LIMIT = 16
 
+# The author the drafts carry when nobody says otherwise.  It is also
+# the one that is left out of the content fingerprint: the drafts in the
+# box were made with it, so counting it would change the hash of every
+# article and send all of them again for no change in their content.
+DEFAULT_AUTHOR = "growdu"
+
 # The body limit of one draft, in characters of rendered HTML.
 #
 # The official field table says "content 少于 2 万字符", but that line is

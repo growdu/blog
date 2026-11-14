@@ -157,7 +157,6 @@ def test_the_fingerprint_moves_when_the_author_changes(tmp_path):
     assert _fingerprint(post, "", 60000, "growdu") != _fingerprint(
         post, "", 60000, "内核开发者")
 
-
 # --- 上限进了统计 ---------------------------------------------------------
 
 

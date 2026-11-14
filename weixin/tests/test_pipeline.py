@@ -15,7 +15,7 @@ from wechat.cli import (_docs_changed, _drop_batch_lock, _fingerprint,
                        _render_parts, _take_batch_lock, main)
 from wechat.assets import prepare_image
 from wechat.material import MaterialCache
-from wechat.posts import CONTENT_LIMIT, load_post
+from wechat.posts import CONTENT_LIMIT, DEFAULT_AUTHOR, load_post
 from wechat.publish import WeChatClient
 
 # The tests below are about how an article is cut, so they pin the
@@ -247,7 +247,7 @@ def test_convert_shortens_a_long_title_instead_of_refusing(tmp_path, capsys):
     assert "一个很长很长的主标题部分" in out
 
 
-def _legacy_fingerprint(post, tag_html, limit, author):
+def _legacy_fingerprint(post, tag_html, limit):
     """The fingerprint as it was before the title was shortened.
 
     The drafts that are already in the box carry this hash, so a draft
@@ -256,8 +256,7 @@ def _legacy_fingerprint(post, tag_html, limit, author):
 
     The limit is part of it: it decides where the article is cut, so a
     different limit means different parts, and the drafts that carry
-    the old cut have to be replaced.  So is the author: it is printed
-    above the body of every part.
+    the old cut have to be replaced.
     """
     digest = hashlib.sha256()
     digest.update(post.fingerprint.encode("utf-8"))
@@ -267,8 +266,6 @@ def _legacy_fingerprint(post, tag_html, limit, author):
     digest.update(tag_html.encode("utf-8"))
     digest.update(b"\x00")
     digest.update(str(limit).encode("utf-8"))
-    digest.update(b"\x00")
-    digest.update(author.encode("utf-8"))
     return digest.hexdigest()
 
 
@@ -288,19 +285,23 @@ def test_the_fingerprint_of_an_untouched_article_does_not_move(tmp_path):
     Every draft in the box costs one upload and one ``draft/add`` to
     send.  If the fingerprint of an article whose title did not change
     moves, all of them are sent again for no reason.
+
+    The default author is left out of the hash for the same reason: the
+    drafts in the box were made with it, and counting it would move the
+    hash of every article in the corpus.
     """
     post = _post_with_title(tmp_path, "一个短标题")
     tag = "<p>分类</p>"
-    assert _fingerprint(post, tag, CONTENT_LIMIT, "growdu") == _legacy_fingerprint(
-        post, tag, CONTENT_LIMIT, "growdu")
+    assert _fingerprint(post, tag, CONTENT_LIMIT, DEFAULT_AUTHOR) == _legacy_fingerprint(
+        post, tag, CONTENT_LIMIT)
 
 
 def test_the_fingerprint_moves_when_the_title_is_shortened(tmp_path):
     """A title that was cut has to reach the drafts that carry it."""
     post = _post_with_title(tmp_path, "主标题在这里：{}".format("副标题" * 20))
     tag = "<p>分类</p>"
-    assert _fingerprint(post, tag, CONTENT_LIMIT, "growdu") != _legacy_fingerprint(
-        post, tag, CONTENT_LIMIT, "growdu")
+    assert _fingerprint(post, tag, CONTENT_LIMIT, DEFAULT_AUTHOR) != _legacy_fingerprint(
+        post, tag, CONTENT_LIMIT)
 
 
 def test_publish_creates_draft_with_expected_payload(sample_post, tmp_path, server, monkeypatch):

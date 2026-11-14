@@ -44,8 +44,8 @@ from . import titles as titles_module
 from . import version as version_module
 from .mdparse import parse
 from .posts import (AUTHOR_LIMIT, BODY_LIMIT, CONTENT_BYTES_LIMIT, CONTENT_LIMIT,
-                    DIGEST_LIMIT, TITLE_LIMIT, check_eligibility, discover, load_post,
-                    resolve_content_limit)
+                    DEFAULT_AUTHOR, DIGEST_LIMIT, TITLE_LIMIT, check_eligibility,
+                    discover, load_post, resolve_content_limit)
 from .state import PublishState, StateStore, needs_submit
 
 DEFAULT_POSTS_DIR = Path(__file__).resolve().parents[2] / "source" / "_posts"
@@ -194,6 +194,11 @@ def _fingerprint(post, tag_html: str, limit: int, author: str) -> str:
     so a new signature has to reach the drafts.  It used to be missing
     from this hash, which meant that changing ``--author`` looked like
     it did nothing -- the drafts kept the old signature.
+
+    The **default** author does not count, though, for the same reason
+    the shortened title does not: the drafts that are already in the box
+    were made with it, and counting it would change the hash of every
+    article and send all of them again for no change in their content.
     """
     digest = hashlib.sha256()
     digest.update(post.fingerprint.encode("utf-8"))
@@ -207,8 +212,9 @@ def _fingerprint(post, tag_html: str, limit: int, author: str) -> str:
     digest.update(tag_html.encode("utf-8"))
     digest.update(b"\x00")
     digest.update(str(limit).encode("utf-8"))
-    digest.update(b"\x00")
-    digest.update(author.encode("utf-8"))
+    if author != DEFAULT_AUTHOR:
+        digest.update(b"\x00")
+        digest.update(author.encode("utf-8"))
     return digest.hexdigest()
 
 
@@ -1787,7 +1793,8 @@ def _add_common_options(parser, *, suppress: bool) -> None:
                         help="微信接口地址")
     parser.add_argument("--appid", default=default(""), help="公众号 AppID，默认取环境变量")
     parser.add_argument("--appsecret", default=default(""), help="公众号 AppSecret，默认取环境变量")
-    parser.add_argument("--author", default=default("growdu"), help="作者署名")
+    parser.add_argument("--author", default=default(DEFAULT_AUTHOR),
+                        help="作者署名")
     parser.add_argument("--cover", default=default(""), help="封面图路径，默认取文章首图")
     parser.add_argument("--secrets-file", type=Path, default=default(DEFAULT_SECRETS_FILE),
                         help="本地凭据 JSON，默认 weixin/secrets.json")
