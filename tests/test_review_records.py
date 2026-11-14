@@ -18,6 +18,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -468,6 +469,64 @@ def test_index_counts_match_the_records():
         if info["status"] == "已合入":
             assert not open_items, (
                 f"{path.name} 标了已合入，却还有 {len(open_items)} 条没销掉")
+
+
+def count_warn_signals(report: dict) -> int:
+    """检查器报告里 warn 级信号的条数。
+
+    info 级（STR-*/MET-* 那些结构提示）不计入——进度表里的「信号」
+    列记的是 warn。把结构提示混进来，这一列就换了口径，两种数字
+    摆在一起没法比。
+    """
+    return sum(1 for s in report.get("signals", []) if s.get("severity") == "warn")
+
+
+def run_checker(source: str) -> dict:
+    """对单个文件跑一遍检查器，返回它那一篇的报告。"""
+    result = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "tools" / "review-check.py"), source, "--json"],
+        cwd=REPO_ROOT, capture_output=True, encoding="utf-8", errors="replace")
+    assert result.returncode == 0, result.stdout + result.stderr
+    docs = json.loads(result.stdout)["docs"]
+    assert len(docs) == 1, f"{source} 应当只产出一份报告，实得 {len(docs)}"
+    return docs[0]
+
+
+def test_count_warn_signals_ignores_info_level_signals():
+    """单元：「信号」列只数 warn，info 级结构提示不算。"""
+    report = {"signals": [
+        {"rule": "AIF-03", "severity": "warn"},
+        {"rule": "AIF-05", "severity": "warn"},
+        {"rule": "STR-01", "severity": "info"},
+        {"rule": "STR-02", "severity": "info"},
+        {"rule": "MET-01", "severity": "info"},
+    ]}
+    assert count_warn_signals(report) == 2
+    assert count_warn_signals({"signals": []}) == 0
+    assert count_warn_signals({}) == 0
+    # 级别缺失的条目不能被当成 warn 算进去
+    assert count_warn_signals({"signals": [{"rule": "X"}]}) == 0
+
+
+def test_index_signal_counts_match_the_checker():
+    """集成：索引里的「信号」列必须是检查器实跑出来的 warn 条数。
+
+    「信号」这一列是手写的。别的列（待确认、不阻塞）都有测试盯着，
+    只有它没人管——改一篇正文、写错一个数字，进度表就在骗人，
+    而且是那种没人会去核对的骗人。
+
+    正文在阶段 B 被改过之后，这一列必须跟着改：信号数变了，
+    索引不跟着变，就说明进度表记的不是这篇的现状。
+    """
+    columns, rows = index_table()
+    assert "信号" in columns, "进度表少了「信号」列"
+    for path in record_files():
+        source = parse_record(path)["source"]
+        actual = count_warn_signals(run_checker(source))
+        row = rows[path.resolve()]
+        assert row["信号"] == str(actual), (
+            f"{path.name} 的信号数对不上：索引写 {row['信号']}，"
+            f"检查器实跑 {actual} 条（{source}）")
 
 
 def test_scope_exclusion_list_points_at_existing_files():
