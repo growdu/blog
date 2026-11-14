@@ -12,6 +12,7 @@
 #   make bgm       按《背景音乐规范》检查曲库台账
 #   make mix-verify 成片级混音验收（规范 §5.7）
 #   make all       validate → brand → render → compose
+#   make nobrand   无品牌导流版（抖音这一档用）：nobrand → render → compose
 #
 # align 是手工步骤，需要在 all 之前单独跑。
 # 片段是增量渲染的：build/ 里未过期的片段会被直接复用。
@@ -55,7 +56,17 @@ BGM := $(ROOT)/music/tracks/series-bed-01.wav
 BUILD := $(ROOT)/build/$(EP)
 OUT := $(ROOT)/out/$(EP).mp4
 
-.PHONY: all test doctor validate align brand render compose probe persona bgm mix-verify topics pronunciation clean
+# 无品牌导流版：抖音这一档用。去掉品牌片头/片尾，落版标签也不带品牌名——
+# 抖音禁「过度营销信息」与站外引流，片头整屏字标与片尾的 growdu.cn 胶囊
+# 正好撞上（规格 §6.6.4）。
+#
+# **片段目录与成片都另起一份**：不跟带品牌的版本共用，否则增量渲染会把
+# 带品牌片的片段当成可复用的（成片的 sha256 变了才发现，已经晚了）。
+NOBRAND_STORYBOARD := $(ROOT)/storyboard_$(EP)__nobrand.json
+NOBRAND_BUILD := $(ROOT)/build/$(EP)__nobrand
+NOBRAND_OUT := $(ROOT)/out/$(EP)__nobrand.mp4
+
+.PHONY: all test doctor validate align brand render compose nobrand probe persona bgm mix-verify topics pronunciation clean
 
 all: validate brand render compose
 
@@ -83,6 +94,16 @@ render:
 compose:
 	$(PY) -m pyv.cli compose --storyboard $(STORYBOARD) --build $(BUILD) \
 		--out $(OUT) --narration $(NARRATION) --bgm $(BGM)
+
+# 无品牌导流版（抖音这一档用）
+nobrand:
+	$(PY) -m pyv.cli nobrand --storyboard $(STORYBOARD) \
+		--out $(NOBRAND_STORYBOARD)
+	$(PY) -m pyv.cli render --storyboard $(NOBRAND_STORYBOARD) \
+		--out $(NOBRAND_BUILD)
+	$(PY) -m pyv.cli compose --storyboard $(NOBRAND_STORYBOARD) \
+		--build $(NOBRAND_BUILD) --out $(NOBRAND_OUT) \
+		--narration $(NARRATION) --bgm $(BGM)
 
 persona:
 	$(PY) -m pyv.cli persona check --script $(SCRIPT)

@@ -19,9 +19,25 @@ AIV_ROOT = Path(__file__).resolve().parents[2] / "aiv"
 DEFAULT_OUT = Path(__file__).resolve().parents[1] / "out"
 WEBHOOK_ENV = "DOUYIN_WEBHOOK"
 
+#: 抖音这一档用**无品牌导流版**成片。
+#:
+#: 带品牌的那版有整屏「Growdu」字标与片尾的 `growdu.cn` / 订阅关注 /
+#: 点赞支持三胶囊，正好撞在抖音「过度营销信息 + 站外引流」这两条上
+#: （规格 §6.6.4）。所以抖音不能用 `aiv/out/<EP>.mp4`。
+NO_BRAND_SUFFIX = "__nobrand"
+
+#: 找不到成片时的提示。写成常量是因为它要能被测试直接断言——
+#: 这条提示指向哪个文件，决定了下一个人会不会拿带品牌的成片去发。
+MISSING_VIDEO_HINT = (
+    "      抖音这一档要用**无品牌导流版**成片（规格 §6.6.4）："
+    "带品牌字标与 growdu.cn 胶囊的版本会被抖音判「过度营销 + "
+    "站外引流」而限流。\n"
+    "      先出片：cd aiv/pipeline && make EP={episode} nobrand"
+)
+
 
 def _video_path(episode: str) -> Path:
-    return AIV_ROOT / "out" / f"{episode}.mp4"
+    return AIV_ROOT / "out" / f"{episode}{NO_BRAND_SUFFIX}.mp4"
 
 
 def _title_of(meta) -> str:
@@ -37,7 +53,10 @@ def cmd_package(args: argparse.Namespace) -> int:
 
     video = Path(args.video) if args.video else _video_path(args.episode)
     if not video.is_file():
-        print(f"ERROR 成片不存在：{video}（先跑 make all 出片）", file=sys.stderr)
+        print(f"ERROR 成片不存在：{video}", file=sys.stderr)
+        if not args.video:
+            print(MISSING_VIDEO_HINT.format(episode=args.episode),
+                  file=sys.stderr)
         return 1
 
     try:

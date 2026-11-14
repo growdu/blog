@@ -41,6 +41,20 @@ BRAND_DIRNAME = "brand"
 TIMESCALE_FACTOR = 1000
 MAX_BRAND_SECONDS = 3.0
 
+# 品牌词。画面里出现它，就说明有品牌标识。
+BRAND_TOKEN = "growdu"
+
+# 落版标签所在的参数名。**别的参数不碰。**
+#
+# 「哪个参数是品牌位」是**版式的事实**，写在这里比用「凡含品牌词就改」的
+# 通用规则安全：通用规则会误伤正文里正当出现的词，而且出错时无声无息。
+BRAND_COPY_PARAMS = ("badge",)
+
+# 剥掉品牌名之后空了，用这句兜底。
+# 六期的落版标签都是「独立开发者 · growdu」，剥完剩下的就是「独立开发者」；
+# 这一句只是「万一剥空了」的兜底。
+NEUTRAL_LABEL = "独立开发者"
+
 
 def _run(cmd: list[str]) -> None:
     proc = subprocess.run(cmd, capture_output=True, text=True)
@@ -194,6 +208,98 @@ def _shift(raw: dict, scenes: list[dict], delta: float) -> None:
         event["end"] = round(float(event["end"]) + delta, 3)
 
 
+def _remove_brand_scenes(raw: dict) -> list[dict]:
+    """去掉已有的品牌场景，并撤销上一次引入的位移。
+
+    **可重复执行**：套上去再摘下来，时间码能回到原样——
+    所以无品牌版可以直接拿带品牌的 storyboard 当输入。
+    """
+    old_shift = 0.0
+    scenes: list[dict] = []
+    for scene in list(raw.get("scenes", [])):
+        scene_id = scene.get("id", "")
+        if scene_id.startswith(CLIP_PREFIX):
+            if scene_id == "brand_intro":
+                old_shift = float(scene.get("end", 0)) - float(scene.get("start", 0))
+            continue
+        scenes.append(scene)
+    _shift(raw, scenes, -old_shift)
+    return scenes
+
+
+def strip_brand_word(text: str) -> str:
+    """把品牌词从落版标签里去掉。
+
+    「独立开发者 · growdu」→「独立开发者」。
+
+    按分隔符分段，**整段丢掉**，而不是做字符串替换：
+    替换会留下「独立开发者 · 」这种尾巴，也会把正文里正当出现的词改掉。
+    剥完空了用 `NEUTRAL_LABEL` 兜底。
+    """
+    parts = [part.strip() for part in text.split("·")]
+    kept = [part for part in parts
+            if part and BRAND_TOKEN not in part.lower()]
+    if not kept:
+        return NEUTRAL_LABEL
+    return " · ".join(kept)
+
+
+def _strip_brand_copy(scenes: list[dict]) -> list[str]:
+    """把落版标签里的品牌名去掉。返回改动了哪些场景。"""
+    changed = []
+    for scene in scenes:
+        params = scene.get("params")
+        if not isinstance(params, dict):
+            continue
+        touched = False
+        for key in BRAND_COPY_PARAMS:
+            value = params.get(key)
+            if not isinstance(value, str) or BRAND_TOKEN not in value.lower():
+                continue
+            cleaned = strip_brand_word(value)
+            if cleaned != value:
+                params[key] = cleaned
+                touched = True
+        if touched:
+            changed.append(str(scene.get("id", "")))
+    return changed
+
+
+def make_nobrand(storyboard_path: str | Path, out_path: str | Path) -> Path:
+    """产出一份「无品牌导流版」storyboard。
+
+    **抖音这一档用它**（规格 §6.6.4）：抖音禁「过度营销信息」与站外引流，
+    而我们的片头字标与片尾的 `growdu.cn` 胶囊正好撞在这两条上。
+
+    做两件事：
+
+    1. 去掉品牌片场景（`brand_intro` / `brand_outro`），正文时间码相应回退
+    2. 落版标签去掉品牌名：「独立开发者 · growdu」→「独立开发者」
+
+    **吉祥物胸口那枚铭牌不在这一步**——那是**素材**上的东西，要换素材
+    （见 `aiv/character/scripts/clear_badge.py`）。这一版保留它：
+    实投一条看审核口径，被判了再换（规格 §十四 第 16 条）。
+
+    不需要品牌片素材：没有 `brand/clips/*.mp4` 也能产出这一版。
+    """
+    storyboard_path = Path(storyboard_path)
+    out_path = Path(out_path)
+    raw = json.loads(storyboard_path.read_text(encoding="utf-8"))
+    scenes = _remove_brand_scenes(raw)
+    changed = _strip_brand_copy(scenes)
+    raw["scenes"] = scenes
+    if scenes:
+        raw.setdefault("video", {})["duration"] = round(float(scenes[-1]["end"]), 3)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(
+        json.dumps(raw, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    detail = "、".join(changed) if changed else "（没有落版标签要改）"
+    print(f"OK 无品牌导流版：去掉品牌片，{len(scenes)} 个场景，"
+          f"落版标签改动 {detail} → {out_path}", file=sys.stderr)
+    return out_path
+
+
 def apply_plates(storyboard_path: str | Path, out_path: str | Path,
                  build_dir: str | Path, intro: bool = True,
                  outro: bool = True) -> Path:
@@ -209,19 +315,8 @@ def apply_plates(storyboard_path: str | Path, out_path: str | Path,
     build_dir = Path(build_dir)
 
     raw = json.loads(storyboard_path.read_text(encoding="utf-8"))
-    all_scenes = list(raw.get("scenes", []))
-
-    # 移除旧品牌场景，并记下上次片头引入的位移量
-    old_shift = 0.0
-    scenes: list[dict] = []
-    for scene in all_scenes:
-        scene_id = scene.get("id", "")
-        if scene_id.startswith(CLIP_PREFIX):
-            if scene_id == "brand_intro":
-                old_shift = float(scene.get("end", 0)) - float(scene.get("start", 0))
-            continue
-        scenes.append(scene)
-    _shift(raw, scenes, -old_shift)
+    # 移除旧品牌场景，并撤销上一次片头引入的位移（可重复执行）
+    scenes = _remove_brand_scenes(raw)
 
     prepared = prepare_clips(build_dir)
 

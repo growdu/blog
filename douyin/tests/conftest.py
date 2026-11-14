@@ -54,6 +54,38 @@ def outbox(tmp_path, monkeypatch):
     return target
 
 
+@pytest.fixture(autouse=True)
+def _the_repo_outbox_stays_untouched():
+    """测试不许往仓库里的 `publish/outbox` 写东西。
+
+    快照的默认位置就在那儿。而命令行测试是**另一个进程**——
+    上面那个 monkeypatch 拦不住它。曾经就把
+    `publish/outbox/structured-ddl__douyin.json` 写成了指向
+    pytest 临时目录的垃圾：文件在、JSON 合法、看着像真的状态，
+    下一个人读到的是假的。
+
+    这条守卫在每个测试前后比一遍仓库 outbox 的内容。
+    """
+    repo_outbox = REPO_ROOT / "publish" / "outbox"
+
+    def _snapshot():
+        if not repo_outbox.is_dir():
+            return {}
+        return {path.name: path.read_bytes()
+                for path in sorted(repo_outbox.glob("*.json"))}
+
+    before = _snapshot()
+    yield
+    after = _snapshot()
+    changed = sorted(
+        name for name in set(before) | set(after)
+        if before.get(name) != after.get(name)
+    )
+    assert not changed, (
+        f"测试往仓库的 publish/outbox 写了东西：{changed}"
+    )
+
+
 @pytest.fixture
 def meta():
     """一份合法的抖音元数据。

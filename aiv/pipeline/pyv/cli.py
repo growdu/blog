@@ -120,6 +120,34 @@ def cmd_brand(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_nobrand(args: argparse.Namespace) -> int:
+    """产出一份「无品牌导流版」storyboard。
+
+    **抖音这一档用它**：抖音禁「过度营销信息」与站外引流，片头字标与片尾的
+    `growdu.cn` 胶囊正好撞上（规格 §6.6.4）。
+
+    不需要品牌片素材：仓库里一张 `brand/clips/*.mp4` 都没有也能产出这一版。
+    """
+    from pyv import brand
+    out = brand.make_nobrand(args.storyboard, args.out)
+    storyboard = Storyboard.load(out)
+    errors = storyboard.validate()
+    if errors:
+        for e in errors:
+            print(f"ERROR {e}", file=sys.stderr)
+        return 1
+    plates = [s for s in storyboard.scenes if s.id.startswith("brand_")]
+    if plates:
+        # 出了带品牌片的「无品牌版」——那是最难发现的错：
+        # 文件在、时长对、命令报成功，只有画面里多了一整屏字标。
+        print(f"ERROR 无品牌版里还有品牌场景："
+              f"{'、'.join(s.id for s in plates)}", file=sys.stderr)
+        return 1
+    print(f"OK 无品牌导流版：{len(storyboard.scenes)} 个场景，"
+          f"总时长 {storyboard.duration:.3f}s → {out}")
+    return 0
+
+
 def cmd_persona(args: argparse.Namespace) -> int:
     """检查口播稿符不符合《人格规范》。"""
     from pyv import persona
@@ -391,6 +419,12 @@ def main(argv: list[str] | None = None) -> int:
     p_brand.add_argument("--no-intro", action="store_true")
     p_brand.add_argument("--no-outro", action="store_true")
     p_brand.set_defaults(func=cmd_brand)
+
+    p_nobrand = sub.add_parser(
+        "nobrand", help="产出无品牌导流版 storyboard（抖音这一档用）")
+    p_nobrand.add_argument("--storyboard", required=True)
+    p_nobrand.add_argument("--out", required=True)
+    p_nobrand.set_defaults(func=cmd_nobrand)
 
     p_persona = sub.add_parser("persona")
     persona_sub = p_persona.add_subparsers(dest="persona_command", required=True)
