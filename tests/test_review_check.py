@@ -157,6 +157,7 @@ REVIEWED_ARTICLES = (
     "docs/db/postgresql/learning-path/06-heap-and-mvcc.md",
     "docs/pgsql/checkpoint机制浅析.md",
     "docs/cluster/分布式一致性协议.md",
+    "docs/base/file.md",
 )
 
 

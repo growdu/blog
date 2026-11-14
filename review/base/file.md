@@ -6,7 +6,7 @@
 - 一句话定位：把四种语言的文件操作 API 并排摆开，当速查手册用
 - 核心判断：接口清单齐全，但通篇没说过「文件在操作系统里到底是什么」——
   读者拿走的是一张 API 表，出了事也不知道该往哪查
-- 审校状态：建议中
+- 审校状态：已合入
 
 ## 优先修改
 
@@ -207,15 +207,26 @@
   返回 false、`mkdirs()` 返回 true。
 - [x] Java `char` 的大小 —— 实测 `Character.BYTES = 2`、`Character.SIZE = 16`，
   原文「字符(2byte=16bit)」成立。
-- ext2 的 superblock 确切字段布局 —— 本机没有 ext2 源码或权威文档可查，
-  需查 ext2 文档后再写进正文；核不到就别在正文里列字段。
-- `st_blocks` 与 `st_blksize` 的精确关系（为什么小文件也占满一块）——
-  实测只确认了单位是 512 字节，机制部分要查 `stat(2)` 手册页后再写。
-- C# 段落里 `File.Create` 返回的 `FileStream` 默认缓冲大小与
-  `FileOptions` —— 原文没提，本轮也没核实；补写之前需查 .NET 文档。
-- `docs/base/file.md` 里「四种语言」之外的 `docs/language/` 下是否已有
-  讲文件/IO 的文章 —— 有则本篇应链过去并避免重复，没有则本篇该扩到覆盖
-  更多语言；需先全库搜一遍再定。
+- [不适用] ext2 的 superblock 确切字段布局 —— 本轮**没有在正文里列字段**：
+  「文件系统」一节改成讲 superblock / inode / 数据块各自是什么、外加
+  「目录项 → inode → 数据块」这条查找链，字段清单整个去掉了。
+  要列字段得先查到 ext2 的权威文档，那是另一轮的事。
+- [x] `st_blocks` 与 `st_blksize` 的精确关系 —— 查 `stat(3type)` 手册页
+  （man7.org，man-pages 6.19）：`st_blocks` 是「以 512 字节为单位已分配的
+  块数」，`st_blksize` 是「文件系统 I/O 的首选块大小」；手册页并写明
+  「有空洞时它可能比 `st_size`/512 还小」。本机实测也对上了：2 字节的文件
+  `st_size=2`、`st_blocks=8`（即 4096 字节，占满一块）；1 MiB 稀疏文件
+  `st_blocks=0`。正文里据此把两个数的差别写清楚了。
+- [不适用] C# 段落里 `File.Create` 返回的 `FileStream` 默认缓冲大小与
+  `FileOptions` —— 本轮正文没有写这两项：建议 15 只要求把路径拼写改对、
+  补一个真正往文件里写东西的例子，都没有涉及缓冲。要补得先查 .NET 文档。
+- [不适用] `docs/language/` 下是否已有讲文件/IO 的文章 —— 搜过了：
+  `docs/language/` 下只有内存、autoconf、cmake、变长数组、词法分析这些，
+  **没有**讲文件/IO 的文章，所以本篇不存在重复。本轮**没有扩语言覆盖范围**
+  （扩到更多语言属于扩写，不在本次改动范围里），改为在「延伸阅读」一节
+  链到本仓库确实相关的三篇：`pgsql/pg_io_调优`、
+  `db/postgresql/learning-path/04-storage-abstraction`、
+  `cluster/分布式存储需要解决的问题`。
 
 ## 可补的技术证据或产物
 
@@ -239,4 +250,69 @@
 
 ## 已确认的改动
 
-- （本轮只出审校记录，正文改动待确认后执行。）
+按「优先修改」的 19 条逐条落地，正文改动如下：
+
+1. L55 的定位句 → 移到开头作导语：点明「底下是文件描述符、缓冲、原子性
+   三件事」，再引出四种语言只是同一套机制的不同包装。
+2. 「## 文件系统」重写：删掉 `2.inode` / `3.block` 两个空编号和错位的
+   「文件的各种属性」bullet，改成 superblock / inode / 数据块各自是什么、
+   外加「目录项 → inode → 数据块」这条查找链。
+3. L59-L61 的流程改成四步：打开 → 读/写 →（可选：fseek/fsetpos 定位）→ 关闭。
+4. `struct stat`：`st_off` 改为 `st_size`；补 `st_blocks` 单位是 512 字节，
+   并写明 `st_blocks × 512` 与 `st_size` 可以差很多（小文件占满一块、
+   稀疏文件反而更小），附实测值。
+5. 处理流一段从 241 字压到 4 句：「包装另一个流 + 在包装里加能力」；
+   「提高了读写的效率」换成可验证的说法——`BufferedInputStream` 一次读
+   8192 字节进缓冲，逐字节读 8K 时 `read(2)` 调用从 8192 次降到 1 次。
+6. C# 四个类改成对照表（类名 / 面向文件还是目录 / 静态还是实例），
+   并点出真正的区别：静态方法直接吃路径字符串，实例方法先 new 出来、
+   能缓存路径、便于链式调用。
+7. Python `open()` 一节按 Python 3 重写：默认 mode 是 `'r'` 不是追加；
+   变量名去掉空格；`buffering` 改说「缓冲」不是「寄存」，并写明文本模式下
+   `buffering=0` 会报 ValueError；补 `with open(...) as f:`。
+8. Python 属性与方法逐条改正：`colse()` → `close()`；删掉 Python 3 已移除的
+   `file.next()`；`isatty` 标明是方法；`read()` 读的是剩下的全部内容；
+   `readlines(sizehint)` 是总字符数的近似提示；`truncate(size)` 是截断到
+   指定大小、与当前位置无关。4.3 的表统一成「方法 / 是不是方法 / 说明」。
+9. L441 的 `direc="%%1"` 改成 `direc="$(pwd)"`，并给 `$direc`、`$dir2del`
+   加引号。
+10. L474 的中文全角引号换成 ASCII 双引号。
+11. L453、L463 的 `if` 条件补上 `[` 后的空格，并给变量加引号：
+    `if [ -e "$filename" ]`、`if [ ! -s "$filename" ]`。
+12. Java 缓冲流方法名改成 `readLine()` / `newLine()`。
+13. Java 建文件与建目录补上两个坑：`createNewFile()` 要求父目录存在
+    （否则抛 `IOException: No such file or directory`）、`mkdir()` 只建一层
+    而 `mkdirs()` 递归建；示例顺序改成先 `mkdirs()` 再 `createNewFile()`。
+14. 删掉 JDK `File.getName()` 的私有实现片段，换成面向读者的说明：
+    `getName()` 是路径最后一段、`getPath()` 是拼进去的整条路径、
+    规范化路径用 `getCanonicalPath()`。
+15. C# 示例路径 `D:\exampleexample.txt` 改成 `D:\example\example.txt`，
+    并补一个真正写入内容的 `StreamWriter` 例子。
+16. `## 3 C sharp` 改成 `## 3 C#`。
+17. 删掉「代码示例详见code.」——仓库里没有对应的代码，指向不明。
+18. 标题层级与编号修好：`#### 2.2 流的分类` 升为 `### 2.2`；
+    两个 `2.4.2` 分别改为 2.4.2 / 2.4.3，其后的 2.4.3 顺延为 2.4.4；
+    正文里的裸文本 `4.3 总结` 改成 `### 4.3 总结`。
+19. 开头补「编写人 / 编写内容 / 编写时间」表与定位导语；结尾新增
+    「## 6 常见坑清单」（8 条）与「## 7 延伸阅读」（链到本仓库三篇
+    相关文章）。
+
+本轮新增的事实依据（均已实测或查证）：
+
+- `stat(3type)` 手册页（man7.org，man-pages 6.19）：`st_blocks` 单位
+  512 字节、`st_blksize` 是首选 I/O 块大小、有空洞时 `st_blocks` 可能
+  小于 `st_size`/512。
+- 本机实测：2 字节文件 `st_blocks=8`（4096 字节）；1 MiB 稀疏文件
+  `st_blocks=0`。
+- JDK 17 实测：`BufferedInputStream` 内部缓冲区 8192 字节；读 1 字节后
+  `available()` 为 8191（说明底层已被一次读进缓冲）。
+- JDK 17 实测：`createNewFile()` 父目录不存在时抛
+  `IOException: No such file or directory`；多层目录下 `mkdir()` 返回
+  false、`mkdirs()` 返回 true。
+- Python 3.11 实测：文本模式 `buffering=0` 抛 `ValueError`；
+  `readlines(150)` 在 303 字符的文件上读到 2 行 / 202 字符；
+  `truncate(3)` 把文件截到 3 字节且与当前位置无关；`read()` 读全部；
+  `hasattr(f,'next')` 为 False、`isatty` 是方法。
+
+正文改动后检查器信号：AIF-02 / AIF-03 / AIF-05 三条 warn 全部消除，
+STR-02 也通过（开头有了明确定位句）。

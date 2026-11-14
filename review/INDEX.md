@@ -46,7 +46,7 @@
 | [06-heap-and-mvcc](db/postgresql/learning-path/06-heap-and-mvcc.md) | db | 已合入 | 1 | 0 | 2 | 试点 |
 | [checkpoint机制浅析](pgsql/checkpoint机制浅析.md) | pgsql | 已合入 | 0 | 0 | 0 | 试点 |
 | [分布式一致性协议](cluster/分布式一致性协议.md) | cluster | 已合入 | 0 | 0 | 2 | 试点 |
-| [file](base/file.md) | base | 建议中 | 3 | 4 | 0 | 1 |
+| [file](base/file.md) | base | 已合入 | 0 | 0 | 3 | 1 |
 | [corosync-down网卡仍处于多数派](cluster/corosync/corosync-down网卡仍处于多数派.md) | cluster | 建议中 | 3 | 5 | 0 | 1 |
 | [tptc](cluster/kingbase/tptc.md) | cluster | 建议中 | 3 | 5 | 0 | 1 |
 | [从原理到实践，彻底告别 IPv6 上网不稳定的问题](network/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md) | network | 建议中 | 3 | 7 | 0 | 1 |
