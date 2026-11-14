@@ -80,8 +80,13 @@ def _aspect_label(info: preflight.VideoInfo) -> str:
 
 def _checklist(episode: str, copy: contract.DouyinCopy,
                info: preflight.VideoInfo, text: str,
-               warnings: list[str]) -> str:
+               warnings: list[str], limits: dict) -> str:
     topics = contract.topics_line(copy.topics)
+    # **上限写能力声明里的那个数**，不写死 1000：写死的话，改了
+    # `publish/capabilities/douyin.toml` 的 text_chars，清单还在说 1000——
+    # 两处数字打架，人照着清单发，文案却被闸门拦下。
+    limit = limits.get("text_chars")
+    limit_text = f"（上限 {limit}）" if isinstance(limit, int) and limit > 0 else ""
     lines = [
         f"# 待发布：{copy.title}（{episode}）",
         "",
@@ -91,7 +96,7 @@ def _checklist(episode: str, copy: contract.DouyinCopy,
         f"| 标题 | {copy.title}（{len(copy.title)} 字） |",
         f"| 正文 | {len(copy.description)} 字 |",
         f"| 话题 | {topics or '（无）'} |",
-        f"| 整段文案 | {len(text)} 字（上限 1000） |",
+        f"| 整段文案 | {len(text)} 字{limit_text} |",
         "| 封面 | `cover.jpg`（与成片同比例） |",
         "",
         "## 步骤",
@@ -190,7 +195,8 @@ def _limits_or_empty(limits_loader, platform: str) -> dict:
 
 def preflight_findings(meta: epmeta.EpisodeMeta, info: preflight.VideoInfo,
                        episode: str,
-                       capabilities_dir: str | Path | None = None) -> list:
+                       capabilities_dir: str | Path | None = None,
+                       limits: dict | None = None) -> list:
     """出包前的预检：文案层 + 技术层 + 抖音专属层。
 
     返回的 finding 里 `error` 的必须先改，`warning` 的要写进清单。
@@ -205,11 +211,12 @@ def preflight_findings(meta: epmeta.EpisodeMeta, info: preflight.VideoInfo,
     findings = _for_douyin(findings)
     findings.extend(preflight.check_video(info, "douyin", capabilities_dir))
 
+    if limits is None:
+        limits = _limits_or_empty(limits_loader, "douyin")
     copy = contract.slice_copy(meta)
     text = contract.build_text(copy)
     findings.extend(
-        _douyin_rule_findings(
-            text, _limits_or_empty(limits_loader, "douyin"), episode))
+        _douyin_rule_findings(text, limits, episode))
     return findings
 
 
@@ -225,7 +232,8 @@ def build_package(episode: str, meta: epmeta.EpisodeMeta, video: str | Path,
         raise FileNotFoundError(f"成片不存在：{video_path}")
 
     info = preflight.probe(video_path)
-    findings = preflight_findings(meta, info, episode, capabilities_dir)
+    limits = _limits_or_empty(_douyin_limits_loader(capabilities_dir), "douyin")
+    findings = preflight_findings(meta, info, episode, capabilities_dir, limits)
     errors = [f for f in findings if f.level == epmeta.ERROR]
     if errors:
         # 有硬约束违规就不出包——宁可现在报错，也不要出一个发不出去的包。
@@ -238,24 +246,34 @@ def build_package(episode: str, meta: epmeta.EpisodeMeta, video: str | Path,
     previous = store.get(episode)
     digest = preflight.file_sha256(video_path)
 
-    files: dict[str, Path] = {}
+    # 包里该有的东西。**清单、封面、软链一样都不能少**——少了就是
+    # 一个发不出去的包，而命令会报「成功」。
+    names = ("video.mp4", "cover.jpg", "title.txt", "description.txt",
+             "topics.txt", "text.txt", "publish.md")
+    files = {name: target / name for name in names}
+
     reused = False
     if previous.video_sha256 == digest and (target / "meta.json").is_file():
         # 成片没变：抽帧与软链复用，不重做费事的那部分。
-        reused = True
-        meta_file = json.loads((target / "meta.json").read_text(encoding="utf-8"))
-        files = {name: target / name for name in meta_file["files"]}
-    else:
+        # **但要复查包里东西还在不在**：软链会悬空（成片被删了/换了），
+        # 别的文件也会被人手删。少了任何一件就重出——复用不是
+        # 「目录还在就算数」。
+        missing = sorted(name for name, path in files.items()
+                         if not path.exists())
+        if not missing:
+            reused = True
+    if not reused:
         target.mkdir(parents=True, exist_ok=True)
         assets.make_cover(video_path, copy.cover_at, target)
         link = target / "video.mp4"
         if link.exists() or link.is_symlink():
             link.unlink()
         link.symlink_to(video_path.resolve())
-
-        names = ("video.mp4", "cover.jpg", "title.txt", "description.txt",
-                 "topics.txt", "text.txt", "publish.md")
-        files = {name: target / name for name in names}
+    else:
+        # 封面重抽一次：包里那张是上一次抽的，而元数据里的取帧点可能改了。
+        # 封面与 `meta.json` 记的 `cover_at` 对不上，人按清单选封面就会
+        # 选错那一帧（清单说 1.0 秒，包里那张是 3 秒的）。
+        assets.make_cover(video_path, copy.cover_at, target)
 
     # **文案每次都按当前元数据重写。**
     # 成片没变 ≠ 文案没变：改了标题再重跑，必须出新标题。
@@ -267,7 +285,8 @@ def build_package(episode: str, meta: epmeta.EpisodeMeta, video: str | Path,
     # text.txt 是平台真正要的那一个字段：标题、正文、话题拼好的整段。
     (target / "text.txt").write_text(text, encoding="utf-8")
     (target / "publish.md").write_text(
-        _checklist(episode, copy, info, text, warnings), encoding="utf-8")
+        _checklist(episode, copy, info, text, warnings, limits),
+        encoding="utf-8")
 
     # 人工回填的发布状态不能被出包抹掉。
     # 成片没变 → 之前发出去的就是这一条，状态保留；

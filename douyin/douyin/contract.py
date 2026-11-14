@@ -28,20 +28,58 @@ from pyv import epmeta
 #
 # **拦的是形态，不是白名单。** 「https://growdu.cn」和「加V: abc123」长得
 # 完全不一样，但性质一样——都是把人引到站外。抖音限流的常见原因就是这个。
+# 所以每条规则都按「长什么样」来写（网址长什么样、微信号长什么样），
+# 而不是列具体的值（列不完，也不该列）。
+#
+# 域名那条是唯一的例外：**后缀没法穷举**（`.xyz`、`.icu` 也是真的域名），
+# 所以按形态收——「一段词 + 一个点 + 2 到 24 个字母」，
+# 再把**肯定不是域名的后缀**放行：文件后缀（正文里写 README.md 是常事）
+# 与产品词（gpt-4o.mini 这种模型名）。
 #
 # 误伤是可能的（比如正文里提到某个开源项目的官网）——真遇到了就把那句话
 # 挪到别处去，**不要把闸拆了**：闸拆了之后，下一次就没人拦了。
 #
 # 「私信」**不在**这张表里：抖音私信是站内功能，不是站外引流。
+
+#: 肯定不是域名的后缀——**文件后缀 + 产品词**。
+#:
+#: 正文里写文件名、写代码、写模型名是常事，那些点后面的词不是站外引流。
+#: （`.mini` 确实是个真域名，但它在正文里出现的时候几乎都是 "gpt-4o.mini"
+#: 这种模型名。）
+_NOT_A_DOMAIN = (
+    r"md|txt|json|ya?ml|toml|ini|conf|cfg|env|log|lock|sum|mod"
+    r"|py|js|mjs|cjs|ts|tsx|jsx|html?|css|scss|sass|less|vue|svelte"
+    r"|png|jpe?g|gif|webp|bmp|svg|ico|mp[34]|mov|avi|mkv|flac|wav"
+    r"|pdf|docx?|xlsx?|pptx?|csv|zip|tar|gz|bz2|xz|7z|rar"
+    r"|sh|bash|zsh|fish|go|rs|pyi|c|cc|cpp|cxx|h|hpp|java|kt|swift|rb|php"
+    r"|sql|gradle|mk|cmake|dockerfile|makefile"
+    r"|mini|max|pro|plus|beta|alpha|preview|nightly"
+)
+
 OUTBOUND_RULES: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("网址", re.compile(r"https?://|www\.", re.IGNORECASE)),
     ("域名", re.compile(
-        r"(?<![A-Za-z0-9-])[A-Za-z0-9][A-Za-z0-9-]*\."
-        r"(?:com|cn|net|org|io|dev|me|co)(?![A-Za-z0-9-])",
+        r"(?<![A-Za-z0-9_-])[A-Za-z0-9][A-Za-z0-9-]*\."
+        r"(?!" + _NOT_A_DOMAIN + r"(?![A-Za-z0-9]))[A-Za-z]{2,24}"
+        r"(?![A-Za-z0-9-])",
         re.IGNORECASE)),
-    ("微信", re.compile(r"微\s*信|加\s*[vV]|[vV]\s*信|vx|威信")),
-    ("QQ", re.compile(r"Q\s*Q|扣\s*扣")),
-    ("电话", re.compile(r"\b1[3-9]\d{9}\b|手\s*机\s*号|电\s*话")),
+    # 微信：「加V」「加vx」「加wx」「微信号」「VX: abc」都是同一件事。
+    # 前后用字母数字挡一下：wxPython 这种库名不该被当成微信号。
+    ("微信", re.compile(
+        r"微\s*信|威\s*信|weixin|wechat"
+        r"|(?<![A-Za-z0-9])(?:wx|vx)(?![A-Za-z0-9])"
+        r"|加\s*[vVvWxX]",
+        re.IGNORECASE)),
+    # QQ：「QQ」「扣扣」；后头跟数字是正常的（QQ 号就是数字）。
+    ("QQ", re.compile(
+        r"(?<![A-Za-z0-9])q\s*q(?![A-Za-z])|扣\s*扣",
+        re.IGNORECASE)),
+    # 手机号：**不能靠 `\b`**——中文与数字之间没有词边界，
+    # 「手机号13800138000」在 `\b1[3-9]\d{9}\b` 下根本匹配不上。
+    ("电话", re.compile(
+        r"(?<!\d)1[3-9]\d[-\s]?\d{4}[-\s]?\d{4}(?!\d)"
+        r"|手\s*机\s*号|电\s*话|联\s*系",
+        re.IGNORECASE)),
 )
 
 # 拼装 `text` 时的分隔。抖音的文案是一整段，不是几个独立字段。

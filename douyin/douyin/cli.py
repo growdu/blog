@@ -76,6 +76,11 @@ def cmd_package(args: argparse.Namespace) -> int:
     except epmeta.MetaError as error:
         print(f"ERROR {error}", file=sys.stderr)
         return 1
+    except FileNotFoundError as error:
+        # 成片在预检之后就没了（被人删了、路径写错了）：报错，别把 traceback
+        # 甩到终端上——那看着像崩溃，不像「这一条没出包」。
+        print(f"ERROR {error}", file=sys.stderr)
+        return 1
 
     for warning in result.warnings:
         print(f"WARNING {warning}")
@@ -100,27 +105,41 @@ def cmd_mark(args: argparse.Namespace) -> int:
 
     抖音这一档只有 `published` 一档：抖音创作者后台的草稿能力没核实过，
     不设一个没验证过的档位（规格 §6.6.1）。
+
+    **先做完会失败的事，再落状态。** 顺序反了就会留下假的「已发布」：
+    状态文件写着已发布、快照也写了链接，而发布包根本不存在——
+    下一个人照着快照去找，找不到任何东西。
     """
     if not args.url:
         print("ERROR published 需要 --url（公开链接）", file=sys.stderr)
         return 1
 
-    store = state.StateStore(Path(args.out) / "state.json")
-    current = store.get(args.episode)
-    target = Path(args.out) / args.episode
+    # 1. 元数据：读不到就退出（这一期压根没配抖音文案）
+    try:
+        meta = epmeta.load_meta(args.episode)
+    except epmeta.MetaError as error:
+        print(f"ERROR {error}", file=sys.stderr)
+        return 1
+    title = _title_of(meta)
 
-    current.status = "published"
-    current.published_url = args.url
+    # 2. 发布包：没有包就没有「发出去的是哪一版」——不许回填
+    target = Path(args.out) / args.episode
     try:
         package.mark_published(target, args.url)
     except FileNotFoundError as error:
-        print(f"WARNING {error}", file=sys.stderr)
+        print(f"ERROR {error}", file=sys.stderr)
+        print("      没有发布包就回填不了：先出包，再上传，再回填"
+              f"（python -m douyin.cli package {args.episode}）",
+              file=sys.stderr)
+        return 1
+
+    # 3. 到这儿才算成了：状态与快照一起落
+    store = state.StateStore(Path(args.out) / "state.json")
+    current = store.get(args.episode)
+    current.status = "published"
+    current.published_url = args.url
     reason = "人工发布后回填"
-
     store.save(args.episode, current)
-
-    meta = epmeta.load_meta(args.episode)
-    title = _title_of(meta)
 
     outbox = Path(args.outbox) if args.outbox else snapshot.OUTBOX_DIR
     snapshot.write_snapshot(

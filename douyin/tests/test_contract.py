@@ -116,6 +116,54 @@ def test_outbound_contact_is_reported(offender):
     assert problems, f"{offender!r} 没被拦下来"
 
 
+@pytest.mark.parametrize("offender", [
+    "加wx growdu",           # 微信号：wx
+    "VX: growdu",            # 微信号：大写 VX
+    "vx:growdu",             # 微信号：小写 vx
+    "加 WX: growdu",         # 微信号：加 WX
+    "qq123456",              # QQ：小写，后面直接跟数字
+    "QQ 123456",
+    "扣扣 123456",
+    "手机号13800138000",      # 手机号：中文与数字之间**没有词边界**
+    "联系 13800138000",
+    "138-0013-8000",         # 手机号：带分隔符
+    "见 claude.ai",          # 域名：白名单之外的后缀
+    "见 foo.xyz",
+    "见 example.io",
+])
+def test_every_shape_of_outbound_is_reported(offender):
+    """**每一种形态都得拦得住**，不只是列出来的那几个。
+
+    上一版规则漏了一大截：`vx` 没带 `IGNORECASE`（`VX:` 直接放行）、
+    没有 `wx`、手机号靠 `\b` 而中文与数字之间根本没有词边界
+    （`手机号13800138000` 放行）、域名只有八个后缀的白名单——
+    而模块注释却自称「拦的是形态，不是白名单」，两处说法打架。
+
+    这里逐条钉住：**规则按形态写，就得每种形态都拦得住。**
+    """
+    problems = contract.check_no_outbound(f"正文。{offender}")
+    assert problems, f"{offender!r} 没被拦下来"
+
+
+@pytest.mark.parametrize("ordinary", [
+    "看 README.md 的说明",       # 文件后缀不是域名
+    "node.js 的文档",            # 同上
+    "gpt-4o.mini 这个模型",      # 产品词不是域名
+    "用 3.5 版本",               # 数字不是后缀
+    "U.S.A 的格式",              # 单字母不是后缀
+    "i.e. 就是这个",             # 同上
+    "wxPython 这个库",           # 库名不是微信号
+    "Python 3 与 PostgreSQL 18",
+    "有问题欢迎私信我",
+])
+def test_ordinary_words_are_not_outbound(ordinary):
+    """**误伤也是错**——闸太宽会把正常的文案也拦住，人就得改稿。
+
+    拦的是站外引流，不是「句子里有个点」。
+    """
+    assert contract.check_no_outbound(ordinary) == [], ordinary
+
+
 def test_private_messages_are_not_outbound():
     """私信是**站内**功能，不是站外引流——不能误伤。"""
     assert contract.check_no_outbound("有问题欢迎私信我") == []
