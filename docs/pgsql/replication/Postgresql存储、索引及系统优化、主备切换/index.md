@@ -1,8 +1,16 @@
-# 0 Postgresql存储、索引及系统优化、主备切换
+# PostgreSQL存储、索引及系统优化、主备切换
 
-<font color="red">基于pg12描述。</font>
+| 编写人 | 编写内容 | 编写时间 |
+| --- | --- | --- |
+| growdu | 修订：去掉标题里的编号残留，把版本基线提到开头做显眼说明；修章节编号撞号与标题层级错乱；4.1.5按PG 12重写；pg_basebackup -R、wal_keep_size、vacuum_defer_cleanup_age三处补版本标注；补前置条件清单与结尾巡检清单 | 2026-11-14 |
 
-## 1 Postgresql存储
+> **版本基线**：本文以PostgreSQL 12为基线。PostgreSQL 13起`wal_keep_segments`改名为`wal_keep_size`（单位从「段」变成MB）；PostgreSQL 15起`pg_start_backup()`/`pg_stop_backup()`改名`pg_backup_start()`/`pg_backup_stop()`；PostgreSQL 16起`vacuum_defer_cleanup_age`被移除。这三处是全文版本边界最要紧的地方，正文里就地标注，不要照着旧版本抄。
+
+本文讲三件事：数据在磁盘上长什么样（存储结构）、索引怎么选、系统层面怎么调，最后落到主备集群怎么搭、怎么切。
+
+阅读本文需要知道SQL与事务的基本概念，以及WAL（预写日志）是什么。
+
+## 1 PostgreSQL存储
 
 ### 1.1 数据（表）逻辑结构
 
@@ -14,7 +22,13 @@
 - 表、索引：一个数据库中有很多表、索引。一般来说，在PostgreSQL中表的术语为“Relation”，而在其他数据库中则叫“Table”。
 - 数据行：每张表中都有很多行数据。在PostgreSQL中行的术语一般为“Tuple”，而在其他数据库中则叫“Row”。
 
-在PostgreSQL中，逻辑对象是有层次关系的，数据库创建后，有一个叫数据库簇的概念，虽然数据库簇的英文为database cluster，但它并不是数据库集群的意思，故而翻译为数据库簇。在数据库簇中可以创建很多数据库（使用create database创建），也就是说，数据库簇相当于是一个数据库的容器。而PostgreSQL中的database与MySQL中的Database完全不是一个概念，PostgreSQL的Database是一个多租户的概念，与Oracle 12C的Pluggable Database类似，主要实现租户隔离。在Database下，可以有多个模式（Schema），数据库逻辑存储结构的层次关系下图所示。
+在PostgreSQL中，逻辑对象是有层次关系的，数据库创建后，有一个叫数据库簇的概念，虽然数据库簇的英文为database cluster，但它并不是数据库集群的意思，故而翻译为数据库簇。
+
+在数据库簇中可以创建很多数据库（使用create database创建），也就是说，数据库簇相当于是一个数据库的容器。
+
+而PostgreSQL中的database与MySQL中的Database完全不是一个概念，PostgreSQL的Database是一个多租户的概念，与Oracle 12C的Pluggable Database类似，主要实现租户隔离。
+
+在Database下，可以有多个模式（Schema），数据库逻辑存储结构的层次关系下图所示。
 
 pg安装后，其安装目录如下：
 
@@ -214,7 +228,7 @@ root@eb2e0ae36696:/# ls $PGDATA/base/16405/16412 -al
 ```
 ### 1.2 数据（表）物理存储结构
 
-Postgresql当前不支持使用裸设备或者块设备，必须基于文件系统来存储。
+PostgreSQL当前不支持使用裸设备或者块设备，必须基于文件系统来存储。
 
 #### 1.2.1 关键概念
 
@@ -268,8 +282,11 @@ pd_flags可取值如下：
 #define PD_VALID_FLAG_BITS 0x0007
 ```
 当向表中插入数据时，postgres会分配8KB(BLCKSZ)的内存空间。
+
 除了页的头部数据占用的空间外，其余的空间都是可用于存储元组的(当然行指针也有占用空间)。
+
 当没有行数据时，pd_upper指向可用空间（空闲空间）的末尾，而pd_lower指向页头(PageHeaderData)之后的第一个空闲空间的起始位置。
+
 pd_upper - pd_lower是该页中剩余可用的空闲空间，随着元素的不断插入，pd_upper和pd_lower变量会不断地随着更新。
 
 ##### 1.2.2.2 行指针
@@ -284,7 +301,7 @@ typedef struct ItemIdData
 				lp_len:15;		/* 行内容的长度 */
 } ItemIdData;
 ```
-行指针中表示行内容在业内（块中）的偏移量是15bit，能表示的最大偏移量是2^15=32768，因此在Postgresql中的最大大小是32KB。
+行指针中表示行内容在块内的偏移量是15bit，能表示的最大偏移量是2^15=32768，因此在PostgreSQL中的最大大小是32KB。
 
 行指针的长度为4个字节，它形成一个简单的(ItemId，行指针)数组，该数组起着元组索引的作用。每个索引编号从1开始，称为“偏移数”。
 
@@ -384,7 +401,7 @@ PG中每个表都包含了一些系统字段，其中包括cmin和cmax
 - cmin
 插入该元组的命令在插入事务中的命令标识（从0开始累加）
 - cmax
-删除该元组的命令在插入事务中的命令标识（从0开始累加）
+删除该元组的命令在删除方事务中的命令标识（从0开始累加）
 
 简单来说，cmin和cmax都是表示tuple的command id，即cmin是产生该条tuple的command id，cmax是删除该tuple的command id。
 cmin和cmax用于判断同一个事务内的其他命令导致的行版本变更是否可见。如果一个事务内的所有命令严格顺序执行，那么每个命令总能看到之前该事务内的所有变更，不需要使用命令标识。
@@ -448,7 +465,10 @@ comboHash = hash_create("Combo CIDs",
 
 - infomask
 行上的xmin、xmax、cmin、cmax和CLOG日志一起用于控制行的可见性。
-每个事务在CLOG中占用两个bit，数据库运行一段时间后，如几年，就可能产生上亿个事务，最多时甚至可能达到20亿个事务，它们使用的CLOG可能占用512MB的空间，在这么大的CLOG中查询事务的状态，效率可能不高，于是PostgreSQL对查询行的可见性做了优化，把一些可见性的信息记录在infomask字段上，该字段的t_infomask中有以下与可见性相关的标志位：
+
+每个事务在CLOG中占用两个bit。数据库运行一段时间后，如几年，就可能产生上亿个事务，最多时甚至可能达到20亿个事务，它们使用的CLOG可能占用512MB的空间，在这么大的CLOG中查询事务的状态，效率可能不高。
+
+于是PostgreSQL对查询行的可见性做了优化，把一些可见性的信息记录在infomask字段上，该字段的t_infomask中有以下与可见性相关的标志位：
 
 ```c
 #define HEAP_HASNULL			0x0001	/* has null attribute(s) */
@@ -539,7 +559,7 @@ PG是通过数据行上的xmin和xmax来判断对某事务是否可见，那么�
 
 PostgreSQL的MVCC机制中，更新和删除操作并不是对原有的数据空间进行操作，而是通过对元组（tuple）的多版本形式来实现的。而由此引发了过期数据的问题，即当一个版本的元组对所有事物都不可见时，那么它就是过期的，此时它占用的空间是可以被释放的。
 
-上述过期空间的释放工作是交给VACCUM来进行的。在这个过程中，VACCUM会将数据页上的过期元组的空间标记为可用，而当有新的数据插入时，也会优先使用这些可用空间。因此如何将这些可用空间管理起来，并在需要的时候能够高效地分配出去是一个需要解决的问题。
+上述过期空间的释放工作是交给VACUUM来进行的。在这个过程中，VACUUM会将数据页上的过期元组的空间标记为可用，而当有新的数据插入时，也会优先使用这些可用空间。因此如何将这些可用空间管理起来，并在需要的时候把它分配出去，是一个需要解决的问题——FSM用大根堆组织各数据页的空余空间，取堆顶就能拿到当前最大的空余空间。
 
 当插入新行时，如果多个数据块中都有空闲空间，应把数据行插到哪个有空闲空间的数据块中呢？
 
@@ -548,13 +568,13 @@ PostgreSQL的MVCC机制中，更新和删除操作并不是对原有的数据空
 > - 要记录每个数据块空闲空间的大小。
 > - 查找时，不能一个一个地找，要实现快速查找
 
-Postgresql引入了FSM（Free Space Map）结构来管理数据页中的空闲空间。FSM是存在以_fsm为后缀的文件中的，每个表都有一个对应的fsm文件。
+PostgreSQL引入了FSM（Free Space Map）结构来管理数据页中的空闲空间。FSM是存在以_fsm为后缀的文件中的，每个表都有一个对应的fsm文件。
 
 FSM的存在的意义就是为了管理空闲资源，并且让它们可以快速地被再次使用，所以结构的设计要以小而快的目标。FSM的空间管理中，没有细粒度到数据页的每个比特.为缩小FSM文件的大小，只使用一个字节来记录一个数据块中的空闲。即将最小单元定义为页大小（BLCKSZ）的256分之一，也就是说，在默认8KB数据页的大小下，从FSM的角度观察，它有256（2^8）个单元。
 
 `从PostgreSQL 8.4版本之后，对每个数据文件创建一个名为“<表oid>_fsm”的文件，如假设一个表“test01”的OID为“25566”，则它的FSM文件名为“25566_fsm”。`
 
-为了快速查找到满足要求的数据块，PostgreSQL使用了树型结构组织FSM文件,FSM中将每个页的空余空间信息通过一个大根堆的形式组织的, <font color="red"> 想要知道是否有满足需求的空间，只需要从堆的根获取到当前最大的空余空间就可以快速的判断，减少了整体的判断次数，提高效率 </font>。其结构如下：
+为了快速查找到满足要求的数据块，PostgreSQL使用了树型结构组织FSM文件,FSM中将每个页的空余空间信息通过一个大根堆的形式组织的, <font color=“red”> 想要知道是否有满足需求的空间，只需要从堆的根获取到当前最大的空余空间就可以快速的判断，减少了整体的判断次数 </font>。其结构如下：
 
 堆中的每个叶子节点都对应一个数据页，叶子节点上记录的是数据页的可用单元的个数，例如，上图中P1中当前包含了6个空闲单元。每个非叶子节点上的记录的则是它的子节点中较大的可用数目。
 
@@ -573,11 +593,11 @@ FSM文件固定使用3层树型结构，第0层和第1层为查找辅助层，�
 为什么fsm只需要3层二叉树？
 
 >fsm实际在文件中也是按页存储的,对于BLCKSZ是8KB的场景，每个二叉树可以大约存储8*1024/2个二叉树叶子节点，即4000个左右。三层二叉树共可以存储4000^3=(2^2*2^10)^3=2^36个数据页。
-我们知道，Postgresql中每张表最多有2^32-1个数据页，因而三层二叉树即可满足。
+我们知道，PostgreSQL中每张表最多有2^32-1个数据页，因而三层二叉树即可满足。
 
 按照前文所述，fsm使用1个字节来表示一个数据块，一个字节可以取值0~255共256个单元，若BLCKSZ为8KB，则每个单元表示32字节空闲空间。
 
-Postgresql提供了一个插件pg_freespacemap可供我们查询FSM，该插件提供了一种方法来检查空闲空间映射（FSM）。
+PostgreSQL提供了一个插件pg_freespacemap可供我们查询FSM，该插件提供了一种方法来检查空闲空间映射（FSM）。
 
 它提供了一个称为pg_freespace的函数，或者准确地说是两个重载的函数。这些函数显示空闲空间映射中为一个给定页面所记录的值，或者显示关系中所有页面的记录值。
 
@@ -594,11 +614,15 @@ postgres=#
 ```
 #### 1.2.5 可见性映射表文件
 
-在PostgreSQL中更新、删除行后，数据行并不会马上从数据块中被清理掉，而是需要等VACUUM时清理。为了能加快VACUUM清理的速度并降低对系统I/O性能的影响，PostgreSQL在8.4.1版本之后为每个数据文件加了一个后缀为“_vm”的文件，此文件被称为可见性映射表文件，简称VM文件。VM文件中为每个数据块存储了一个标志位，用来标记数据块中是否存在需要清理的行。有该文件后，做VACUUM扫描此文件时，如果发现VM文件中该数据块上的位表示该数据块没有需要清理的行，VACUUM就可以跳过对这个数据块的扫描，从而加快VACUUM清理的速度。
+在PostgreSQL中更新、删除行后，数据行并不会马上从数据块中被清理掉，而是需要等VACUUM时清理。
+
+为了能加快VACUUM清理的速度并降低对系统I/O性能的影响，PostgreSQL在8.4.1版本之后为每个数据文件加了一个后缀为“_vm”的文件，此文件被称为可见性映射表文件，简称VM文件。VM文件中为每个数据块存储了一个标志位，用来标记数据块中是否存在需要清理的行。
+
+有该文件后，做VACUUM扫描此文件时，如果发现VM文件中该数据块上的位表示该数据块没有需要清理的行，VACUUM就可以跳过对这个数据块的扫描，从而加快VACUUM清理的速度。
 
 VACUUM有两种方式，一种被称为“Lazy VACUUM”，另一种被称为“Full VACUUM”，VM文件仅在Lazy VACUUM中使用，Full VACUUM操作则需要对整个数据文件进行扫描。
 
-#### 1.2.6 reference
+#### 1.2.6 参考资料
 
 1. https://blog.csdn.net/weixin_39540651/article/details/119139620
 2. https://zhuanlan.zhihu.com/p/67725967
@@ -608,7 +632,7 @@ VACUUM有两种方式，一种被称为“Lazy VACUUM”，另一种被称为“
 6. https://wiki.postgresql.org/images/8/81/FSM_and_Visibility_Map.pdf
 7. https://www.eggtart.icu/learning/posgresql-fsm/
 
-### 1.2 控制文件
+### 1.3 控制文件
 
 PostgreSQL的控制文件记录了数据库的重要信息，如数据库的系统标识符“system_identifier”、系统表版本“Catalog version number”、实例状态、Checkpoint信息、数据页的块大小、WAL日志的页大小及文件大小、一些实例备份和恢复信息等。
 
@@ -669,7 +693,7 @@ Data page checksum version:           0
 Mock authentication nonce:            8242cbd9ab9f94ca6eec380df819fa397c0b2fd6bdbd64e76d3df8cd9bff5504
 root@1db814f27ee9:/# 
 ```
-#### 1.2.1 数据库唯一标识
+#### 1.3.1 数据库唯一标识
 
 数据库的唯一标识串“Database system identifier”用于唯一标识一套数据库系统，流复制的主数据库和备数据库有相同的数据库唯一标识串。在备库和主库建立流复制关系时需要根据该标识来确认是否能建立流复制关系，如果数据库唯一标识不同，将无法建立流复制关系。
 
@@ -684,17 +708,17 @@ postgres=# SELECT to_timestamp(((7337595217489322023>>32) & (2^32 -1)::bigint));
 
 postgres=# 
 ```
-#### 1.2.2 checkpoint信息
+#### 1.3.2 checkpoint信息
 
-Postgresql采用WAL日志来保证数据一致性，优先保证WAL日志写入磁盘。当数据库宕机时，可以通过重放wal日志来恢复数据库。但wal日志重放存在如下问题：
+PostgreSQL采用WAL日志来保证数据一致性，优先保证WAL日志写入磁盘。当数据库宕机时，可以通过重放wal日志来恢复数据库。但wal日志重放存在如下问题：
 
 - WAL重做日志不可以无限增大，因为WAL日志会占用一定的空间。
 - 重放WAL日志会占用时间，不可能一个数据库宕机后我们花费很长时间来进行恢复，通常需要在有限的时间内完成恢复，如在几分钟之内完成。
 - 缓冲区不可能无限大，所以不管怎么样，都需要把一定的脏数据刷新到磁盘中，需要考虑必须要先刷新哪些脏数据等问题。
 
-为解决以上问题，Postgresql提供了检查点机制。检查点只是一个数据库事件，该事件触发后将会执行一个操作，而此操作可以保证把事件之前的脏数据全部刷新到磁盘中。Checkpoint发生得越频繁，在数据库实例宕机后重放的WAL日志量就越少，当然重做的日志量的多少也取决于发生宕机的时间点，发生宕机的时间点越靠近最后的检查点，重做的日志量也就越少。
+为解决以上问题，PostgreSQL提供了检查点机制。检查点只是一个数据库事件，该事件触发后将会执行一个操作，而此操作可以保证把事件之前的脏数据全部刷新到磁盘中。Checkpoint发生得越频繁，在数据库实例宕机后重放的WAL日志量就越少，当然重做的日志量的多少也取决于发生宕机的时间点，发生宕机的时间点越靠近最后的检查点，重做的日志量也就越少。
 
-Postgresql的控制文件中存放了checkpoint的相关信息，其内容如下：
+PostgreSQL的控制文件中存放了checkpoint的相关信息，其内容如下：
 
 ```shell
 Latest checkpoint location:           0/16AFEB0
@@ -732,7 +756,7 @@ checkpoint写入wal日志的流程如下：
 1. 从 pg_control 文件中找到最新的 checkpoint 位置
 2. 从 checkpoint 找到 redo point 的位置，开始重放日志
 
-#### 1.2.3 备库相关信息
+#### 1.3.3 备库相关信息
 
 备库的控制信息与主库并不完全相同，主要体现在如下两个字段不一致。
 
@@ -757,13 +781,13 @@ Min recovery ending loc's timeline:   1
 为什么在主库上不需要这两项内容呢？
 >因为在主库上，只有把当前所有的WAL日志全部应用完成之后才能对外提供服务，而备库是不断地从主库接收日志，然后不断地应用日志，没有把当前WAL日志应用完的说法，所以在备库上需要知道应用多少日志之后就可以对外提供只读服务了。
 
-#### reference
+#### 参考资料
 
 1. https://zhuanlan.zhihu.com/p/360506744
 
-### 1.3 WAL文件
+### 1.4 WAL文件
 
-#### 1.3.1 关键概念
+#### 1.4.1 关键概念
 
 - wal：WAL文件是“Write Ahead Log”的简称，就是数据库重做日志，与Oracle的Redo Log的功能是一样的。
 
@@ -779,7 +803,7 @@ drwx------  2 postgres postgres    6 Feb 20 08:16 archive_status
 ```
 - LSN：“Log Sequence Number（日志序列号）”，是一个不断增长的8字节（64bit）长数字，用于记录WAL日志的绝对位置，随着数据库WAL日志的不断增加，LSN也会不断地增长。
 
-#### 1.3.2 wal文件构成
+#### 1.4.2 wal文件构成
 
 WAL文件名的24个字符由三部分组成:
 
@@ -790,13 +814,13 @@ WAL文件名的24个字符由三部分组成:
 WAL日志文件默认大小为16MB，如果想改变其大小，在PostgreSQL10.X及之前的版本中需要重新编译程序，在PostgreSQL11.X版本之后，可以在Initdb初始化数据库实例时指定WAL文件的大小。
 如果WAL文件是默认大小，即16MB时，LogSeg最大为FF，即000000～0000FF，即在文件名中，最后8字节中前6字节总是0。这时因为LSN的低32bit的值再除以WAL文件大小［2^32/(16*1024*1024)=256］最大只能是256，换算成十六进制，即FF。
 
-#### 1.3.3 wal文件循环复用
+#### 1.4.3 wal文件循环复用
 
 PostgreSQL的循环覆盖写是通过把旧的WAL日志“重命名”来实现的。发生一次Checkpoint之后，此Checkpoint点之前的WAL日志文件都可以删除，而PostgreSQL中一般并不会将其删除，而是“重命名”旧的WAL文件使之成为一个新的WAL文件。所以WAL文件目录下文件序号最大的那个WAL文件并不是当前正在写的WAL文件，因为这个WAL文件有可能是前一次Checkpoint时重命名旧文件产生的。
 
 PostgreSQL在源代码中的“改名”方法实际上并不是用改名的方法实现的，而是用先创建一个新硬链接文件指向旧文件，然后再删除旧文件的方法。 硬链接不占用额外的存储空间，因为它们只是指向同一文件的不同名称，可以使用不同的名称来引用同一个文件，而无需创建该文件的多个副本。
 
-#### 1.3.4 wal日志归档
+#### 1.4.4 wal日志归档
 
 由于wal日志回收和循环复用的关系，以及备份还原的需要，一般需要对wal日志进行归档。wal日志归档不是默认开启的功能，需要配置归档命令，将wal日志从pg_wal目录下拷贝到非data目录下。
 
@@ -810,9 +834,9 @@ select pg_switch_wal();
 2. wal日志写满后触发归档
 3. 设置archive_timeout
 
-### 1.4 clog文件
+### 1.5 clog文件
 
-#### 1.4.1 clog文件简介
+#### 1.5.1 clog文件简介
 
 PostgreSQL把事务状态记录在CommitLog中。PostgreSQL 9.X及之前版本中CLOG文件在数据目录的pg_clog子目录下，从PostgreSQL10版本开始，CLOG文件是在pg_xact子目录下。
 
@@ -824,12 +848,12 @@ PostgreSQL把事务状态记录在CommitLog中。PostgreSQL 9.X及之前版本�
 
 CommitLog文件是一个位图文件，因为事务有上述4种状态，所以需要用两位来表示一个事务的状态。
 
-Postgresql对clog进行了如下优化：
+PostgreSQL对clog进行了如下优化：
 
 - PostgreSQL对CommitLog文件进行了Cache，即在共享内存中有clog buffer，所以多数情况下不需要读取CommitLog文件
 - 在每行上有一个标志字段“t_infomask”，如果标志位“HEAP_XMIN_COMMITTED”被设置，就知道xmin代表的事务已提交，则不需要到CommitLog文件中去判断。同样，如果“HEAP_XMAX_COMMITTED”被设置，就知道xmin代表的事务已提交，则不需要到CommitLog文件中去判断。
 
-## 2 Postgresql索引
+## 2 PostgreSQL索引
 
 ### 2.1 索引简介
 
@@ -867,7 +891,9 @@ CREATE [ UNIQUE ] INDEX [ CONCURRENTLY ] [ 名称 ] ON 表名 [ USING 方法 ]
 
 postgres=# 
 ```
-一般，在创建索引的过程中会把表中的数据全部读一遍，该过程所用时间由表的大小决定，对于较大的表，可能会花费很久的时间。在创建索引的过程中，对表的查询可以正常常运行，但对表的增、删、改等操作需要等索引建完后才能进行，为此PostgreSQL提供了一种并发建索引的方法，并发创建索引不会影响表的增删改操作，这是通过在CREATE INDEX中加CONCURRENTLY选项来实现的。当该选项被启用时，PostgreSQL会执行表的两次扫描，因此该方法需要更长的时间来建索引。
+一般，在创建索引的过程中会把表中的数据全部读一遍，该过程所用时间由表的大小决定，对于较大的表，可能会花费很久的时间。在创建索引的过程中，对表的查询可以正常运行，但对表的增、删、改等操作需要等索引建完后才能进行。
+
+为此PostgreSQL提供了一种并发建索引的方法，并发创建索引不会影响表的增删改操作，这是通过在CREATE INDEX中加CONCURRENTLY选项来实现的。当该选项被启用时，PostgreSQL会执行表的两次扫描，因此该方法需要更长的时间来建索引。
 
 ### 2.4 索引的特性
 
@@ -936,15 +962,15 @@ BRIN表示块范围索引。BRIN是为处理这样的表而设计的：表的规
 
 postgresql 按照一定的数目（默认 128， 可以通过 pages_per_range 指定），将相邻的数据 Block 分成一组，然后计算它的的取值范围。当需要查看数据时，会先遍历这些取值范围。当要查找的数据不在此范围内，则可以直接跳过这些数据 Block。
 
-当数据按照一定规则新增时，比如监控数据，数据的查找会非常高效。而且块级索引的空间占用会很小，多个相邻的Block才会对应一条索引记录。
+当数据按照一定规则新增时，比如监控数据，数据的查找代价很低：默认128个Block组成一个范围，每个范围只对应一条索引记录，索引本身占用的空间也很小。
 
 如果数据排列的比较随机时，那么索引效果就非常差，因为它起不到快速筛除不符合的数据 Block。造成数据排列乱的原因，还有频繁的删除数据，因为 postgresql 会将删除空间回收掉，后续的数据新增都会填补这些空间。虽然可以配置删除的数据不会回收，但是会造成存储空间浪费，所以块级索引还不适合频繁删除数据的场景。
 
-### 2.5 reference
+### 2.5 参考资料
 
 1. https://zhmin.github.io/posts/postgresql-block-range-index/
 
-## 3 Postgresql系统优化
+## 3 PostgreSQL系统优化
 
 ### 3.1 优化准则
 
@@ -1112,18 +1138,22 @@ SSD硬盘内部通常有以下几种优化。
 文件系统中除记录文件内容信息外，还记录了一些元数据（如目录树、文件名、文件的块分配列表），以及和文件相关的一些属性（如文件名、文件的创建时间等），还有磁盘的空间分配信息（如哪些块已被分配、哪些块是空闲的）。
 
 在写一个文件时，除了写文件的内容信息外，还会写一些元数据。为了保证数据的可靠性，在出现宕机等异常情况后，文件系统除了要保证元数据本身一致，还要求文件内容的数据与元数据之间也是一致的。
+
 元数据一致性当然是最重要的，不能将同一个数据块分配给两个文件，这会导致一个文件的内容被另一个文件覆盖。分配出去的数据块必须有文件在使用，否则会导致明明现有文件并未占用多少空间，但文件系统上却没有空间了。当向一个文件的末尾添加数据时，文件会扩大，如果元数据记录了该文件的扩大，但新数据没有实际写入，就会导致新扩大的数据块中存在垃圾数据，这有可能导致问题产生。
 
-早期的文件系统并不能保证元数据与数据的一致性，如Windows下的FAT文件系统和Ext2文件系统。当一个操作需要多次写元数据或一次写元数据一次写数据时，操作中的多个步骤通常不是原子性的，要保证一致性就必须要有类似数据库中的事务的概念。要有事
-务就需要有日志，也就是说，要通过日志来保证整个操作的一致性。所以现在流行的文件系统都被设计成有日志的，如Ext3、Ext4及Windows下的NTFS文件系统。
+早期的文件系统并不能保证元数据与数据的一致性，如Windows下的FAT文件系统和Ext2文件系统。当一个操作需要多次写元数据或一次写元数据一次写数据时，操作中的多个步骤通常不是原子性的，要保证一致性就必须要有类似数据库中的事务的概念。
 
-但写日志相当于原先的一次写变成了两次写，可能会降低写的性能。为了降低对性能的影响，多数文件系统通常只是把元数据写入日志，而实际数据块内容的变更并不会写入日志。如果一个文件已被写过，再写以前的数据块时，不会分配新的数据块；关于空间分配的元数据也不会被更新，通常只更新文件上的时间戳。对于数据库来说，这种情况下通常不会产生不一致，所以数据库使用重写会更安全一些，PostgreSQL中WAL日志的写就是这样的。
+要有事务就需要有日志，也就是说，要通过日志来保证整个操作的一致性。所以现在流行的文件系统都被设计成有日志的，如Ext3、Ext4及Windows下的NTFS文件系统。
 
-##### 3.3.2.1 Ext2文件系统
+但写日志相当于原先的一次写变成了两次写，可能会降低写的性能。为了降低对性能的影响，多数文件系统通常只是把元数据写入日志，而实际数据块内容的变更并不会写入日志。
+
+如果一个文件已被写过，再写以前的数据块时，不会分配新的数据块；关于空间分配的元数据也不会被更新，通常只更新文件上的时间戳。对于数据库来说，这种情况下通常不会产生不一致，所以数据库使用重写会更安全一些，PostgreSQL中WAL日志的写就是这样的。
+
+##### 3.3.2.2 Ext2文件系统
 
 Ext2文件系统不是一种日志文件系统，它的性能比较好，但由于没有日志，在写数据时，如果机器突然宕机，文件系统中的数据可能会不一致。Ext2文件系统并不适合存放PostgreSQL的数据文件。
 
-##### 3.3.2.2 Ext3文件系统
+##### 3.3.2.3 Ext3文件系统
 
 Ext3文件系统是Linux下使用最广泛的文件系统，它提供以下3种数据日志记录方式。
 
@@ -1141,9 +1171,10 @@ Ext3文件系统是Linux下使用最广泛的文件系统，它提供以下3种�
 rootflags=data=journal
 ```
 从理论上说，writeback模式的性能最好，但可靠性最差；journal模式的性能最差，但可靠性最好。如果硬件是带电池的Raid卡，而Raid卡上都有写缓存，在写缓存的帮助下，三者的性能差异并不是很大。因为文件系统日志的写通常是顺序写，这些顺序写的数据写入Raid卡的缓存中后会立即返回，而Raid卡会在后台再把数据刷新到磁盘中，所以这种情况下三种模式的性能差异并不大。
-在PostgreSQL中通常会使用默认的ordered模式。当然也不应该完全放弃journal模式，因为journal模式提供了更全面的完整性保证。
 
-##### 3.3.2.3 Ext4文件系统
+在PostgreSQL中通常会使用默认的ordered模式。当然也不应该完全放弃journal模式——它记录的是完整的数据和元数据，断电后可以重放日志把两者恢复成一致状态。
+
+##### 3.3.2.4 Ext4文件系统
 
 Ext4最有用的功能如下。
 - 与Ext3兼容：只需执行一些命令就能将Ext3在线迁移到Ext4，而无须重新格式化磁盘或重新安装系统。原有的Ext3数据结构照样保留，Ext4将作用于新数据。
@@ -1160,11 +1191,11 @@ Ext4最有用的功能如下。
 - 更大的文件系统和更大的文件：Ext3目前最大支持16TB的文件系统和2TB的文件，Ext4则最大支持1EB（1048576TB，1EB=1024PB，1PB=1024TB）的文件系统以及16TB的文件。
 - 无限数量的子目录：Ext3目前只支持32000个子目录，而Ext4支持无限数量的子目录。
 
-##### 3.3.2.4 XFS文件系统
+##### 3.3.2.5 XFS文件系统
 
 XFS与前面讲的Ext3文件系统不同，它从一开始就设计为日志文件系统。从一些第三方的测试数据来看，在性能上，XFS相比Ext3有5%～30%的提高，所以建议在Linux环境下把PostgreSQL数据库建在XFS文件系统上。
 
-##### 3.3.2.5 Barriers I/O
+##### 3.3.2.6 Barriers I/O
 
 为了保证数据的可靠性，I/O的写顺序很重要。例如，在PostgreSQL数据库中要求必须在写入WAL日志后，数据块的数据才能被写入。
 
@@ -1195,9 +1226,9 @@ XFS也默认打开了Barriers，如果想关闭，则需要在挂载文件系统
 ```shell
 mount -o nobarrier /dev/sdb1 /data/pgdata
 ```
-##### 3.3.2.5 I/O调优方法
+##### 3.3.2.7 I/O调优方法
 
-###### 3.3.2.5.1 打开noatime
+###### 3.3.2.7.1 打开noatime
 
 每个文件上都有以下3个时间。
 - ctime：改变时间。
@@ -1208,7 +1239,7 @@ mount -o nobarrier /dev/sdb1 /data/pgdata
 ```shell
 /dev/sdd1 / xfs noatime,errors=remount-ro 0 1
 ```
-###### 3.3.2.5.2 调整预读
+###### 3.3.2.7.2 调整预读
 
 Linux环境下块设备通常都默认打开了预读，可以使用下面的命令查看预读的大小：
 
@@ -1228,7 +1259,7 @@ blockdev --setra 4096 /dev/sda
 
 如果想让全表扫描更快，可以把预读调整得更大一些，如像上例中那样把预读设置为2MB。
 
-###### 3.3.2.5.3 调整虚拟内存参数
+###### 3.3.2.7.3 调整虚拟内存参数
 
 需要调整的第一个虚拟内存参数是swappiness，该参数值的范围为0~100，为0时表示尽量使用物理内存，取值越大，越倾向于使用SWAP空间，默认值为“60”。查看此参数当前值的方法如下：
 
@@ -1275,9 +1306,11 @@ vm.overcommit_ratio=0
 ```shell
 vm.overcommit_ratio=95
 ```
-###### 3.3.2.5.4 写缓存优化
+###### 3.3.2.7.4 写缓存优化
 
-在Linux系统中，对文件的普通写，并不会马上写入磁盘中，而是会先写到内存页cache中，实际刷新到磁盘中的操作是由内核线程来完成的。在Linux2.6中，内核线程为pdflush，在Linux3.0以上则为flush进程。既然是由Linux中的一个内核线程后台刷新到磁盘中的，那么当内存中累积多少脏数据或积累多长时间后刷新是有讲究的，如果刷新得太频繁会产生过多的I/O，因为同一个数据块，在刷新到磁盘之前可能被写了好几次，但不管写了几次，实际上只会写到磁盘一次。而如果刷新太慢，会占用太多的内存，当真正需要内存时，需要先把脏数据刷新到磁盘中以腾出内存空间，从而导致PostgreSQL数据库的性能出现较大的抖动。
+在Linux系统中，对文件的普通写，并不会马上写入磁盘中，而是会先写到内存页cache中，实际刷新到磁盘中的操作是由内核线程来完成的。在Linux2.6中，内核线程为pdflush，在Linux3.0以上则为flush进程。
+
+既然是由Linux中的一个内核线程后台刷新到磁盘中的，那么当内存中累积多少脏数据或积累多长时间后刷新是有讲究的。如果刷新得太频繁会产生过多的I/O，因为同一个数据块，在刷新到磁盘之前可能被写了好几次，但不管写了几次，实际上只会写到磁盘一次。而如果刷新太慢，会占用太多的内存，当真正需要内存时，需要先把脏数据刷新到磁盘中以腾出内存空间，从而导致PostgreSQL数据库的性能出现较大的抖动。
 
 在Linux系统中有以下3个参数用于控制写缓存的过程。
 
@@ -1299,7 +1332,7 @@ vm.dirty_ratio = 10
 ```
 在实际应用中可以根据需求，通过测试来确定一个更精确的值。
 
-###### 3.3.2.5.5 调整IO调度器
+###### 3.3.2.7.5 调整IO调度器
 
 Linux系统下通常有以下3种I/O调度器。
 - cfq：完全公平队列（Completely Fair Queuing），尝试为所有的请求分配公平的I/O带宽，注意是带宽，而不是响应时间。
@@ -1318,7 +1351,7 @@ kernel /vmlinuz-2.6.18-128.e15 ro root=/dev/sda1 elevator=deadline
 ```
 实际上，改变I/O调度器对PostgreSQL性能的提升很小，所以保留默认的调度器也是可以的。
 
-##### 3.3.2.6 SSD的trim优化
+##### 3.3.2.8 SSD的trim优化
 
 当删除一个文件时，该文件在SSD内部占用的空间实际上是可以擦除的，但因为SSD内部并不了解文件系统的情况，这些可被擦除的空间仍然会被保留，这会使SSD变慢。而目前常用的文件系统（如Ext4、XFS）都提供了通知SSD哪些数据块可以被擦除的功能，
 即文件系统向SSD发送了Trim指令。当然要使用该功能，需要在mount文件系统时加上discard选项，命令如下：
@@ -1326,25 +1359,46 @@ kernel /vmlinuz-2.6.18-128.e15 ro root=/dev/sda1 elevator=deadline
 ```shell
 mount -o discard, noatime/dev/sdd1 /data
 ```
-## 4 Postgresql主备切换
+## 4 PostgreSQL主备切换
+
+> **前置条件**：动手之前先把这张表过一遍。每一项漏配都会在某个时间点炸出来，而炸出来的现象（备库起不来、主库写不进去、磁盘写满）都不指向真正的原因。
+
+| 要求 | 在哪配 | 漏了会怎样 |
+| --- | --- | --- |
+| `wal_level`至少是`replica` | 主库`postgresql.conf` | 备库连不上，报`wal_level is insufficient to support streaming replication` |
+| `max_wal_senders`大于0 | 主库`postgresql.conf` | 一个流复制连接都建不起来 |
+| `max_replication_slots`大于0（用了复制槽就要） | 主库`postgresql.conf` | 建复制槽时报错，PG 12+默认值是10 |
+| 备份/复制账号有REPLICATION权限 | `CREATE ROLE ... WITH REPLICATION;` | 认证过了却拿不到WAL |
+| `pg_hba.conf`允许replication连接 | 主库`pg_hba.conf` | 连接被拒，日志里是`no pg_hba.conf entry` |
+| `hot_standby = on` | 备库`postgresql.conf` | 备库是Warm Standby，连上去报`the database system is starting up` |
+| 备库数据目录里有空的`standby.signal` | 备库数据目录 | 备库会以主库模式启动，两个库都认为自己能写 |
+| 表空间用`-T`单独指定 | `pg_basebackup -T olddir=newdir` | 备份出来的表空间路径指向主库的目录，备库起不来 |
 
 ### 4.1 standby数据库原理
 
 数据库服务器通常允许存在一个与主库同步的在线备数据库服务器，当主数据库服务器失败后，备数据库服务器可以快速提升为主服务器并提供服务，从而实现数据库服务的高可用；同时，备数据库服务器也提供了数据库的另一个副本，当主数据库服务器的数据丢失后，备数据库服务器上还有一份数据，不会导致数据的完全丢失，从而提高数据的可靠性。
 
-另一种模式是允许多台数据库服务器同时提供负载均衡服务。因为数据库内部记录的是数据，当多台数据库同时提供服务时，不会像Web服务器那么简单，因为Web服务器是无状态的，而数据库是有状态的，主备数据库之间存在着数据同步，通常是一台主数据
-库提供读写，然后把数据同步到另一台备数据库，这台备数据库不断应用（apply）从主数据库发来的变化数据。这台备数据库服务器不能提供写服务，通常最多提供只读服务。在PostgreSQL中能提供读写全功能的服务器称为Primary Database或Master Database，若备份数据库在接收主数据库同步数据和应用同步数据时不能提供只读服务，则该备份数据库称为Warm Standby Server；而如果备份数据库在接收和应用主数据库同步数据时也能提供只读服务，则该备份数据库称为Hot Standby Server。
+另一种模式是允许多台数据库服务器同时提供负载均衡服务。因为数据库内部记录的是数据，当多台数据库同时提供服务时，不会像Web服务器那么简单，因为Web服务器是无状态的，而数据库是有状态的，主备数据库之间存在着数据同步。
+
+通常是一台主数据库提供读写，然后把数据同步到另一台备数据库，这台备数据库不断应用（apply）从主数据库发来的变化数据。这台备数据库服务器不能提供写服务，通常最多提供只读服务。
+
+在PostgreSQL中能提供读写全功能的服务器称为Primary Database或Master Database，若备份数据库在接收主数据库同步数据和应用同步数据时不能提供只读服务，则该备份数据库称为Warm Standby Server；而如果备份数据库在接收和应用主数据库同步数据时也能提供只读服务，则该备份数据库称为Hot Standby Server。
 
 #### 4.1.1 PITR原理
 
 PostgreSQL在数据目录的pg_wal子目录（10版本之前是pg_xlog子目录）中始终维护一个WAL日志文件。该日志文件记录了数据库数据文件的每次改变。最初设计该日志文件的主要目的是为了数据库异常崩溃后，能够通过重放最后一次Checkpoint点之后的日志文件，把数据库推到最终的一致状态，避免数据丢失或不一致。
 
-当然，因为此日志文件的机制也提供了另一种热备份方案：先把数据库以文件系统的方式备份出来，同时把相应的WAL日志也备份出来。虽然直接复制数据库数据文件会导致复制出来的数据文件不一致，如复制的多个数据文件不是同一个时间点的文件。同时复制一个8KB的数据块时也存在数据不一致的情况：假设刚复制完前4KB个块，而数据库又写了整个8KB的数据块的内容，这时复制的这个数据块的前4KB块和后4KB块不是一个完整的8KB的数据块，从而导致不一致。但因为有了WAL日志，即使备份出来的数据块不一致，也可以重放备份开始后的WAL日志，把备份的内容推到一致状态。
+当然，因为此日志文件的机制也提供了另一种热备份方案：先把数据库以文件系统的方式备份出来，同时把相应的WAL日志也备份出来。虽然直接复制数据库数据文件会导致复制出来的数据文件不一致，如复制的多个数据文件不是同一个时间点的文件。
 
-当有WAL日志之后，备份数据库不再需要一个完美的一致性备份，备份中的任何非一致性数据都会被重放WAL日志文件的过程纠正，所以我们可以在备份数据库时通过简单的cp命令或tar等操作系统提供的备份文件的工具来实现数据库的在线备份。
+同时复制一个8KB的数据块时也存在数据不一致的情况：假设刚复制完前4KB个块，而数据库又写了整个8KB的数据块的内容，这时复制的这个数据块的前4KB块和后4KB块不是一个完整的8KB的数据块，从而导致不一致。但因为有了WAL日志，即使备份出来的数据块不一致，也可以重放备份开始后的WAL日志，把备份的内容推到一致状态。
 
-使用简单的cp命令或其他命令把数据库在线复制出来的备份，称为基础备份，从基础备份操作开始之后产生的WAL日志和此基础备份构成了一个完整的备份。把基础备份恢到另一台机器，然后不停地从原始数据库机器上接收WAL日志，在新机器上持续重放
-WAL日志，只要应用WAL日志足够快，该备数据库就会追上主数据库的变化，拥有当前主数据库的最新数据状态。这个新机器上的数据库被称为Standby数据库。当主数据库出现问题无法正常提供服务时，可以把Standby数据库打开提供服务，从而实现高可用。
+当有WAL日志之后，备份数据库不再需要一份完全一致的文件系统备份，备份中的任何非一致性数据都会被重放WAL日志文件的过程纠正，所以我们可以在备份数据库时通过简单的cp命令或tar等操作系统提供的备份文件的工具来实现数据库的在线备份。
+
+这句话是PostgreSQL官方文档《Backup and Restore》里的原话——原文写的是 we do not need a perfectly consistent file system backup as the starting point，任何内部不一致都会被日志重放纠正。
+
+使用简单的cp命令或其他命令把数据库在线复制出来的备份，称为基础备份，从基础备份操作开始之后产生的WAL日志和此基础备份构成了一个完整的备份。把基础备份恢复到另一台机器，然后不停地从原始数据库机器上接收WAL日志，在新机器上持续重放WAL日志，只要应用WAL日志足够快，该备数据库就会追上主数据库的变化，拥有当前主数据库的最新数据状态。
+
+这个新机器上的数据库被称为Standby数据库。当主数据库出现问题无法正常提供服务时，可以把Standby数据库打开提供服务，从而实现高可用。
 
 把WAL日志传送到另一台机器上的方法有两种，一种是通过WAL归档日志方法；另一种是PostgreSQL 9.X版本开始提供的被称为流复制的方法。
 
@@ -1370,20 +1424,24 @@ archive_command = 'scp %p postgres@192.168.1.100:/backup/pgarch/%f'
 
 流复制是PostgreSQL从9.0版本开始提供的一种新的传递WAL日志的方法。使用流复制时，Primary数据库的WAL日志一产生，就会马上传递到Standby数据库。流复制传递日志的方式有两种，一种是异步方式；另一种是同步方式。
 
-使用同步方式，则在Primary数据库提交事务时，一定会等到WAL日志传递到Standby数据库后才会返回，这样可以做到
-Standby数据库接收到的WAL日志完全与Primary数据库同步，没有一点落后，当主备库切换时使用同步方式可以做到零数据丢失。
-异步方式，则是事务提交后不必等日志传递到Standby数据库就即可返回，所以Standby数据库通常比Primary数据库落后一定的时间，落后时间的多少取决于网络延迟和备库的I/O能力。
+使用同步方式，则在Primary数据库提交事务时，一定会等到WAL日志传递到Standby数据库后才会返回，这样可以做到Standby数据库接收到的WAL日志完全与Primary数据库同步，没有一点落后，当主备库切换时使用同步方式可以做到零数据丢失。
+
+异步方式，则是事务提交后不必等日志传递到Standby数据库就可以返回，所以Standby数据库通常比Primary数据库落后一定的时间，落后时间的多少取决于网络延迟和备库的I/O能力。
 
 #### 4.1.4 standby数据库的运行原理
 
 当PostgreSQL数据库异常中止后，数据库刚重启时，会重放停机前最后一个Checkpoint点之后的WAL日志，把数据库恢复到停机时的状态，恢复完成后自动进入正常的状态，可以接收其他用户的查询和修改。
 
-同步复制时，当备库出现问题后，通常会导致主库也会被hang住。PostgreSQL提供了多个Standby数据库的功能，如配置两个Standby数据库，当一个Standby数据库损坏时，主数据库不会被hang住，两个备数据库都出现问题时才会导致主数据库不能写。PostgreSQL 9.2版本开始，增加级连复制的功能，也就是一个Standby数据库后面可以再级连另一个Standby数据库，也就是说，其他Standby数据库不必都从主数据库上拉取WAL日志，可以从其他Standby数据库拉取WAL日志。
+同步复制时，当备库出现问题后，通常会导致主库也会被hang住。PostgreSQL提供了多个Standby数据库的功能，如配置两个Standby数据库，当一个Standby数据库损坏时，主数据库不会被hang住，两个备数据库都出现问题时才会导致主数据库不能写。
+
+PostgreSQL 9.2版本开始，增加级联复制的功能，也就是一个Standby数据库后面可以再级连另一个Standby数据库，也就是说，其他Standby数据库不必都从主数据库上拉取WAL日志，可以从其他Standby数据库拉取WAL日志。
 
 流复制协议不仅能传递WAL日志，也能传递数据文件，后面介绍的pg_basebackup工具就是通过流复制协议把远程主库的所有数据
 文件传输到本地的。
 
-PostgreSQL数据库是通过在数据目录下建一个特殊的文件来指示数据库启动在主库模式还是在备库模式，在PostgreSQL 12版本之前是通过文件“recovery.conf”来指示数据库启动在备库模式的（当然需要在recovery.conf中配置一些合适的内容才以），从PostgreSQL 12版本开始把recovery.conf中的配置项全部移到postgresql.conf配置文件中，不再使用recovery.conf文件。当然为了指示该数据库是备库，还需要在数据目录下建一个名为“standby.signal”的空文件。
+PostgreSQL数据库是通过在数据目录下建一个特殊的文件来指示数据库启动在主库模式还是在备库模式。在PostgreSQL 12版本之前是通过文件“recovery.conf”来指示数据库启动在备库模式的（当然需要在recovery.conf中配置一些合适的内容才可以），从PostgreSQL 12版本开始把recovery.conf中的配置项全部移到postgresql.conf配置文件中，不再使用recovery.conf文件。
+
+当然为了指示该数据库是备库，还需要在数据目录下建一个名为“standby.signal”的空文件。
 
 如果我们在postgresql.conf中配置了“hot_standby”为“on”，说明备库是“Hot Standby”，即可以只读的，如果配置“hot_standby”为“off”，说明备库是“Warm Standby”，psql是无法连接这个备库的，连接时会报如下错误：
 
@@ -1393,15 +1451,18 @@ psql: FATAL: the database system is starting up
 ```
 #### 4.1.5 创建standby备库的步骤
 
-对于PostgreSQL 12版本的数据库，只需要在数据库的数据目录下建standby.signal文件，然后重新启动数据库，数据库就会进入Standby模式下。当然由于PostgreSQL 12版本中postgresql.conf的参数“hot_standby”是打开的，该数据库是只读的。对于PostgreSQL 12版本之前的数据库，如PostgreSQL 11版本，需要创建一个recovery.conf文件，并在文件中设置如下内容：
+对于PostgreSQL 12版本的数据库，只需要在数据库的数据目录下建standby.signal文件，然后在postgresql.conf里配好primary_conninfo（流复制）或restore_command（从归档取WAL），重启数据库，数据库就会进入Standby模式下。当然由于PostgreSQL 12版本中postgresql.conf的参数“hot_standby”是打开的，该数据库是只读的。
+
+对于PostgreSQL 12版本之前的数据库，如PostgreSQL 11版本，需要创建一个recovery.conf文件，并在文件中设置如下内容：
 
 ```shell
 standby_mode = 'on'
 ```
 当我们把文件standby.signal（如果是PostgreSQL 12之前的版本数据库是recovery.conf）删除，再重启数据库，数据库就变回主库了。
 
-当然上面的步骤只是把主库转换成了备库，变成了只读库，并没有新建一个备库，通常我们需要新建一个只读备库，并从主库进行WAL日志的同步，最简单的方法是把主数据库停下来，把主数据库的数据目录原封不动地复制到备机，在备机数据库的数据目录下
-建一个指示这个库是备库的文件（如果是PostgreSQL 12及以上版本是standby.signal文件，如果是PostgreSQL 12之前的版本是recovery.conf文件），然后在指定的配置文件（如果是在PostgreSQL 12及以上版本是postgresql.conf文件，如果是PostgreSQL 12之前的版本是recovery.conf文件）中配置如何连接主库的流复制，然后启动备库就完成了Standby备库的搭建。
+当然上面的步骤只是把主库转换成了备库，变成了只读库，并没有新建一个备库。通常我们需要新建一个只读备库，并从主库进行WAL日志的同步。
+
+最简单的方法是把主数据库停下来，把主数据库的数据目录原封不动地复制到备机，在备机数据库的数据目录下建一个指示这个库是备库的文件（如果是PostgreSQL 12及以上版本是standby.signal文件，如果是PostgreSQL 12之前的版本是recovery.conf文件），然后在指定的配置文件（如果是在PostgreSQL 12及以上版本是postgresql.conf文件，如果是PostgreSQL 12之前的版本是recovery.conf文件）中配置如何连接主库的流复制，然后启动备库就完成了Standby备库的搭建。
 
 上面这种通过冷备库的方式搭建备库的方式需要停止主库，如果数据库比较大，会有比较长的停库时间，这时会不方便，所以PostgreSQL也提供了热备份的方式搭建Standby备库，即在主库不停机，也不终止正常读写的情况下，就可以在线搭建Standby备库。
 
@@ -1418,18 +1479,17 @@ standby_mode = 'on'
 
 底层API的方式搭建备库的过程和步骤如下：
 
-1. 以数据库超级用户身份连接到数据库，发出命令“SELECT pg_start_backup('label')”
-2. 执行备份：使用任何方便的文件系统工具，比如tar或cp直接把数据目录复制下来。操作过程中既不需要关闭数据库，也不需要停止对数据库的任何写操作。
-3. 再次以数据库超级用户身份连接数据库，然后发出命令“SELECT pg_stop_backup()” 。这将中止备份模式并自动切换到下一个WAL段。设置自动切换是为了在备份间隔中写入的最后一个WAL段文件可以立即为下次备份做好准备。
+1. 以数据库超级用户身份连接到数据库，发出命令“SELECT pg_start_backup('label')”（PostgreSQL 15起改名为`pg_backup_start('label')`）
+2. 执行备份：使用任何方便的文件系统工具，比如tar或cp直接把数据目录复制下来。操作过程中既不需要关闭数据库，也不需要停止对数据库的任何写操作
+3. 再次以数据库超级用户身份连接数据库，然后发出命令“SELECT pg_stop_backup()”（PostgreSQL 15起改名为`pg_backup_stop()`）。这将中止备份模式并自动切换到下一个WAL段。设置自动切换是为了在备份间隔中写入的最后一个WAL段文件可以立即为下次备份做好准备
 4. 把备份过程中产生的WAL日志文件也复制到备机上
 
 pg_start_backup()主要做了以下两项工作：
 
-1. 置写日志标志位：XLogCtl->Insert.forcePageWrites=true，也就是把这个标志设置为“t
-rue”后，数据库会把变化的整个数据块都记录到数据库中，而不仅仅是块中记录的变化
-2. 强制发生一次Checkpoint。
+1. 置写日志标志位：XLogCtl->Insert.forcePageWrites=true。上游源码的注释解释得很清楚——把变化的整个数据块都记录到WAL中，而不仅仅是块中记录的变化，否则备份期间读到的页可能是“半截”的
+2. 强制发生一次Checkpoint，把共享内存里的脏页先刷出去
 
-Standby数据库一直运行在恢复状态，如何让数据库运行在恢复状态呢？在PostgreSQL中是通过配置recovery.conf文件来实现的。在数据库启动过程中，如果发现数据目录（$PGDATA环境变量指向的目录）下存在recovery.conf，就会按recovery.conf文件中指示的情况把数据库启动到恢复状态。
+Standby数据库一直运行在恢复状态，如何让数据库运行在恢复状态呢？PostgreSQL 12是在数据目录（$PGDATA环境变量指向的目录）下放一个空的standby.signal文件来指示的，数据库启动时发现它就按postgresql.conf里的恢复配置启动到恢复状态。PostgreSQL 12之前则是靠recovery.conf文件——启动过程中如果发现数据目录下存在recovery.conf，就会按recovery.conf文件中指示的情况把数据库启动到恢复状态。
 
 ### 4.2 pg_basebackup命令行工具
 
@@ -1460,7 +1520,7 @@ PostgreSQL9.2之后支持级连复制，所以在9.2及以上的版本中pg_base
 - -D directory或--pgdata=directory：指定备份的目标目录，即备份到哪儿。如果这个目录或目录路径中的各级父目录不存在，pg_basebackup就会自动创建该目录。如果目录存在，但不为空，则会导致pg_basebackup执行失败。如果备份的输出是tar结果（指定-F tar ，后面会介绍此选项），而-D参数后的目录名写成“-”（中划线），则备份会输出到标准输出，此项功能是为了方便通过管道与其他工具配合使用。
 - -F format或--format=format：指定输出的格式。目前支持两种格式，第一种格式是原样输出，即把主数据库中的各个数据文件、配置文件、目录结构都完全一样地写到备份目录中，这种情况下“format”指定为“p”或“plain”；第二种格式是tar格式，相当于把输出的备份文件打包到一个tar文件中，这种情况下“format”应为“t”或“tar”。
 - -r，--max-rate=RATE：限速参数，热备份会在主库产生较多的I/O和网络开销，可以用该参数限制速率。速率的默认单位是“kB/s”，当然也可以指定单位“k”或“M”。
-- -R，--write-recovery-conf：是否生成recovery.conf文件。
+- -R，--write-recovery-conf：是否生成备库需要的恢复配置。PostgreSQL 12起写的是standby.signal和postgresql.auto.conf（把primary_conninfo放进去），PostgreSQL 11及以前写的是recovery.conf。
 - -x或--xlog：备份时会把备份中主库产生的WAL文件也自动备份出来，这样在恢复数据库时，做出的备份才能应用这些WAL文件把数据库推到一个一致点，然后才能打开备份的数据库。该选项与下面的选项“-X fetch”是完全一样的。使用该选项需要设置wal_keep_segments参数，以保证在备份过程中需要的WAL日志文件不会被覆盖。注意，该参数在PostgreSQL 10版本之后废弃，请用“-X fetch”替代。
 - -X method或--xlog-method=method：method可以取的值为“f”“fetch”“s”“stream”，“f” 与“fetch”相同，其含义与“-x”参数是一样的。“s”与“stream”表示的含义相同，均表示备份开始后，启动另一个流复制连接从主库接收WAL日志。这种方式避免了使用“-X f”时，主库上的WAL日志有可能被覆盖而导致失败的问题。但这种方式需要与主库建两个连接，因此使用这种方式时，主库的max_wal_senders参数要设置为大于或等于2的值。
 - -z或--gzip：仅能与tar输出模式配合使用，表明输出的tar备份包是经过gzip压缩的，相当于生成了一个*.tar.gz的备份包
@@ -1535,7 +1595,9 @@ START TIME: 2024-03-07 12:05:19 UTC
 LABEL: standby01
 START TIMELINE: 1
 ```
-上述的命令中使用的连接用户名为“postgres”，输出格式为普通原样输出“-F p”，“-P”参数表示在执行过程中输出备份的进度，“-X stream”参数表示把在备份过程中产生的xlog文件也备份出来，“-R” 参数表示在备份中会生standby.signal文件，并把连接主库的信息放到postgresql.auto.conf中，如果是PostgreSQL 12版本之前会生成配置文件“recovery.conf”，当用此备份启动备库时，只需要简单修改recovery.conf就可以把数据库启动到备库模式。“-D”参数指定了备份文件都生成到环境变量backup2目录下，“-l”参数指定了备份的标识串为“standby01”。
+上述的命令中使用的连接用户名为“postgres”，输出格式为普通原样输出“-F p”，“-P”参数表示在执行过程中输出备份的进度，“-X stream”参数表示把在备份过程中产生的xlog文件也备份出来。
+
+“-R”参数表示在备份中会生成standby.signal文件，并把连接主库的信息放到postgresql.auto.conf中，如果是PostgreSQL 12版本之前会生成配置文件“recovery.conf”，当用此备份启动备库时，只需要简单修改recovery.conf就可以把数据库启动到备库模式。“-D”参数指定了备份文件都生成到环境变量backup2目录下，“-l”参数指定了备份的标识串为“standby01”。
 
 ### 4.3 异步流复制Hot Standby的示例
 
@@ -1581,7 +1643,7 @@ primary_conninfo = 'user=postgres password=postgres channel_binding=disable host
 ```
 如果没有加“-R”参数，我们也可以手动添加上面的内容。
 
-## 4.3.4 启动Standby数据库
+#### 4.3.4 启动Standby数据库
 
 在启动Standby数据库之前，检查standby数据库postgresql.conf中的参数“hot_standby”是否为“on”，设置该参数是为了让备库是Hot Standby，即可以对外提供只读服务。当然该参数在较新版本的PostgreSQL中默认已经被设置成“on”。
 
@@ -1603,7 +1665,7 @@ postgres=# select client_addr,client_port,state,sync_state from pg_stat_replicat
 
 因为Hot Standby是只读的，所以如果在Standby上做修改，会操作失败。
 
-### 4.3.5 switchover（交换主备库的角色）
+#### 4.3.5 switchover（交换主备库的角色）
 
 对于Oracle数据库的DBA来说，切换Oracle数据库的主备库之间的角色的过程叫“switchover”，Oracle提供了相应的“switchover”的一些较复杂的命令和过程。对于PostgreSQL数据库来说，切换操作的步骤比较简单：
 
@@ -1617,10 +1679,13 @@ postgres=# select client_addr,client_port,state,sync_state from pg_stat_replicat
 
 通常故障切换称为“Failover”。异步复制时，如果主库出现了问题，可以激活备库作为主库提供服务。在PostgreSQL9.1版本之前是在recovery.conf中配置一个trigger文件，当备库检测到该文件时，就自动把自己激活成主库，PostgreSQL9.1版本之后提供了命令“pg_ctl promote”来激活备库，所以现在很少有人再以配置trigger文件的方式激活备库了。
 
-原主库出现问题后，通常这些故障并没有导致数据丢失，如宕机、机器重启的故障。当故障解决之后，通常我们会把原主库转换成新主库的Standby备库，该转换一般来说需要重新搭建备库。这是因为原主库的一些数据没有同步过去就把备库激活了，备库相当于丢失了一些数据。而重新搭建备库的话，如果数据库很大，基础备份会执行很长时间，为了解决这个问题，从PostgreSQL 9.5版本开始提供pg_rewind命令，不需要复制太多的数据就可以把原主库转换成新主库的备库。该命令相当于把原主库的数据“回滚”到新主库激活时的状态，当然这里所说的“回滚”不是真的“回滚”，只是为了让我们更好地理解pg_rewind的作用。
+原主库出现问题后，通常这些故障并没有导致数据丢失，如宕机、机器重启的故障。当故障解决之后，通常我们会把原主库转换成新主库的Standby备库，该转换一般来说需要重新搭建备库。
 
-使用pg_rewind命令要求主库必须把参数“wal_log_hints”设置成“on”或主库在建数据库实例时打开了checksum，这样配置的主库在出现故障时才能使用pg_rewind命令。当然这样做之后，数据库会产生更多的WAL日志，所以数据库默认是没有打开checksum参数的
-。数据库实例打开checksum参数的方法是，在用initdb命令初始化数据库实例时使用“-k” 或“--data-checksums”参数。
+这是因为原主库的一些数据没有同步过去就把备库激活了，备库相当于丢失了一些数据。而重新搭建备库的话，如果数据库很大，基础备份会执行很长时间，为了解决这个问题，从PostgreSQL 9.5版本开始提供pg_rewind命令，不需要复制太多的数据就可以把原主库转换成新主库的备库。该命令相当于把原主库的数据“回滚”到新主库激活时的状态，当然这里所说的“回滚”不是真的“回滚”，只是为了让我们更好地理解pg_rewind的作用。
+
+使用pg_rewind命令要求主库必须把参数“wal_log_hints”设置成“on”或主库在建数据库实例时打开了checksum，这样配置的主库在出现故障时才能使用pg_rewind命令。
+
+当然这样做之后，数据库会产生更多的WAL日志，所以数据库默认是没有打开checksum参数的。数据库实例打开checksum参数的方法是，在用initdb命令初始化数据库实例时使用“-k” 或“--data-checksums”参数。
 
 如果我们没有把参数“wal_log_hints”或“checksum”打开，运行pg_rewind时会报错。
 
@@ -1630,13 +1695,19 @@ pg_rewind执行完之后，需要手动建文件“standby.signal”。
 
 #### 4.4.1 同步流复制架构
 
-PostgreSQL异步流复制的缺点是当主库损坏的时候，激活备库后会丢失一些数据，这对于一些不允许丢失数据的应用来说是不可接受的，所以PostgreSQL从9.1版本开始提供同步流复制的功能，解决了主备库切换时丢失数据的问题。同步复制要求WAL日志写入Standby数据库后commit才能返回，所以Standby库出现问题时，会导致主库被hang住。解决这个问题的方法是启动两个Standby数据库，这两个Standby数据库只要有一个是正常运行的就不会让主库hang住。所以在实际应用中，同步流复制，总是有一个主库和两个以上的Standby备库。
+PostgreSQL异步流复制的缺点是当主库损坏的时候，激活备库后会丢失一些数据，这对于一些不允许丢失数据的应用来说是不可接受的，所以PostgreSQL从9.1版本开始提供同步流复制的功能，解决了主备库切换时丢失数据的问题。
 
-即使是同步复制，如果因主库发生临时故障激活了其中一个备库，要想把原主库转换成新主库的备库，仍然需要用pg_rewind处理一下才行，这是因为虽然是同步复制，但并不是把主库的WAL日志完全同步地传输到备库，同步只是到事务提交时才保证其已经传输到了备库，一些未提交事务的WAL日志可能还没有传输到备库，因此激活备库时，还是会丢失一些WAL日志。当然对于用户来说，未提交事务的WAL日志丢失，并不会导致用户数据的丢失。
+同步复制要求WAL日志写入Standby数据库后commit才能返回，所以Standby库出现问题时，会导致主库被hang住。解决这个问题的方法是启动两个Standby数据库，这两个Standby数据库只要有一个是正常运行的就不会让主库hang住。所以在实际应用中，同步流复制，总是有一个主库和两个以上的Standby备库。
+
+即使是同步复制，如果因主库发生临时故障激活了其中一个备库，要想把原主库转换成新主库的备库，仍然需要用pg_rewind处理一下才行。
+
+这是因为虽然是同步复制，但并不是把主库的WAL日志完全同步地传输到备库，同步只是到事务提交时才保证其已经传输到了备库，一些未提交事务的WAL日志可能还没有传输到备库，因此激活备库时，还是会丢失一些WAL日志。当然对于用户来说，未提交事务的WAL日志丢失，并不会导致用户数据的丢失。
 
 #### 4.4.2 同步流复制的配置
 
-同步复制的配置主要是在主库上配置参数“synchronous_standby_names”，该参数指定多个Standby的名称，各个名称用逗号分隔，而Standby名称是在Standby连接到主库时由连接参数“application_name”指定的。要使用同步复制，在Standby数据库中primary_conninfo参数一定要指定连接参数“application_name”。primary_conninfo参数的配置示例如下：
+同步复制的配置主要是在主库上配置参数“synchronous_standby_names”，该参数指定多个Standby的名称，各个名称用逗号分隔，而Standby名称是在Standby连接到主库时由连接参数“application_name”指定的。
+
+要使用同步复制，在Standby数据库中primary_conninfo参数一定要指定连接参数“application_name”。primary_conninfo参数的配置示例如下：
 
 ```shell
 primary_conninfo = 'application_name=standby01 user=postgres password=XXXXXX host=10.0.3.101 port=5432 ss
@@ -1871,7 +1942,9 @@ postgres=# select pg_last_wal_receive_lsn(),pg_last_wal_replay_lsn(),pg_last_xac
 
 #### 4.5.1 Hot Standby的查询限制
 
-DML语句（如INSERT、UPDATE、DELETE、COPY FROM、TRUNCATE等）和DDL（如CREATE、DROP、ALTER、COMMENT等）都不能在Hot Standby备库上执行，这很好理解。另外，“SELECT...FOR SHARE|UPDATE”语句在Hot Standby备库中也不能执行，因为在PostgreSQL中，行锁是要更新数据行的。如果在Hot Standby备库执行上述SQL语句，会报如下错误：
+DML语句（如INSERT、UPDATE、DELETE、COPY FROM、TRUNCATE等）和DDL（如CREATE、DROP、ALTER、COMMENT等）都不能在Hot Standby备库上执行，这很好理解。
+
+另外，“SELECT...FOR SHARE|UPDATE”语句在Hot Standby备库中也不能执行，因为在PostgreSQL中，行锁是要更新数据行的。如果在Hot Standby备库执行上述SQL语句，会报如下错误：
 
 ```shell
 postgres=# create table test(id int);
@@ -1944,7 +2017,9 @@ ERROR：canceling statement due to conflict with recove
 
 如果备库用作主库的高可用切换，则可以把以上参数设置得小一些，这样可以保证备库不会落后主库太多；如果备库就是用来执行一些大查询的，可以把这两个参数设置成较大的值。
 
-大多数冲突发生的原因是主库上把备库需要的多版本数据给清理掉了，这时可以通过在备库上的postgresql.conf中设置参数“hot_standby_feedback”为“true”来解决此问题。设置此参数为“true”后，备库会通知主库，哪些多版本数据在备库上还需要，这样主库上的AutoVacuum就不会清理掉这些数据，就能大大减少冲突的发生。当然还有一个办法是把主库上的参数“vacuum_defer_cleanup_age”的值调得大一些，以延迟清理多版本数据。
+大多数冲突发生的原因是主库上把备库需要的多版本数据给清理掉了，这时可以通过在备库上的postgresql.conf中设置参数“hot_standby_feedback”为“true”来解决此问题。
+
+设置此参数为“true”后，备库会通知主库，哪些多版本数据在备库上还需要，这样主库上的AutoVacuum就不会清理掉这些数据，就能大大减少冲突的发生。至于把主库上的参数“vacuum_defer_cleanup_age”的值调得大一些这种老办法，注意该参数在PostgreSQL 16起已经被移除，详见4.7.2。
 
 当然即使设置了hot_standby_feedback等参数，仍然会有一些查询因为冲突而被取消执行，所以连接到备库的应用程序最好能检测到这个错误并能再次执行被取消的查询。
 
@@ -1969,7 +2044,9 @@ f.mid /data/archivedir/%f"'
 ```shell
 restore_command = 'cp /data/archivedir /%f "%p"'
 ```
-另两个参数“archive_cleanup_command”“recovery_end_command”是可选的，其中archive_cleanup_command参数可以用来清理上面示例中“/data/archivedir”目录中的WAL日志文件。从上面的示例中可以知道，当主库不断地把WAL日志文件复制到Standby备库的“/data/archivedir”目录中时，一定要有清理机制，否则就会把此目录的空间填满。清理的原则通常是清除Standby已使用完的WAL日志文件。contrib目录中提供了一个命令行的工具“pg_archivecleanup”以便实现清理工作，archive_cleanup_comand参数的配置内容如下：
+另两个参数“archive_cleanup_command”“recovery_end_command”是可选的，其中archive_cleanup_command参数可以用来清理上面示例中“/data/archivedir”目录中的WAL日志文件。
+
+从上面的示例中可以知道，当主库不断地把WAL日志文件复制到Standby备库的“/data/archivedir”目录中时，一定要有清理机制，否则就会把此目录的空间填满。清理的原则通常是清除Standby已使用完的WAL日志文件。contrib目录中提供了一个命令行的工具“pg_archivecleanup”以便实现清理工作，archive_cleanup_comand参数的配置内容如下：
 
 ```shell
 archive_cleanup_command = 'pg_archivecleanup /data/archivedir %r'
@@ -2007,11 +2084,53 @@ archive_cleanup_command = 'pg_archivecleanup /data/archivedir %r'
 
 ### 4.7 流复制的注意事项
 
-#### 4.7.1 min_wal_size参数的配置
+#### 4.7.1 wal_keep_size参数的配置
 
-使用流复制建好备库后，如果由于各种原因备库接收日志的速度较慢，而主库产生日志的速度很快，这容易导致主库上的WAL日志还没有传递到备库就会被覆盖，如果被覆盖的WAL日志文件又没有归档备份，那么备库就再也无法与主库同步了，这会导致备库需要重新搭建。为了避免这种情况发生，PostgreSQL提供了一个配置参数“wal_keep_segments”。该参数的含义是，无论如何都要在主库上保留wal_keep_segements个WAL日志文件。默认此参数为“0”，表示并不专门为Standby保留WAL日志文件。通常需要把此参数配置成一个安全的值，如“64”，表示将为Standby保留64个WAL日志文件。当然保留WAL日志文件会占用一定的磁盘空间，每个WAL日志文件的大小通常是16MB，如果设置为“64”，就可能会多占用64×16MB=1G空间。所以如果磁盘空间允许，可以把此参数设置得大一些，这样，WAL日志来不及传输到备库导致的备库需要重新搭建的风险就会小一些。
+用流复制建好备库后，如果备库接收日志的速度慢于主库产生日志的速度，主库上的WAL日志会在传到备库之前就被覆盖。被覆盖的WAL如果没有归档，备库就再也追不上主库，只能重新搭建。
+
+PostgreSQL用`wal_keep_size`来兜底：不管怎样，主库上都额外保留这么多WAL空间不回收。默认值是0，也就是不专门为Standby保留。通常要配一个安全的值，比如512MB。
+
+这个参数有两个坑：
+
+- **名字和单位都变过**。PostgreSQL 12及以前叫`wal_keep_segments`，单位是「段」，一个段默认16MB；PostgreSQL 13起改名`wal_keep_size`，单位是MB。「保留64段」在13起要写成1024（64 × 16MB）。
+- **它只是个下限，不是保证**。`wal_keep_size`保留的是空间，WAL实际用了多少还得看备库连了多久。备库断连一晚上，参数配得再大也可能不够。
+
+更可靠的做法是**复制槽**（replication slot）：主库为每个备库保留一份WAL，备库连上才发、断开也不回收，备库重新连上就能接着拉。用它就不必再猜`wal_keep_size`要配多大。
+
+代价是复制槽会把主库磁盘撑爆——备库长期断连时，槽里的WAL会一直堆着。所以用了复制槽就必须配套监控，详见[PostgreSQL复制槽实操](../PostgreSQL复制槽实操.md)。
+
 
 #### 4.7.2 vacuum_defer_cleanup_age参数的配置
 
-在主库上，Vacuum进程知道哪些旧版本的数据会被当前数据库中的查询使用，从而不清理这些数据。但对于Hot Standby上的查询的数据需要，主库是不知道的，所以主库上的Vacuum可能会把Hot Standby上的查询还需要的旧版本数据清理掉，这会导致Standby上的查询失败。为了降低Hot Standby因为这个原因失败的概率，可以设置vacuum_defer_cleanup_age参数，让主库延迟清理。该参数的含义是延迟清理多少个事务，当然也可以通过在备库上设置参数“hot_standby_feedback”为“true”来减少此问题的发生。
+在主库上，Vacuum进程知道哪些旧版本的数据会被当前数据库中的查询使用，从而不清理这些数据。但对于Hot Standby上的查询的数据需要，主库是不知道的，所以主库上的Vacuum可能会把Hot Standby上的查询还需要的旧版本数据清理掉，这会导致Standby上的查询失败。为了降低Hot Standby因为这个原因失败的概率，可以设置vacuum_defer_cleanup_age参数，让主库延迟清理。该参数的含义是延迟清理多少个事务。
+
+**但要注意版本**：
+
+- PostgreSQL 15及以前这个参数有效。
+- PostgreSQL 16起这个参数**已被移除**（上游提交1118cd37eb6，2023-04-24，理由是它「难以合理使用、且让xid horizon的计算变复杂」）。PG 16+的实例上配了它会直接报参数不存在。
+
+替代方案有两条，优先用第一条：
+
+- 在备库上打开`hot_standby_feedback = on`。备库会通知主库哪些旧版本它还要用，主库的AutoVacuum就不清理这些。保护范围只覆盖「备库正在用」的版本，可控。
+- 靠`max_standby_streaming_delay`控制备库的等待上限。备库应用WAL时最多等这么久再取消冲突查询，默认30秒，设成-1就是一直等——代价是备库会越落越远。
+
+### 4.8 主备切换巡检清单
+
+日常巡检按这四段走，任何一段断了都要先定位到断在哪一段：
+
+| 阶段 | 检查什么 | 怎么看 | 断了怎么办 |
+| --- | --- | --- | --- |
+| 搭建 | 主库参数、备库参数、复制槽 | `SHOW wal_level;` `SHOW max_wal_senders;` `SHOW primary_slot_name;` | 参数没生效就是没改到`postgresql.conf`，改完要reload或restart |
+| 验证 | 复制连接在不在、落后多少 | 主库`SELECT * FROM pg_stat_replication;`看`state`与`sync_state`；备库`SELECT pg_is_in_recovery();` | `state`不是`streaming`就是没连上，去看备库日志 |
+| 切换 | 演练过没有、原主库怎么追回来 | `pg_ctl promote`提升备库；原主库用`pg_rewind`追回 | 没开`wal_log_hints`或`checksum`就没法`pg_rewind`，只能重建备库 |
+| 巡检 | WAL会不会涨满磁盘、复制槽会不会积压 | 主库`SELECT * FROM pg_replication_slots;`看`wal_status`与`restart_lsn` | 备库长时间断连时复制槽会一直留着WAL，撑爆磁盘 |
+
+### 4.9 延伸阅读
+
+- [PostgreSQL复制槽实操](../PostgreSQL复制槽实操.md)——复制槽的创建、监控与清理
+- [postgresql流复制同异步分析](../postgresql流复制同异步分析.md)——同步与异步两种模式的内部实现
+- [详解完整恢复及基于时间点的恢复](../详解完整恢复及基于时间点的恢复.md)——PITR的恢复流程
+- [repmgr实现原理](../../ha/repmgr实现原理.md)——自动故障切换工具的原理
+- [repmgr集群配置](../../repmgr/repmgr_cluster.md)——repmgr的集群搭建
+- [WAL机制浅析](../../wal机制浅析.md)——WAL记录与检查点的源码级说明
 
