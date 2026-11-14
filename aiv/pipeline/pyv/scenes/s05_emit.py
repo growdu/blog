@@ -30,6 +30,32 @@ EMIT_DURATION = 0.36
 CHIP_W_RATIO = 0.065
 CHIP_GAP_RATIO = 0.008
 
+#: 起飞时「整组发出」标签与箭头的让位速度（相对飞行进度）。
+#:
+#: **标签与箭头都在芯片的飞行走廊上**：竖版是芯片从它们上面压过去，
+#: 横版是芯片从它们前面横穿过去。它们跟芯片挤在同一条通道里，
+#: 硬留着就会被芯片切碎——字被劈成两半、箭头从字里穿出来。
+#:
+#: 所以起飞就让位：让飞出去的那一组自己说话。
+LABEL_FADE_SPAN = 0.25
+
+#: 竖版：飞行组压过的那一行退到多淡。
+#:
+#: 竖版只有 1080 宽，发射组（三块芯片，639 px）要从缓冲第一行一路降到
+#: 接收方框，中间**必然**压过下面两行的芯片。两组芯片一样大、一样对齐，
+#: 半透明地叠在一起就糊成一团（橙的压着绿的，看不出谁是谁）。
+#:
+#: 被压过的那一行让开：面板、徽标、芯片一起退成背景。**整行一起退**
+#: 才有信号——只让芯片退的话，芯片正好被飞过来的那组盖住，退了也看不见。
+ROW_DIM_ALPHA = 0.45
+
+#: 飞行中的芯片放大多大。
+#:
+#: 竖版里飞行组要从缓冲第一行降到接收方框，中间必然压过下面两行的芯片。
+#: 一样大的两组芯片叠在一起，分不清谁压着谁——放大的那组是**浮在上面的**
+#: 那一组，被盖住的那块还会从边上露出一点，看得出下面本来是有东西的。
+FLY_SCALE = 1.08
+
 
 def emit_slot(params=None) -> list[str]:
     """要发出去的那一组：它有哪些操作，按什么顺序。"""
@@ -110,19 +136,26 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
             cx = x + dx * offset
             cy = chip_y + dy * offset
             is_commit = op == commit_op
+            # **芯片是不透明的。** 它飞过去的时候会盖住箭头、盖住别的字——
+            # 半透明的话，被盖住的东西会从芯片里透出来，箭头就从字里
+            # 穿过去了（看着像字被箭头劈开）。「飞过去盖住」是正常动画，
+            # 「盖住但还透出来」才是事故。
             rounded_rect(ctx, cx, cy, chip_w, chip_h, 9,
-                         "#FFFFFF" if is_commit else color,
-                         alpha=1.0 - 0.20 * offset)
+                         "#FFFFFF" if is_commit else color)
             text(ctx, op, cx + chip_w / 2, cy + chip_h * 0.70, 28,
                  COLORS["primary"] if is_commit else "#FFFFFF",
-                 anchor="center", bold=True, alpha=1.0 - 0.20 * offset)
+                 anchor="center", bold=True)
 
     # ---- 中间的去向 ----
+    # 标签与箭头跟芯片在同一条通道上：起飞就让位（见 LABEL_FADE_SPAN）。
     lane_y = target_y + target_h / 2
+    emit_alpha = 1.0 - min(1.0, progress / LABEL_FADE_SPAN)
     arrow(ctx, panel_x + panel_w + w * 0.015, lane_y,
-          target_x - w * 0.015, lane_y, COLORS["accent"], 7, 24)
+          target_x - w * 0.015, lane_y, COLORS["accent"], 7, 24,
+          alpha=emit_alpha)
     text(ctx, p["emit_label"], (panel_x + panel_w + target_x) / 2,
-         lane_y - h * 0.045, 40, COLORS["accent"], anchor="center", bold=True)
+         lane_y - h * 0.045, 40, COLORS["accent"], anchor="center", bold=True,
+         alpha=emit_alpha)
 
     text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])
 
@@ -190,16 +223,29 @@ def _render_vertical(ctx, t: float, w: int, h: int, p: Params) -> None:
     dx = land_x - start_x
     dy = land_y - start_y
 
+    # 飞行组此刻占的那条带：被它压过的行要让开（见 ROW_DIM_ALPHA）。
+    fly_chip_h = chip_h * FLY_SCALE
+    fly_top = start_y + dy * progress + (chip_h - fly_chip_h) / 2
+    fly_bottom = fly_top + fly_chip_h
+
     for index, (txn_id, ops) in enumerate(slots):
         color = MARKER_COLORS[index % len(MARKER_COLORS)]
         y = row_top + index * (row_h + row_gap)
-        rounded_rect(ctx, left, y, max_width, row_h, 14, "#F2F5F9")
-        stroke_rect(ctx, left, y, max_width, row_h, 14, "#DCE1E8", 3, 0.9)
         badge_y = y + (row_h - chip_h) / 2
-        rounded_rect(ctx, left + w * 0.020, badge_y, badge_w, chip_h, 9, color)
+        # 这一行被飞行组压住了吗？压住多少就让开多少——
+        # 刚碰到边缘时只淡一点，整个盖住了才退到底。
+        overlap = min(fly_bottom, badge_y + chip_h) - max(fly_top, badge_y)
+        row_alpha = 1.0
+        if overlap > 0:
+            row_alpha = 1.0 - (1.0 - ROW_DIM_ALPHA) * min(1.0, overlap / chip_h)
+        rounded_rect(ctx, left, y, max_width, row_h, 14, "#F2F5F9",
+                     alpha=row_alpha)
+        stroke_rect(ctx, left, y, max_width, row_h, 14, "#DCE1E8", 3, row_alpha)
+        rounded_rect(ctx, left + w * 0.020, badge_y, badge_w, chip_h, 9, color,
+                     alpha=row_alpha)
         scene_layout.line(ctx, txn_id, left + w * 0.020 + badge_w / 2,
                           badge_y + chip_h * 0.70, badge_w, 32, "#FFFFFF",
-                          anchor="center", bold=True)
+                          anchor="center", bold=True, alpha=row_alpha)
 
         if txn_id == target_txn:
             # 整组搬走的那一组留到最后一轮再画：它要一路往下飞过
@@ -209,31 +255,46 @@ def _render_vertical(ctx, t: float, w: int, h: int, p: Params) -> None:
             x = chip_x0 + op_index * (chip_w + chip_gap)
             is_commit = op == commit_op
             rounded_rect(ctx, x, badge_y, chip_w, chip_h, 9,
-                         "#FFFFFF" if is_commit else color)
+                         "#FFFFFF" if is_commit else color, alpha=row_alpha)
             scene_layout.line(ctx, op, x + chip_w / 2, badge_y + chip_h * 0.70,
                               chip_w - 16, 28,
                               COLORS["primary"] if is_commit else "#FFFFFF",
-                              anchor="center", bold=True)
+                              anchor="center", bold=True, alpha=row_alpha)
 
     # ---- 发出去的那一组：整组平移，相对位置不变 ----
     emit_color = MARKER_COLORS[emit_index % len(MARKER_COLORS)]
+    # 一层影子 + 大一点：芯片是从「上面」飞过去的，压在谁头上要看得出来。
+    # 不加影子的话，两组一样大的芯片叠在一起还是像混成了一组；
+    # 大一点还能让被盖住的那块从边上露出来——看得出下面本来是有东西的，
+    # 不然看着像那一行凭空多了几块芯片。
+    shadow_dx = chip_w * 0.035
+    shadow_dy = chip_h * 0.10
     for op_index, op in enumerate(emit_ops):
         x = chip_x0 + op_index * (chip_w + chip_gap)
         cx = x + dx * progress
         cy = start_y + dy * progress
         is_commit = op == commit_op
-        rounded_rect(ctx, cx, cy, chip_w, chip_h, 9,
-                     "#FFFFFF" if is_commit else emit_color,
-                     alpha=1.0 - 0.20 * progress)
-        scene_layout.line(ctx, op, cx + chip_w / 2, cy + chip_h * 0.70,
-                          chip_w - 16, 28,
+        # 放大是**围着芯片中心**放大的：整组的相对位置不变，还是「一组」。
+        big_w = chip_w * FLY_SCALE
+        big_h = chip_h * FLY_SCALE
+        bx = cx + chip_w / 2 - big_w / 2
+        by = cy + chip_h / 2 - big_h / 2
+        rounded_rect(ctx, bx + shadow_dx, by + shadow_dy, big_w, big_h, 9,
+                     "#0B1F3A", alpha=0.16)
+        rounded_rect(ctx, bx, by, big_w, big_h, 9,
+                     "#FFFFFF" if is_commit else emit_color)
+        scene_layout.line(ctx, op, bx + big_w / 2, by + big_h * 0.70,
+                          big_w - 16, 28 * FLY_SCALE,
                           COLORS["primary"] if is_commit else "#FFFFFF",
-                          anchor="center", bold=True, alpha=1.0 - 0.20 * progress)
+                          anchor="center", bold=True)
 
     # ---- 中间的去向 ----
-    # 画在飞过去的那一组之上：芯片飞过时盖住字，看着像字被吃掉了。
+    # 标签与箭头在芯片的飞行走廊上：起飞就让位（见 LABEL_FADE_SPAN）。
+    emit_alpha = 1.0 - min(1.0, progress / LABEL_FADE_SPAN)
     scene_layout.line(ctx, p["emit_label"], center, h * 0.468, max_width, 36,
-                      COLORS["accent"], anchor="center", bold=True)
-    arrow(ctx, center, h * 0.478, center, h * 0.505, COLORS["accent"], 7, 24)
+                      COLORS["accent"], anchor="center", bold=True,
+                      alpha=emit_alpha)
+    arrow(ctx, center, h * 0.478, center, h * 0.505, COLORS["accent"], 7, 24,
+          alpha=emit_alpha)
 
     scene_layout.caption(ctx, p["caption"], w, h)
