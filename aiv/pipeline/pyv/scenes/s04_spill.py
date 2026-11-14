@@ -8,6 +8,13 @@
 芯片的位置由 `chip_layout()` 一处算出：渲染与测试共用同一份算法，
 这样「任何时刻两块芯片都不重叠」这条约束才能被测试盯住，
 而不是靠肉眼看渲染图。
+
+**竖版（1080×1920）**：横版是「内存区在左、磁盘区在右」，芯片横着飞过去；
+竖版只有 1080 宽，左右并排会把两个区各压到 300 宽，芯片放不下。
+竖版改成「内存区在上、磁盘区在下」，芯片往下飞：先落到搬运走廊上，
+横穿到落点的列上，再落进磁盘区。落点与走廊的位置由
+`chip_layout_vertical()` 另算一份——横版的落点是横版坐标，
+直接套到竖版上会飞不出屏幕（见 `pyv/scene_layout.py` 的三条规矩）。
 """
 from __future__ import annotations
 
@@ -15,6 +22,7 @@ from typing import NamedTuple
 
 from pyv import easing
 from pyv import palette
+from pyv import scene_layout
 from pyv.draw import arrow, rounded_rect, stroke_rect, text
 from pyv.palette import COLORS
 from pyv.params import Params
@@ -55,6 +63,21 @@ LAND_COLS = 2
 LAND_GAP_RATIO = 0.012
 LAND_ROW_GAP_RATIO = 0.088
 LAND_TOP_RATIO = 0.135
+
+# ---- 竖版（1080×1920）：内存区在上、磁盘区在下，芯片往下飞 ----
+# 比例相对画面高度；宽度类相对画面宽度。
+V_CHIP_W_RATIO = 0.185        # 芯片宽
+V_CHIP_H_RATIO = 0.032        # 芯片高
+V_MEM_TOP_RATIO, V_MEM_H_RATIO = 0.128, 0.164     # 内存区
+V_DISK_TOP_RATIO, V_DISK_H_RATIO = 0.411, 0.214   # 磁盘区
+V_SLOT_COLS = 3               # 内存区里芯片排几列
+V_SLOT_GUTTER_RATIO = 0.10    # 内存区左边留出的空当（给落盘标签与箭头）
+V_SLOT_TOP_RATIO = 0.167      # 芯片槽区上沿
+V_SLOT_BOTTOM_RATIO = 0.260   # 芯片槽区下沿
+V_LANE_Y_RATIO = 0.343        # 搬运走廊：芯片横着飞过去的那条线
+V_LAND_COLS = 2               # 磁盘区里落点排几列
+V_LAND_BOTTOM_RATIO = 0.542   # 落点下行上沿
+V_LAND_ROW_STEP_RATIO = 0.058 # 落点两行之间的距离
 
 
 def chip_slots(count: int, left: float, top: float, width: float,
@@ -141,8 +164,118 @@ def chip_layout(chips: list[str], spill_count: int, t: float,
     return out
 
 
+def chip_slots_vertical(count: int, left: float, top: float, width: float,
+                        height: float, chip_w: float,
+                        chip_h: float) -> list[tuple[float, float]]:
+    """竖版里每块芯片的初始位置：几列几行排开。"""
+    rows = max(1, (count + V_SLOT_COLS - 1) // V_SLOT_COLS)
+    gap_x = (width - V_SLOT_COLS * chip_w) / (V_SLOT_COLS + 1)
+    gap_y = (height - rows * chip_h) / (rows + 1)
+    out: list[tuple[float, float]] = []
+    for index in range(count):
+        row, col = divmod(index, V_SLOT_COLS)
+        x = left + gap_x + col * (chip_w + gap_x)
+        y = top + gap_y + row * (chip_h + gap_y)
+        out.append((x, y))
+    return out
+
+
+def landing_slots_vertical(count: int, left: float, width: float, h: int,
+                           chip_w: float) -> list[tuple[float, float]]:
+    """竖版里芯片的落点：按飞行顺序从最里侧往外排。
+
+    **先飞的那块落到最下侧**：后飞的芯片沿走廊横穿过来时，
+    已经落好的那几块都在它下面，不会从它们身上压过去。
+    """
+    cols = max(1, min(V_LAND_COLS, count))
+    rows = max(1, (count + cols - 1) // cols)
+    gap = (width - cols * chip_w) / (cols + 1)
+    out: list[tuple[float, float]] = []
+    for col in range(cols):
+        # 行号从下往上排：同一列里先飞的那块落最下面，
+        # 后飞的落在它上面——后飞的往下落时不会从它身上穿过去。
+        for row in reversed(range(rows)):
+            if len(out) >= count:
+                break
+            x = left + gap + col * (chip_w + gap)
+            y = h * V_LAND_BOTTOM_RATIO - (rows - 1 - row) * h * V_LAND_ROW_STEP_RATIO
+            out.append((x, y))
+    return out
+
+
+def chip_layout_vertical(chips: list[str], spill_count: int, t: float,
+                         w: int = palette.VERTICAL_WIDTH,
+                         h: int = palette.VERTICAL_HEIGHT) -> list["Chip"]:
+    """竖版：每一块芯片在 t 时刻的位置（内存在上、磁盘在下）。
+
+    **槽位怎么分**：跟横版一个路子——留在内存的占左边，搬走的占右边，
+    同一排里从右往左搬：右边那块先飞走腾出位置，左边那块再往下飞时，
+    路过的地方已经空了。
+    **飞行怎么走**：先落到搬运走廊上，再沿走廊横穿到落点那一列，
+    最后落进磁盘区。
+    """
+    chip_w = w * V_CHIP_W_RATIO
+    chip_h = h * V_CHIP_H_RATIO
+
+    mem_x = w * scene_layout.MARGIN_X
+    mem_w = w * scene_layout.CONTENT_W
+
+    slots = chip_slots_vertical(
+        len(chips),
+        mem_x + mem_w * V_SLOT_GUTTER_RATIO,
+        h * V_SLOT_TOP_RATIO,
+        mem_w * (1 - V_SLOT_GUTTER_RATIO),
+        h * (V_SLOT_BOTTOM_RATIO - V_SLOT_TOP_RATIO),
+        chip_w, chip_h,
+    )
+    stay_idx = list(range(spill_count, len(chips)))
+    move_idx = list(range(spill_count))
+
+    slot_of: dict[int, tuple[float, float]] = {}
+    for n, index in enumerate(stay_idx):
+        slot_of[index] = slots[n]
+    for n, index in enumerate(move_idx):
+        slot_of[index] = slots[len(slots) - 1 - n]
+
+    lane_y = h * V_LANE_Y_RATIO
+    lands = landing_slots_vertical(len(move_idx), mem_x, mem_w, h, chip_w)
+
+    out: list[Chip] = []
+    for index in stay_idx:
+        sx, sy = slot_of[index]
+        out.append(Chip(index, sx, sy, 0.0))
+
+    for order, index in enumerate(move_idx):
+        sx, sy = slot_of[index]
+        move = easing.ease_in_out(
+            max(0.0, min(1.0, (t - MOVE_DELAY - MOVE_STEP * order) * MOVE_SPEED))
+        )
+        land_x, land_y = lands[order]
+
+        if move < 0.25:
+            # 第一段：落到走廊上
+            u = move / 0.25
+            x, y = sx, sy + (lane_y - sy) * u
+        elif move < 0.75:
+            # 第二段：沿走廊横穿
+            u = (move - 0.25) / 0.5
+            x = sx + (land_x - sx) * u
+            y = lane_y
+        else:
+            # 第三段：落进磁盘区
+            u = (move - 0.75) / 0.25
+            x = land_x
+            y = lane_y + (land_y - lane_y) * u
+        out.append(Chip(index, x, y, move))
+    return out
+
+
 def render(ctx, t: float, w: int, h: int, params=None) -> None:
     p = Params(params, "s04")
+    if h > w:
+        _render_vertical(ctx, t, w, h, p)
+        return
+
     chips = [str(x) for x in p["chips"]]
 
     text(ctx, p["title"], w * 0.06, h * 0.145, 58, COLORS["primary"], bold=True)
@@ -186,3 +319,61 @@ def render(ctx, t: float, w: int, h: int, params=None) -> None:
              "#FFFFFF", anchor="center", bold=True, alpha=alpha)
 
     text(ctx, p["caption"], w * 0.06, h * 0.86, 44, COLORS["primary"])
+
+
+def _render_vertical(ctx, t: float, w: int, h: int, p: Params) -> None:
+    """竖版：内存区在上、磁盘区在下，芯片往下飞。
+
+    **框变宽**：两个区各占一整行（内容区宽 950），芯片 200 宽，
+    比横版的 182 宽还大一号——竖版只有 1080 宽，芯片小了看不清。
+    芯片的落点由 `chip_layout_vertical()` 另算一份：横版的落点用的是
+    横版坐标，直接套过来会飞出屏幕。
+    """
+    chips = [str(x) for x in p["chips"]]
+    left = w * scene_layout.MARGIN_X
+    width = w * scene_layout.CONTENT_W
+
+    scene_layout.title(ctx, p["title"], w, h)
+
+    # ---- 内存区 ----
+    mem_x, mem_y = left, h * V_MEM_TOP_RATIO
+    mem_w, mem_h = width, h * V_MEM_H_RATIO
+    rounded_rect(ctx, mem_x, mem_y, mem_w, mem_h, 16, "#F2F5F9")
+    stroke_rect(ctx, mem_x, mem_y, mem_w, mem_h, 16, "#DCE1E8", 3, 0.9)
+    scene_layout.line(ctx, p["memory_label"], mem_x + w * 0.026,
+                      mem_y + h * 0.028, mem_w * 0.30, 36, COLORS["primary"],
+                      bold=True)
+
+    # ---- 磁盘区 ----
+    disk_x, disk_y = left, h * V_DISK_TOP_RATIO
+    disk_w, disk_h = width, h * V_DISK_H_RATIO
+    rounded_rect(ctx, disk_x, disk_y, disk_w, disk_h, 16, COLORS["primary"])
+    scene_layout.line(ctx, p["disk_label"], disk_x + disk_w / 2,
+                      disk_y + h * 0.037, disk_w * 0.5, 36, "#FFFFFF",
+                      bold=True, anchor="center")
+    for index in range(3):
+        line_y = disk_y + disk_h - h * 0.021 - index * h * 0.0085
+        rounded_rect(ctx, disk_x + disk_w * 0.12, line_y, disk_w * 0.76, 5, 2,
+                     "#FFFFFF", alpha=0.30)
+
+    # ---- 溢出的箭头与标签 ----
+    # 箭头与标签摆在左边那条空当里：芯片从内存区往下飞、横穿走廊时
+    # 会经过内存区与磁盘区之间的那一段，摆在那一段里会被芯片盖住。
+    arrow(ctx, mem_x + w * 0.070, mem_y + mem_h + h * 0.034,
+          mem_x + w * 0.070, disk_y - h * 0.008, COLORS["accent"], 7, 24)
+    scene_layout.line(ctx, p["spill_label"], mem_x + w * 0.026,
+                      mem_y + mem_h + h * 0.022, mem_w * 0.16, 32,
+                      COLORS["accent"], bold=True)
+
+    # ---- 芯片一块块搬进磁盘 ----
+    chip_w = w * V_CHIP_W_RATIO
+    chip_h = h * V_CHIP_H_RATIO
+    for chip in chip_layout_vertical(chips, int(p["spill_count"]), t, w, h):
+        alpha = 1.0 - 0.30 * chip.progress
+        rounded_rect(ctx, chip.x, chip.y, chip_w, chip_h, 9, COLORS["secondary"],
+                     alpha=alpha)
+        scene_layout.line(ctx, chips[chip.index], chip.x + chip_w / 2,
+                          chip.y + chip_h * 0.70, chip_w, 30, "#FFFFFF",
+                          bold=True, alpha=alpha, anchor="center")
+
+    scene_layout.caption(ctx, p["caption"], w, h)
