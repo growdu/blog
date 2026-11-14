@@ -351,6 +351,27 @@ def test_docs_tree_has_no_review_leakage():
     assert not records, f"docs/ 下出现了审校记录: {records}"
 
 
+def _naive_changed_paths(sha: str, *, extra_env: dict[str, str] | None = None) -> list[str]:
+    """The pre-fix way of reading a commit's paths: no ``-z``.
+
+    Kept here so the guard can prove the hazard is real instead of only
+    asserting the happy path.
+    """
+    out = git("show", "--name-only", "--pretty=format:", sha, extra_env=extra_env)
+    return [line for line in out.split("\n") if line]
+
+
+def _chinese_records_with_a_merge_commit() -> list[Path]:
+    """中文路径、且已经有合入提交的记录。
+
+    只挑「有合入提交」的：这条守卫验的是「从提交里读路径」这一步，
+    还没合入的记录没有提交可比，混进来只会让守卫误报。
+    """
+    return [p for p in record_files()
+            if not p.stem.isascii() and parse_record(p)["source"]
+            and merged_commit_for(p.stem)]
+
+
 def test_changed_paths_are_raw_even_when_git_quotes_non_ascii_paths():
     """单元：取「提交改了哪些文件」不能受 git 的路径转义影响。
 
@@ -358,17 +379,36 @@ def test_changed_paths_are_raw_even_when_git_quotes_non_ascii_paths():
     ``"docs/cluster/\\350\\276\\205..."``，除非 ``core.quotePath`` 是 false。
     那是**每台机器自己的** git 配置：开发机常关掉，CI runner 保持默认。
     两边对同一个提交给出的文本不同，路径比对必然一边成一边败。
+
+    所有「中文路径 + 已合入」的记录都过一遍——只查第一条的话，
+    新增一条记录就可能挑到另一条，覆盖面看着变宽、实际没变。
     """
-    chinese = [p for p in record_files()
-               if not p.stem.isascii() and parse_record(p)["source"]]
-    assert chinese, "没有中文路径的记录，测不到路径转义这个坑"
-    record = chinese[0]
+    chinese = _chinese_records_with_a_merge_commit()
+    assert chinese, "没有带中文路径且已合入的记录，测不到路径转义这个坑"
+    for record in chinese:
+        info = parse_record(record)
+        for sha in merged_commit_for(record.stem):
+            paths = changed_paths(sha, extra_env=CI_LIKE_GIT_ENV)
+            assert info["source"] in paths, (
+                f"{info['source']} 不在提交的改动列表里：{paths}")
+
+
+def test_the_ci_like_git_environment_really_breaks_the_naive_path_reading():
+    """单元：CI 样的 git 环境确实会让「不带 -z 的路径读取」失败。
+
+    没有这一条，上面那条守卫可能是**空转**的：如果这个环境其实并不
+    转义路径，那么 ``changed_paths`` 改不改都一样，守卫就成了永远绿
+    的摆设——这正是「守卫从被测代码取阈值」之外的另一种自证。
+    """
+    record = _chinese_records_with_a_merge_commit()[0]
     info = parse_record(record)
-    shas = merged_commit_for(record.stem)
-    assert shas, f"{record.stem} 找不到对应的合入提交"
-    paths = changed_paths(shas[0], extra_env=CI_LIKE_GIT_ENV)
-    assert info["source"] in paths, (
-        f"{info['source']} 不在提交的改动列表里：{paths}")
+    sha = merged_commit_for(record.stem)[0]
+    naive = _naive_changed_paths(sha, extra_env=CI_LIKE_GIT_ENV)
+    assert info["source"] not in naive, (
+        "CI 样的 git 环境没有转义非 ASCII 路径，上一条守卫测不到东西")
+    raw = changed_paths(sha, extra_env=CI_LIKE_GIT_ENV)
+    assert info["source"] in raw, (
+        f"{info['source']} 不在带 -z 的改动列表里：{raw}")
 
 
 def test_readme_documents_the_fact_markers_the_contract_enforces():
