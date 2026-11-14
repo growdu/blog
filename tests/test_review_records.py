@@ -14,10 +14,13 @@
    内部流程漏到线上就是事故。
 8. 契约检查本身不能依赖本机 git 配置——GitHub runner 和开发机的 git
    环境并不相同，本地全绿不代表 CI 全绿。
+9. README 写明的图示阈值必须与检查器的常量一致——规范和实现不许各说一套，
+   改了阈值忘了改文档（或反过来），审校的人就按着过时的数字判断。
 """
 
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import re
@@ -668,3 +671,81 @@ def test_contract_file_passes_in_a_ci_like_git_environment():
         env=env,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+# --- README 与检查器不许各说一套 ----------------------------------------
+
+
+def load_checker():
+    """Import tools/review-check.py as a module (it is a script, not a package)."""
+    spec = importlib.util.spec_from_file_location(
+        "review_check", REPO_ROOT / "tools" / "review-check.py")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules["review_check"] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+# README 的图示阈值表里，每一行对应检查器的一个常量。
+# (规则编号, 行内关键词, 常量名)
+README_FIG_ROWS = (
+    ("FIG-01", "框数", "MERMAID_MAX_NODES"),
+    ("FIG-01", "步数", "MERMAID_MAX_PATH"),
+    ("FIG-01", "支线", "MERMAID_MAX_FANOUT"),
+    ("FIG-01", "mindmap", "MERMAID_MAX_MINDMAP_LINES"),
+    ("FIG-02", "离图的距离", "FIGURE_REF_MAX_DISTANCE"),
+)
+
+
+def readme_figure_thresholds() -> dict[str, int]:
+    """README 阈值表 → {常量名: 阈值}。"""
+    text = (REVIEW_ROOT / "README.md").read_text(encoding="utf-8")
+    found: dict[str, int] = {}
+    for line in text.split("\n"):
+        stripped = line.strip()
+        if not stripped.startswith("| `FIG-"):
+            continue
+        cells = [c.strip() for c in stripped.strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        rule, metric, threshold = cells[0], cells[1], cells[2]
+        match = re.search(r"超过\s*(\d+)", threshold)
+        assert match, f"阈值列没写清数字：{stripped}"
+        for want_rule, keyword, const in README_FIG_ROWS:
+            if rule == f"`{want_rule}`" and keyword in metric:
+                assert const not in found, f"{const} 在 README 里出现了两次"
+                found[const] = int(match.group(1))
+    return found
+
+
+def test_readme_figure_thresholds_match_the_checker():
+    """单元：README 写的图示阈值必须等于检查器里的常量。
+
+    两边各说一套时，审校的人按 README 判断「15 个框算多」，
+    检查器却按另一个数报信号——同一篇文章，两套结论。
+    """
+    module = load_checker()
+    stated = readme_figure_thresholds()
+    for _, _, const in README_FIG_ROWS:
+        assert const in stated, f"README 阈值表里找不到 {const} 那一行"
+        actual = getattr(module, const)
+        assert stated[const] == actual, (
+            f"{const} 漂移了：README 写 {stated[const]}，检查器是 {actual}")
+    # 反过来：检查器里改出一个新阈值，README 没跟上也要报出来
+    assert len(stated) == len(README_FIG_ROWS), (
+        f"README 阈值表只认出 {len(stated)} 行，应有 {len(README_FIG_ROWS)} 行")
+
+
+def test_readme_documents_the_readability_dimensions():
+    """单元：README 得写明趣味性、布局、可读、简洁这四条要求。
+
+    这四条机械上判不了，全靠人。规范里不写，审校时就没有依据——
+    「读起来闷」不是一个可以提给作者的意见。
+    """
+    readme = (REVIEW_ROOT / "README.md").read_text(encoding="utf-8")
+    assert "## 可读性、布局与图表" in readme, "README 少了「可读性、布局与图表」一节"
+    for keyword in ("有趣", "布局合理", "可读", "简洁"):
+        assert keyword in readme, f"README 没写明「{keyword}」这条要求"
+    # 问题类别：审校记录里的「优先修改」条目要靠它归类
+    for category in ("结构", "表达", "事实", "图表", "可读性"):
+        assert category in readme, f"README 的问题类别表里少了「{category}」"

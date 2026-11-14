@@ -19,7 +19,7 @@
 | 记录 | 审校记录；点进去是逐条建议 |
 | 支柱 | `docs/` 下的一级目录 |
 | 状态 | 待审 → 审校中 → 建议中 → 已确认 → 已合入 |
-| 信号 | 检查器给出的 warn 级信号条数（0~19，是「命中了几条规则」） |
+| 信号 | 检查器给出的 warn 级信号条数（warn 规则共 8 条，所以是 0~8；全树实测最高 3 条） |
 | 待确认 | 「事实待核」里还没销掉的条目数——状态为「已合入」时必须是 0 |
 | 不阻塞 | 标了「不适用」的条目数：事实本身还没核实，但本次改动没碰它，不卡合并 |
 | 批次 | 试点 / 1 / 2 … |
@@ -33,11 +33,17 @@
 批次 2 按信号密度清完 cluster 支柱的 2 信号队列（10 篇，已核空）。
 范围扩到全树后按信号密度排序继续——排序依据见范围分类文档的「逐支柱分布」。
 
+图示可读性规则（`FIG-01` 图太长该拆 / `FIG-02`「下图」离图太远）加入后，
+全树 621 篇里 82 篇命中 `FIG-01`、5 篇命中 `FIG-02`。已审文章中
+`一文读懂openguass dcf网络模块`（6 张超长链式流程图）与 `06-heap-and-mvcc`
+（HeapTuple 结构图 + UPDATE 流程图）的信号数因此各 +1。
+**已合入的文章不保证信号为 0**——规则是后加的，之前的稿子没按新规则重审。
+
 | 记录 | 支柱 | 状态 | 信号 | 待确认 | 不阻塞 | 批次 |
 | --- | --- | --- | --- | --- | --- | --- |
 | [postgresql-mvcc](database/postgresql-mvcc.md) | database | 已合入 | 0 | 0 | 1 | 试点 |
 | [postgresql-logical-replication-worker-model](database/postgresql-logical-replication-worker-model.md) | database | 已合入 | 0 | 0 | 1 | 试点 |
-| [06-heap-and-mvcc](db/postgresql/learning-path/06-heap-and-mvcc.md) | db | 已合入 | 0 | 0 | 2 | 试点 |
+| [06-heap-and-mvcc](db/postgresql/learning-path/06-heap-and-mvcc.md) | db | 已合入 | 1 | 0 | 2 | 试点 |
 | [checkpoint机制浅析](pgsql/checkpoint机制浅析.md) | pgsql | 已合入 | 0 | 0 | 0 | 试点 |
 | [分布式一致性协议](cluster/分布式一致性协议.md) | cluster | 已合入 | 0 | 0 | 2 | 试点 |
 | [file](base/file.md) | base | 建议中 | 3 | 4 | 0 | 1 |
@@ -54,4 +60,4 @@
 | [corosync qnet挂死场景分析解决](cluster/corosync/corosync qnet挂死场景分析解决.md) | cluster | 建议中 | 2 | 7 | 0 | 2 |
 | [从两地三中心到OceanBase的多地多中心 - 墨天轮](cluster/从两地三中心到OceanBase的多地多中心 - 墨天轮.md) | cluster | 建议中 | 2 | 8 | 0 | 2 |
 | [tptc_improve](cluster/kingbase/tptc_improve.md) | cluster | 建议中 | 2 | 6 | 0 | 2 |
-| [一文读懂openguass dcf网络模块](cluster/DCF/一文读懂openguass dcf网络模块.md) | cluster | 建议中 | 2 | 7 | 0 | 2 |
+| [一文读懂openguass dcf网络模块](cluster/DCF/一文读懂openguass dcf网络模块.md) | cluster | 建议中 | 3 | 7 | 0 | 2 |

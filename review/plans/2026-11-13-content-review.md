@@ -4,7 +4,7 @@
 
 **Goal:** 把 `review/README.md` 的审校规范落成可执行的机制——一个只出信号的确定性检查器、一套机器可校验的审校记录契约、一张进度索引，以及 5 篇试点审校记录。
 
-**Architecture:** 两层分离。`tools/review-check.py` 把可计算的指标固定成 19 条带稳定编号的信号（只出位置与计数，不下结论）；Agent 按 README 六步流程读上下文做判断，产出 `review/<支柱>/<slug>.md` 记录；`review/INDEX.md` 是唯一的进度真相源。阶段 A 只出记录（`docs/` 不动），阶段 B 经确认后才改正文。
+**Architecture:** 两层分离。`tools/review-check.py` 把可计算的指标固定成 20 条带稳定编号的信号（只出位置与计数，不下结论）；Agent 按 README 七步流程读上下文做判断，产出 `review/<支柱>/<slug>.md` 记录；`review/INDEX.md` 是唯一的进度真相源。阶段 A 只出记录（`docs/` 不动），阶段 B 经确认后才改正文。
 
 **Tech Stack:** Python 3 标准库（无第三方依赖）、pytest、根级 `tests/`（已被 `.github/workflows/site-guard.yml` 覆盖，零新增 CI 工作流）。
 

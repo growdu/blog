@@ -474,3 +474,178 @@ def test_str_02_accepts_a_bold_target_marker(tmp_path):
     text = "# 标题\n\n**目标**：理解 PostgreSQL 堆表的页面布局与 MVCC 可见性。\n\n正文。\n"
     doc = make_doc(tmp_path, text)
     assert load_tool().rule_str_02(doc) == []
+
+
+# --- FIG 规则：图示可读性 ------------------------------------------------
+#
+# 「流程图不能太长，布局要合理，不然一眼看不完」——这一节判的是
+# 图的**尺寸**，不是图画得对不对。超限只说明「该拆」。
+
+
+def _mermaid(source: str) -> str:
+    """把一段 mermaid 源码包成一篇 markdown 文章。"""
+    return f"# 标题\n\n```mermaid\n{source}\n```\n"
+
+
+# (mermaid 源码, (框数, 最长路径的框数, 最大扇出))
+#
+# 这些数字是人工核过的：框数只算 id，最长路径按整图算（不是按行），
+# 扇出按**不同的目标**算（同一条边的两种画法只算一条支线）。
+MERMAID_SIZE_CASES = (
+    ("graph TB\n    A --> B --> C\n", (3, 3, 1)),
+    ("graph TB\n    A --> B\n    B --> C\n    C --> D\n", (4, 4, 1)),
+    ("graph TB\n    A -->|说明|B\n", (2, 2, 1)),
+    ("graph TB\n    subgraph one\n    A --> B\n    end\n", (2, 2, 1)),
+    ("stateDiagram-v2\n    [*] --> S1\n    S1 --> S2\n", (2, 2, 1)),
+    ("graph TB\n    A --> B\n    B --> A\n", (2, 2, 1)),
+    ("graph LR\n    Root --> A\n    Root --> B\n    Root --> C\n", (4, 2, 3)),
+    # 同一条边的两种画法（实线 + 虚线）指向同一个目标：只算一条支线
+    ("graph TB\n    A --> B\n    A -.-> B\n", (2, 2, 1)),
+)
+
+
+def test_mermaid_size_matches_the_expected_shape():
+    """单元：mermaid 尺寸解析的定版用例。"""
+    module = load_tool()
+    for source, expected in MERMAID_SIZE_CASES:
+        assert module._mermaid_size(source) == expected, source
+
+
+def test_fig_01_flags_a_diagram_with_too_many_boxes(tmp_path):
+    body = "\n".join(f"    N{i} --> M{i}" for i in range(16))
+    doc = make_doc(tmp_path, _mermaid("graph TB\n" + body))
+    signals = load_tool().rule_fig_01(doc)
+    assert len(signals) == 1
+    assert signals[0].rule == "FIG-01"
+    assert signals[0].severity == "warn"
+
+
+def test_fig_01_accepts_a_balanced_diagram(tmp_path):
+    """结构规整的图不该被判超限——只看框数会把好图也抓进来。"""
+    body = [f"    Root --> A{i}" for i in range(1, 5)]
+    for i in range(1, 5):
+        body.append(f"    A{i} --> A{i}L")
+        body.append(f"    A{i} --> A{i}R")
+    doc = make_doc(tmp_path, _mermaid("graph TB\n" + "\n".join(body)))
+    assert load_tool().rule_fig_01(doc) == []
+
+
+def test_fig_01_flags_a_chain_that_is_too_long(tmp_path):
+    chain = " --> ".join(f"S{i}" for i in range(10))
+    doc = make_doc(tmp_path, _mermaid(f"graph TB\n{chain}"))
+    assert len(load_tool().rule_fig_01(doc)) == 1
+
+
+def test_fig_01_counts_a_chain_written_one_edge_per_line(tmp_path):
+    """回归：链一行写一条边时，图照样是长条，不能漏判。
+
+    按「单行有几个节点」去数的话，这种图每行只有 2 个节点，
+    一条十步的链会被算成 2——这是最容易漏的一种写法。
+    """
+    body = "\n".join(f"    S{i} --> S{i + 1}" for i in range(10))
+    doc = make_doc(tmp_path, _mermaid("graph TB\n" + body))
+    assert len(load_tool().rule_fig_01(doc)) == 1
+
+
+def test_fig_01_flags_a_node_with_too_many_branches(tmp_path):
+    body = "\n".join(f"    Root --> T{i}" for i in range(8))
+    doc = make_doc(tmp_path, _mermaid("graph TB\n" + body))
+    assert len(load_tool().rule_fig_01(doc)) == 1
+
+
+def test_fig_01_ignores_a_plain_code_block(tmp_path):
+    """不是 mermaid 的代码块不判——里面写几行步骤是正常事。"""
+    body = "\n".join(f"step {i}" for i in range(60))
+    doc = make_doc(tmp_path, f"# 标题\n\n```text\n{body}\n```\n")
+    assert load_tool().rule_fig_01(doc) == []
+
+
+def test_fig_01_aggregates_into_one_signal_per_article(tmp_path):
+    """一篇一条信号：图的个数不该把「信号」列撑爆。"""
+    parts = []
+    for k in range(3):
+        body = "\n".join(f"    N{k}_{i} --> M{k}_{i}" for i in range(16))
+        parts.append(f"```mermaid\ngraph TB\n{body}\n```\n")
+    doc = make_doc(tmp_path, "# 标题\n\n" + "\n".join(parts))
+    signals = load_tool().rule_fig_01(doc)
+    assert len(signals) == 1
+    assert "3 张图超限" in signals[0].detail
+
+
+def test_fig_01_does_not_count_the_diagram_header_as_a_box(tmp_path):
+    """回归：``stateDiagram-v2`` 是图类型，不是图里的一个框。"""
+    module = load_tool()
+    body = "stateDiagram-v2\n    [*] --> S1\n    S1 --> S2\n"
+    assert module._mermaid_size(body) == (2, 2, 1)
+    doc = make_doc(tmp_path, _mermaid(body))
+    assert module.rule_fig_01(doc) == []
+
+
+def test_fig_01_counts_a_node_whose_name_starts_with_end(tmp_path):
+    """回归：``end`` 是收尾一个 subgraph 的关键字，不能把 ``endpoint`` 也吞掉。"""
+    module = load_tool()
+    assert module._mermaid_size("graph TB\n    endpoint --> server\n") == (2, 2, 1)
+
+
+def test_fig_01_flags_an_over_long_mindmap(tmp_path):
+    body = "mindmap\n" + "\n".join(f"    分支{i}" for i in range(21))
+    doc = make_doc(tmp_path, _mermaid(body))
+    assert len(load_tool().rule_fig_01(doc)) == 1
+
+
+def test_fig_01_accepts_a_mindmap_within_the_limit(tmp_path):
+    body = "mindmap\n" + "\n".join(f"    分支{i}" for i in range(20))
+    doc = make_doc(tmp_path, _mermaid(body))
+    assert load_tool().rule_fig_01(doc) == []
+
+
+def test_fig_02_flags_a_reference_far_from_the_figure(tmp_path):
+    filler = "\n\n".join(f"第 {i} 段正文。" for i in range(8))
+    text = ("# 标题\n\n下图给出这条链路。\n\n" + filler
+            + "\n\n```mermaid\ngraph TB\n    A --> B\n```\n")
+    doc = make_doc(tmp_path, text)
+    signals = load_tool().rule_fig_02(doc)
+    assert len(signals) == 1
+    assert signals[0].rule == "FIG-02"
+    assert signals[0].severity == "info"
+
+
+def test_fig_02_accepts_a_reference_right_above_the_figure(tmp_path):
+    text = "# 标题\n\n下图给出这条链路。\n\n```mermaid\ngraph TB\n    A --> B\n```\n"
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_fig_02(doc) == []
+
+
+def test_fig_02_ignores_a_reference_when_there_is_no_figure(tmp_path):
+    text = "# 标题\n\n下图给出这条链路，但下面并没有图。\n"
+    doc = make_doc(tmp_path, text)
+    assert load_tool().rule_fig_02(doc) == []
+
+
+def test_fig_02_finds_a_reference_in_the_middle_of_a_paragraph(tmp_path):
+    """回归：引用常常写在段落中间，按「块首行」找会整个漏掉。"""
+    filler = "\n\n".join(f"第 {i} 段正文。" for i in range(8))
+    text = ("# 标题\n\n这一段先说了背景，\n下图给出这条链路。\n\n" + filler
+            + "\n\n```mermaid\ngraph TB\n    A --> B\n```\n")
+    doc = make_doc(tmp_path, text)
+    signals = load_tool().rule_fig_02(doc)
+    assert len(signals) == 1
+    assert "下图" in signals[0].detail
+
+
+def test_the_checker_reports_fig_signals_for_a_real_article():
+    """集成：真实文章上跑一遍，FIG-01/FIG-02 真的会报出来。"""
+    target = REPO_ROOT / "docs" / "cluster" / "DCF" / "一文读懂openguass dcf网络模块.md"
+    assert target.exists(), "样例文章不在了，集成测试要换一个真实文章"
+    result = subprocess.run(
+        [sys.executable, str(TOOL), str(target), "--json"],
+        capture_output=True, text=True, cwd=REPO_ROOT,
+    )
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    signals = payload["docs"][0]["signals"]
+    fig1 = [s for s in signals if s["rule"] == "FIG-01"]
+    assert fig1, "这篇有 6 张超长的链式流程图，检查器却没报 FIG-01"
+    assert fig1[0]["severity"] == "warn"
+    # 聚合信号：位置全部写进 detail，而不是每张图一条
+    assert "6 张图超限" in fig1[0]["detail"]

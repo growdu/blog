@@ -59,6 +59,9 @@ class Block:
     text: str
     line: int
     level: int = 0
+    # 代码块的语言标记（```mermaid / ```c / ```shell …）。空串表示没有标记。
+    # mermaid 的图要单独识别，所以这个信息不能丢在解析阶段。
+    lang: str = ""
 
 
 @dataclass
@@ -486,8 +489,276 @@ def rule_met_02(doc: Doc) -> list[Signal]:
     return [Signal("MET-02", "info", 1, "", "缺少 H1 标题")]
 
 
+# --- 图示可读性 --------------------------------------------------------
+#
+# 「流程图不能太长，布局要合理，不然一眼看不完」——这一条机械上判得了：
+# 一张图有多少个框、顺着一路走最多几步、从一个框分出去几条支线。
+# 阈值是经验值，不是硬标准：图超限说明**该拆**，不是说图画错了。
+#
+# 三个指标各自对应一种「看不完」，单看框数不够：
+#   框多   → 扫一眼看不到全貌（一张图摆了两面墙）
+#   路径长 → 顺着一路走要一直往下，接不上前后（流程图太长）
+#   分支多 → 一个点炸开十几条线，视线来回跳（架构图布局乱）
+# 12 个框但结构规整的图不算超限，6 个框却连成一条长链的图算。
+
+MERMAID_MAX_NODES = 15          # 一张图里的框数上限
+MERMAID_MAX_PATH = 8            # 一条流程最多几步
+MERMAID_MAX_FANOUT = 6          # 一个框最多分出几条支线
+MERMAID_MAX_MINDMAP_LINES = 20  # mindmap 的内容行数上限
+FIGURE_REF_MAX_DISTANCE = 10    # 「下图」到图之间允许隔的行数
+
+MERMAID_EDGE_RE = re.compile(r"(?:-\.->|-\.-|==>|--[xo]|-->|---)")
+MERMAID_ID_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*)")
+# 图类型声明。用正则而不是 startswith：``stateDiagram-v2`` 的版本后缀
+# 要认出来，``graphical`` 这种节点名又不能被当成图类型。
+MERMAID_HEADER_RE = re.compile(
+    r"^(?:graph|flowchart|sequencediagram|classdiagram|statediagram|"
+    r"state-diagram|mindmap|timeline|erdiagram|gantt|journey|pie|quadrantchart)\b")
+# 整行就是这一个词的（``end`` 收尾一个 subgraph）。
+MERMAID_SKIP_EXACT = ("end",)
+# 行首是这些前缀的（``style A fill:#fff`` 之类）。
+MERMAID_SKIP_PREFIX = (
+    "subgraph", "style ", "class ", "click ", "linkstyle",
+    "classdef", "direction", "note ", "note:", "acctitle:",
+    "accdescr:", "%%",
+)
+
+
+def _is_mermaid_header(low: str) -> bool:
+    """这一行是不是图类型声明（``graph TB`` / ``stateDiagram-v2`` / ``mindmap``）。"""
+    return bool(MERMAID_HEADER_RE.match(low))
+
+
+def _is_mermaid_noise(low: str) -> bool:
+    """这一行是不是图里的修饰语句（不是框，也不是边）。"""
+    if low in MERMAID_SKIP_EXACT:
+        return True
+    return low.startswith(MERMAID_SKIP_PREFIX)
+
+
+def _mermaid_graph(body: str) -> tuple[set[str], list[tuple[str, str]]]:
+    """把 mermaid 源码解析成 (框的集合, 有向边列表)。
+
+    框 id 的取法：mermaid 里节点可以写成 ``A``、``A[文字]``、``A(文字)``、
+    ``A((文字))``，只有开头的标识符是 id，后面的是形状与文字。
+    边上的说明有三种写法（``A-->|说明|B``、``A-- 说明 -->B``、``A-->B: 说明``），
+    先去掉说明，剩下的才切得干净。
+    """
+    nodes: set[str] = set()
+    edges: list[tuple[str, str]] = []
+    for raw in body.split("\n"):
+        line = raw.strip()
+        if not line:
+            continue
+        low = line.lower()
+        if _is_mermaid_header(low) or _is_mermaid_noise(low):
+            continue
+        if low.startswith(("participant ", "actor ")):
+            m = MERMAID_ID_RE.match(line.split(None, 1)[1].strip())
+            if m:
+                nodes.add(m.group(1))
+            continue
+        line = re.sub(r"\|[^|]*\|", " ", line)
+        line = re.sub(r"--\s+[^->|]*\s*-->", " --> ", line)
+        chain: list[str] = []
+        for part in MERMAID_EDGE_RE.split(line):
+            part = part.strip()
+            if not part:
+                continue
+            m = MERMAID_ID_RE.match(part)
+            if not m:
+                continue
+            nodes.add(m.group(1))
+            chain.append(m.group(1))
+        edges.extend(zip(chain, chain[1:]))
+    return nodes, edges
+
+
+def _longest_path(nodes: set[str], edges: list[tuple[str, str]]) -> int:
+    """顺着一路走最多能经过几个框。
+
+    图里可能有环（重试、回滚），所以用 DFS 记忆化 + 在途标记把环截断。
+    截断后算出来的是「不重复经过同一个框」的最长路径——环上转一圈
+    不算变长，这正是「这条路有多长」该有的意思。
+    """
+    adjacency: dict[str, list[str]] = {}
+    for src, dst in edges:
+        adjacency.setdefault(src, []).append(dst)
+    memo: dict[str, int] = {}
+    on_stack: set[str] = set()
+
+    def walk(node: str) -> int:
+        if node in memo:
+            return memo[node]
+        if node in on_stack:
+            # 回到在途的框：这里有环。贡献 0 个新框——那个框已经被算过了，
+            # 环上转一圈不会让路径变得更长。
+            return 0
+        on_stack.add(node)
+        best = 1
+        for nxt in adjacency.get(node, ()):
+            best = max(best, 1 + walk(nxt))
+        on_stack.discard(node)
+        memo[node] = best
+        return best
+
+    longest = 1
+    for node in nodes:
+        longest = max(longest, walk(node))
+    return longest
+
+
+def _max_fanout(edges: list[tuple[str, str]]) -> int:
+    """一个框最多分出去几条支线（同一条目标只算一条）。"""
+    out: dict[str, set[str]] = {}
+    for src, dst in edges:
+        out.setdefault(src, set()).add(dst)
+    return max((len(v) for v in out.values()), default=0)
+
+
+def _mermaid_size(body: str) -> tuple[int, int, int]:
+    """(框数, 最长路径的框数, 最大扇出)。"""
+    nodes, edges = _mermaid_graph(body)
+    return len(nodes), _longest_path(nodes, edges), _max_fanout(edges)
+
+
+def _mermaid_content_lines(body: str) -> int:
+    """图里真正有内容的行数（去掉类型声明和空行）。"""
+    count = 0
+    for raw in body.split("\n"):
+        line = raw.strip()
+        if not line:
+            continue
+        low = line.lower()
+        if _is_mermaid_header(low) or _is_mermaid_noise(low):
+            continue
+        count += 1
+    return count
+
+
+def rule_fig_01(doc: Doc) -> list[Signal]:
+    """A flow/architecture diagram is too big to read at a glance.
+
+    Mermaid renders a long chain into one very long strip, and a diagram
+    with dozens of nodes turns into a wall. Both are fixable by splitting
+    the diagram, so the signal points at the block, not at the drawing.
+
+    一篇一条信号：一张图超限是「这张图要拆」，六张图超限也还是同一件事
+    （这篇的图整体太密），拆成六条信号只会把「信号」这一列撑爆——
+    那一列是用来排审校队列的。
+    """
+    hits: list[tuple[int, str]] = []
+    for block in doc.blocks:
+        if block.kind != CODE or block.lang != "mermaid":
+            continue
+        if block.text.strip().lower().startswith("mindmap"):
+            lines = _mermaid_content_lines(block.text)
+            if lines > MERMAID_MAX_MINDMAP_LINES:
+                hits.append((block.line, f"L{block.line} mindmap {lines} 行"))
+            continue
+        nodes, path, fanout = _mermaid_size(block.text)
+        reasons: list[str] = []
+        if nodes > MERMAID_MAX_NODES:
+            reasons.append(f"{nodes} 个框")
+        if path > MERMAID_MAX_PATH:
+            reasons.append(f"一条流程 {path} 步")
+        if fanout > MERMAID_MAX_FANOUT:
+            reasons.append(f"一个框分出 {fanout} 条支线")
+        if reasons:
+            hits.append((block.line, f"L{block.line} " + "、".join(reasons)))
+    if not hits:
+        return []
+    line = hits[0][0]
+    detail = (f"{len(hits)} 张图超限（框数>{MERMAID_MAX_NODES}、"
+              f"单条流程>{MERMAID_MAX_PATH} 步、单个框分出>{MERMAID_MAX_FANOUT} 条支线、"
+              f"mindmap>{MERMAID_MAX_MINDMAP_LINES} 行）："
+              + "、".join(text for _, text in hits[:6])
+              + "，建议拆成几张、每张只讲一段")
+    return [Signal("FIG-01", "warn", line, doc.excerpt(line), detail)]
+
+
+FIGURE_REF_RE = re.compile(r"(下|上)图")
+
+
+def block_span(block: Block) -> tuple[int, int]:
+    """这个块占的物理行范围（含首尾）。
+
+    代码块的 ``line`` 是围栏所在行，正文在它后面，所以结束行要 +1；
+    其它块的 ``text`` 包含自己的第一行，直接按换行数算。
+    """
+    if block.kind == CODE:
+        return block.line, block.line + block.text.count("\n") + 1
+    return block.line, block.line + block.text.count("\n")
+
+
+def _figure_blocks(doc: Doc) -> list[tuple[int, int]]:
+    """图块的 (起始行, 结束行)：mermaid 代码块与图片行。"""
+    spans: list[tuple[int, int]] = []
+    for block in doc.blocks:
+        if block.kind == CODE and block.lang == "mermaid":
+            spans.append(block_span(block))
+    for number, line in enumerate(doc.lines, 1):
+        if IMAGE_RE.search(line):
+            spans.append((number, number))
+    spans.sort()
+    return spans
+
+
+def rule_fig_02(doc: Doc) -> list[Signal]:
+    """A "see the diagram below" reference is too far from the diagram.
+
+    The reader is told to look down, then has to scroll past a screen of
+    text (or a different diagram) before the picture arrives.
+    """
+    spans = _figure_blocks(doc)
+    if not spans:
+        return []
+    hits: list[tuple[int, str]] = []
+    for number, line in enumerate(doc.lines, 1):
+        if block_kind(doc, number) not in (PARAGRAPH, LIST):
+            continue
+        for m in FIGURE_REF_RE.finditer(line):
+            direction = m.group(1)
+            if direction == "下":
+                later = [s for s in spans if s[0] > number]
+                if not later:
+                    continue
+                target = later[0]
+                distance = target[0] - number
+            else:
+                earlier = [s for s in spans if s[1] < number]
+                if not earlier:
+                    continue
+                target = earlier[-1]
+                distance = number - target[1]
+            if distance > FIGURE_REF_MAX_DISTANCE:
+                hits.append((number, f"L{number}「{m.group(0)}」→图在 L{target[0]}，隔 {distance} 行"))
+    if not hits:
+        return []
+    line = hits[0][0]
+    detail = (f"{len(hits)} 处「下图/上图」离图太远"
+              f"（超过 {FIGURE_REF_MAX_DISTANCE} 行）："
+              + "、".join(text for _, text in hits[:6]))
+    return [Signal("FIG-02", "info", line, doc.excerpt(line), detail)]
+
+
+def block_kind(doc: Doc, line: int) -> str:
+    """The kind of the block that **covers** ``line`` (empty string if none).
+
+    Must be a range lookup, not a lookup by the block's first line: a
+    paragraph spans several lines, and「下图」usually sits in the middle
+    of one. Matching only the first line would miss most references.
+    """
+    for block in doc.blocks:
+        start, end = block_span(block)
+        if start <= line <= end:
+            return block.kind
+    return ""
+
+
 RULES.extend([rule_str_01, rule_str_02, rule_str_03, rule_str_04,
-              rule_str_05, rule_met_01, rule_met_02])
+              rule_str_05, rule_met_01, rule_met_02,
+              rule_fig_01, rule_fig_02])
 
 
 def derive_identity(path: Path, docs_root: Path = DOCS_ROOT) -> tuple[str, str]:
@@ -546,7 +817,9 @@ def parse_blocks(lines: list[str]) -> list[Block]:
             while j < total and not lines[j].strip().startswith(marker[:3]):
                 body.append(lines[j])
                 j += 1
-            blocks.append(Block(CODE, "\n".join(body), line_no))
+            blocks.append(Block(CODE, "\n".join(body), line_no,
+                                lang=fence.group(2).strip().split()[0].lower()
+                                if fence.group(2).strip() else ""))
             i = j + 1
             continue
 
