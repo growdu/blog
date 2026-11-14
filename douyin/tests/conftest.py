@@ -54,36 +54,62 @@ def outbox(tmp_path, monkeypatch):
     return target
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture(autouse=True, scope="session")
 def _the_repo_outbox_stays_untouched():
     """测试不许往仓库里的 `publish/outbox` 写东西。
 
-    快照的默认位置就在那儿。而命令行测试是**另一个进程**——
-    上面那个 monkeypatch 拦不住它。曾经就把
-    `publish/outbox/structured-ddl__douyin.json` 写成了指向
-    pytest 临时目录的垃圾：文件在、JSON 合法、看着像真的状态，
-    下一个人读到的是假的。
+    **基准是会话起点，不是每个测试的前后。** 前后比对看不见**上一个
+    测试**留下的东西——那个文件在本次起点就已经存在了，于是「前后一样」，
+    守卫报一切正常。而脏文件恰恰会活过整个 session，最后混进提交。
 
-    这条守卫在每个测试前后比一遍仓库 outbox 的内容。
+    再补一条判据：**入库目录里只允许有 git 跟踪的文件**。测试写出来的
+    文件一定是未跟踪的，`git ls-files` 是唯一能发现「上个 session
+    遗留」的办法。
+
+    踩过的坑：命令行测试是**另一个进程**，conftest 里把快照目录改到
+    临时区拦不住它——它把 `publish/outbox/structured-ddl__douyin.json`
+    写成了指向 pytest 临时目录的垃圾：文件在、JSON 合法、看着像真的
+    状态，下一个人读到的是假的。
     """
     repo_outbox = REPO_ROOT / "publish" / "outbox"
 
-    def _snapshot():
+    def _on_disk():
         if not repo_outbox.is_dir():
             return {}
         return {path.name: path.read_bytes()
                 for path in sorted(repo_outbox.glob("*.json"))}
 
-    before = _snapshot()
+    def _tracked():
+        import subprocess
+
+        probe = subprocess.run(["git", "rev-parse", "--git-dir"],
+                               cwd=REPO_ROOT, capture_output=True, text=True)
+        if probe.returncode != 0:
+            return None                      # 不在 git 仓库里，跳过这条判据
+        result = subprocess.run(["git", "ls-files", "publish/outbox"],
+                                cwd=REPO_ROOT, capture_output=True, text=True)
+        return {line.strip() for line in result.stdout.splitlines() if line.strip()}
+
+    before = _on_disk()
     yield
-    after = _snapshot()
+    after = _on_disk()
+
     changed = sorted(
         name for name in set(before) | set(after)
         if before.get(name) != after.get(name)
     )
-    assert not changed, (
-        f"测试往仓库的 publish/outbox 写了东西：{changed}"
-    )
+    assert not changed, f"测试往仓库的 publish/outbox 写了东西：{changed}"
+
+    tracked = _tracked()
+    if tracked is not None:
+        untracked = sorted(
+            name for name in after
+            if f"publish/outbox/{name}" not in tracked
+        )
+        assert not untracked, (
+            f"publish/outbox 里有没被 git 跟踪的文件：{untracked}"
+            f"（上个 session 留下的脏文件，或本次测试写的）"
+        )
 
 
 @pytest.fixture

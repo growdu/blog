@@ -42,6 +42,16 @@ REQUIRED_ASSETS = {
     "aiv/music/tracks/series-motif-01.wav": "片头片尾闭环的 motif",
 }
 
+#: 备用素材：入库了，但**不是**默认出片必需的（缺了照样能出片）。
+#:
+#: 抖音这一档备用：胸口那枚 `growdu` 铭牌也是品牌标识，被判「过度营销」
+#: 时要换成无标牌那份（`make EP=… nobrand NOBADGE=1`）。入库是因为
+#: 换素材这件事在另一台机器上也得能立刻做，不能临时还得先跑脚本。
+OPTIONAL_ASSETS = {
+    "aiv/character/growdu_character_2k_nobg_nobadge.png":
+        "无标牌形象（抖音这一档备用：铭牌也是品牌标识）",
+}
+
 #: 产物目录：里面不许有被跟踪的文件
 PRODUCT_DIRS = ("aiv/out", "aiv/build", "aiv/frames")
 
@@ -76,6 +86,22 @@ def test_required_asset_is_not_ignored(relative):
     assert result.returncode != 0, f"{relative} 被 .gitignore 拦着"
 
 
+@pytest.mark.parametrize("relative", sorted(OPTIONAL_ASSETS))
+def test_optional_asset_is_tracked(relative):
+    """备用素材也要在版本控制里。
+
+    它不是默认出片必需的，但「被平台判了要换素材」这种场景
+    往往发生在一台刚 clone 完的机器上——素材不在，就得先跑脚本才能换。
+    """
+    assert (REPO_ROOT / relative).is_file(), f"{relative} 本机就没有"
+    result = _git("ls-files", "--error-unmatch", relative)
+    assert result.returncode == 0, (
+        f"{relative} 没被 git 跟踪（{OPTIONAL_ASSETS[relative]}）"
+    )
+    assert _git("check-ignore", "-q", relative).returncode != 0, \
+        f"{relative} 被 .gitignore 拦着"
+
+
 @pytest.mark.parametrize("directory", PRODUCT_DIRS)
 def test_product_directory_has_no_tracked_files(directory):
     """产物目录里不许有被跟踪的文件——成片一入库，仓库就开始长。"""
@@ -88,7 +114,7 @@ def test_no_tracked_media_outside_the_allowlist():
     """入库的媒体文件只有白名单里那些。"""
     result = _git("ls-files", "aiv")
     media_suffixes = (".mp3", ".mp4", ".wav", ".png", ".jpg", ".jpeg")
-    allowed = set(REQUIRED_ASSETS)
+    allowed = set(REQUIRED_ASSETS) | set(OPTIONAL_ASSETS)
     unexpected = [
         path for path in result.stdout.splitlines()
         if path.endswith(media_suffixes) and path not in allowed

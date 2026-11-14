@@ -8,13 +8,16 @@
 | --- | --- | --- |
 | `growdu_character_2k.png` | 2048×2048 | 主形象，白底。通用素材源 |
 | `growdu_character_2k_nobg.png` | 2048×2048 RGBA | 透明底版。**合成进视频用这个** |
+| `growdu_character_2k_nobg_nobadge.png` | 2048×2048 RGBA | 透明底**无铭牌**版。抖音这一档备用 |
 | `growdu_pose_sheet.png` | 2720×1536 | 6 姿态设定表：中性 / 指示 / 思考 / 数字 2 / 低头 / 收束 |
 | `scripts/generate_character.py` | — | 生成脚本（prompt + 参数都在里面，可复现） |
 | `scripts/add_glasses.py` | — | 戴眼镜化：图生图加眼镜 + 擦镜框杂物 + 抠底 + 盖章 |
 | `scripts/stamp_badge.py` | — | 铭牌盖章：刷白铭牌 + 用真实字体印上 growdu |
+| `scripts/clear_badge.py` | — | 抹掉胸口铭牌：产出无标牌素材（抖音这档备用） |
 | `scripts/_mcode.py` | — | mcode-tools CLI 封装（上传 / 调用 / 下载 / 临时故障重试） |
 
-媒体文件不入库，保留本机即可；需要时跑脚本重新生成。
+透明底主形象与无标牌版**入库**（出片必需 / 抖音这档备用）；
+白底原图与姿态表不入库，保留本机即可，需要时跑脚本重新生成。
 
 ## 形象原型
 
@@ -60,6 +63,25 @@ promote 之后再跑一次不会「眼镜叠眼镜」。
 python3 scripts/stamp_badge.py            # 处理默认素材
 python3 scripts/stamp_badge.py <png> ...  # 处理指定文件
 ```
+
+### 换成无铭牌形象（抖音这一档备用）
+
+胸口那枚 `growdu` 铭牌也是品牌标识。抖音判「过度营销信息」时要换成
+无铭牌那份：
+
+```bash
+cd aiv/character
+python3 scripts/clear_badge.py            # 产出 growdu_character_2k_nobg_nobadge.png
+cd ../pipeline
+make EP=row-lock nobrand NOBADGE=1        # 用无铭牌素材重出片
+```
+
+抹法是刷成**马甲色**：铭牌四周一圈取马甲色像素的中值，按列竖向插值填
+回去（整块一个色会在马甲上留下一块偏平的矩形）。铭牌是脚本印上去的，
+所以定位也是自动的，不硬编码坐标。
+
+默认**保留**铭牌：它占画面 0.4%，机器审核未必看得见，
+先按保留投一条看结果（发布契约 §十四 第 16 条）。
 
 ## 三条硬规矩
 

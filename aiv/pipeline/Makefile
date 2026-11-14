@@ -13,6 +13,8 @@
 #   make mix-verify 成片级混音验收（规范 §5.7）
 #   make all       validate → brand → render → compose
 #   make nobrand   无品牌导流版（抖音这一档用）：nobrand → render → compose
+#                  胸口铭牌也是品牌标识：make EP=<期号> nobrand NOBADGE=1
+#                  换成无标牌形象（默认保留铭牌，等实投结果再定）
 #
 # align 是手工步骤，需要在 all 之前单独跑。
 # 片段是增量渲染的：build/ 里未过期的片段会被直接复用。
@@ -66,6 +68,14 @@ NOBRAND_STORYBOARD := $(ROOT)/storyboard_$(EP)__nobrand.json
 NOBRAND_BUILD := $(ROOT)/build/$(EP)__nobrand
 NOBRAND_OUT := $(ROOT)/out/$(EP)__nobrand.mp4
 
+# 无标牌形象（抖音这一档备用）：胸口那枚 growdu 铭牌也是品牌标识，
+# 被判「过度营销信息」时用它重出片。**默认不换**——铭牌占比极小，
+# 先按保留投一条看审核结果（规格 §十四 第 16 条）。
+#
+#   make EP=row-lock nobrand NOBADGE=1
+NOBADGE_CHAR := $(ROOT)/character/growdu_character_2k_nobg_nobadge.png
+CHARACTER_FLAG := $(if $(NOBADGE),--character $(NOBADGE_CHAR))
+
 .PHONY: all test doctor validate align brand render compose nobrand probe persona bgm mix-verify topics pronunciation clean
 
 all: validate brand render compose
@@ -100,7 +110,7 @@ nobrand:
 	$(PY) -m pyv.cli nobrand --storyboard $(STORYBOARD) \
 		--out $(NOBRAND_STORYBOARD)
 	$(PY) -m pyv.cli render --storyboard $(NOBRAND_STORYBOARD) \
-		--out $(NOBRAND_BUILD)
+		--out $(NOBRAND_BUILD) $(CHARACTER_FLAG)
 	$(PY) -m pyv.cli compose --storyboard $(NOBRAND_STORYBOARD) \
 		--build $(NOBRAND_BUILD) --out $(NOBRAND_OUT) \
 		--narration $(NARRATION) --bgm $(BGM)

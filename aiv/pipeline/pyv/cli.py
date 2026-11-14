@@ -55,7 +55,12 @@ def cmd_align(args: argparse.Namespace) -> int:
 
 
 def cmd_render(args: argparse.Namespace) -> int:
-    from pyv import render, subtitle
+    from pyv import character, render, subtitle
+    if args.character:
+        if not character.use_image(args.character):
+            print(f"ERROR 形象素材不存在：{args.character}", file=sys.stderr)
+            return 1
+        print(f"形象素材 → {character.STATIC_IMAGE}")
     storyboard = _load_or_report(args)
     if storyboard is None:
         return 1
@@ -402,6 +407,8 @@ def main(argv: list[str] | None = None) -> int:
     p_render = sub.add_parser("render")
     p_render.add_argument("--storyboard", required=True)
     p_render.add_argument("--out", required=True)
+    p_render.add_argument("--character", default=None,
+                           help="换一份形象素材（如无标牌版）")
     p_render.set_defaults(func=cmd_render)
 
     p_compose = sub.add_parser("compose")

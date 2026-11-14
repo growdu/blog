@@ -4,14 +4,17 @@
 
 | 素材 | 位置 | 是否入库 |
 | --- | --- | --- |
-| 3D 卡通形象 | `aiv/character/growdu_character_2k_nobg.png` | 否（媒体产物） |
+| 3D 卡通形象 | `aiv/character/growdu_character_2k_nobg.png` | 是（出片必需） |
+| 无标牌形象 | `aiv/character/growdu_character_2k_nobg_nobadge.png` | 是（抖音这档备用） |
 
 形象是 3D 渲染的静态图，**不做部件切分动画**——连通块阈值与绝对坐标都是为
 2D 扁平图硬编码的，3D 渲染的渐变高光会直接破坏分割。按《形象与音色规范》
 §1.6：形象一律走**静帧素材 + 位移 / 缩放 / 淡入**。
 
-降级策略：有形象就画，没有就完全不画。任何情况下都不抛异常——媒体产物不入库，
-缺素材是常态而不是错误。
+换素材走 `use_image()`（命令行是 `render --character <路径>`）。默认素材
+缺失时的降级策略是：有形象就画，没有就完全不画。任何情况下都不抛异常
+——媒体产物不入库，缺素材是常态而不是错误。但**显式指定**的素材缺失
+会报错：那是指错了，不是没有。
 """
 from __future__ import annotations
 
@@ -27,9 +30,34 @@ AIV_ROOT = Path(__file__).resolve().parents[2]
 REPO_ROOT = AIV_ROOT.parents[0]
 
 # 3D 形象（透明底，合成进视频用这个）
-STATIC_IMAGE = AIV_ROOT / "character" / "growdu_character_2k_nobg.png"
+DEFAULT_STATIC_IMAGE = AIV_ROOT / "character" / "growdu_character_2k_nobg.png"
+# 当前用的形象素材。换素材走 `use_image()`，别直接改这个常量。
+STATIC_IMAGE = DEFAULT_STATIC_IMAGE
 # 个人头像（已入库，用于落版；不使用任何公司 Logo）
 AVATAR_IMAGE = REPO_ROOT / "themes" / "matery" / "source" / "medias" / "avatar.jpg"
+
+
+def use_image(path: str | Path) -> bool:
+    """换一份形象素材（无标牌版等）。文件不存在返回 False。
+
+    **为什么需要它**：胸口那枚 `growdu` 铭牌也是品牌标识。抖音判
+    「过度营销信息」时要换成无铭牌那份（`character/scripts/clear_badge.py`
+    产出，`make EP=… nobrand NOBADGE=1`）。
+
+    **为什么不静默退回默认那份**：默认素材缺失可以降级成「不画形象」——
+    那是「没料到」的情况，媒体产物不入库、缺了是常态。但**显式指定的**
+    素材缺失是「指错了」，这时候退回默认等于用错素材出片：片子看起来
+    正常、发出去才发现胸口还挂着铭牌，而片子已经收不回来了。
+
+    换过的素材会参与片段新鲜度判断（`asset_mtimes`），所以已渲染的
+    片段会自动作废重渲。
+    """
+    global STATIC_IMAGE
+    candidate = Path(path).expanduser()
+    if not candidate.is_file():
+        return False
+    STATIC_IMAGE = candidate
+    return True
 
 
 def pil_to_cairo(image: Image.Image) -> cairo.ImageSurface:
@@ -66,6 +94,7 @@ class Mascot:
 
     def __init__(self) -> None:
         self._mode = ""
+        self._source: Path | None = None
         self._surface: cairo.ImageSurface | None = None
         self._box: tuple[int, int, int, int] = (0, 0, 0, 0)
 
@@ -76,8 +105,14 @@ class Mascot:
         return self._mode
 
     def _load(self) -> None:
-        if self._mode:
+        # 缓存的是**上一张图**的像素。换过素材（`use_image`）就得重来，
+        # 否则画面里还是旧形象。
+        if self._mode and self._source == STATIC_IMAGE:
             return
+        self._mode = ""
+        self._source = STATIC_IMAGE
+        self._surface = None
+        self._box = (0, 0, 0, 0)
         if STATIC_IMAGE.exists():
             image = Image.open(STATIC_IMAGE).convert("RGBA")
             self._surface = pil_to_cairo(image)

@@ -56,6 +56,9 @@ __pycache__/
 # 形象原型（重新生成主形象的唯一来源）+ 透明底主形象（合成进画面用这个）。
 !growdu2.jpeg
 !character/growdu_character_2k_nobg.png
+# 无标牌形象：抖音这一档备用（胸口那枚 growdu 铭牌也是品牌标识）。
+# 由 `character/scripts/clear_badge.py` 从上面那份派生，可复现。
+!character/growdu_character_2k_nobg_nobadge.png
 
 # 品牌片头片尾与成品音轨（缺了也能出片，只是成片不带品牌片）。
 !brand/clips/growdu_intro_3s_1080p.mp4

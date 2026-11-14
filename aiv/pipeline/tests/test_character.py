@@ -138,6 +138,77 @@ def test_subject_box_finds_the_real_foot():
     assert character.subject_box(empty) == (0, 0, 50, 50)
 
 
+# --- 换素材 -----------------------------------------------------------------
+#
+# 抖音那一档备用：胸口那枚 growdu 铭牌也是品牌标识，被判「过度营销」
+# 时要换成无铭牌那份。切换走 `use_image()`，命令行是 `render --character`。
+
+
+def _solid(path, color):
+    from PIL import Image
+
+    Image.new("RGBA", (64, 64), color).save(path)
+    return path
+
+
+def test_use_image_switches_to_the_given_asset(tmp_path):
+    """显式指定的那份素材要真的被用上。"""
+    asset = _solid(tmp_path / "other.png", (10, 20, 30, 255))
+    original = character.STATIC_IMAGE
+    try:
+        assert character.use_image(asset) is True
+        assert character.STATIC_IMAGE == asset
+    finally:
+        character.STATIC_IMAGE = original
+
+
+def test_use_image_refuses_a_missing_file(tmp_path):
+    """指错了就报「指错了」，不能悄悄退回默认那份。
+
+    退回默认 = 拿带铭牌的形象出片，胸口那枚 growdu 还在，
+    而片子发出去就收不回来了。
+    """
+    original = character.STATIC_IMAGE
+    try:
+        assert character.use_image(tmp_path / "nope.png") is False
+        assert character.STATIC_IMAGE == original
+    finally:
+        character.STATIC_IMAGE = original
+
+
+def test_the_mascot_reloads_after_the_asset_is_switched(tmp_path):
+    """换素材后，已经加载过的形象必须重载——否则画面里还是旧的那张。"""
+    first = _solid(tmp_path / "a.png", (200, 30, 30, 255))
+    second = _solid(tmp_path / "b.png", (30, 200, 30, 255))
+    original = character.STATIC_IMAGE
+    try:
+        character.use_image(first)
+        mascot = character.Mascot()
+        mascot.draw(cairo.Context(cairo.ImageSurface(
+            cairo.FORMAT_ARGB32, 320, 180)), (160.0, 170.0), 120.0)
+        before = bytes(mascot._surface.get_data())
+
+        character.use_image(second)
+        mascot.draw(cairo.Context(cairo.ImageSurface(
+            cairo.FORMAT_ARGB32, 320, 180)), (160.0, 170.0), 120.0)
+        after = bytes(mascot._surface.get_data())
+
+        assert before != after, "换素材后形象没重载，画面里还是旧的那张"
+    finally:
+        character.STATIC_IMAGE = original
+
+
+def test_render_refuses_a_missing_character_asset(tmp_path, capsys):
+    """命令行指错了素材要干净地报错，不能出片。"""
+    from pyv import cli
+
+    code = cli.main(["render", "--storyboard", str(tmp_path / "sb.json"),
+                     "--out", str(tmp_path / "out"),
+                     "--character", str(tmp_path / "nope.png")])
+    assert code == 1
+    assert "形象素材不存在" in capsys.readouterr().err
+
+
 def test_pil_to_cairo_keeps_rgba_order():
     """BGRA 字节序弄错会让整个形象偏色。"""
     from PIL import Image
