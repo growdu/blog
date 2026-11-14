@@ -23,7 +23,9 @@ import pytest
 
 from pyv import align
 from pyv import episodes as episodes_mod
+from pyv import fonts
 from pyv import palette
+from pyv import scene_layout
 from pyv import subtitle as subtitle_mod
 from pyv.timeline import Storyboard, Video
 
@@ -180,6 +182,100 @@ def test_align_defaults_to_the_horizontal_canvas(tmp_path):
         contract_path=ROOT / "contracts" / contract_name,
     )
     assert (storyboard.video.width, storyboard.video.height) == (1920, 1080)
+
+
+# --- 收字号要量得准 ---------------------------------------------------------
+
+
+def _measured_width(ctx: cairo.Context, s: str, size: float,
+                    bold: bool = False) -> float:
+    """按 `draw.text` 真正用的字体族与字重去量宽度。"""
+    ctx.select_font_face(
+        fonts.font_family(), cairo.FONT_SLANT_NORMAL,
+        cairo.FONT_WEIGHT_BOLD if bold else cairo.FONT_WEIGHT_NORMAL,
+    )
+    ctx.set_font_size(size)
+    return ctx.text_extents(s).width
+
+
+def _ink_cols(surface: cairo.ImageSurface, width: int, height: int) -> np.ndarray:
+    """画面上有墨的列号。"""
+    surface.flush()
+    data = np.frombuffer(bytes(surface.get_data()), dtype=np.uint8)
+    data = data.reshape(height, surface.get_stride() // 4, 4)
+    mask = data[..., 3] > 8
+    return np.nonzero(mask.any(axis=0))[0]
+
+
+#: 竖版标题与说明会碰上的文案。长度不一，所以每一条都要试。
+FITTING_STRINGS = [
+    "行锁",
+    "结构化 DDL",
+    "WAL 与解码",
+    "关注数据库内核的独立开发者",
+    "并行解码：把顺序依赖拆成可并行的段",
+]
+
+
+@pytest.mark.parametrize("s", FITTING_STRINGS)
+@pytest.mark.parametrize("bold", [False, True])
+def test_the_fitted_size_really_fits_when_drawn(s, bold):
+    """`fit_size` 收出来的字号，画出来必须真的放得下。
+
+    这条守卫盯的是一个真踩过的坑：cairo 的 toy API 默认族是 sans，
+    没有中文字形，量中文只能量到 .notdef 的宽度——实测只有真实值的
+    **63%**。拿那个宽度收字号，中文标题会被判成「放得下」，
+    实际画出去却是出框的。而画面照样生成、时长照样对，**看不出问题**。
+    """
+    ctx = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 200, 100))
+    max_width = 400.0
+    size = scene_layout.fit_size(ctx, s, max_width, 64, bold=bold)
+    width = _measured_width(ctx, s, size, bold)
+    assert width <= max_width * 1.02, (
+        f"「{s}」收成 {size:.1f} 号字后画出来宽 {width:.1f}，"
+        f"还是放不进 {max_width}"
+    )
+
+
+def test_the_fitted_size_does_not_depend_on_the_previous_font_face():
+    """`fit_size` 自己选定字体族——不能被 ctx 上一次选的族带偏。
+
+    渲染时每个场景用的是**全新的 ctx**，默认族是 sans。要是 fit_size
+    依赖 ctx 的当前状态，同一句话在不同调用点会收到不同的字号，
+    而且「谁先画过什么」会决定画面长什么样——那种 bug 复现不了。
+    """
+    s = "关注数据库内核的独立开发者"
+    max_width = 500.0
+    fresh = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 200, 100))
+    dirty = cairo.Context(cairo.ImageSurface(cairo.FORMAT_ARGB32, 200, 100))
+    dirty.select_font_face("serif", cairo.FONT_SLANT_NORMAL,
+                            cairo.FONT_WEIGHT_BOLD)
+    dirty.set_font_size(11)
+    assert scene_layout.fit_size(fresh, s, max_width, 64) == \
+           scene_layout.fit_size(dirty, s, max_width, 64), (
+        "fit_size 的结果依赖了 ctx 之前选过什么字体族"
+    )
+
+
+@pytest.mark.parametrize("s", FITTING_STRINGS)
+def test_the_drawn_text_stays_inside_the_content_width(s):
+    """画出来的墨不许越过内容区右沿。
+
+    这条比「量宽度」更硬：它量的是**画面上的墨**，不是算出来的数——
+    收字号这套逻辑要是哪里不对，这里立刻能看出来。
+    """
+    width, height = 1080, 300
+    surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
+    ctx = cairo.Context(surface)
+    left = width * scene_layout.MARGIN_X
+    max_width = width * scene_layout.CONTENT_W
+    scene_layout.line(ctx, s, left, 120, max_width, 64, "#2B4C7E")
+    cols = _ink_cols(surface, width, height)
+    assert cols.size > 0, "字没画出来"
+    assert cols.max() <= left + max_width + 1, (
+        f"「{s}」画到 x={cols.max()}，越过了内容区右沿 "
+        f"{left + max_width:.0f}"
+    )
 
 
 # --- 品牌片不进竖版 ---------------------------------------------------------

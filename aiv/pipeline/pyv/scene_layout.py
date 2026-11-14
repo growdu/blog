@@ -35,7 +35,8 @@ from __future__ import annotations
 
 import cairo
 
-from pyv.draw import text, text_width
+from pyv import fonts
+from pyv.draw import text
 from pyv.palette import COLORS
 
 #: 竖版的三个位置（比例相对画面高度）
@@ -57,21 +58,61 @@ CAPTION_SIZE = 40
 MIN_SIZE = 20.0
 
 
+def _select_face(ctx: cairo.Context, bold: bool) -> None:
+    """把 ctx 的字体族设成**画的时候真正用的那一个**。
+
+    `draw.text` 画之前会自己 `select_font_face(fonts.font_family(), ...)`，
+    所以量宽度必须用同一个族与同一个字重——量出来的宽度要和画出来的
+    宽度一致，否则「收字号」就是在跟一个假的宽度较劲。
+    """
+    ctx.select_font_face(
+        fonts.font_family(),
+        cairo.FONT_SLANT_NORMAL,
+        cairo.FONT_WEIGHT_BOLD if bold else cairo.FONT_WEIGHT_NORMAL,
+    )
+
+
+def _ink_extent(ctx: cairo.Context, s: str, size: float,
+                bold: bool) -> float:
+    """从落笔点算起，这行字的墨迹右沿有多远。
+
+    **量的是墨迹右沿，不是步进宽度。** cairo 的 `text_extents().width`
+    是墨迹包围盒的宽，`x_bearing` 是从落笔点到最左墨迹的距离——
+    两者相加才是墨迹真正占到的右沿（实测中文左边距约 2 px）。
+    少算这一截，字就会画出框外几个像素。
+    """
+    _select_face(ctx, bold)
+    ctx.set_font_size(size)
+    ext = ctx.text_extents(s)
+    return ext.x_bearing + ext.width
+
+
 def fit_size(ctx: cairo.Context, s: str, max_width: float, size: float,
-             floor: float = MIN_SIZE) -> float:
+             floor: float = MIN_SIZE, bold: bool = False) -> float:
     """把字号往下收，直到这行字放得进 `max_width`。
 
     **宁可字小一点，也不能出框。** 出框的标题在手机上就是「被裁掉
     半个字」，而渲染图上一眼看不出来——画面照样生成、时长照样对。
 
-    文字宽度跟字号基本成正比，所以按比例缩一次就够，不必迭代。
+    **测量前必须先选定字体族**（见 `_select_face`）：cairo 的 toy API
+    默认族是 sans，没有中文字形，量中文只能量到 .notdef 的宽度——
+    实测只有真实宽度的 63%。拿这个宽度去收字号，中文标题就会被判成
+    「放得下」，实际画出去却是出框的。
+
+    **要迭代，不能只缩一次。** 字体 hinting 会把每个字的步进宽度取整，
+    所以「宽度正比于字号」只是近似：缩一次之后量出来仍可能超几个像素。
+    所以收完再量一次，直到真的放下。
     """
     if not s or size <= floor:
         return floor
-    width = text_width(ctx, s, size)
-    if width <= max_width or width <= 0:
-        return size
-    return max(floor, size * max_width / width)
+    for _ in range(4):
+        extent = _ink_extent(ctx, s, size, bold)
+        if extent <= max_width or extent <= 0:
+            break
+        size = max(floor, size * max_width / extent)
+        if size <= floor:
+            break
+    return size
 
 
 def line(ctx: cairo.Context, s: str, x: float, y: float, max_width: float,
@@ -82,7 +123,7 @@ def line(ctx: cairo.Context, s: str, x: float, y: float, max_width: float,
     这是竖版最常用的入口——竖版的框比横版窄一半，**每一行字都要
     过一遍 `fit_size`**。
     """
-    fitted = fit_size(ctx, s, max_width, size)
+    fitted = fit_size(ctx, s, max_width, size, bold=bold)
     text(ctx, s, x, y, fitted, color, anchor=anchor, bold=bold, alpha=alpha)
 
 
