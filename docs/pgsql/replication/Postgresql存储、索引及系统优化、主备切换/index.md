@@ -741,7 +741,11 @@ Latest checkpoint's newestCommitTsXid:0
 ```
 “Latest checkpoint location”和“Prior checkpoint location”这两项指的是“最后一次的Checkpoint位置”和“前一次的Checkpoint位置”。
 
-虽然Checkpoint事件是一个时间点，但执行Checkpoint刷盘的操作是需要进行一段时间的，如现在我们要开始做Checkpoint了，先记录当前点，该当前点就记录在“Latest checkpoint's REDO location”中，当完成刷盘操作之后，把Checkpoint相关信息也生成一条WAL记录，再把这条WAL记录也写入WAL日志文件中，此WAL日志的位置就是“Latest checkpoint location”，然后更新控制文件中有关Checkpoint的信息。
+虽然Checkpoint事件是一个时间点，但执行Checkpoint刷盘的操作是需要进行一段时间的。
+
+如现在我们要开始做Checkpoint了，先记录当前点，该当前点就记录在“Latest checkpoint's REDO location”中。
+
+当完成刷盘操作之后，把Checkpoint相关信息也生成一条WAL记录，再把这条WAL记录也写入WAL日志文件中，此WAL日志的位置就是“Latest checkpoint location”，然后更新控制文件中有关Checkpoint的信息。
 
 checkpoint写入wal日志的流程如下：
 
@@ -812,11 +816,14 @@ WAL文件名的24个字符由三部分组成:
 - LogSeg：32bit长的一个数字，是以0开始递增的，如0，1，2，3，…。LogSeg是LSN的低32bit的值再除以WAL文件大小（通常为16MB）的结果。注意：当LogId为0时，LogSeg是从1开始的。
 
 WAL日志文件默认大小为16MB，如果想改变其大小，在PostgreSQL10.X及之前的版本中需要重新编译程序，在PostgreSQL11.X版本之后，可以在Initdb初始化数据库实例时指定WAL文件的大小。
+
 如果WAL文件是默认大小，即16MB时，LogSeg最大为FF，即000000～0000FF，即在文件名中，最后8字节中前6字节总是0。这时因为LSN的低32bit的值再除以WAL文件大小［2^32/(16*1024*1024)=256］最大只能是256，换算成十六进制，即FF。
 
 #### 1.4.3 wal文件循环复用
 
-PostgreSQL的循环覆盖写是通过把旧的WAL日志“重命名”来实现的。发生一次Checkpoint之后，此Checkpoint点之前的WAL日志文件都可以删除，而PostgreSQL中一般并不会将其删除，而是“重命名”旧的WAL文件使之成为一个新的WAL文件。所以WAL文件目录下文件序号最大的那个WAL文件并不是当前正在写的WAL文件，因为这个WAL文件有可能是前一次Checkpoint时重命名旧文件产生的。
+PostgreSQL的循环覆盖写是通过把旧的WAL日志“重命名”来实现的。发生一次Checkpoint之后，此Checkpoint点之前的WAL日志文件都可以删除，而PostgreSQL中一般并不会将其删除，而是“重命名”旧的WAL文件使之成为一个新的WAL文件。
+
+所以WAL文件目录下文件序号最大的那个WAL文件并不是当前正在写的WAL文件，因为这个WAL文件有可能是前一次Checkpoint时重命名旧文件产生的。
 
 PostgreSQL在源代码中的“改名”方法实际上并不是用改名的方法实现的，而是用先创建一个新硬链接文件指向旧文件，然后再删除旧文件的方法。 硬链接不占用额外的存储空间，因为它们只是指向同一文件的不同名称，可以使用不同的名称来引用同一个文件，而无需创建该文件的多个副本。
 
@@ -1439,7 +1446,9 @@ PostgreSQL 9.2版本开始，增加级联复制的功能，也就是一个Standb
 流复制协议不仅能传递WAL日志，也能传递数据文件，后面介绍的pg_basebackup工具就是通过流复制协议把远程主库的所有数据
 文件传输到本地的。
 
-PostgreSQL数据库是通过在数据目录下建一个特殊的文件来指示数据库启动在主库模式还是在备库模式。在PostgreSQL 12版本之前是通过文件“recovery.conf”来指示数据库启动在备库模式的（当然需要在recovery.conf中配置一些合适的内容才可以），从PostgreSQL 12版本开始把recovery.conf中的配置项全部移到postgresql.conf配置文件中，不再使用recovery.conf文件。
+PostgreSQL数据库是通过在数据目录下建一个特殊的文件来指示数据库启动在主库模式还是在备库模式。
+
+在PostgreSQL 12版本之前是通过文件“recovery.conf”来指示数据库启动在备库模式的（当然需要在recovery.conf中配置一些合适的内容才可以），从PostgreSQL 12版本开始把recovery.conf中的配置项全部移到postgresql.conf配置文件中，不再使用recovery.conf文件。
 
 当然为了指示该数据库是备库，还需要在数据目录下建一个名为“standby.signal”的空文件。
 
@@ -1451,7 +1460,9 @@ psql: FATAL: the database system is starting up
 ```
 #### 4.1.5 创建standby备库的步骤
 
-对于PostgreSQL 12版本的数据库，只需要在数据库的数据目录下建standby.signal文件，然后在postgresql.conf里配好primary_conninfo（流复制）或restore_command（从归档取WAL），重启数据库，数据库就会进入Standby模式下。当然由于PostgreSQL 12版本中postgresql.conf的参数“hot_standby”是打开的，该数据库是只读的。
+对于PostgreSQL 12版本的数据库，只需要在数据库的数据目录下建standby.signal文件，然后在postgresql.conf里配好primary_conninfo（流复制）或restore_command（从归档取WAL），重启数据库，数据库就会进入Standby模式下。
+
+当然由于PostgreSQL 12版本中postgresql.conf的参数“hot_standby”是打开的，该数据库是只读的。
 
 对于PostgreSQL 12版本之前的数据库，如PostgreSQL 11版本，需要创建一个recovery.conf文件，并在文件中设置如下内容：
 
@@ -1462,7 +1473,9 @@ standby_mode = 'on'
 
 当然上面的步骤只是把主库转换成了备库，变成了只读库，并没有新建一个备库。通常我们需要新建一个只读备库，并从主库进行WAL日志的同步。
 
-最简单的方法是把主数据库停下来，把主数据库的数据目录原封不动地复制到备机，在备机数据库的数据目录下建一个指示这个库是备库的文件（如果是PostgreSQL 12及以上版本是standby.signal文件，如果是PostgreSQL 12之前的版本是recovery.conf文件），然后在指定的配置文件（如果是在PostgreSQL 12及以上版本是postgresql.conf文件，如果是PostgreSQL 12之前的版本是recovery.conf文件）中配置如何连接主库的流复制，然后启动备库就完成了Standby备库的搭建。
+最简单的方法是把主数据库停下来，把主数据库的数据目录原封不动地复制到备机，在备机数据库的数据目录下建一个指示这个库是备库的文件（如果是PostgreSQL 12及以上版本是standby.signal文件，如果是PostgreSQL 12之前的版本是recovery.conf文件）。
+
+然后在指定的配置文件（如果是在PostgreSQL 12及以上版本是postgresql.conf文件，如果是PostgreSQL 12之前的版本是recovery.conf文件）中配置如何连接主库的流复制，然后启动备库就完成了Standby备库的搭建。
 
 上面这种通过冷备库的方式搭建备库的方式需要停止主库，如果数据库比较大，会有比较长的停库时间，这时会不方便，所以PostgreSQL也提供了热备份的方式搭建Standby备库，即在主库不停机，也不终止正常读写的情况下，就可以在线搭建Standby备库。
 
@@ -1489,7 +1502,11 @@ pg_start_backup()主要做了以下两项工作：
 1. 置写日志标志位：XLogCtl->Insert.forcePageWrites=true。上游源码的注释解释得很清楚——把变化的整个数据块都记录到WAL中，而不仅仅是块中记录的变化，否则备份期间读到的页可能是“半截”的
 2. 强制发生一次Checkpoint，把共享内存里的脏页先刷出去
 
-Standby数据库一直运行在恢复状态，如何让数据库运行在恢复状态呢？PostgreSQL 12是在数据目录（$PGDATA环境变量指向的目录）下放一个空的standby.signal文件来指示的，数据库启动时发现它就按postgresql.conf里的恢复配置启动到恢复状态。PostgreSQL 12之前则是靠recovery.conf文件——启动过程中如果发现数据目录下存在recovery.conf，就会按recovery.conf文件中指示的情况把数据库启动到恢复状态。
+Standby数据库一直运行在恢复状态，如何让数据库运行在恢复状态呢？
+
+PostgreSQL 12是在数据目录（$PGDATA环境变量指向的目录）下放一个空的standby.signal文件来指示的，数据库启动时发现它就按postgresql.conf里的恢复配置启动到恢复状态。
+
+PostgreSQL 12之前则是靠recovery.conf文件——启动过程中如果发现数据目录下存在recovery.conf，就会按recovery.conf文件中指示的情况把数据库启动到恢复状态。
 
 ### 4.2 pg_basebackup命令行工具
 
@@ -1597,7 +1614,9 @@ START TIMELINE: 1
 ```
 上述的命令中使用的连接用户名为“postgres”，输出格式为普通原样输出“-F p”，“-P”参数表示在执行过程中输出备份的进度，“-X stream”参数表示把在备份过程中产生的xlog文件也备份出来。
 
-“-R”参数表示在备份中会生成standby.signal文件，并把连接主库的信息放到postgresql.auto.conf中，如果是PostgreSQL 12版本之前会生成配置文件“recovery.conf”，当用此备份启动备库时，只需要简单修改recovery.conf就可以把数据库启动到备库模式。“-D”参数指定了备份文件都生成到环境变量backup2目录下，“-l”参数指定了备份的标识串为“standby01”。
+“-R”参数表示在备份中会生成standby.signal文件，并把连接主库的信息放到postgresql.auto.conf中，如果是PostgreSQL 12版本之前会生成配置文件“recovery.conf”，当用此备份启动备库时，只需要简单修改recovery.conf就可以把数据库启动到备库模式。
+
+“-D”参数指定了备份文件都生成到环境变量backup2目录下，“-l”参数指定了备份的标识串为“standby01”。
 
 ### 4.3 异步流复制Hot Standby的示例
 
@@ -1681,7 +1700,9 @@ postgres=# select client_addr,client_port,state,sync_state from pg_stat_replicat
 
 原主库出现问题后，通常这些故障并没有导致数据丢失，如宕机、机器重启的故障。当故障解决之后，通常我们会把原主库转换成新主库的Standby备库，该转换一般来说需要重新搭建备库。
 
-这是因为原主库的一些数据没有同步过去就把备库激活了，备库相当于丢失了一些数据。而重新搭建备库的话，如果数据库很大，基础备份会执行很长时间，为了解决这个问题，从PostgreSQL 9.5版本开始提供pg_rewind命令，不需要复制太多的数据就可以把原主库转换成新主库的备库。该命令相当于把原主库的数据“回滚”到新主库激活时的状态，当然这里所说的“回滚”不是真的“回滚”，只是为了让我们更好地理解pg_rewind的作用。
+这是因为原主库的一些数据没有同步过去就把备库激活了，备库相当于丢失了一些数据。而重新搭建备库的话，如果数据库很大，基础备份会执行很长时间，为了解决这个问题，从PostgreSQL 9.5版本开始提供pg_rewind命令，不需要复制太多的数据就可以把原主库转换成新主库的备库。
+
+该命令相当于把原主库的数据“回滚”到新主库激活时的状态，当然这里所说的“回滚”不是真的“回滚”，只是为了让我们更好地理解pg_rewind的作用。
 
 使用pg_rewind命令要求主库必须把参数“wal_log_hints”设置成“on”或主库在建数据库实例时打开了checksum，这样配置的主库在出现故障时才能使用pg_rewind命令。
 
@@ -2102,7 +2123,9 @@ PostgreSQL用`wal_keep_size`来兜底：不管怎样，主库上都额外保留�
 
 #### 4.7.2 vacuum_defer_cleanup_age参数的配置
 
-在主库上，Vacuum进程知道哪些旧版本的数据会被当前数据库中的查询使用，从而不清理这些数据。但对于Hot Standby上的查询的数据需要，主库是不知道的，所以主库上的Vacuum可能会把Hot Standby上的查询还需要的旧版本数据清理掉，这会导致Standby上的查询失败。为了降低Hot Standby因为这个原因失败的概率，可以设置vacuum_defer_cleanup_age参数，让主库延迟清理。该参数的含义是延迟清理多少个事务。
+在主库上，Vacuum进程知道哪些旧版本的数据会被当前数据库中的查询使用，从而不清理这些数据。但对于Hot Standby上的查询的数据需要，主库是不知道的，所以主库上的Vacuum可能会把Hot Standby上的查询还需要的旧版本数据清理掉，这会导致Standby上的查询失败。
+
+为了降低Hot Standby因为这个原因失败的概率，可以设置vacuum_defer_cleanup_age参数，让主库延迟清理。该参数的含义是延迟清理多少个事务。
 
 **但要注意版本**：
 
