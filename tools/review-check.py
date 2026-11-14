@@ -938,6 +938,10 @@ def to_report(doc: Doc) -> dict:
             "code_blocks": sum(1 for b in doc.blocks if b.kind == CODE),
             "tables": sum(1 for b in doc.blocks if b.kind == TABLE),
             "images": len(IMAGE_RE.findall(doc.text)),
+            # mermaid 的图也是图。只数 markdown 图片语法的话，一篇有 22 张
+            # 流程图的文章会报「图 0」。
+            "mermaid": sum(1 for b in doc.blocks
+                           if b.kind == CODE and b.lang == "mermaid"),
             "links": sum(1 for m in LINK_RE.finditer(doc.text) if m.group(1) != "!"),
         },
         "depth": doc.depth,
@@ -954,7 +958,9 @@ def render_text(docs: list[Doc]) -> str:
         out.append(f"{report['source']}  [{report['pillar']}/{report['slug']}]")
         out.append(f"  {report['title']}")
         out.append(
-            "  段落 {paragraphs} · 章节 {h2} · 代码块 {code_blocks} · 图 {images} · 链接 {links}".format(**stats)
+            "  段落 {paragraphs} · 章节 {h2} · 代码块 {code_blocks} · "
+            "图 {figures}（mermaid {mermaid} + 图片 {images}） · 链接 {links}".format(
+                **stats, figures=stats["mermaid"] + stats["images"])
         )
         depth = report["depth"]
         if depth:

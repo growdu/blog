@@ -183,7 +183,7 @@ python3 tools/review-check.py docs/database docs/db docs/pgsql docs/cluster \
   "slug": "postgresql-mvcc",
   "title": "PostgreSQL MVCC：一条数据是如何拥有\"分身术\"的",
   "stats": {"chars": 18422, "paragraphs": 96, "h2": 14, "code_blocks": 8,
-            "images": 6, "links": 11, "tables": 3},
+            "images": 6, "mermaid": 3, "links": 11, "tables": 3},
   "depth": {"DEP-01": 2, "DEP-02": 6, "DEP-03": 5, "DEP-04": 3, "DEP-05": 4},
   "depth_ok": true,
   "signals": [

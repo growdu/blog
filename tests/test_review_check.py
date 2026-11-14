@@ -649,3 +649,34 @@ def test_the_checker_reports_fig_signals_for_a_real_article():
     assert fig1[0]["severity"] == "warn"
     # 聚合信号：位置全部写进 detail，而不是每张图一条
     assert "6 张图超限" in fig1[0]["detail"]
+
+
+def test_stats_count_mermaid_figures_not_just_markdown_images(tmp_path):
+    """回归：一篇满是流程图的文章不该报「图 0」。
+
+    ``images`` 只数 markdown 图片语法；mermaid 的图也是图，
+    摘要里漏掉它，审校的人就看不出这篇到底有多少张图。
+    """
+    module = load_tool()
+    text = ("# 标题\n\n```mermaid\ngraph TB\n    A --> B\n```\n\n"
+            "![图](./images/x.png)\n")
+    path = tmp_path / "index.md"
+    path.write_text(text, encoding="utf-8")
+    doc = module.load_doc(path)
+    module.REPO_ROOT = tmp_path        # to_report 要靠它换算相对路径
+    report = module.to_report(doc)
+    assert report["stats"]["mermaid"] == 1
+    assert report["stats"]["images"] == 1
+
+
+def test_the_text_report_shows_the_total_figure_count(tmp_path):
+    """回归：人读摘要里的「图 N」要是 mermaid 与图片之和。"""
+    module = load_tool()
+    text = ("# 标题\n\n```mermaid\ngraph TB\n    A --> B\n```\n\n"
+            "![图](./images/x.png)\n")
+    path = tmp_path / "index.md"
+    path.write_text(text, encoding="utf-8")
+    doc = module.load_doc(path)
+    module.REPO_ROOT = tmp_path
+    rendered = module.render_text([doc])
+    assert "图 2（mermaid 1 + 图片 1）" in rendered
