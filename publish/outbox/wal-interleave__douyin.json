@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "wal-interleave",
+  "kind": "video",
+  "package_dir": "douyin/out/wal-interleave",
+  "platform": "douyin",
+  "published_url": null,
+  "reason": "开放平台发布能力需企业主体，已出包待人工上传",
+  "status": "packaged",
+  "title": "WAL 里的顺序，不等于事务的顺序",
+  "updated_at": "2026-11-14T00:15:25+00:00"
+}

@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "structured-ddl",
+  "kind": "video",
+  "package_dir": "douyin/out/structured-ddl",
+  "platform": "douyin",
+  "published_url": null,
+  "reason": "开放平台发布能力需企业主体，已出包待人工上传",
+  "status": "packaged",
+  "title": "DDL 同步，不能直接把 SQL 发过去",
+  "updated_at": "2026-11-14T00:15:25+00:00"
+}

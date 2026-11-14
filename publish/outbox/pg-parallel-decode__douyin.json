@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "pg-parallel-decode",
+  "kind": "video",
+  "package_dir": "douyin/out/pg-parallel-decode",
+  "platform": "douyin",
+  "published_url": null,
+  "reason": "开放平台发布能力需企业主体，已出包待人工上传",
+  "status": "packaged",
+  "title": "32 核机器，解码只占 1 核",
+  "updated_at": "2026-11-14T00:15:24+00:00"
+}

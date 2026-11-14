@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "parallel-apply",
+  "kind": "video",
+  "package_dir": "douyin/out/parallel-apply",
+  "platform": "douyin",
+  "published_url": null,
+  "reason": "开放平台发布能力需企业主体，已出包待人工上传",
+  "status": "packaged",
+  "title": "发布端并行了，订阅端还在排队",
+  "updated_at": "2026-11-14T00:15:24+00:00"
+}

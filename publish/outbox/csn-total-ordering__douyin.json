@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "csn-total-ordering",
+  "kind": "video",
+  "package_dir": "douyin/out/csn-total-ordering",
+  "platform": "douyin",
+  "published_url": null,
+  "reason": "开放平台发布能力需企业主体，已出包待人工上传",
+  "status": "packaged",
+  "title": "一个单调递增的号，决定事务的提交顺序",
+  "updated_at": "2026-11-14T00:15:23+00:00"
+}
