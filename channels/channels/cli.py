@@ -51,6 +51,11 @@ def cmd_package(args: argparse.Namespace) -> int:
     except epmeta.MetaError as error:
         print(f"ERROR {error}", file=sys.stderr)
         return 1
+    except FileNotFoundError as error:
+        # 成片在预检之后没了（被人删了、路径写错了）：报错，别把 traceback
+        # 甩到终端上——那看着像崩溃，不像「这一条没出包」。
+        print(f"ERROR {error}", file=sys.stderr)
+        return 1
 
     for warning in result.warnings:
         print(f"WARNING {warning}")
@@ -76,42 +81,54 @@ def cmd_mark(args: argparse.Namespace) -> int:
     两个档：
     - `drafted`：草稿已存在平台上（视频号没有公开发布接口，人工点「保存草稿」后回填）；
     - `published`：已发表，带公开链接。
+
+    **先做完会失败的事，再落状态。** 顺序反了就会留下假的「已发布」：
+    状态文件写着已发布、快照也写了链接，而发布包根本不存在——
+    下一个人照着快照去找，找不到任何东西。
     """
     if args.state == "published" and not args.url:
         print("ERROR published 需要 --url（公开链接）", file=sys.stderr)
         return 1
 
+    # 1. 元数据：读不到就退出（这一期压根没配视频号文案）
+    try:
+        meta = epmeta.load_meta(args.episode)
+    except epmeta.MetaError as error:
+        print(f"ERROR {error}", file=sys.stderr)
+        return 1
+    title = _title_of(meta)
+
+    # 2. 发布包：没有包就没有「发出去的是哪一版」——不许回填
+    target = Path(args.out) / args.episode
+    try:
+        if args.state == "published":
+            package.mark_published(target, args.url)
+        else:
+            package.mark_drafted(target)
+    except FileNotFoundError as error:
+        print(f"ERROR {error}", file=sys.stderr)
+        print("      没有发布包就回填不了：先出包，再上传，再回填"
+              f"（python -m channels.cli package {args.episode}）",
+              file=sys.stderr)
+        return 1
+
+    # 3. 到这儿才算成了：状态与快照一起落
     store = state.StateStore(Path(args.out) / "state.json")
     current = store.get(args.episode)
-    target = Path(args.out) / args.episode
-
+    current.status = args.state
     if args.state == "published":
-        current.status = "published"
         current.published_url = args.url
-        try:
-            package.mark_published(target, args.url)
-        except FileNotFoundError as error:
-            print(f"WARNING {error}", file=sys.stderr)
         reason = "人工发布后回填"
         published_url = args.url
         summary = "已回填发布链接"
     else:
         # 草稿还没发出去：链接必须清空，
         # 留着旧链接会让人以为这条已经发出去了。
-        current.status = "drafted"
         current.published_url = None
-        try:
-            package.mark_drafted(target)
-        except FileNotFoundError as error:
-            print(f"WARNING {error}", file=sys.stderr)
         reason = "已存草稿，待人工发表"
         published_url = None
         summary = "已回填草稿状态"
-
     store.save(args.episode, current)
-
-    meta = epmeta.load_meta(args.episode)
-    title = _title_of(meta)
 
     outbox = Path(args.outbox) if args.outbox else snapshot.OUTBOX_DIR
     snapshot.write_snapshot(

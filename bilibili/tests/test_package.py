@@ -623,3 +623,49 @@ def test_a_failing_webhook_does_not_break_the_run(capsys):
                           webhook="not-a-url")
     assert "待你上传" in text
     assert "WARNING" in capsys.readouterr().out
+
+
+def test_a_missing_file_in_the_package_forces_a_rebuild(meta, video, tmp_path):
+    """**复用不是「目录还在就算数」。**
+
+    上一版的复用分支只看「成片没变」和「meta.json 在」，包里少了东西
+    （软链悬空、封面被人删）照样报「复用成功」——而那个包根本发不出去。
+    """
+    result = package.build_package("ep02", meta, video, tmp_path / "out")
+    (result.dir / "cover.jpg").unlink()
+
+    again = package.build_package("ep02", meta, video, tmp_path / "out")
+    assert not again.reused, "包里缺了封面还报复用"
+    assert (again.dir / "cover.jpg").is_file()
+
+
+def test_a_dangling_video_symlink_forces_a_rebuild(meta, video, tmp_path):
+    """软链悬空也要重出——成片被挪走或删了，那个包发不出去。"""
+    result = package.build_package("ep02", meta, video, tmp_path / "out")
+    (result.dir / "video.mp4").unlink()
+
+    again = package.build_package("ep02", meta, video, tmp_path / "out")
+    assert not again.reused
+    assert (again.dir / "video.mp4").is_symlink()
+    assert (again.dir / "video.mp4").exists()
+
+
+def test_the_cover_is_re_extracted_when_the_frame_moves(meta, video, tmp_path):
+    """封面与 `meta.json` 记的取帧点必须对得上。
+
+    上一版复用时不重抽封面：元数据里的 `cover_at` 从 1.0 改成 2.0，
+    清单与 `meta.json` 都写着 2.0，包里那张封面却还是 1.0 秒那一帧——
+    人按清单选封面，选到的是另一帧。
+    """
+    import dataclasses
+
+    first = package.build_package("ep02", meta, video, tmp_path / "out")
+    cover_before = (first.dir / "cover.jpg").read_bytes()
+
+    moved = dataclasses.replace(meta, cover_at=2.0)
+    again = package.build_package("ep02", moved, video, tmp_path / "out")
+    cover_after = (again.dir / "cover.jpg").read_bytes()
+
+    assert cover_after != cover_before, "换了取帧点，封面还是原来那张"
+    data = json.loads((again.dir / "meta.json").read_text(encoding="utf-8"))
+    assert data["cover_at"] == 2.0

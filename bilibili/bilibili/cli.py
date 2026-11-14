@@ -117,26 +117,47 @@ def cmd_mark(args: argparse.Namespace) -> int:
     `drafted` = 视频已存进B站 的**草稿箱**，还没公开；
     `published` = 已经公开出去，有链接了。
     标成 `published` 必须给 `--url`——没有链接就不该说「已发布」。
-    """
-    store = state.StateStore(Path(args.out) / "state.json")
-    current = store.get(args.episode)
 
+    **先做完会失败的事，再落状态。** 顺序反了就会留下假的「已发布」：
+    状态文件写着已发布、快照也写了链接，而发布包根本不存在——
+    下一个人照着快照去找，找不到任何东西。
+    """
     if args.state == "published" and not args.url:
         print("ERROR 标成 published 必须给 --url——"
               "没有公开链接就不该说「已发布」。", file=sys.stderr)
         return 2
 
-    meta = epmeta.load_meta(args.episode)
+    # 1. 元数据：读不到就退出（这一期压根没配 B站文案）
+    try:
+        meta = epmeta.load_meta(args.episode)
+    except epmeta.MetaError as error:
+        print(f"ERROR {error}", file=sys.stderr)
+        return 1
     title = _title_of(meta)
-    target = Path(args.out) / args.episode
 
+    # 2. 发布包：没有包就没有「发出去的是哪一版」——不许回填
+    target = Path(args.out) / args.episode
+    try:
+        if args.state == "published":
+            package.mark_published(target, args.url)
+        else:
+            # B站这一档没有「草稿」要写进包里的 meta.json，
+            # 但包**必须在**：草稿是拿这个包投出去的。
+            if not (target / "meta.json").is_file():
+                raise FileNotFoundError(f"发布包不存在：{target}")
+    except FileNotFoundError as error:
+        print(f"ERROR {error}", file=sys.stderr)
+        print("      没有发布包就回填不了：先出包，再投稿，再回填"
+              f"（python -m bilibili.cli package {args.episode}）",
+              file=sys.stderr)
+        return 1
+
+    # 3. 到这儿才算成了：状态与快照一起落
+    store = state.StateStore(Path(args.out) / "state.json")
+    current = store.get(args.episode)
     current.status = args.state
     if args.state == "published":
         current.published_url = args.url
-        try:
-            package.mark_published(target, args.url)
-        except FileNotFoundError as error:
-            print(f"WARNING {error}", file=sys.stderr)
     store.save(args.episode, current)
 
     outbox = Path(args.outbox) if args.outbox else snapshot.OUTBOX_DIR

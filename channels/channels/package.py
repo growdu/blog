@@ -175,24 +175,34 @@ def build_package(episode: str, meta: epmeta.EpisodeMeta, video: str | Path,
     previous = store.get(episode)
     digest = preflight.file_sha256(video_path)
 
-    files: dict[str, Path] = {}
+    # 包里该有的东西。**清单、封面、软链一样都不能少**——少了就是
+    # 一个发不出去的包，而命令会报「成功」。
+    names = ("video.mp4", "cover-4x3.jpg", "cover-3x4.jpg",
+             "title.txt", "description.txt", "topics.txt", "publish.md")
+    files = {name: target / name for name in names}
+
     reused = False
     if previous.video_sha256 == digest and (target / "meta.json").is_file():
         # 成片没变：抽帧与软链复用，不重做费事的那部分。
-        reused = True
-        meta_file = json.loads((target / "meta.json").read_text(encoding="utf-8"))
-        files = {name: target / name for name in meta_file["files"]}
-    else:
+        # **但要复查包里东西还在不在**：软链会悬空（成片被删了/换了），
+        # 别的文件也会被人手删。少了任何一件就重出——复用不是
+        # 「目录还在就算数」。
+        missing = sorted(name for name, path in files.items()
+                         if not path.exists())
+        if not missing:
+            reused = True
+    if not reused:
         target.mkdir(parents=True, exist_ok=True)
         assets.make_covers(video_path, copy.cover_at, target)
         link = target / "video.mp4"
         if link.exists() or link.is_symlink():
             link.unlink()
         link.symlink_to(video_path.resolve())
-
-        names = ("video.mp4", "cover-4x3.jpg", "cover-3x4.jpg",
-                 "title.txt", "description.txt", "topics.txt", "publish.md")
-        files = {name: target / name for name in names}
+    else:
+        # 封面重抽一次：包里那张是上一次抽的，而元数据里的取帧点可能改了。
+        # 封面与 `meta.json` 记的 `cover_at` 对不上，人按清单选封面就会
+        # 选错那一帧（清单说 1.0 秒，包里那张是 3 秒的）。
+        assets.make_covers(video_path, copy.cover_at, target)
 
     # **文案每次都按当前元数据重写。**
     # 成片没变 ≠ 文案没变：改了标题再重跑，必须出新标题。

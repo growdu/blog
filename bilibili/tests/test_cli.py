@@ -35,3 +35,54 @@ def test_the_cli_reports_a_missing_video_instead_of_crashing(tmp_path):
     assert proc.returncode == 1
     assert "ERROR" in proc.stderr
     assert "Traceback" not in proc.stderr
+
+
+def test_marking_published_without_a_package_is_refused(tmp_path, outbox,
+                                                        capsys):
+    """**没有发布包就不许回填「已发布」。**
+
+    上一版把「发布包不存在」降级成 WARNING，然后照样写状态、照样写快照：
+    命令返回 0，快照写着「已发布」并指向一个空的 `package_dir`——
+    下一个人照着快照去找发布包，什么都没有，而「已发布」已经记上去了。
+
+    **回填的前提是「发出去的是包里那一版」。** 没有包，就没有那一版。
+    """
+    from bilibili import cli
+
+    out = tmp_path / "out"
+    assert cli.main(["mark", "published", "row-lock", "--url",
+                      "https://www.bilibili.com/video/BV1", "--out", str(out)]) == 1
+    err = capsys.readouterr().err
+    assert "发布包不存在" in err
+    assert not (out / "state.json").exists(), "失败的回填留下了状态文件"
+    assert not list(outbox.glob("*.json")), "失败的回填留下了状态快照"
+
+
+def test_marking_drafted_without_a_package_is_refused(tmp_path, outbox, capsys):
+    """草稿档也一样：草稿是拿这个包投出去的，没有包就无从谈起。"""
+    from bilibili import cli
+
+    out = tmp_path / "out"
+    assert cli.main(["mark", "drafted", "row-lock", "--out", str(out)]) == 1
+    err = capsys.readouterr().err
+    assert "发布包不存在" in err
+    assert not (out / "state.json").exists(), "失败的回填留下了状态文件"
+    assert not list(outbox.glob("*.json")), "失败的回填留下了状态快照"
+
+
+def test_a_failed_mark_leaves_no_state_behind(tmp_path, capsys):
+    """**失败不许留下假状态。**
+
+    上一版的顺序是「先存状态，再读元数据」：元数据读不到时命令崩了，
+    而状态文件里已经写着「已发布」。顺序反过来就好了——
+    会失败的事先做完，都成了才落状态。
+    """
+    from bilibili import cli
+
+    out = tmp_path / "out"
+    assert cli.main(["mark", "published", "no-such-episode", "--url",
+                      "https://www.bilibili.com/video/BV1", "--out", str(out)]) == 1
+    err = capsys.readouterr().err
+    assert "ERROR" in err
+    assert "Traceback" not in err
+    assert not (out / "state.json").exists(), "失败的回填留下了状态文件"
