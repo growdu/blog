@@ -30,9 +30,6 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 REVIEW_ROOT = REPO_ROOT / "review"
 DOCS_ROOT = REPO_ROOT / "docs"
 
-# 首轮审校范围：数据库内核四支柱。
-REVIEWED_PILLARS = ("database", "db", "pgsql", "cluster")
-
 STATES = ("待审", "审校中", "建议中", "已确认", "已合入")
 
 # 事实待核的三种标记。契约测试认得它们，README 也必须写明它们——
@@ -255,10 +252,20 @@ def changed_paths(sha: str, *, extra_env: dict[str, str] | None = None) -> list[
     return [p for p in out.split("\0") if p]
 
 
-def test_records_live_under_a_reviewed_pillar():
+def test_records_live_under_the_articles_own_pillar():
+    """记录必须放在原文所属的支柱目录下。
+
+    审校范围从四支柱扩到全树之后，「范围不扩散」这条约束换了个形式：
+    不再是「柱子得在白名单里」，而是「记录必须跟着原文的目录走」——
+    拿到一份记录，顺着目录就知道它对应 `docs/` 下哪个位置。
+    """
     for path in record_files():
         rel = path.relative_to(REVIEW_ROOT)
-        assert rel.parts[0] in REVIEWED_PILLARS, f"{rel} 不在首轮审校范围内"
+        pillar = rel.parts[0]
+        assert (DOCS_ROOT / pillar).is_dir(), f"{rel} 的支柱目录在 docs/ 下不存在"
+        source = parse_record(path)["source"]
+        assert source.startswith(f"docs/{pillar}/"), (
+            f"{rel} 的原文 {source} 不在自己的支柱目录下")
 
 
 def test_record_has_all_template_sections():
