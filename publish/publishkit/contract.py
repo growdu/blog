@@ -55,6 +55,13 @@ publish_on   str             ``YYYY-MM-DD``
 date         str             ``YYYY-MM-DD`` 或 ``YYYY-MM-DD HH:MM:SS``
 ===========  ==============  ==========================================
 
+期号字段（契约七 §4.3）是**另一组**键，校验在 ``publishkit/episode.py``：
+``episode`` / ``episode_no`` / ``series`` / ``episode_hook`` /
+``episode_subtitle`` / ``episode_duration_s`` / ``episode_license`` /
+``episode_sources`` / ``episode_repro``。
+
+没有 ``episode`` 键的母稿**不是**一期，它不进期号线，也不需要写其余字段。
+
 **``date`` 不是作者写的字段，是 sync 写进 ``source/_posts/`` 的那一个。**
 调度层的选题规则要按日期排序（06 规格 §3.3「按 ``publish_on``（缺省用
 ``date``）升序」），所以这一层得认它。
@@ -76,6 +83,8 @@ from .capability import PLATFORM_ID_RE
 
 __all__ = [
     "CONTENT_KINDS",
+    "EPISODE_LIST_FIELDS",
+    "EPISODE_SCALAR_FIELDS",
     "PASSTHROUGH_FIELDS",
     "REPRINT_POLICIES",
     "ContentContract",
@@ -106,7 +115,40 @@ REPRINT_POLICIES = (
     "pay",
 )
 
-#: 透传白名单（§4.1）。未声明的顶层字段一律丢弃——白名单透传，不做全文转储。
+#: 期号的标量字段（契约七 §4.3）。
+#:
+#: 定义在**最底层**这一层，而不是 ``episode.py``：``episode.py`` 要 import
+#: 本模块的 front matter 解析器，所以常量放这里才不会形成循环导入。
+#: ``episode.py`` 原样转出这两个常量——调用方只认一个名字。
+#:
+#: 全部是**扁平键名**：front matter 的格式规则（§4.2）只允许扁平的
+#: ``key: value`` 与单层列表，两道透传白名单也都是按扁平键名逐个搬的。
+#: 嵌套的 ``episode_media:`` 会被**静默丢掉**——页面照常渲染，只是期号
+#: 区块是空的。那正是「展示元数据通道是断的」（§2.2）的翻版。
+#:
+#: 这 7 个字段只回答「**这一期是什么**」——身份、内容事实。
+#: 「**在哪看**」（平台链接）是发布动作的产物，记在
+#: ``publish/outbox/<EP>__<平台>.json`` 的 ``published_url`` 里，
+#: **不进 front matter**：发布产物抄进母稿就是新造一类手写常量，
+#: 而手写常量正是 §5.1 刚消灭掉的东西。
+EPISODE_SCALAR_FIELDS = (
+    "episode",
+    "episode_no",
+    "series",
+    "episode_hook",
+    "episode_subtitle",
+    "episode_duration_s",
+    "episode_license",
+)
+
+#: 期号的列表字段（契约七 §4.3）。
+EPISODE_LIST_FIELDS = (
+    "episode_sources",
+    "episode_repro",
+)
+
+#: 透传白名单（§4.1 + 契约七 §4.3）。未声明的顶层字段一律丢弃——
+#: 白名单透传，不做全文转储。
 PASSTHROUGH_FIELDS = (
     "title",
     "short_title",
@@ -118,7 +160,7 @@ PASSTHROUGH_FIELDS = (
     "kind",
     "platforms",
     "publish_on",
-)
+) + EPISODE_SCALAR_FIELDS + EPISODE_LIST_FIELDS
 
 #: 长度约束（§4.1）。
 _FIELD_MAX_CHARS = {

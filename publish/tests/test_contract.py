@@ -504,8 +504,9 @@ def test_contract_from_fields_accepts_parsed_fields():
 
 
 def test_passthrough_whitelist_covers_the_spec_fields():
-    """§4.1 的白名单字段一个都不能少。"""
+    """§4.1 的白名单字段一个都不能少，加上契约七 §4.3 的 9 个期号字段。"""
     assert set(PASSTHROUGH_FIELDS) == {
+        # §4.1 内容字段
         "title",
         "short_title",
         "tldr",
@@ -516,6 +517,16 @@ def test_passthrough_whitelist_covers_the_spec_fields():
         "kind",
         "platforms",
         "publish_on",
+        # 契约七 §4.3 期号字段：7 个标量 + 2 个列表
+        "episode",
+        "episode_no",
+        "series",
+        "episode_hook",
+        "episode_subtitle",
+        "episode_duration_s",
+        "episode_license",
+        "episode_sources",
+        "episode_repro",
     }
 
 

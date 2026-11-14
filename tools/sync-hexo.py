@@ -540,7 +540,23 @@ def yaml_escape(s):
 #
 # 平台 id 与发布日期不参与站点渲染，展示元数据（tldr / description /
 # difficulty ...）同理——所以接上这条通道不改动现有页面的渲染结果。
-PASSTHROUGH_LIST_FIELDS = ('platforms',)
+# 期号字段（契约七 §4.3）在这里**再写一份**。
+#
+# 这一层**不许** import 契约层——有测试盯着
+# （publish/tests/test_sync_passthrough.py::test_sync_script_does_not_import_the_contract_layer）。
+# 所以两份清单各自写字面量，一致性靠测试钉住：
+# publish/tests/test_episode.py 里两条——「期号字段逐个出现在本文件里」
+# 与「真文章 → 期号字段全部到达产物」。
+#
+# 这与上面那十来个字段的处理方式完全一致，不是新开的口子。
+#
+# 全部是**扁平键名**：front matter 的格式规则只允许扁平标量与单层列表，
+# 嵌套的 episode_media 会被静默丢掉——页面照常渲染，只是期号区块是空的。
+PASSTHROUGH_LIST_FIELDS = (
+    'platforms',
+    'episode_sources',
+    'episode_repro',
+)
 PASSTHROUGH_SCALAR_FIELDS = (
     'short_title',
     'tldr',
@@ -550,6 +566,13 @@ PASSTHROUGH_SCALAR_FIELDS = (
     'reprintPolicy',
     'kind',
     'publish_on',
+    'episode',
+    'episode_no',
+    'series',
+    'episode_hook',
+    'episode_subtitle',
+    'episode_duration_s',
+    'episode_license',
 )
 
 

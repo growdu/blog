@@ -79,10 +79,8 @@ EV_DRAFT_P90 = 23_583
 # 规格里引用、但**尚未创建**的路径（本期要新增的）。
 # 实施对应 commit 时从这里移除——移除的那一刻就是该模块真的落地了。
 PLANNED_PATHS = {
-    "publish/publishkit/episode.py",
     "publish/publishkit/evidence.py",
     "publish/publishkit/linkcheck.py",
-    "publish/tests/test_episode.py",
     "publish/tests/test_evidence.py",
     "publish/tests/test_episode_page.py",
     "source/_data/",
