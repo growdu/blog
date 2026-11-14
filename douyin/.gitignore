@@ -1,0 +1,13 @@
+# 发布包等本地产物
+out/
+
+# 凭据永不入库
+secrets.json
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# macOS
+.DS_Store

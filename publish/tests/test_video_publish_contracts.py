@@ -1,6 +1,6 @@
-"""跨平台的收口检查：两个平台的契约不许各自漂。
+"""跨平台的收口检查：各平台的契约不许各自漂。
 
-这一层是**契约层**（`publish/`），所以它可以同时看见两个平台——
+这一层是**契约层**（`publish/`），所以它可以同时看见各平台——
 adapter 之间仍然互不引用（规格 §3.3）。
 """
 import json
@@ -11,21 +11,37 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 for extra in (REPO_ROOT / "channels", REPO_ROOT / "bilibili",
+              REPO_ROOT / "douyin",
               REPO_ROOT / "aiv" / "pipeline"):
     if str(extra) not in sys.path:
         sys.path.insert(0, str(extra))
 
 from bilibili import snapshot as bili_snapshot       # noqa: E402
 from channels import snapshot as channels_snapshot   # noqa: E402
+from douyin import snapshot as douyin_snapshot       # noqa: E402
 
 
-def test_the_two_platforms_write_the_same_snapshot_shape():
+def test_every_platform_writes_the_same_snapshot_shape():
     """字段完全一致，只有 platform 不同（规格 §7.5）。
 
-    两个平台的快照靠 `content_id` 对接，谁改了字段另一个就接不上——
+    各平台的快照靠 `content_id` 对接，谁改了字段另一个就接不上——
     这种错只有契约测试能抓。
+
+    之前这条只比视频号与B站两个平台；加进抖音之后改成**遍历全部**，
+    否则新平台进来时这条守卫又变成半个。
     """
-    assert set(bili_snapshot.SNAPSHOT_KEYS) == set(channels_snapshot.SNAPSHOT_KEYS)
+    shapes = {
+        "channels": set(channels_snapshot.SNAPSHOT_KEYS),
+        "bilibili": set(bili_snapshot.SNAPSHOT_KEYS),
+        "douyin": set(douyin_snapshot.SNAPSHOT_KEYS),
+    }
+    reference = shapes["channels"]
+    for platform, keys in shapes.items():
+        assert keys == reference, (
+            f"{platform} 的快照字段与视频号不一致："
+            f"多出 {sorted(keys - reference)}，"
+            f"缺少 {sorted(reference - keys)}"
+        )
 
 
 def test_the_bilibili_subtitle_events_match_the_timeline_owner():
