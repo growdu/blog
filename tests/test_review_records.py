@@ -54,6 +54,8 @@ INDEX_ROW_RE = re.compile(r"^\|\s*\[([^\]]+)\]\(([^)]+)\)\s*\|(.*)\|\s*$")
 # 范围分类文档：它记录了「哪些不是面向读者的技术文章」，是审校范围的依据。
 SCOPE_DOC = REVIEW_ROOT / "scope" / "2026-11-14-scope-classification.md"
 EXCLUDED_PATH_RE = re.compile(r"^- `(docs/[^`]+)`$", re.M)
+# 转载稿：正文顶部标了来源，署名他人
+REPRINT_MARKER_RE = re.compile(r"^> 来源:", re.M)
 
 
 def excluded_paths() -> set[str]:
@@ -64,9 +66,9 @@ def excluded_paths() -> set[str]:
 
 
 def mechanically_non_article(path: Path) -> bool:
-    """机械判据认得出的非内容：目录页、代码仓库说明、只有标题的未成稿。
+    """机械判据认得出的非内容：目录页、代码仓库说明、转载稿、只有标题的未成稿。
 
-    这三条判据是死的——新支柱、新目录页一进来就该被排除，所以要钉住。
+    这几条判据是死的——新支柱、新目录页、新转载进来时就该被排除，所以要钉住。
     人工判断那一层（内部工作文档、速查类、非技术内容）在范围文档里，
     机器复算不了，也不该复算。
     """
@@ -74,8 +76,10 @@ def mechanically_non_article(path: Path) -> bool:
         return True
     if path.relative_to(REPO_ROOT).as_posix().startswith("docs/code/"):
         return True
-    body = [line.strip() for line
-            in path.read_text(encoding="utf-8", errors="replace").split("\n")
+    text = path.read_text(encoding="utf-8", errors="replace")
+    if REPRINT_MARKER_RE.search(text[:1200]):
+        return True
+    body = [line.strip() for line in text.split("\n")
             if line.strip() and line.strip() != "---"]
     if any(line.startswith("```") or line.startswith("|") for line in body):
         return False
