@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import importlib.util
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -256,18 +257,53 @@ def test_cli_refuses_a_config_it_does_not_understand(tmp_path: Path):
     assert result.returncode == 2, "看不懂的配置应当返回 2，不是悄悄改点什么"
 
 
+def _hermetic_env(tmp_path: Path, conf: Path, *, with_nginx: bool) -> dict[str, str]:
+    """一条只含脚本真正用到的命令的 PATH，外加 nginx/systemctl 的替身。
+
+    这条测试以前只在 macOS 上绿过。``tools/fix-soft-404.sh`` 里写着
+    「没有 nginx 可执行文件时（本地、CI、容器里）只改文件、不校验也不
+    reload」——但 GitHub 的 ubuntu runner **预装 nginx 1.24.0**
+    （见 actions/runner-images 的 Ubuntu2404-Readme）。于是 CI 上脚本走进
+    ``nginx -t`` 分支，而 ``nginx -t`` 校验的是 runner 上 nginx 的主配置，
+    对着一份片段配置当然失败，脚本按设计回滚备份并退出 1。
+    本地 macOS 没有 nginx，走的是「不在 PATH 上」那条分支，所以本地绿。
+
+    差的就是「这台机器上有没有 nginx」。所以这里把 PATH 收窄成脚本真正
+    用到的三个命令（bash / python3 / dirname），再按需放进两个**必定成功**
+    的 nginx 与 systemctl 替身：脚本的完整路径照走，结果不再取决于宿主
+    装了什么。
+    """
+    bindir = tmp_path / "bin"
+    bindir.mkdir(exist_ok=True)
+    for name in ("bash", "python3", "dirname", "cp"):
+        real = shutil.which(name)
+        assert real, f"PATH 上找不到 {name}，这条测试没法构造一个受控的环境"
+        (bindir / name).symlink_to(real)
+    if with_nginx:
+        for name in ("nginx", "systemctl"):
+            stub = bindir / name
+            stub.write_text("#!/bin/sh\n# 测试替身：永远成功\nexit 0\n",
+                            encoding="utf-8")
+            stub.chmod(0o755)
+    return {
+        "PATH": str(bindir),
+        "HOME": str(tmp_path),
+        "BLOG_CONF": str(conf),
+    }
+
+
 def test_server_wrapper_patches_and_is_idempotent(tmp_path: Path):
     """服务器脚本：BLOG_CONF 指向一份 fixture，跑两遍。
 
     第二遍必须说「already applied」并且**文件内容不变**。
+
+    脚本在「机器上有 nginx」时还要做 ``nginx -t`` 与 reload，所以这里把
+    nginx 与 systemctl 换成必定成功的替身——脚本的完整路径照走，但结果
+    不再取决于宿主装没装 nginx（GitHub 的 runner 装了，macOS 没装）。
     """
     conf = _write_conf(tmp_path, "    location / {\n        try_files $uri $uri/ /index.html;\n    }\n")
 
-    env = {
-        "PATH": "/usr/bin:/bin:/usr/sbin:/sbin",
-        "HOME": str(tmp_path),
-        "BLOG_CONF": str(conf),
-    }
+    env = _hermetic_env(tmp_path, conf, with_nginx=True)
     first = subprocess.run(
         ["bash", str(WRAPPER)],
         capture_output=True,
@@ -289,3 +325,24 @@ def test_server_wrapper_patches_and_is_idempotent(tmp_path: Path):
     assert second.returncode == 0, second.stderr
     assert "already applied" in second.stdout
     assert conf.read_text(encoding="utf-8") == patched, "第二遍不该再改文件"
+
+
+def test_server_wrapper_patches_even_without_nginx_on_the_path(tmp_path: Path):
+    """机器上没有 nginx 时，脚本也要把文件改好并正常退出。
+
+    这是本地与容器里的路径，也是脚本注释里写的那条。把它单独钉住，
+    免得有人为了「简化」把「nginx 不在 PATH 上」那个分支删掉。
+    """
+    conf = _write_conf(tmp_path, "    location / {\n        try_files $uri $uri/ /index.html;\n    }\n")
+
+    env = _hermetic_env(tmp_path, conf, with_nginx=False)
+    result = subprocess.run(
+        ["bash", str(WRAPPER)],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        env=env,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "=404" in conf.read_text(encoding="utf-8")
+    assert "nginx 不在 PATH 上" in result.stdout

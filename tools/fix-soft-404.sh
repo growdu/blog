@@ -41,8 +41,14 @@ fi
 
 python3 "$PATCHER" "$CONF"
 
-# 没有 nginx 可执行文件时（本地、CI、容器里）只改文件、不校验也不 reload。
+# 没有 nginx 可执行文件时（本地与容器里常见）只改文件、不校验也不 reload。
 # 服务器上 nginx 在 PATH 上，走下面的正常路径。
+#
+# 注意：**CI runner 上有 nginx**。GitHub 的 ubuntu-24.04 镜像预装了
+# nginx 1.24.0（见 actions/runner-images 的 Ubuntu2404-Readme），所以
+# 「CI 里没有 nginx」这个假设不成立——CI 上会走进下面的 nginx 分支，
+# 而 `nginx -t` 校验的是 runner 上 nginx 的主配置，对着一份片段配置
+# 必然失败，脚本会按设计回滚备份并退出 1。测试因此必须自己控制 PATH。
 if ! command -v nginx >/dev/null 2>&1; then
     echo "WARNING: nginx 不在 PATH 上，已改配置但没有校验也没有 reload"
     echo "         请在服务器上手动跑： nginx -t && systemctl reload nginx"
