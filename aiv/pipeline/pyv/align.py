@@ -18,6 +18,7 @@ import subprocess
 from pathlib import Path
 
 from pyv.contract import Contract, load_contract
+from pyv import palette
 from pyv.timeline import (
     Audio,
     Scene,
@@ -233,13 +234,18 @@ def parse_subtitle_table(md_path: str | Path) -> list[str]:
 def build_storyboard(audio_path: str | Path,
                       script_md: str | Path,
                       out_path: str | Path,
-                      contract_path: str | Path | None = None) -> Storyboard:
+                      contract_path: str | Path | None = None,
+                      canvas: str = "horizontal") -> Storyboard:
     """对齐旁白与口播稿，写出 storyboard.json 并返回其内容。
 
     `contract_path` 是视觉分镜契约：句到视觉段的映射 + 画面上的文案。
     省略时用默认契约（`aiv/contracts/pg-parallel-decode.json`）。
+
+    `canvas` 是画布档位（`horizontal` / `vertical`，见 `palette.CANVASES`）。
+    **默认横版**——竖版是抖音那一档的另一个产物，不是替换。
     """
     contract = load_contract(contract_path)
+    canvas_width, canvas_height = palette.canvas(canvas)
     sentences = parse_script(script_md)
     subtitle_texts = parse_subtitle_table(script_md)
     if len(sentences) != len(subtitle_texts):
@@ -289,7 +295,8 @@ def build_storyboard(audio_path: str | Path,
 
     raw = {
         "version": 1,
-        "video": {"width": 1920, "height": 1080, "fps": 24, "duration": round(duration, 3)},
+        "video": {"width": canvas_width, "height": canvas_height,
+                  "fps": 24, "duration": round(duration, 3)},
         "audio": {"narration": Path(audio_path).name, "bgm": None},
         "subtitle_style": {"primary": "#1B2A47", "outline": "#FFFFFF",
                            "position": "bottom-center"},

@@ -15,6 +15,8 @@
 #   make nobrand   无品牌导流版（抖音这一档用）：nobrand → render → compose
 #                  胸口铭牌也是品牌标识：make EP=<期号> nobrand NOBADGE=1
 #                  换成无标牌形象（默认保留铭牌，等实投结果再定）
+#   make vertical  竖版 9:16（抖音那一档）：align --canvas vertical → nobrand
+#                  → render → compose
 #
 # align 是手工步骤，需要在 all 之前单独跑。
 # 片段是增量渲染的：build/ 里未过期的片段会被直接复用。
@@ -76,7 +78,15 @@ NOBRAND_OUT := $(ROOT)/out/$(EP)__nobrand.mp4
 NOBADGE_CHAR := $(ROOT)/character/growdu_character_2k_nobg_nobadge.png
 CHARACTER_FLAG := $(if $(NOBADGE),--character $(NOBADGE_CHAR))
 
-.PHONY: all test doctor validate align brand render compose nobrand probe persona bgm mix-verify topics pronunciation clean
+# 竖版画布（抖音那一档）：9:16。**不套品牌片**——品牌片素材是横版的，
+# 贴到竖版画布上会被拉变形（`pyv.cli brand` 会直接拒绝）。
+# 竖版这一档同时也是无品牌版：片头片尾本来就不该有。
+VERTICAL_ALIGNED := $(ROOT)/storyboard_$(EP)__vertical_aligned.json
+VERTICAL_STORYBOARD := $(ROOT)/storyboard_$(EP)__vertical.json
+VERTICAL_BUILD := $(ROOT)/build/$(EP)__vertical
+VERTICAL_OUT := $(ROOT)/out/$(EP)__vertical.mp4
+
+.PHONY: all test doctor validate align brand render compose nobrand vertical probe persona bgm mix-verify topics pronunciation clean
 
 all: validate brand render compose
 
@@ -113,6 +123,20 @@ nobrand:
 		--out $(NOBRAND_BUILD) $(CHARACTER_FLAG)
 	$(PY) -m pyv.cli compose --storyboard $(NOBRAND_STORYBOARD) \
 		--build $(NOBRAND_BUILD) --out $(NOBRAND_OUT) \
+		--narration $(NARRATION) --bgm $(BGM)
+
+# 竖版（抖音那一档）：9:16
+# align 直接产出竖版画布的 storyboard，再走 nobrand（竖版不要品牌片，
+# 也不要落版上的品牌名）。
+vertical:
+	$(PY) -m pyv.cli align --audio $(NARRATION) --script $(SCRIPT) \
+		--scenes $(CONTRACT) --canvas vertical --out $(VERTICAL_ALIGNED)
+	$(PY) -m pyv.cli nobrand --storyboard $(VERTICAL_ALIGNED) \
+		--out $(VERTICAL_STORYBOARD)
+	$(PY) -m pyv.cli render --storyboard $(VERTICAL_STORYBOARD) \
+		--out $(VERTICAL_BUILD) $(CHARACTER_FLAG)
+	$(PY) -m pyv.cli compose --storyboard $(VERTICAL_STORYBOARD) \
+		--build $(VERTICAL_BUILD) --out $(VERTICAL_OUT) \
 		--narration $(NARRATION) --bgm $(BGM)
 
 persona:

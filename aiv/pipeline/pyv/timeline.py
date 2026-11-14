@@ -11,6 +11,8 @@ import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from pyv import palette
+
 BANNED_SUBSTRINGS = (
     "海量数据库",
     "海量智库",
@@ -152,9 +154,13 @@ class Storyboard:
         errors: list[str] = []
         if self.version != 1:
             errors.append(f"version 必须为 1，实际 {self.version}")
-        if (self.video.width, self.video.height) != (1920, 1080):
+        if (self.video.width, self.video.height) not in palette.CANVASES.values():
+            supported = "、".join(
+                f"{w}x{h}" for w, h in palette.CANVASES.values()
+            )
             errors.append(
-                f"画布必须是 1920x1080，实际 {self.video.width}x{self.video.height}"
+                f"画布必须是 {supported}，"
+                f"实际 {self.video.width}x{self.video.height}"
             )
         if self.video.fps != 24:
             errors.append(f"fps 必须为 24，实际 {self.video.fps}")

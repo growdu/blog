@@ -75,6 +75,15 @@ def test_the_caption_is_placed_at_the_series_position(module_path):
     """
     ratio = _caption_ratio(module_path)
     if ratio is None:
+        # **画了说明却量不出位置，不能跳过——那等于这条守卫失效了。**
+        # 跳过是「这个场景没有说明」；量不出来是「有人把说明挪了地方，
+        # 而量的办法认不出来了」，后者必须有人看一眼。
+        source = module_path.read_text(encoding="utf-8")
+        if 'p["caption"]' in source:
+            pytest.fail(
+                f"{module_path.stem} 里画了说明，但量不出它画在 h*几——"
+                f"说明的位置没人盯了（量位置的规矩见本文件的 _caption_ratio）"
+            )
         pytest.skip("这个场景没有画说明")
     assert ratio == pytest.approx(CAPTION_RATIO), (
         f"{module_path.stem} 的说明画在 h*{ratio}，"

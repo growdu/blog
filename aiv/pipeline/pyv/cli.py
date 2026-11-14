@@ -45,7 +45,8 @@ def cmd_validate(args: argparse.Namespace) -> int:
 def cmd_align(args: argparse.Namespace) -> int:
     from pyv import align
     storyboard = align.build_storyboard(
-        args.audio, args.script, args.out, contract_path=args.scenes
+        args.audio, args.script, args.out, contract_path=args.scenes,
+        canvas=args.canvas,
     )
     print(
         f"OK {len(storyboard.scenes)} 个视觉段，"
@@ -104,6 +105,14 @@ def cmd_compose(args: argparse.Namespace) -> int:
 
 def cmd_brand(args: argparse.Namespace) -> int:
     from pyv import brand
+    source = Storyboard.load(args.storyboard)
+    if palette.is_vertical(source.video.width, source.video.height):
+        # 品牌片素材是 1920x1080 的横版，贴到 1080x1920 上会被拉变形。
+        # 竖版那一档走 `nobrand`（无品牌版），不套品牌片。
+        print("ERROR 竖版画布不套品牌片：品牌片素材是 1920x1080 的横版，"
+              "贴到 1080x1920 上会被拉变形。竖版那一档用 `nobrand`。",
+              file=sys.stderr)
+        return 1
     out = brand.apply_plates(
         args.storyboard, args.out, args.build,
         intro=not args.no_intro, outro=not args.no_outro,
@@ -402,6 +411,9 @@ def main(argv: list[str] | None = None) -> int:
     p_align.add_argument("--out", required=True)
     p_align.add_argument("--scenes", default=str(contract.DEFAULT_CONTRACT),
                          help="视觉分镜契约（本期文案与段落划分）")
+    p_align.add_argument("--canvas", default="horizontal",
+                         choices=sorted(palette.CANVASES),
+                         help="画布档位：横版 1920x1080 / 竖版 1080x1920")
     p_align.set_defaults(func=cmd_align)
 
     p_render = sub.add_parser("render")

@@ -14,6 +14,7 @@ from __future__ import annotations
 from typing import NamedTuple
 
 from pyv import easing
+from pyv import palette
 from pyv.draw import arrow, rounded_rect, stroke_rect, text
 from pyv.palette import COLORS
 from pyv.params import Params
@@ -74,7 +75,7 @@ def chip_slots(count: int, left: float, top: float, width: float,
 
 
 def chip_layout(chips: list[str], spill_count: int, t: float,
-                w: int = 1920, h: int = 1080) -> list["Chip"]:
+                w: int = palette.WIDTH, h: int = palette.HEIGHT) -> list["Chip"]:
     """每一块芯片在 t 时刻的位置。
 
     **槽位怎么分**：留在内存的占左边，搬走的占右边；同一排里从右往左搬——

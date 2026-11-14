@@ -9,6 +9,7 @@ from __future__ import annotations
 import cairo
 
 from pyv import fonts
+from pyv import palette
 from pyv.palette import hex_to_rgb
 from pyv.timeline import SubtitleEvent, SubtitleStyle, Storyboard, display_width
 
@@ -110,12 +111,17 @@ def draw_event(ctx: cairo.Context, text: str, style: SubtitleStyle,
                width: int, height: int) -> None:
     """把一条字幕画在画面底部居中位置。
 
-    字号、边距按 1080p 基准等比缩放，保证换分辨率导出时不会溢出。
+    字号、边距按**短边**等比缩放，保证换画幅导出时不会溢出。
+    横版的短边是 1080（跟原来的基准一样），所以**横版行为一个字都没变**；
+    竖版的短边也是 1080，字号与横版同档，但相对画面更大——竖版要的就是这个。
+
+    竖版底部还要给平台 UI 让出位置（导航栏与文案区），字幕压在 UI 底下
+    等于没写（规格 §6.6.5）。
     """
     lines = wrap_line(text)
     if not lines:
         return
-    scale = height / 1080.0
+    scale = palette.short_side(width, height) / 1080.0
     font_size = BURN_FONT_SIZE * scale
     margin_v = BURN_MARGIN_V * scale
     line_gap = BURN_LINE_GAP * scale
@@ -127,7 +133,8 @@ def draw_event(ctx: cairo.Context, text: str, style: SubtitleStyle,
     ctx.set_font_size(font_size)
     descent = ctx.font_extents()[1]  # pycairo 返回 (ascent, descent, height, ...)
     line_height = font_size + line_gap
-    last_baseline = height - margin_v - descent
+    ui_bottom = palette.VERTICAL_UI_BOTTOM if palette.is_vertical(width, height) else 0
+    last_baseline = height - ui_bottom - margin_v - descent
     for index, line in enumerate(lines):
         baseline = last_baseline - (len(lines) - 1 - index) * line_height
         line_width = ctx.text_extents(line).width
