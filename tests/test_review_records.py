@@ -51,6 +51,37 @@ TEMPLATE_SECTIONS = (
 
 INDEX_ROW_RE = re.compile(r"^\|\s*\[([^\]]+)\]\(([^)]+)\)\s*\|(.*)\|\s*$")
 
+# 范围分类文档：它记录了「哪些不是面向读者的技术文章」，是审校范围的依据。
+SCOPE_DOC = REVIEW_ROOT / "scope" / "2026-11-14-scope-classification.md"
+EXCLUDED_PATH_RE = re.compile(r"^- `(docs/[^`]+)`$", re.M)
+
+
+def excluded_paths() -> set[str]:
+    """范围分类文档里排除在技术文章审校之外的路径。"""
+    text = SCOPE_DOC.read_text(encoding="utf-8")
+    section = text.split("## 排除清单", 1)[1]
+    return set(EXCLUDED_PATH_RE.findall(section))
+
+
+def mechanically_non_article(path: Path) -> bool:
+    """机械判据认得出的非内容：目录页、代码仓库说明、只有标题的未成稿。
+
+    这三条判据是死的——新支柱、新目录页一进来就该被排除，所以要钉住。
+    人工判断那一层（内部工作文档、速查类、非技术内容）在范围文档里，
+    机器复算不了，也不该复算。
+    """
+    if path.name == "_index.md":
+        return True
+    if path.relative_to(REPO_ROOT).as_posix().startswith("docs/code/"):
+        return True
+    body = [line.strip() for line
+            in path.read_text(encoding="utf-8", errors="replace").split("\n")
+            if line.strip() and line.strip() != "---"]
+    if any(line.startswith("```") or line.startswith("|") for line in body):
+        return False
+    rest = "".join(line for line in body if not line.startswith("#"))
+    return len(rest.replace(" ", "")) <= 10
+
 # GitHub runner 的 git 环境：没有开发者的全局 git 配置，core.quotePath
 # 取默认值（true）。开发机常常把它关掉，于是同一个提交在两台机器上
 # 报出来的路径文本不一样——本地绿、CI 红就是这么来的。
@@ -68,7 +99,8 @@ CHILD_MARKER = "REVIEW_RECORDS_CONTRACT_CHILD"
 def record_files() -> list[Path]:
     return sorted(p for p in REVIEW_ROOT.rglob("*.md")
                   if p.name not in ("README.md", "INDEX.md")
-                  and "specs" not in p.parts and "plans" not in p.parts)
+                  and "specs" not in p.parts and "plans" not in p.parts
+                  and "scope" not in p.parts)
 
 
 def parse_record(path: Path) -> dict:
@@ -385,6 +417,36 @@ def test_index_counts_match_the_records():
         if info["status"] == "已合入":
             assert not open_items, (
                 f"{path.name} 标了已合入，却还有 {len(open_items)} 条没销掉")
+
+
+def test_scope_exclusion_list_points_at_existing_files():
+    """排除清单里的路径必须真实存在——清单悬空了，范围就说不清。"""
+    assert SCOPE_DOC.exists(), f"缺少范围分类文档 {SCOPE_DOC}"
+    for rel in sorted(excluded_paths()):
+        assert (REPO_ROOT / rel).exists(), f"排除清单里的路径不存在: {rel}"
+
+
+def test_mechanical_non_articles_are_all_excluded():
+    """机械判据认出的非内容必须都在排除清单里。
+
+    新增支柱、新目录页进来时，这条测试会提醒把它加进排除清单，
+    免得把站点导航页也按技术深度五要素去审。
+    """
+    excluded = excluded_paths()
+    missing = [p.relative_to(REPO_ROOT).as_posix()
+               for p in sorted(DOCS_ROOT.rglob("*.md"))
+               if mechanically_non_article(p)
+               and p.relative_to(REPO_ROOT).as_posix() not in excluded]
+    assert not missing, f"机械判据认出的非内容没进排除清单: {missing}"
+
+
+def test_reviewed_articles_are_inside_the_review_scope():
+    """审校记录的原文不许落在排除清单里——非内容不按五要素审。"""
+    excluded = excluded_paths()
+    for path in record_files():
+        source = parse_record(path)["source"]
+        assert source not in excluded, (
+            f"{path.name} 的原文 {source} 在排除清单里，不是面向读者的技术文章")
 
 
 def test_contract_file_passes_in_a_ci_like_git_environment():
