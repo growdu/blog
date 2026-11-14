@@ -529,6 +529,97 @@ def test_index_signal_counts_match_the_checker():
             f"检查器实跑 {actual} 条（{source}）")
 
 
+def scope_bucket_table() -> dict[str, int]:
+    """范围文档「五个桶」表里的 篇数，形如 ``{'1 非内容': 99, ...}``。"""
+    text = SCOPE_DOC.read_text(encoding="utf-8")
+    section = text.split("## 五个桶", 1)[1].split("## ", 1)[0]
+    counts: dict[str, int] = {}
+    for line in section.split("\n"):
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 3:
+            continue
+        label, count = cells[0], cells[2]
+        if re.match(r"^\d\s", label) and count.isdigit():
+            counts[label] = int(count)
+    return counts
+
+
+def scope_bucket_sections() -> dict[str, tuple[int, list[str]]]:
+    """范围文档里每个 ``### 桶 N`` 小节 → (标题写的篇数, 该桶列出的路径)。"""
+    text = SCOPE_DOC.read_text(encoding="utf-8")
+    sections: dict[str, tuple[int, list[str]]] = {}
+    for match in re.finditer(
+            r"^### (桶 \d+ [^（(\n]+)[（(](\d+) 篇[）)]\n(.*?)(?=^### |\Z)",
+            text, re.M | re.S):
+        label = match.group(1)[len("桶 "):]
+        paths = re.findall(r"^- `(docs/[^`]+)`$", match.group(3), re.M)
+        sections[label] = (int(match.group(2)), paths)
+    return sections
+
+
+def test_index_excluded_count_matches_the_scope_list():
+    """索引里写的「共 N 篇已排除」必须等于范围文档排除清单的实际条数。
+
+    这个数字是对外的承诺——它决定审校工作量有多大。桶 4（转载稿）单独
+    拆出来那年，桶 3 少了 9 篇、桶 4 多了 17 篇，净变化是 +8；索引却按
+    「旧数 + 17」写了下来，和真实的排除数差了 9。
+    """
+    index = (REVIEW_ROOT / "INDEX.md").read_text(encoding="utf-8")
+    match = re.search(r"共\s*(\d+)\s*篇已排除", index)
+    assert match, "review/INDEX.md 里找不到「共 N 篇已排除」这句话"
+    stated = int(match.group(1))
+    actual = len(excluded_paths())
+    assert stated == actual, (
+        f"索引说共 {stated} 篇已排除，范围文档的排除清单里实际有 {actual} 条")
+
+
+def test_scope_bucket_counts_are_self_consistent():
+    """范围文档的桶数必须自洽。
+
+    同一件事在三个地方各写了一遍：桶表里的「篇数」、每个 ``### 桶 N``
+    小节标题里的「（N 篇）」、以及该小节里实际列出的路径条数。任何一处
+    对不上，「审校范围是 418 篇」这个结论就不可信了。
+    """
+    table = scope_bucket_table()
+    sections = scope_bucket_sections()
+    assert table, "范围文档里读不到「五个桶」表"
+    assert sections, "范围文档里读不到桶小节"
+
+    excluded_total = 0
+    for label, count in table.items():
+        if label.startswith("5 "):
+            # 桶 5 是「全集减排除清单」，没有自己的小节，条目是算出来的。
+            continue
+        assert label in sections, f"桶表里的「{label}」在正文里没有对应小节"
+        heading_count, paths = sections[label]
+        assert heading_count == count, (
+            f"桶「{label}」标题写 {heading_count} 篇，桶表写 {count} 篇")
+        assert len(paths) == count, (
+            f"桶「{label}」标题写 {count} 篇，小节里实际列了 {len(paths)} 条")
+        excluded_total += count
+
+    assert excluded_total == len(excluded_paths()), (
+        f"五个桶相加 {excluded_total}，排除清单里实际有 {len(excluded_paths())} 条")
+
+    technical = table.get("5 技术文章")
+    assert technical is not None, "桶表里找不到「5 技术文章」"
+    assert excluded_total + technical == 621, (
+        f"五桶 {excluded_total} + 技术文章 {technical} = "
+        f"{excluded_total + technical}，不是全树 621 篇")
+
+    prose = SCOPE_DOC.read_text(encoding="utf-8")
+    work = re.search(r"审校工作面\s*=\s*(\d+)\s*篇", prose)
+    assert work, "范围文档里找不到「审校工作面 = N 篇」这句话"
+    assert int(work.group(1)) == technical, (
+        f"范围文档说审校工作面 {work.group(1)} 篇，桶表里的技术文章是 {technical} 篇")
+
+    index = (REVIEW_ROOT / "INDEX.md").read_text(encoding="utf-8")
+    stated = re.search(r"面向读者的技术文章\*\*（(\d+) 篇）", index)
+    assert stated, "review/INDEX.md 里找不到「面向读者的技术文章（N 篇）」"
+    assert int(stated.group(1)) == technical, (
+        f"索引说技术文章 {stated.group(1)} 篇，桶表里是 {technical} 篇")
+
+
 def test_scope_exclusion_list_points_at_existing_files():
     """排除清单里的路径必须真实存在——清单悬空了，范围就说不清。"""
     assert SCOPE_DOC.exists(), f"缺少范围分类文档 {SCOPE_DOC}"
