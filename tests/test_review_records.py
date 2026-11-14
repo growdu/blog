@@ -606,9 +606,13 @@ def test_scope_bucket_counts_are_self_consistent():
 
     technical = table.get("5 技术文章")
     assert technical is not None, "桶表里找不到「5 技术文章」"
-    assert excluded_total + technical == 621, (
+    # 全树总数从文件系统数出来，不写死：docs/ 下增删一篇文章（合并两篇
+    # 同标题的、删掉一篇重复的），范围文档就得跟着更新——写死 621 的话，
+    # 真相会漂在测试里，下次有人照着旧数字改文档就对不上了。
+    actual_total = sum(1 for _ in DOCS_ROOT.rglob("*.md"))
+    assert excluded_total + technical == actual_total, (
         f"五桶 {excluded_total} + 技术文章 {technical} = "
-        f"{excluded_total + technical}，不是全树 621 篇")
+        f"{excluded_total + technical}，不是全树 {actual_total} 篇")
 
     prose = SCOPE_DOC.read_text(encoding="utf-8")
     work = re.search(r"审校工作面\s*=\s*(\d+)\s*篇", prose)

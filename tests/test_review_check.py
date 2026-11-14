@@ -158,6 +158,7 @@ REVIEWED_ARTICLES = (
     "docs/pgsql/checkpoint机制浅析.md",
     "docs/cluster/分布式一致性协议.md",
     "docs/base/file.md",
+    "docs/cluster/corosync/corosync-down网卡仍处于多数派/index.md",
 )
 
 

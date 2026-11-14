@@ -74,7 +74,7 @@ EV_SOURCE_PATH_MIN = 6
 EV_FUNCTION_REF_MIN = 1
 EV_DIAGRAM_MIN = 1
 EV_SPEECH_RATE = 7.19
-EV_DRAFT_P90 = 22_609
+EV_DRAFT_P90 = 23_583
 
 # 规格里引用、但**尚未创建**的路径（本期要新增的）。
 # 实施对应 commit 时从这里移除——移除的那一刻就是该模块真的落地了。
@@ -452,7 +452,7 @@ def test_draft_p90_constant_matches_the_docs_distribution():
 
     rows = _markdown_table(_spec_text(), "指标")
     row = _row_with(rows, 0, "EV-06")
-    assert "22,609" in row[3], f"EV-06 的依据栏必须写出 22,609，实为：{row[3]!r}"
+    assert "23,583" in row[3], f"EV-06 的依据栏必须写出 23,583，实为：{row[3]!r}"
 
 
 # --- 平台矩阵 -------------------------------------------------------------
