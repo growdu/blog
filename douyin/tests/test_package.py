@@ -56,6 +56,33 @@ def test_the_cover_keeps_the_video_aspect_ratio(meta, video, tmp_path):
         assert cover.size == (1920, 1080)
 
 
+def test_a_vertical_video_gives_a_vertical_cover(meta, tmp_path, make_video):
+    """竖版成片的封面也是竖版。
+
+    抖音这一档发的是竖版 9:16（规格 §6.6.5）。封面跟着成片走，
+    比例未实测不猜，但**同比例**这条得守住——横版封面配竖版成片，
+    后台裁起来会切掉画面中间的内容。
+    """
+    from PIL import Image
+
+    video = make_video(tmp_path / "ep01-vertical.mp4", size="1080x1920")
+    result = _package(meta, video, tmp_path)
+    with Image.open(result.dir / "cover.jpg") as cover:
+        assert cover.size == (1080, 1920)
+
+
+def test_the_checklist_says_which_aspect_ratio_it_is(meta, tmp_path, make_video):
+    """清单里要写明画幅与「竖版」。
+
+    出包的人照着清单在后台上传——清单上写着尺寸，才知道发出去的是 9:16。
+    """
+    video = make_video(tmp_path / "ep01-vertical.mp4", size="1080x1920")
+    result = _package(meta, video, tmp_path)
+    checklist = (result.dir / "publish.md").read_text(encoding="utf-8")
+    assert "1080×1920" in checklist
+    assert "竖版" in checklist
+
+
 def test_the_same_video_reuses_the_package(meta, video, tmp_path):
     result = _package(meta, video, tmp_path)
     again = _package(meta, video, tmp_path)

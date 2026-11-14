@@ -1,10 +1,10 @@
 """端到端：真实成片 + 真实元数据走完整条出包链路。
 
-**为什么单��立这一层。** 单元测试用的是合成的 fixture：它能验「出包这个
+**为什么单独立这一层。** 单元测试用的是合成的 fixture：它能验「出包这个
 函数怎么工作」，验不了「真实的成片和真实的文案凑在一起还成立」。
 
 这一层用**仓库里真实的东西**：
-- 成片 `aiv/out/<EP>.mp4`（本机产物，不入库，所以没有就跳过）
+- 成片 `aiv/out/<EP>__vertical.mp4`（本机产物，不入库，所以没有就跳过）
 - 元数据 `aiv/publish/<EP>.json`（入库的事实）
 
 跑的是真正的 `build_package`，不是拼出来的假象。
@@ -16,7 +16,7 @@ from pathlib import Path
 import pytest
 
 from douyin import contract, package
-from pyv import epmeta
+from pyv import epmeta, preflight
 
 AIV_ROOT = Path(__file__).resolve().parents[2] / "aiv"
 EPISODES = ("csn-total-ordering", "parallel-apply", "pg-parallel-decode",
@@ -24,7 +24,12 @@ EPISODES = ("csn-total-ordering", "parallel-apply", "pg-parallel-decode",
 
 
 def _real_video(episode: str) -> Path | None:
-    path = AIV_ROOT / "out" / f"{episode}.mp4"
+    """抖音这一档真实发出去的那一版：竖版 9:16（同时也是无品牌导流版）。
+
+    刻意不用 `aiv/out/<EP>.mp4`（带品牌横版）——那不是抖音要发的东西，
+    拿它出包，验的就不是要发的那条片子了。
+    """
+    path = AIV_ROOT / "out" / f"{episode}__vertical.mp4"
     return path if path.is_file() else None
 
 
@@ -66,6 +71,12 @@ def test_a_real_episode_packages_end_to_end(episode, tmp_path, outbox):
 
     # 软链指向真实成片，不是复制品
     assert (result.dir / "video.mp4").resolve() == video.resolve()
+
+    # 发出去的那一版是**竖版 9:16**。成片哪天换回横版，这条要红。
+    info = preflight.probe(video)
+    assert (info.width, info.height) == (1080, 1920), (
+        f"{episode} 的成片不是竖版 9:16（{info.width}×{info.height}）"
+    )
 
     # text.txt 是元数据拼出来的那一段，一个字不差
     copy = contract.slice_copy(meta)

@@ -19,25 +19,31 @@ AIV_ROOT = Path(__file__).resolve().parents[2] / "aiv"
 DEFAULT_OUT = Path(__file__).resolve().parents[1] / "out"
 WEBHOOK_ENV = "DOUYIN_WEBHOOK"
 
-#: 抖音这一档用**无品牌导流版**成片。
+#: 抖音这一档用**竖版 9:16**成片：`aiv/out/<EP>__vertical.mp4`。
 #:
-#: 带品牌的那版有整屏「Growdu」字标与片尾的 `growdu.cn` / 订阅关注 /
-#: 点赞支持三胶囊，正好撞在抖音「过度营销信息 + 站外引流」这两条上
-#: （规格 §6.6.4）。所以抖音不能用 `aiv/out/<EP>.mp4`。
-NO_BRAND_SUFFIX = "__nobrand"
+#: 两个理由，都是抖音自己的规矩：
+#:
+#: 1. **竖版**。抖音的信息流是竖版，横版天然吃亏（规格 §6.6.5）。
+#: 2. **无品牌导流版**。竖版那一档**同时就是无品牌版**——不要品牌片、
+#:    落版去品牌名，画面里不出现站外域名（规格 §6.6.4）。
+#:
+#: 带品牌的那版（`aiv/out/<EP>.mp4`）有整屏「Growdu」字标与片尾的
+#: `growdu.cn` / 订阅关注 / 点赞支持三胶囊，正好撞在抖音「过度营销信息 +
+#: 站外引流」这两条上。抖音这一档不能用它。
+VERTICAL_SUFFIX = "__vertical"
 
 #: 找不到成片时的提示。写成常量是因为它要能被测试直接断言——
-#: 这条提示指向哪个文件，决定了下一个人会不会拿带品牌的成片去发。
+#: 这条提示指向哪个文件，决定了下一个人会不会拿错的成片去发。
 MISSING_VIDEO_HINT = (
-    "      抖音这一档要用**无品牌导流版**成片（规格 §6.6.4）："
-    "带品牌字标与 growdu.cn 胶囊的版本会被抖音判「过度营销 + "
-    "站外引流」而限流。\n"
-    "      先出片：cd aiv/pipeline && make EP={episode} nobrand"
+    "      抖音这一档要用**竖版 9:16（无品牌导流版）**成片（规格 §6.6.4/§6.6.5）："
+    "横版在抖音的信息流里吃亏；带品牌字标与 growdu.cn 胶囊的版本"
+    "会被判「过度营销 + 站外引流」而限流。\n"
+    "      先出片：cd aiv/pipeline && make EP={episode} vertical"
 )
 
 
 def _video_path(episode: str) -> Path:
-    return AIV_ROOT / "out" / f"{episode}{NO_BRAND_SUFFIX}.mp4"
+    return AIV_ROOT / "out" / f"{episode}{VERTICAL_SUFFIX}.mp4"
 
 
 def _title_of(meta) -> str:
@@ -136,7 +142,8 @@ def main(argv: list[str] | None = None) -> int:
 
     p_package = sub.add_parser("package")
     p_package.add_argument("episode")
-    p_package.add_argument("--video", default=None, help="成片路径，默认 aiv/out/<期号>.mp4")
+    p_package.add_argument("--video", default=None,
+                           help="成片路径，默认 aiv/out/<期号>__vertical.mp4（竖版 9:16）")
     p_package.add_argument("--out", default=str(DEFAULT_OUT))
     p_package.add_argument("--outbox", default=None,
                            help="状态快照目录，默认 publish/outbox")

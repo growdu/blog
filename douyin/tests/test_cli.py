@@ -39,17 +39,19 @@ def test_the_cli_reports_a_missing_video_instead_of_crashing(tmp_path):
     assert "Traceback" not in proc.stderr
 
 
-def test_the_missing_video_hint_points_at_the_nobrand_target():
-    """找不到成片时的提示必须指向无品牌版。
+def test_the_missing_video_hint_points_at_the_vertical_target():
+    """找不到成片时的提示必须指向竖版那一档。
 
-    抖音这一档用的是**无品牌导流版**——带品牌字标与 `growdu.cn` 胶囊的
-    版本会被判「过度营销 + 站外引流」。提示里必须写出来，
-    否则下一个人会拿带品牌的那版去发。
+    抖音这一档用的是**竖版 9:16**（同时也是无品牌导流版）——横版在
+    抖音的信息流里吃亏，带品牌字标与 `growdu.cn` 胶囊的版本会被判
+    「过度营销 + 站外引流」。提示里必须写出来，
+    否则下一个人会拿错成片去发。
     """
     from douyin import cli
 
-    assert "nobrand" in cli.MISSING_VIDEO_HINT
-    assert "make EP={episode} nobrand" in cli.MISSING_VIDEO_HINT
+    assert "vertical" in cli.MISSING_VIDEO_HINT
+    assert "make EP={episode} vertical" in cli.MISSING_VIDEO_HINT
+    assert "__nobrand" not in cli.MISSING_VIDEO_HINT
 
 
 def test_the_missing_video_hint_reaches_the_terminal(tmp_path, monkeypatch, capsys):
@@ -68,18 +70,21 @@ def test_the_missing_video_hint_reaches_the_terminal(tmp_path, monkeypatch, caps
     monkeypatch.setattr(cli, "AIV_ROOT", tmp_path / "aiv")
     assert cli.main(["package", "structured-ddl"]) == 1
     err = capsys.readouterr().err
-    assert "nobrand" in err
-    assert "make EP=structured-ddl nobrand" in err
+    assert "vertical" in err
+    assert "make EP=structured-ddl vertical" in err
 
 
-def test_the_default_video_is_the_nobrand_one():
-    """默认成片是 `<EP>__nobrand.mp4`，不是 `<EP>.mp4`。
+def test_the_default_video_is_the_vertical_one():
+    """默认成片是 `<EP>__vertical.mp4`。
 
-    静默回退到带品牌的那版，等于带着水印发出去——发出去就收不回来了。
+    静默回退到横版或带品牌的那版，等于发错片子——发出去就收不回来了：
+    横版在抖音信息流里吃亏，带品牌那版会被判过度营销 + 站外引流。
     """
     from douyin import cli
 
-    assert cli._video_path("row-lock").name == "row-lock__nobrand.mp4"
+    assert cli._video_path("row-lock").name == "row-lock__vertical.mp4"
+    assert cli._video_path("row-lock").name != "row-lock.mp4"
+    assert cli._video_path("row-lock").name != "row-lock__nobrand.mp4"
 
 
 def test_marking_published_without_a_url_is_refused(tmp_path):

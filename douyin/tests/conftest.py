@@ -11,19 +11,21 @@ for extra in (REPO_ROOT / "douyin", REPO_ROOT / "aiv" / "pipeline"):
 from pyv import epmeta  # noqa: E402
 
 
-def _encode(path: Path, seconds: int = 3) -> Path:
+def _encode(path: Path, seconds: int = 3, size: str = "1920x1080") -> Path:
     """造一段合法的小视频。
 
     尺寸、像素格式与 faststart 都按视频平台自己的门槛来
     （`publish/capabilities/douyin.toml` 的 `[media]`）：
     出包前要过技术预检，fixture 自己不合规的话，
     测到的就只剩预检，而不是出包。
+
+    `size` 默认横版；抖音那一档实际发的是竖版 9:16，所以这里要能造竖版。
     """
     import subprocess
 
     proc = subprocess.run([
         "ffmpeg", "-y", "-f", "lavfi", "-i",
-        f"testsrc=size=1920x1080:rate=24:duration={seconds}",
+        f"testsrc=size={size}:rate=24:duration={seconds}",
         "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
         "-movflags", "+faststart",
         str(path),
@@ -35,8 +37,8 @@ def _encode(path: Path, seconds: int = 3) -> Path:
 @pytest.fixture
 def make_video():
     """给一个路径，在那儿造一段合规的小视频。"""
-    def _make(path, seconds: int = 3) -> Path:
-        return _encode(Path(path), seconds)
+    def _make(path, seconds: int = 3, size: str = "1920x1080") -> Path:
+        return _encode(Path(path), seconds, size)
     return _make
 
 
