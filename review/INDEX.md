@@ -51,7 +51,7 @@
 | [file](base/file.md) | base | 已合入 | 0 | 0 | 3 | 1 |
 | [corosync-down网卡仍处于多数派](cluster/corosync/corosync-down网卡仍处于多数派.md) | cluster | 已合入 | 0 | 0 | 6 | 1 |
 | [tptc](cluster/kingbase/tptc.md) | cluster | 已合入 | 0 | 0 | 8 | 1 |
-| [从原理到实践，彻底告别 IPv6 上网不稳定的问题](network/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md) | network | 建议中 | 3 | 7 | 0 | 1 |
+| [从原理到实践，彻底告别 IPv6 上网不稳定的问题](network/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md) | network | 已合入 | 0 | 0 | 6 | 1 |
 | [Postgresql存储、索引及系统优化、主备切换](pgsql/replication/Postgresql存储、索引及系统优化、主备切换.md) | pgsql | 建议中 | 3 | 6 | 0 | 1 |
 | [raft重要概念](cluster/raft/raft重要概念.md) | cluster | 建议中 | 2 | 4 | 0 | 2 |
 | [sanlock实现共享corosync共享存储仲裁](cluster/corosync/sanlock实现共享corosync共享存储仲裁.md) | cluster | 建议中 | 2 | 6 | 0 | 2 |

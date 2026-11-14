@@ -326,3 +326,194 @@ def test_the_two_tptc_articles_are_merged_into_one():
     rows = [line for line in index.split("\n") if line.strip().startswith("| [")]
     assert not [r for r in rows if "tptc_improve" in r], (
         f"INDEX 的进度表里又出现了 tptc_improve 那一行：{rows}")
+
+
+# --- IPv6 上网不稳定 ------------------------------------------------------
+
+IPV6 = DOCS_ROOT / "network/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md"
+
+
+def test_the_ipv6_article_has_a_title_and_an_info_table():
+    """单元：H1 标题 + 编写信息表。
+
+    原文没有 H1，站点上标题会退化成「前言」（检查器 MET-02），
+    而标题是读者唯一的导航。
+    """
+    text = article_text(IPV6)
+    assert text.startswith("# 从原理到实践，彻底告别 IPv6 上网不稳定的问题\n"), (
+        "正文开头不是与文件名一致的 H1 标题")
+    assert "| 编写人 | 编写内容 | 编写时间 |" in text, "正文里没有编写信息表"
+
+
+def test_the_mss_formula_covers_ipv4_ipv6_and_extension_headers():
+    """单元：MSS 换算要给全三套。
+
+    原文整篇讲 IPv6，公式却只给了 IPv4 那套（MSS=MTU−20−20）。
+    IPv6 固定头是 40 字节，MSS=MTU−60；带扩展头还要再减。
+    """
+    text = article_text(IPV6)
+    assert "MSS = MTU − 20（IP 头）− 20（TCP 头）" in text, "IPv4 的换算式不对"
+    assert "MSS = MTU − 40（固定头）− 20（TCP 头）= MTU − 60" in text, (
+        "IPv6 的换算式不对（IPv6 固定头是 40 字节）")
+    assert "IPv6 带扩展头时，还要再减去扩展头占用的字节" in text, (
+        "正文没提扩展头对 MSS 的影响")
+
+
+def test_the_mtu_numbers_are_arithmetically_consistent():
+    """单元：1368 那个算错的数不能回来，三组数还要互相自洽。
+
+    原文写「MSS = 1300 或 MTU=1368」——IPv6 下 MSS=MTU−60，1300 对应的
+    是 1360。文中实测的 WLAN MTU 1410 对应 1370 / 1350，两个都对得上，
+    唯独 1368 对不上任何东西。
+    """
+    text = article_text(IPV6)
+    assert "1368" not in text, "正文里又出现了算错的 MTU=1368"
+    assert "1360" in text, "正文里没有正确的 MTU=1360"
+    assert "1410 − 40 = 1370" in text, "1410 与 IPv4 MSS 的关系没写对"
+    assert "1410 − 60 = 1350" in text, "1410 与 IPv6 MSS 的关系没写对"
+
+
+def test_the_interface_scoped_rule_uses_postrouting():
+    """单元：指定出接口的钳制规则必须走 POSTROUTING，文字也得跟上。
+
+    PREROUTING 里没有出接口可言，指定 `-o` 必须走 POSTROUTING（或 OUTPUT）。
+    原文文字说 PREROUTING、命令却写 POSTROUTING——读者照抄会踩坑。
+    """
+    text = article_text(IPV6)
+    assert "-t mangle -A POSTROUTING" in text, "命令里没有 POSTROUTING"
+    assert "必须用 POSTROUTING（或 OUTPUT）" in text, (
+        "正文没有把指定 -o 的规则指向 POSTROUTING")
+    assert "PREROUTING 里没有出接口可言" in text, (
+        "正文没有解释为什么不是 PREROUTING")
+
+
+def test_the_icmp_error_types_are_named():
+    """单元：ICMP 差错报文的类型与代码必须写出来。
+
+    原文「ping 程序的ICMP不可到达错误，就是采用PMTU动态探测的方法」
+    读者看不出报文是什么、由谁发出。
+    """
+    text = article_text(IPV6)
+    assert "类型是 3（目的不可达）、代码 4（需要分片）" in text, (
+        "正文没写清 IPv4 的 ICMP 类型 3 / 代码 4")
+    assert "Packet Too Big，ICMPv6 类型 2" in text, (
+        "正文没写清 IPv6 的 Packet Too Big / 类型 2")
+
+
+def test_the_pmtud_standards_are_cited():
+    """单元：PMTUD 的结论要挂上规范依据。
+
+    原文「目前IPv4网络其实没有有效手段来发现PMTU」说得太绝——
+    IPv4 有 RFC 1191 的 PMTUD，只是沿途过滤 ICMP 让它经常失效。
+
+    断言按**正文里的句子**写，不按「RFC 4890 这个串出现过」写：附录的
+    参考资料里也有这几个号，只查全文的话，把正文那一句改错，守卫照样绿
+    （这条就是这么漏过一次）。
+    """
+    text = article_text(IPV6)
+    body = text.split("## 参考资料")[0]
+    assert "IPv4 由 RFC 1191 定义，IPv6 由 RFC 1981 定义" in body, (
+        "正文没写清 RFC 1191（IPv4）与 RFC 1981（IPv6）分别定义了 PMTUD")
+    assert "RFC 4890 明确要求：ICMPv6 的 Packet Too Big 不得被过滤" in body, (
+        "正文没写清 RFC 4890 对 Packet Too Big 的要求")
+    assert "RFC 4884 则规定了 ICMP 承载 PMTU 信息的扩展格式" in body, (
+        "正文没写清 RFC 4884 扩展的是什么")
+    assert "IPv4 有这个机制，只是经常用不上" in body, (
+        "正文没有把 IPv4 的 PMTUD 改成「有机制但常失效」")
+
+
+def test_the_uncertain_wording_is_gone():
+    """单元：三处没有依据的断言不能回来。
+
+    「胡扯！」「80% 的把握」「多么完美的一个机制！」分别是空泛断言、
+    没有依据的百分比、和紧接着就被作者自己推翻的赞美。
+    """
+    text = article_text(IPV6)
+    for phrase in ("胡扯", "80% 的把握", "多么完美", "牛逼"):
+        assert phrase not in text, f"正文里又出现了「{phrase}」"
+
+
+def test_the_mtu_mismatch_failure_mode_is_documented():
+    """单元：调 MTU 的失败模式与检查方法要写出来。
+
+    「尽量把 MTU 配大一些」是操作性很强的建议，不写配错的后果，
+    读者会一路踩到「配置完反而全断了」。
+    """
+    text = article_text(IPV6)
+    assert "停在 ExStart 或 Init" in text, "正文没写 MTU 不一致的失败模式"
+    assert "先确认对端能接受同一个值" in text, "「把 MTU 配大」的前提没写出来"
+
+
+def test_the_reference_links_are_direct():
+    """单元：附录的参考必须是指向原文的直链。
+
+    `link.zhihu.com/?target=…` 现在返回知乎安全中心页、不再跳转，
+    12 条参考在站点上等于全部失效；`↩︎` 是当年发表在
+    doc.envview.com 时留下的脚注残留。
+
+    （可达性是手工实测的，不适合放进 CI——见审校记录的「事实待核」：
+    那三条 403 是访问路径被拦，页面本身在线。）
+    """
+    text = article_text(IPV6)
+    assert "link.zhihu.com" not in text, "参考里还有知乎跳转服务链接"
+    assert "↩︎" not in text, "参考里还有 ↩︎ 回跳锚点"
+    assert "doc.envview.com" not in text, "参考里还有 doc.envview.com 残留"
+    urls = re.findall(r"\]\((https?://[^)]+)\)", text)
+    assert len(urls) >= 12, f"参考条目太少（{len(urls)} 条）"
+    for url in urls:
+        assert url.startswith(("http://", "https://")), f"参考链接不是直链：{url}"
+
+
+def test_all_images_are_local_and_present():
+    """单元：图片必须是仓库里的本地文件，且一个都不多。
+
+    原文 16 张图全外链知乎图床，实测不带浏览器头一律返回 403/567，
+    策略一收紧读者看到的就是满屏裂图。
+    """
+    text = article_text(IPV6)
+    refs = re.findall(r"!\[[^\]]*\]\(([^)]+)\)", text)
+    assert refs, "正文里一张图都没有了"
+    for ref in refs:
+        assert not ref.startswith(("http://", "https://")), f"还有外链图片：{ref}"
+        assert (IPV6.parent / ref).is_file(), f"图片文件不存在：{ref}"
+    # 目录里的每一张都要被引用——多出来的文件是上一轮下载的残留
+    used = {Path(r).name for r in refs}
+    on_disk = {p.name for p in (IPV6.parent / "ipv6_img").iterdir() if p.is_file()}
+    assert on_disk == used, (
+        f"目录里的图与正文引用的对不上：多出来 {sorted(on_disk - used)}，"
+        f"缺 {sorted(used - on_disk)}")
+
+
+def test_the_symptom_table_is_there():
+    """单元：结尾要给一份可带走的产物。
+
+    检查器 STR-03 盯的就是这个：读者读完得能带走一张「症状 → 怎么确认
+    → 怎么处置」的对照表。
+    """
+    text = article_text(IPV6)
+    assert "| 症状 | 怎么确认 | 怎么处置 |" in text, "结尾没有症状处置表"
+    assert "ping -f -l" in text, "症状处置表里没有 PMTU 的确认方法"
+
+
+def test_the_ipv6_article_has_no_warn_signal():
+    """集成：合入后这篇不该再被检查器报 warn。
+
+    原文有 3 条 warn：AIF-02（空泛评价）/ AIF-03（超长段落）/
+    AIF-05（近似重复句）。
+    """
+    report = run_checker(IPV6)
+    warns = [s for s in report["signals"] if s["severity"] == "warn"]
+    assert not warns, f"合入后仍有 warn 信号：{warns}"
+
+
+def test_only_one_ipv6_article_with_this_title():
+    """集成：站点上不能出现同标题的第二篇。"""
+    title = "从原理到实践，彻底告别 IPv6 上网不稳定的问题"
+    same = []
+    for path in sorted(DOCS_ROOT.rglob("*.md")):
+        match = re.search(r"^#\s+(.*\S)\s*$",
+                          path.read_text(encoding="utf-8", errors="replace"), re.M)
+        if match and match.group(1).strip() == title:
+            same.append(path.relative_to(REPO_ROOT).as_posix())
+    assert same == ["docs/network/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md"], (
+        f"全树有多篇同名文章：{same}")
