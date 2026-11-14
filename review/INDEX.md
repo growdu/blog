@@ -29,7 +29,7 @@
 
 ## 进度
 
-已审 17 篇（首批试点：数据库内核四支柱 5 篇），批次 1 按信号密度新增 5 篇，
+已审 18 篇（首批试点：数据库内核四支柱 5 篇），批次 1 按信号密度新增 5 篇，
 批次 2 按信号密度清 cluster 支柱的 2 信号队列。
 范围扩到全树后按信号密度排序继续——排序依据见范围分类文档的「逐支柱分布」。
 
@@ -52,3 +52,4 @@
 | [ha元信息常见存储方式](cluster/ha/ha元信息常见存储方式.md) | cluster | 建议中 | 2 | 5 | 0 | 2 |
 | [corosync-qdevice使用](cluster/corosync/corosync-qdevice使用.md) | cluster | 建议中 | 2 | 5 | 0 | 2 |
 | [corosync qnet挂死场景分析解决](cluster/corosync/corosync qnet挂死场景分析解决.md) | cluster | 建议中 | 2 | 7 | 0 | 2 |
+| [从两地三中心到OceanBase的多地多中心 - 墨天轮](cluster/从两地三中心到OceanBase的多地多中心 - 墨天轮.md) | cluster | 建议中 | 2 | 8 | 0 | 2 |
