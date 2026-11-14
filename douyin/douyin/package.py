@@ -63,6 +63,21 @@ class PackageResult:
     warnings: list[str] = field(default_factory=list)
 
 
+def _aspect_label(info: preflight.VideoInfo) -> str:
+    """画幅标签——**按成片的实际尺寸算**，不写死。
+
+    写死「竖版 9:16」的话，`--video` 指向横版成片时清单会自相矛盾
+    （同一行里写着「1920×1080，竖版 9:16」）。而这份清单正是人照着
+    去发布的那份说明：它写错了，人就把错的东西发出去了。
+
+    「无品牌」**不写在这一栏**：adapter 验不出成片里有没有品牌字标与
+    站外域名，写死等于替素材打包票。它写成下面的要求。
+    """
+    if info.height > info.width:
+        return f"竖版 {info.width}×{info.height}"
+    return f"横版 {info.width}×{info.height}"
+
+
 def _checklist(episode: str, copy: contract.DouyinCopy,
                info: preflight.VideoInfo, text: str,
                warnings: list[str]) -> str:
@@ -72,8 +87,7 @@ def _checklist(episode: str, copy: contract.DouyinCopy,
         "",
         "| 项 | 值 |",
         "| --- | --- |",
-        f"| 视频 | `video.mp4`（{info.duration:.1f} s，{info.width}×{info.height}，"
-        f"**竖版 9:16 · 无品牌导流版**） |",
+        f"| 视频 | `video.mp4`（{info.duration:.1f} s，**{_aspect_label(info)}**） |",
         f"| 标题 | {copy.title}（{len(copy.title)} 字） |",
         f"| 正文 | {len(copy.description)} 字 |",
         f"| 话题 | {topics or '（无）'} |",
@@ -93,6 +107,11 @@ def _checklist(episode: str, copy: contract.DouyinCopy,
         "> **文案原样贴，别自己加东西。** 抖音禁站外引流与过度营销——"
         "在文案里加网址、微信号、QQ、电话，都是最常见的限流原因。"
         "要补充信息，发在评论区。",
+        "",
+        "> **成片要选无品牌导流版。** 画面里不能出现品牌字标与站外域名——"
+        "带品牌片头片尾的那一版会被判「过度营销 + 站外引流」而限流"
+        "（规格 §6.6.4）。这一条 adapter 验不出来（它看不见成片里的字），"
+        "所以要你对着上面的画幅与成片自己确认。",
         "",
     ]
     if warnings:

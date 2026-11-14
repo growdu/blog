@@ -72,7 +72,7 @@ def test_a_vertical_video_gives_a_vertical_cover(meta, tmp_path, make_video):
 
 
 def test_the_checklist_says_which_aspect_ratio_it_is(meta, tmp_path, make_video):
-    """清单里要写明画幅与「竖版」。
+    """清单里要写明画幅。
 
     出包的人照着清单在后台上传——清单上写着尺寸，才知道发出去的是 9:16。
     """
@@ -81,6 +81,37 @@ def test_the_checklist_says_which_aspect_ratio_it_is(meta, tmp_path, make_video)
     checklist = (result.dir / "publish.md").read_text(encoding="utf-8")
     assert "1080×1920" in checklist
     assert "竖版" in checklist
+
+
+def test_the_checklist_does_not_call_a_horizontal_video_vertical(meta, tmp_path,
+                                                                  make_video):
+    """清单的画幅**跟着成片走**，不写死。
+
+    写死「竖版 9:16」的话，`--video` 指向横版成片时，清单里就会出现
+    「1920×1080，竖版 9:16」这种自相矛盾的一行——而这份清单正是人
+    照着去发布的那份说明。
+    """
+    video = make_video(tmp_path / "ep01-horizontal.mp4", size="1920x1080")
+    result = _package(meta, video, tmp_path)
+    checklist = (result.dir / "publish.md").read_text(encoding="utf-8")
+    assert "1920×1080" in checklist
+    assert "横版" in checklist
+    assert "竖版" not in checklist, (
+        "横版成片的清单里写着「竖版」——清单写错，人就把错的东西发出去了"
+    )
+
+
+def test_the_checklist_states_the_no_brand_requirement(meta, video, tmp_path):
+    """「无品牌」写成**要求**，不是替素材打包票。
+
+    adapter 看不见成片里有没有品牌字标与站外域名，所以清单不能声称
+    「这一版是无品牌导流版」——那是在替素材打包票。它得写清楚要求，
+    让人自己对。
+    """
+    result = _package(meta, video, tmp_path)
+    checklist = (result.dir / "publish.md").read_text(encoding="utf-8")
+    assert "无品牌导流版" in checklist
+    assert "限流" in checklist
 
 
 def test_the_same_video_reuses_the_package(meta, video, tmp_path):
