@@ -1,83 +1,52 @@
 /* tech.css -----------------------------------------------------------------
-   本站自己的样式：首页首屏（.home-hero）和学习路径页（.learning-page）。
+   本站自己的样式：导航栏里的定位句（.logo-tagline）和学习路径页
+   （.learning-page）。
 
    为什么单独开一个文件：
    docs/blog/重构方案.md §5.4 规定新样式只放这里，不再往 tools/patch-theme.py
    里塞 CSS —— patcher 注入的样式没法 review、没法单测，出错时也看不出是谁写的。
 
-   硬约束（tests/test_home_first_screen.py 会检查）：
-     .home-hero 不得使用 100vh / min-height:100vh。
-     首屏全屏 = 内容还是全在折线以下，等于只把风景照换了个内容而已。
+   历史：这里原来还管着首页首屏 .home-hero（搜索框 + 分类徽章 + 打字机
+   + 一句定位）。2026-11-19 那句定位搬进了顶部导航栏（紧跟站名
+   「growdu」），首屏那块整个退休了 —— 首页只剩统计条 + 学习路径，
+   正好一屏。
    ------------------------------------------------------------------------- */
 
-.home-hero {
-  --tech-accent: #0b7285;
-  --tech-accent-soft: rgba(11, 114, 133, .09);
-  --tech-ink: #1f2933;
-  --tech-muted: #5b6670;
-  --tech-rule: rgba(31, 41, 51, .14);
-  --tech-card: #ffffff;
-  --tech-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
-    Menlo, Consolas, "Liberation Mono", monospace;
+/* --- 导航栏里的定位句 -----------------------------------------------------
+   2026-11-19：定位句从首屏搬到了导航栏，紧跟在站名后面。
 
-  position: relative;
-  /* 2026-11-19：这块原来还有搜索框和分类徽章（+ 打字机），现在只剩
-     一句定位，上下留白也就跟着压扁了。
-     顶部不再留 88px —— navbar 是 position:relative，在文档流里占着
-     64px（实测），不需要额外让位。 */
-  padding: 20px 0 18px;
-  color: var(--tech-ink);
-  background-color: #fbfcfd;
-  background-image:
-    linear-gradient(180deg, var(--tech-accent-soft) 0%, rgba(11, 114, 133, 0) 160px),
-    repeating-linear-gradient(
-      90deg,
-      rgba(31, 41, 51, .035) 0 1px,
-      rgba(31, 41, 51, 0) 1px 48px
-    );
-  border-bottom: 1px solid var(--tech-rule);
+   颜色跟着导航栏走：导航栏是深色底（matery.css 的 header .nav-transparent
+   给的是 #263238），所以这里是浅色字。左边一条竖线把站名和这句
+   分开。
+
+   窄屏（< 992px）不显示：那时候导航栏右边是汉堡按钮，标题行挤不下，
+   而且手机上「让人写代码成为一种习惯」这种话本来就该往下看。 */
+.logo-tagline {
+  display: inline-block;
+  margin: 0 0 0 14px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(255, 255, 255, .28);
+  font-size: .82rem;
+  font-weight: 400;
+  line-height: 1.4;
+  letter-spacing: .04em;
+  color: rgba(255, 255, 255, .62);
+  vertical-align: middle;
+  white-space: nowrap;
 }
 
-.home-hero .container {
-  position: relative;
-  max-width: 1080px;
+/* 首页上它是 h1 —— matery 的 h1 是 2.0rem，还带 48px 的上外边距，
+   得按导航栏里的尺寸重置。 */
+h1.logo-tagline {
+  font-size: .82rem;
+  font-weight: 400;
+  margin: 0 0 0 14px;
 }
-
-.home-hero__lead {
-  max-width: 780px;
-  margin: 0;
-  font-size: clamp(1.15rem, 2.2vw, 1.55rem);
-  font-weight: 500;
-  line-height: 1.75;
-  letter-spacing: .01em;
-  color: var(--tech-ink);
-}
-
-/* --- 响应式 -------------------------------------------------------------- */
 
 @media (max-width: 992px) {
-  .home-hero {
-    padding: 16px 0 14px;
+  .logo-tagline {
+    display: none;
   }
-}
-
-@media (max-width: 600px) {
-  .home-hero__lead {
-    font-size: 1.02rem;
-    line-height: 1.7;
-  }
-}
-
-/* --- 夜间模式 ------------------------------------------------------------ */
-
-body.DarkMode .home-hero {
-  --tech-accent: #66c2d0;
-  --tech-accent-soft: rgba(102, 194, 208, .1);
-  --tech-ink: #dfe6ea;
-  --tech-muted: #9fb0b8;
-  --tech-rule: rgba(223, 230, 234, .16);
-  --tech-card: #1c2226;
-  background-color: #15191c;
 }
 
 /* learning-page ------------------------------------------------------------
@@ -309,9 +278,9 @@ body.DarkMode .learning-path__all-link:focus-visible {
   background: rgba(77, 182, 172, .20);
 }
 
-/* --- 首页占满一屏（统计条 + 定位句 + 学习路径）---------------------------
+/* --- 首页占满一屏（统计条 + 学习路径）-------------------------------------
    2026-11-18：文章区、「最新一期」、代表作三块删掉之后，首页剩下
-   首屏 + 统计条 + 学习路径。目标是这三块正好占满一屏 —— 读者不用滚动
+   首屏 + 统计条 + 学习路径。目标是这几块正好占满一屏 —— 读者不用滚动
    就能看完 8 条赛道。
 
    2026-11-19：首屏里的搜索框和分类徽章也删了，只剩一句定位；统计条
@@ -319,10 +288,13 @@ body.DarkMode .learning-path__all-link:focus-visible {
 
      body.home-page  → 一个「至少一屏高」的 flex 列
        .home-stats    统计条，内容固定（flex: 0 0 auto）
-       .home-hero     定位句，内容固定（flex: 0 0 auto）
        .home-content  吃掉剩下的空间（flex: 1 1 auto）
          .learning-path 继续往下分
            .lane-grid    卡片跟着长高（grid-auto-rows）
+
+   **2026-11-19（第二次）**：定位句（.home-hero）也退休了 —— 它搬到了
+   顶部导航栏，紧跟在站名后面。于是首页正文只剩统计条 + 学习路径两段，
+   省下来的 40px 全给了卡片。
 
    做法（按 docs/blog/重构方案.md §5.4，新样式只放 tech.css，不进
    patch-theme.py 注入的那份）：
@@ -331,7 +303,7 @@ body.DarkMode .learning-path__all-link:focus-visible {
    * 视口不够宽（< 1100px）时整段不生效，回到正常文档流 —— 窄屏硬塞
      会把字压得没法看；
    * 空间真的不够时，滚动的是学习路径面板自己（overflow:auto），
-     不是整页 —— 整页滚动会把统计条和定位句一起推走；
+     不是整页 —— 整页滚动会把统计条一起推走；
    * body 用的是 height（不是 min-height）：flex 的「收缩到刚好装下」
      要有一个确定的高度才生效。内容装不下时是**溢出可见**的，
      页面照常能滚，不会被裁掉一块 —— 宁可多滚一屏，不丢内容。
@@ -341,6 +313,11 @@ body.DarkMode .learning-path__all-link:focus-visible {
 
 @media (min-width: 1100px) {
   body.home-page {
+    /* 这一组变量原来定义在 .home-hero 上（首屏那块）。首屏退休之后，
+       卡片里那个「+N 个阶段」角标还在用其中两个 —— 变量跟着搬过来。 */
+    --tech-muted: #5b6670;
+    --tech-rule: rgba(31, 41, 51, .14);
+
     display: flex;
     flex-direction: column;
     /* height 而不是 min-height：flex 的「收缩到刚好装下」要有一个确定的
@@ -348,6 +325,12 @@ body.DarkMode .learning-path__all-link:focus-visible {
        兜着），页面照常能滚，不会被裁掉一块。 */
     height: 100vh;
     height: 100dvh;
+  }
+
+  /* 夜间模式：跟着原来 .home-hero 的深色值走。 */
+  body.DarkMode.home-page {
+    --tech-muted: #9fb0b8;
+    --tech-rule: rgba(223, 230, 234, .16);
   }
 
   /* --- 统计条：最上面 ---------------------------------------------------- */
@@ -365,17 +348,6 @@ body.DarkMode .learning-path__all-link:focus-visible {
   body.home-page .stat-card { padding: 9px 12px; }
   body.home-page .stat-num { font-size: 21px; margin-bottom: 0; }
   body.home-page .stat-label { font-size: 12px; }
-
-  /* --- 定位句：统计条下面 ------------------------------------------------ */
-  body.home-page .home-hero {
-    flex: 0 0 auto;
-    padding: 4px 0 6px;
-  }
-
-  body.home-page .home-hero__lead {
-    font-size: 1.25rem;
-    line-height: 1.6;
-  }
 
   /* --- 下面那块：学习路径 ------------------------------------------------ */
   body.home-page .home-content {
@@ -596,13 +568,11 @@ body.DarkMode .learning-path__all-link:focus-visible {
 }
 
 /* 矮屏幕（老笔记本、开着开发者工具的浏览器）：视口不到 800px 高的时候，
-   统计条 + 定位句 + 8 张卡放不下，顺序是：先压定位句，再把卡片里那一行
-   简介收起来 —— 简介整句在赛道页上有。
+   统计条 + 8 张卡放不下，顺序是：先把卡片里那一行简介收起来 ——
+   简介整句在赛道页上有。
    统计条和学习路径本身不动，那是首页要看的东西。 */
 @media (min-width: 1100px) and (max-height: 800px) {
   body.home-page .home-stats { padding-top: 8px; }
-  body.home-page .home-hero { padding: 2px 0 4px; }
-  body.home-page .home-hero__lead { font-size: 1.15rem; }
   body.home-page .lane-card__desc { display: none; }
   /* 统计条和页脚各让一点出来 —— 两张卡 + 标题要的那点高度。 */
   body.home-page .stats-banner { margin: 0 0 6px; }

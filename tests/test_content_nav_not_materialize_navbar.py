@@ -109,16 +109,19 @@ def test_no_content_template_uses_a_nav_element():
 
 
 def test_the_home_hero_has_no_navigable_landing_blocks():
-    """首屏里不许再出现「代表作」那一块。
+    """首屏那块整个退休了 —— 里面不许再出现「代表作」那一块。
 
     2026-11-18：三篇代表作整块删掉了（首屏要回答的是「这个站是什么」，
-    不是「作者推荐什么」）。这一条留着是为了防它改回来——它当初是
-    ``<nav>``，被 Materialize 压成 64px 的红条，把底下的统计条盖住了；
-    改回 ``<section>`` 治的是症状，删掉整块才是根治。
+    不是「作者推荐什么」）。
+    2026-11-19：连首屏本身也没了 —— 那句定位搬进了顶部导航栏，
+    ``home-hero.ejs`` 整个删除。
+
+    这一条留着是为了防它改回来——它当初是 ``<nav>``，被 Materialize 压成
+    64px 的红条，把底下的统计条盖住了；改回 ``<section>`` 治的是症状，
+    删掉整块才是根治。
     """
-    html = _read(HOME_HERO)
-    assert "home-hero__featured" not in html, (
-        "首屏的三篇代表作又回来了 —— 那三张卡上的分类全是「源码主线」"
+    assert not HOME_HERO.exists(), (
+        "home-hero.ejs 又回来了 —— 定位句已经搬进导航栏，那块不该再存在"
     )
 
 

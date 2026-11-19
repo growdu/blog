@@ -52,6 +52,7 @@ TOOL = TOOLS / "build-learning-path.py"
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "hexo.yml"
 THEME_LAYOUT = REPO_ROOT / "themes" / "matery" / "layout" / "learning.ejs"
 HOME_HERO = REPO_ROOT / "themes" / "matery" / "layout" / "_partial" / "home-hero.ejs"
+HOME_CONTENT = REPO_ROOT / "themes" / "matery" / "layout" / "_partial" / "home-content.ejs"
 HOME_PANEL = (REPO_ROOT / "themes" / "matery" / "layout" / "_partial"
               / "learning-path.ejs")
 
@@ -374,17 +375,23 @@ def test_the_homepage_links_to_the_learning_path():
     首页要做成正好一屏，那块按钮的 47px 让给下面的学习路径面板，而它指的
     `/learning/` 就是那个面板本身（八张赛道卡 + 「看完整的学习地图」）：
     同一个去处在首屏摆两遍没有意义。入口现在住在面板的标题行里。
+
+    2026-11-19：连首屏那块都没了（那句定位搬进了顶部导航栏），所以
+    首页正文里不该再有第二个 ``/learning/`` 入口。
     """
     panel = HOME_PANEL.read_text(encoding="utf-8")
     assert "/learning/" in panel, "首页没有指向 /learning/ 的入口"
     assert "site.data.learning" in panel, (
         "首页入口的赛道数/文章数应当取自生成的数据，不写死在模板里"
     )
-    hero = HOME_HERO.read_text(encoding="utf-8")
+    assert not HOME_HERO.exists(), (
+        "首屏那块已经退休了 —— 定位句搬进了导航栏"
+    )
+    home_content = HOME_CONTENT.read_text(encoding="utf-8")
     # 只看真正输出的标记：EJS 注释（<%# ... %>）里提到 /learning/ 不算。
-    hero_markup = re.sub(r"<%#.*?%>", "", hero, flags=re.S)
-    assert "/learning/" not in hero_markup, (
-        "首屏那块「从这里开始」已经退休了 —— 入口在下面的学习路径面板里"
+    markup = re.sub(r"<%#.*?%>", "", home_content, flags=re.S)
+    assert "/learning/" not in markup, (
+        "首页正文里又出现了一个 /learning/ 入口 —— 入口在下面的学习路径面板里"
     )
 
 

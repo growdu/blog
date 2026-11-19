@@ -1,6 +1,6 @@
-"""首屏不该是一张风景照，也不该摆一堆入口。
+"""首页的第一屏：导航栏里的一句定位 + 统计条，不该再是别的。
 
-**背景**：首页的第一屏是 ``_partial/index-cover`` 渲染的一个 Materialize
+**背景**：首页的第一屏曾经是 ``_partial/index-cover`` 渲染的一个 Materialize
 carousel——首张 ``about-cover`` 铺着主题默认的模糊橙树照片，上面是打字机、
 口号「技术·学习·实践·人生·哲学」和四个统计。``my.css`` 里由
 ``patch-theme.py`` 注入的 ``RESPONSIVE-HERO-FIX`` 段把它撑到
@@ -9,35 +9,41 @@ carousel——首张 ``about-cover`` 铺着主题默认的模糊橙树照片，�
 **后果**：统计条、学习路径、三个 tab 全部落在首屏之外。一个技术博客的第一
 印象是「风景摄影 + 五词口号」，爬虫和分享卡片拿到的也是那张风景照。
 
+**后来发生的事**（这一串改动都是「首页做减法」）：
+
+* 2026-11-18：首屏换成一句定位；「最新一期」「三篇代表作」「文章区」
+  三块删掉；统计条挪到了最上面。
+* 2026-11-19：首屏里的搜索框、分类徽章、打字机退休。
+* **2026-11-19（第二次）：那句定位搬到了顶部导航栏** —— 紧跟在站名
+  「growdu」后面。首页正文只剩统计条 + 学习路径，正好一屏。
+
 **这里断言的是行为契约**：
 
 1. 首页不再渲染那个 cover carousel；
 2. **统计条排在最上面**——读者第一眼看到的应该是「这个站有多少东西」
-   （580 篇 / 175w 字 / 2701 天 / 64 个分类），定位句压在它下面；
-3. 首屏不是全屏的（全屏 = 还是在卖风景）；
-4. 首屏带的是**站点定位**（读 ``config.home_hero_lead`` 那句短话，没配
-   就退回 ``config.description``），不是一句硬编码的口号；首屏也不再有一行
-   重复分类清单的小标签——那 9 个徽章已经列过一遍了；
-5. 首屏不再摆「三篇代表作」——那三张卡上的分类全是「源码主线」，
-   等于在首屏摆广告位。首屏要回答的是「这个站是什么、从哪儿开始」。
-
-**2026-11-19 再删两块**：首屏的站内搜索框和分类徽章（+ 打字机）。
-搜索框是顶部导航那个全文搜索的缩水版（只搜标题），徽章是导航栏「分类」
-入口的第二份清单 —— 两个都是同一个去处的第二个入口。删掉之后首屏只剩
-一句定位，统计条挪到了最上面。
+   （580 篇 / 175w 字 / 2701 天 / 64 个分类）；
+3. 定位句住在**导航栏**里，紧跟站名 —— 而且它是站名后面那一块，
+   不是导航栏下面又一行；
+4. 定位句读 ``config.home_hero_lead`` 那句短话，没配就退回
+   ``config.description``；它不再重复分类清单（那行小标签）；
+5. 首页正文里**不再有首屏那块** —— ``home-hero.ejs`` 整个删掉了，
+   留着就是留一份没人渲染的模板；
+6. 首页那两段**不带 ``data-aos``** —— AOS 的 fade-up 会把内容整体往下
+   挪 100px 再淡入，那 100px 让页面在动画期间比视口高出一截，
+   滚动条闪一下、内容跳一下。「正好一屏」的版面不要这种入场动画；
+7. ``patch-theme.py`` 不再往首屏注入分类徽章和打字机 —— 只删模板不删
+   注入，CI 构建一次它就又长回来。
 
 另外两条是给 ``patch-theme.py`` 的：它曾经拥有那段 hero CSS，也曾经往
 hero partial 里注入分类徽章和打字机。hero 换掉之后，这两样都得跟着走——
 CSS 要**从 my.css 里剥掉**（不能只是不再注入，留下来的死规则照样
-占着 100vh），注入也要跟着退休（只删模板不删注入，CI 构建一次它就又
-长回来）。
+占着 100vh），注入也要跟着退休。
 
 放在根级 ``tests/``，随 ``site-guard.yml`` 进 CI。
 """
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 
@@ -49,6 +55,8 @@ PARTIAL = LAYOUT / "_partial"
 INDEX_EJS = LAYOUT / "index.ejs"
 HOME_CONTENT = PARTIAL / "home-content.ejs"
 HOME_HERO = PARTIAL / "home-hero.ejs"
+HEADER = PARTIAL / "header.ejs"
+LEARNING_PATH = PARTIAL / "learning-path.ejs"
 MY_CSS = THEME / "source" / "css" / "my.css"
 TECH_CSS = THEME / "source" / "css" / "tech.css"
 LAYOUT_EJS = LAYOUT / "layout.ejs"
@@ -61,6 +69,15 @@ FEATURED_JSON = REPO / "data" / "featured.json"
 def _read(path: Path) -> str:
     assert path.is_file(), "找不到 {}".format(path)
     return path.read_text(encoding="utf-8")
+
+
+def _strip_comments(text: str) -> str:
+    """去掉 ``<%# ... %>`` 注释与 ``/* ... */`` CSS 注释。
+
+    注释里提到「定位句」「首屏」这些词不算真的用了它们。
+    """
+    text = re.sub(r"<%#.*?%>", "", text, flags=re.S)
+    return re.sub(r"/\*.*?\*/", "", text, flags=re.S)
 
 
 # --- 1. cover carousel 不再被渲染 ------------------------------------------
@@ -98,27 +115,29 @@ def test_the_cover_carousel_css_is_gone_from_the_patched_stylesheet():
 # --- 2. 统计条在最上面 -----------------------------------------------------
 
 
-def test_the_stats_banner_comes_first():
-    """``stats-banner`` 必须在 ``home-hero`` 之前。
+def test_the_stats_banner_is_the_first_thing_in_the_homepage_body():
+    """``stats-banner`` 必须在学习路径之前。
 
-    2026-11-19：统计条挪到了最上面。访客第一眼看到的应该是「这个站有多
-    少东西」（580 篇 / 175w 字 / 2701 天 / 64 个分类），定位句压在它下面。
+    2026-11-19：统计条从「定位句下面」挪到了「最上面」。访客第一眼看到的
+    应该是「这个站有多少东西」（580 篇 / 175w 字 / 2701 天 / 64 个分类）。
 
     顺序反过来的话，第一眼是那一句口号 —— 而口号不回答「这站有多少内容」，
     那是新访客最先想知道的事。
     """
     content = _read(HOME_CONTENT)
 
-    hero_at = content.find("home-hero")
     stats_at = content.find("stats-banner")
+    learning_at = content.find("partial('_partial/learning-path')")
 
-    assert hero_at != -1, "home-content.ejs 里没有渲染 home-hero"
     assert stats_at != -1, "home-content.ejs 里没有 stats-banner（结构变了？）"
-    assert stats_at < hero_at, "stats-banner 必须排在 home-hero 之前"
+    assert learning_at != -1, "home-content.ejs 里没有渲染学习路径"
+    assert stats_at < learning_at, (
+        "首页从上到下应该是：统计条 → 学习路径"
+    )
 
 
 def test_the_stats_banner_sits_in_its_own_section_at_the_top():
-    """统计条有自己的 ``<section class="home-stats">``，在 hero 之前。
+    """统计条有自己的 ``<section class="home-stats">``，在学习路径之前。
 
     它是 body 的直接子元素（flex 列的第一项），不是塞在别的容器里 ——
     「在最上面」得在 DOM 顺序上成立，才谈得上排在最上面。
@@ -129,70 +148,82 @@ def test_the_stats_banner_sits_in_its_own_section_at_the_top():
         "统计条没有自己的 section —— 它的位置就由外层容器决定了"
     )
     stats_at = content.find('<section class="home-stats"')
-    hero_at = content.find("<%- partial('_partial/home-hero') %>")
+    learning_at = content.find("partial('_partial/learning-path')")
 
     assert stats_at != -1, "home-content.ejs 里没有 home-stats 那一段"
-    assert hero_at != -1, "home-content.ejs 里没有渲染 home-hero"
-    assert stats_at < hero_at, "home-stats 必须在 home-hero 之前"
+    assert learning_at != -1, "home-content.ejs 里没有渲染学习路径"
+    assert stats_at < learning_at, "home-stats 必须在学习路径之前"
 
 
-# --- 3. 首屏不是全屏的 ------------------------------------------------------
+# --- 3. 定位句搬到导航栏里 ---------------------------------------------------
 
 
-def test_the_hero_is_not_full_screen():
-    """``home-hero`` 不能是 100vh。
+def test_the_hero_partial_is_gone():
+    """``home-hero.ejs`` 整个删掉了。
 
-    首屏全屏 = 所有内容还是在折线以下，只是把照片换了个内容。
-
-    注释先剥掉再扫：tech.css 里写着「别用 100vh」的那句说明本身含有这个
-    词，把它算成一条违规规则，就等于逼着文档不许提这件事。
+    定位句搬到了导航栏，首屏那块就没有内容了。留着一个没人渲染的
+    模板，下一个人会以为「改首屏要改它」——然后改了个没人用的东西。
     """
-    assert TECH_CSS.is_file(), "找不到 themes/matery/source/css/tech.css"
-
-    css = re.sub(r"/\*.*?\*/", "", _read(TECH_CSS), flags=re.S)
-
-    hero_blocks = re.findall(r"\.home-hero[^{]*\{[^}]*\}", css)
-    assert hero_blocks, "tech.css 里没有 .home-hero 的样式"
-
-    for block in hero_blocks:
-        assert "100vh" not in block, (
-            ".home-hero 不该是 100vh —— 那样内容还是全在折线以下：{}".format(block)
-        )
-
-
-# --- 4. 首屏带的是站点定位 ---------------------------------------------------
-
-
-def test_the_hero_carries_the_site_positioning_sentence():
-    """首屏的定位句读 ``config.description``。
-
-    ``config.description`` 现在是一句具体的技术描述（「技术学习实践，
-    涵盖数据库内核（PostgreSQL/openGauss）、分布式系统、高性能网络
-    （DPDK/VPP）等工程实践……」）。硬编码一句口号等于把它复制一份，
-    改配置时两处会对不上。
-    """
-    hero = _read(HOME_HERO)
-
-    assert "config.description" in hero, (
-        "home-hero.ejs 应当读 config.description 当定位句"
+    assert not HOME_HERO.exists(), (
+        "home-hero.ejs 还在 —— 定位句已经搬进导航栏了，这块没人渲染"
     )
+
+
+def test_the_homepage_body_no_longer_renders_the_hero():
+    """首页正文里不再渲染首屏那块。"""
+    content = _strip_comments(_read(HOME_CONTENT))
+
+    assert "home-hero" not in content, (
+        "home-content.ejs 里还在渲染 home-hero —— 定位句已经搬进导航栏了"
+    )
+
+
+def test_the_tagline_sits_right_after_the_site_title_in_the_navbar():
+    """定位句住在导航栏里，**紧跟在站名后面**。
+
+    2026-11-19：定位句从首屏搬到了导航栏。站名「growdu」后面跟一句
+    「让写代码成为一种习惯」——第一眼看到的是它，而不是要往下滚才看到。
+
+    守两件事：一是在导航栏模板里（不在首页正文里），二是排在
+    ``logo-span``（站名）**之后** —— 顺序反了就成了「口号 · 站名」。
+    """
+    header = _read(HEADER)
+
+    span_at = header.find('class="logo-span"')
+    tagline_at = header.find('class="logo-tagline"')
+
+    assert tagline_at != -1, (
+        "header.ejs 里没有 logo-tagline —— 定位句没搬到导航栏里"
+    )
+    assert span_at != -1, "header.ejs 里找不到站名（logo-span）"
+    assert span_at < tagline_at, (
+        "定位句要排在站名后面 —— 现在是「口号 · 站名」"
+    )
+
+
+def test_the_tagline_is_read_from_the_config():
+    """定位句读 ``config.home_hero_lead``，没配就退回 ``config.description``。
+
+    ``config.description`` 是给搜索引擎看的那句长描述；``home_hero_lead``
+    是给人看的那句短话。两处都不在模板里硬编码，改配置时不会两处对不上。
+    """
+    header = _read(HEADER)
+
+    assert re.search(
+        r"config\.home_hero_lead\s*\|\|\s*config\.description", header
+    ), "导航栏里的定位句应当是 config.home_hero_lead || config.description"
 
 
 def test_the_hero_lead_is_a_short_sentence_and_not_the_seo_description():
-    """首屏那句大标题是**短句**，不是 SEO 用的那句长描述。
+    """导航栏里那句是**短句**，不是 SEO 用的那句长描述。
 
     ``config.description`` 是给搜索引擎看的（九十多个字、顿号串），
-    当大标题读着像关键词堆砌，占掉四行。而那行 13px 的小标签
-    （「技术·学习·实践·人生·哲学」）列的又是下面 9 个徽章里的同一批东西。
+    挂在站名旁边读着像关键词堆砌。
 
     所以：短句单独放一个配置项 ``home_hero_lead``，长句留给 meta。
     """
-    hero = _read(HOME_HERO)
     config = _read(REPO / "_config.yml")
 
-    assert "config.home_hero_lead" in hero, (
-        "home-hero.ejs 应当读 config.home_hero_lead 当首屏大标题"
-    )
     assert "home_hero_lead:" in config, "_config.yml 里应当有 home_hero_lead 这一句"
 
     lead = re.search(r"^home_hero_lead:\s*(.+)$", config, re.M)
@@ -200,34 +231,24 @@ def test_the_hero_lead_is_a_short_sentence_and_not_the_seo_description():
     value = lead.group(1).strip().strip("'\"")
     assert value, "home_hero_lead 不能是空的"
     assert len(value) <= 24, (
-        "首屏大标题要是一句话，不是一段话：{}（{} 个字）".format(value, len(value))
+        "定位句要是一句话，不是一段话：{}（{} 个字）".format(value, len(value))
     )
 
 
-def test_the_hero_lead_falls_back_to_the_description_when_it_is_not_configured():
-    """没配 ``home_hero_lead`` 时退回 ``config.description``，那一格不空着。"""
-    hero = _read(HOME_HERO)
-
-    assert re.search(r"config\.home_hero_lead\s*\|\|\s*config\.description", hero), (
-        "home-hero.ejs 的 h1 应当是 config.home_hero_lead || config.description"
-    )
-
-
-def test_the_hero_does_not_repeat_the_category_list_as_an_eyebrow():
-    """首屏不再有一行「技术·学习·实践·人生·哲学」的小标签。
+def test_the_tagline_does_not_repeat_the_category_list():
+    """导航栏里不再有一行「技术·学习·实践·人生·哲学」的小标签。
 
     它列的就是下面那 9 个徽章里的同一批东西，留着是同一句话出现两遍。
-
-    注释里提到 ``config.subtitle`` 不算——那是解释「为什么删了它」，
-    所以先剥掉 ``<%# ... %>`` 注释块再查。
     """
-    hero = re.sub(r"<%#.*?%>", "", _read(HOME_HERO), flags=re.S)
+    header = _strip_comments(_read(HEADER))
 
-    assert "config.subtitle" not in hero, "首屏不该再有一行重复分类清单的小标签"
+    assert "config.subtitle" not in header, (
+        "导航栏里不该再有一行重复分类清单的小标签"
+    )
 
 
-def test_the_built_home_page_shows_the_short_lead():
-    """构建产物里，h1 是那句短句——不是 SEO 的长描述。
+def test_the_built_home_page_shows_the_short_lead_in_the_navbar():
+    """构建产物里，导航栏里是那句短句——不是 SEO 的长描述。
 
     对着 ``public/index.html`` 查，不是对着模板查：模板对了、产物没对，
     中间隔着的正是 sync-hexo 和 patch-theme 那两步。
@@ -239,45 +260,79 @@ def test_the_built_home_page_shows_the_short_lead():
         pytest.skip("还没构建（public/index.html 不存在）")
 
     html = built.read_text(encoding="utf-8")
-    m = re.search(r'<h1 class="home-hero__lead">(.*?)</h1>', html, re.S)
-    assert m, "首页的 h1 不见了"
+    m = re.search(r'<h1 class="logo-tagline">(.*?)</h1>', html, re.S)
+    assert m, "首页导航栏里的 h1 不见了"
     lead = m.group(1).strip()
 
     config = _read(REPO / "_config.yml")
     m2 = re.search(r"^home_hero_lead:\s*(.+)$", config, re.M)
     assert m2, "_config.yml 里没有 home_hero_lead"
     expect = m2.group(1).strip().strip("'\"")
-    assert lead == expect, "首页 h1 是「{}」，配置里写的是「{}」".format(lead, expect)
-    assert len(lead) <= 24, "首页 h1 太长了：{}".format(lead)
+    assert lead == expect, "导航栏里的是「{}」，配置里写的是「{}」".format(lead, expect)
+    assert len(lead) <= 24, "导航栏里那句太长了：{}".format(lead)
     assert "home-hero__eyebrow" not in html, "首页还有那行重复分类清单的小标签"
     assert "技术·学习·实践·人生·哲学" not in html, (
         "首页还在显示那行「技术·学习·实践·人生·哲学」"
     )
 
 
+def test_the_home_page_only_has_one_h1():
+    """首页只有一个 h1 —— 导航栏里那句定位。
+
+    首页原来那个 h1 在首屏那块里，首屏退休后就没有了。定位句搬到导航栏
+    之后，h1 跟着它走（首页的 h1 就是这句定位）；别的页面 h1 是文章标题，
+    那里用的是 span —— 两处不会打架。
+    """
+    built = REPO / "public" / "index.html"
+    if not built.is_file():
+        import pytest
+
+        pytest.skip("还没构建（public/index.html 不存在）")
+
+    html = built.read_text(encoding="utf-8")
+    h1s = re.findall(r"<h1\b[^>]*>(.*?)</h1>", html, re.S)
+
+    assert len(h1s) == 1, "首页有 {} 个 h1：{}".format(len(h1s), h1s)
+    assert "logo-tagline" in html, "首页的 h1 不是导航栏里那句定位"
+
+
+# --- 4. 首页那两段不要入场动画 ---------------------------------------------
+
+
+def test_the_homepage_sections_have_no_aos_animation():
+    """首页的那两段不带 ``data-aos``。
+
+    AOS 的 fade-up 是「先往下挪 100px，再淡入」：那 100px 让页面在动画
+    期间比视口高出一截（实测：innerHeight 813、scrollHeight 902），
+    滚动条会闪一下，内容还会跳一下；动画结束后才落回一屏。
+
+    首页是一个「正好一屏」的固定版面，不要这种入场动画。
+    """
+    for path in (HOME_CONTENT, LEARNING_PATH):
+        content = _strip_comments(_read(path))
+
+        assert "data-aos" not in content, (
+            "{} 又带上了 data-aos —— 那 100px 的入场位移会让页面在动画期间"
+            "比视口高，滚动条会闪一下".format(path.name)
+        )
+
+
 # --- 5. 首屏不再摆「三篇代表作」 --------------------------------------------
 
 
-def test_the_hero_has_no_curated_post_cards():
-    """首屏不再有三篇代表作。
+def test_the_theme_no_longer_reads_the_curated_list():
+    """主题里不再读 ``site.data.featured``。
 
-    2026-11-18：那三张卡上的分类全是「源码主线」——等于在首屏摆三个
-    「读源码」的广告位。首屏该回答的是「这个站是什么、从哪儿开始」，
-    那两件事已经由定位句 + 分类徽章 + 「从这里开始」回答了。
+    2026-11-18：三篇代表作整块删掉了（首屏要回答的是「这个站是什么」，
+    不是「作者推荐什么」）。
     """
-    hero = _read(HOME_HERO)
-
-    assert "home-hero__featured" not in hero, "首屏的三篇代表作还在"
-    assert "home-hero__card" not in hero, "首屏的代表作卡片还在"
-
-
-def test_the_hero_does_not_read_the_curated_list():
-    """首屏不再读 ``site.data.featured``。"""
-    hero = _read(HOME_HERO)
-
-    assert "site.data.featured" not in hero, (
-        "home-hero.ejs 不该再读 site.data.featured —— 策展清单已经退休"
-    )
+    for ejs in sorted(LAYOUT.rglob("*.ejs")):
+        text = _read(ejs)
+        assert "site.data.featured" not in text, (
+            "{} 还在读 site.data.featured —— 策展清单已经退休".format(
+                ejs.relative_to(REPO)
+            )
+        )
 
 
 def test_the_curated_list_file_is_gone():
@@ -332,9 +387,10 @@ def test_the_patcher_strips_the_hero_css_it_used_to_inject():
 
 
 def test_the_patcher_no_longer_injects_the_hero_badges():
-    """``patch-theme.py`` 不再往 ``home-hero.ejs`` 注入分类徽章 + 打字机。
+    """``patch-theme.py`` 不再往首页注入分类徽章 + 打字机。
 
-    2026-11-19：首屏只剩一句定位，徽章和打字机都退休了。
+    2026-11-19：首屏那块整个退休了（定位句搬进了导航栏），注入更没有
+    地方可去。
     """
     patcher = _read(PATCH_THEME)
 
@@ -347,23 +403,23 @@ def test_the_patcher_no_longer_injects_the_hero_badges():
     )
 
 
-def test_the_patcher_strips_the_hero_badges_it_used_to_inject():
-    """已经注入过的（老仓库 / 别人改回来）要能剥掉。
+def test_the_patcher_no_longer_touches_the_hero_partial():
+    """patcher 不再碰首屏那块模板。
 
-    跟「最新一期」那块一个道理：停止注入只管得住以后，**已经注进去的
-    那份**得有人负责拆。
+    模板整个删掉了，patcher 里那段「剥掉已注入的徽章」也就没有对象了 ——
+    留着只会让人以为首页还有那么一块。
     """
     patcher = _read(PATCH_THEME)
 
-    assert "Stripped hero badges" in patcher or "home-hero__badges" in patcher, (
-        "patch-theme.py 没有剥掉已注入的徽章块 —— 老仓库构建一次它就回来了"
+    assert 'os.path.join(theme_dir, "layout", "_partial", "home-hero.ejs")' not in patcher, (
+        "patch-theme.py 里还在操作首屏那块模板 —— 那块已经退休"
     )
 
 
 # --- 7. 首屏的搜索框与分类徽章退休了 ---------------------------------------
 
 
-def test_the_hero_has_no_search_box():
+def test_the_homepage_has_no_search_box():
     """首屏不再有那个只搜标题的搜索框。
 
     顶部导航里本来就有全文搜索（``_partial/search.ejs``）。首屏再来一个
@@ -371,39 +427,60 @@ def test_the_hero_has_no_search_box():
     「按标题搜索 · 全文搜索用顶部导航」，等于在首屏提醒读者「真正的
     搜索在别处」。
     """
-    hero = re.sub(r"<%#.*?%>", "", _read(HOME_HERO), flags=re.S)
+    for path in (HOME_CONTENT, HEADER):
+        text = _strip_comments(_read(path))
 
-    assert "homeSearch" not in hero, "首屏的搜索框还在"
-    assert "home-hero__search" not in hero, "首屏的搜索框还在"
-    assert "search-lite.json" not in hero, "首屏不该再抓精简索引"
+        assert "homeSearch" not in text, "{} 里还有首屏那个搜索框".format(path.name)
+        assert "home-hero__search" not in text, (
+            "{} 里还有首屏那个搜索框".format(path.name)
+        )
 
 
-def test_the_hero_has_no_category_badges():
+def test_the_homepage_has_no_category_badges():
     """首屏不再有那一排分类徽章。
 
-    导航栏里已经有「分类」入口，徽章是同一份清单的第二份。而且它们把
-    首屏从 50px 撑到 220px —— 八张赛道卡只好挤在剩下的空间里。
+    导航栏里已经有「分类」入口，徽章是同一份清单的第二份。
     """
-    hero = re.sub(r"<%#.*?%>", "", _read(HOME_HERO), flags=re.S)
+    for path in (HOME_CONTENT, HEADER):
+        text = _strip_comments(_read(path))
 
-    assert "hero-tech" not in hero, "首屏的分类徽章还在"
-    assert "hero-badge" not in hero, "首屏的分类徽章还在"
-    assert "hero-typing" not in hero, "首屏的打字机还在"
-    assert "home-hero__badges" not in hero, "首屏的徽章容器还在"
+        assert "hero-tech" not in text, "{} 里还有分类徽章".format(path.name)
+        assert "hero-badge" not in text, "{} 里还有分类徽章".format(path.name)
+        assert "hero-typing" not in text, "{} 里还有打字机".format(path.name)
+        assert "home-hero__badges" not in text, "{} 里还有徽章容器".format(path.name)
 
 
 def test_the_dead_hero_styles_are_gone():
-    """徽章 / 打字机 / 搜索框的样式都退休了。
+    """徽章 / 打字机 / 搜索框 / 首屏本身的样式都退休了。
 
     死规则留着，下一个人会以为首页还有那么一块 —— 或者更糟：改首屏
     样式时去改一段没人用的规则，改了半天看不出效果。
     """
-    css = re.sub(r"/\*.*?\*/", "", _read(TECH_CSS), flags=re.S)
-    my_css = re.sub(r"/\*.*?\*/", "", _read(MY_CSS), flags=re.S)
+    css = _strip_comments(_read(TECH_CSS))
+    my_css = _strip_comments(_read(MY_CSS))
 
     for dead in ("home-hero__search", "hero-tech", "hero-badge", "hero-typing"):
         assert dead not in css, "tech.css 里还留着 {} 的样式".format(dead)
         assert dead not in my_css, "my.css 里还留着 {} 的样式".format(dead)
+
+    assert ".home-hero" not in css, (
+        "tech.css 里还留着 .home-hero 的样式 —— 那块已经退休"
+    )
+    assert ".home-hero" not in my_css, (
+        "my.css 里还留着 .home-hero 的样式 —— 那块已经退休"
+    )
+
+
+def test_the_tagline_has_a_style_of_its_own():
+    """导航栏里那句定位有自己的样式。
+
+    新样式只放 ``tech.css``（docs/blog/重构方案.md §5.4）—— 而且得
+    真的有：定位句是 ``<h1>``（首页），matery 的 h1 是 4.2rem，不重置
+    的话它会把这个导航栏撑成两行。
+    """
+    css = _strip_comments(_read(TECH_CSS))
+
+    assert ".logo-tagline" in css, "tech.css 里没有 .logo-tagline 的样式"
 
 
 def test_the_hero_stylesheet_is_linked_from_the_layout():

@@ -5,9 +5,12 @@ author: growdu
 language: zh-CN
 timezone:
 description: 技术学习实践，涵盖数据库内核（PostgreSQL/openGauss）、分布式系统、高性能网络（DPDK/VPP）等工程实践，同时记录工具评测、视频创作、培训分享、股票与金融、哲学思辨、人生感悟与社会观察。
-# 首页首屏那句大标题。跟上面的 description 分工：
+# 那句定位话。跟上面的 description 分工：
 #   description —— 给搜索引擎看的那句长描述（meta description、分享卡片）；
-#   home_hero_lead —— 给人看的那句短话（首屏 h1）。
+#   home_hero_lead —— 给人看的那句短话。
+# 2026-11-19：它从首页首屏搬到了顶部导航栏里，紧跟在站名「growdu」
+# 后面（首页上是 h1，别的页面是 span）—— 首页正文因此只剩统计条 +
+# 学习路径，正好一屏。
 # 首屏那行 13px 的小标签（config.subtitle「技术·学习·实践·人生·哲学」）已经
 # 去掉了：它列的就是下面 9 个徽章里的同一批东西。
 home_hero_lead: 让写代码成为一种习惯

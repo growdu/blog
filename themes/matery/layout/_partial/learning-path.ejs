@@ -12,13 +12,18 @@
   数据文件是构建产物。没跑生成器（比如本地只跑 `hexo generate`）时
   `site.data.learning` 是空的，这时整个面板不渲染，
   免得出现一个点进去什么都没有的入口。
+
+  **不带 data-aos（2026-11-19）**
+  面板只出现在首页上，而首页是「正好一屏」的固定版面：AOS 的 fade-up
+  会把面板整体往下挪 100px 再淡入 —— 那 100px 让页面在动画期间比视口
+  高出一截，滚动条闪一下、内容跳一下。一屏的版面不要这种入场动画。
 */%>
 <%
   var _lpData = (site.data && site.data.learning) || null;
   var _lpTracks = (_lpData && _lpData.tracks) || [];
 %>
 <% if (is_home() && page.current === 1 && _lpTracks.length) { %>
-<section class="learning-path" data-aos="fade-up">
+<section class="learning-path">
   <div class="container">
     <%# 标题行：左边标题 + 副标题，右边「看完整的学习地图」。
         2026-11-18：这条链接原来单独占一行（32px），首页要做成正好一屏，

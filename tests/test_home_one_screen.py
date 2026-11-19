@@ -1,17 +1,20 @@
-"""首页要一屏放下：统计条 + 定位句 + 学习路径。
+"""首页要一屏放下：统计条 + 学习路径。
 
 **为什么**：2026-11-18 之前，首页是「首屏 + 统计条 + 最新一期 + 学习路径
 + 18 张文章卡片」—— 要滚两屏半才到底。那几块（文章区、最新一期、代表作）
 删掉之后，首页只剩三段，正好做得成一屏。
 
-**2026-11-19 再删两块**：首屏的搜索框和分类徽章（+ 打字机）也没了，
-只剩一句定位；统计条挪到了最上面。
+**2026-11-19 再删两块**：首屏的搜索框和分类徽章（+ 打字机）也没了；
+统计条挪到了最上面。
+
+**2026-11-19（第三次）**：那句定位（.home-hero）也搬进了顶部导航栏 ——
+紧跟在站名「growdu」后面。于是首页正文只剩两段：统计条 + 学习路径。
 
 **怎么做的**：``layout.ejs`` 给首页的 ``<body>`` 加一个 ``home-page`` 类，
 ``tech.css`` 挂在它上面：
 
 * ``body.home-page`` 变成一个高度等于视口的 flex 列；
-* 统计条与定位句内容固定（各自压扁）；
+* 统计条内容固定（压扁）；
 * 学习路径吃掉剩下的空间，卡片网格跟着长高铺满。
 
 **这里守的是六件事**：
@@ -28,8 +31,8 @@
 5. 首屏那块「从这里开始」已经退休 —— 它指的是 ``/learning/``，
    而首页下方就是学习路径面板本身，同一个去处摆两遍没有意义；
    面板的入口挪进了标题行（「看完整的学习地图」），不再单独占一行；
-6. 统计条在 flex 列里排在**最上面**（``flex: 0 0 auto``），定位句在它
-   下面，学习路径在最后 —— 顺序就是读者从上往下看到的顺序。
+6. 统计条在 flex 列里排在**最上面**（``flex: 0 0 auto``），学习路径在
+   最后 —— 顺序就是读者从上往下看到的顺序。
 """
 
 from __future__ import annotations
@@ -41,7 +44,6 @@ REPO = Path(__file__).resolve().parent.parent
 THEME = REPO / "themes" / "matery"
 LAYOUT_EJS = THEME / "layout" / "layout.ejs"
 HOME_CONTENT = THEME / "layout" / "_partial" / "home-content.ejs"
-HOME_HERO = THEME / "layout" / "_partial" / "home-hero.ejs"
 LEARNING_PATH = THEME / "layout" / "_partial" / "learning-path.ejs"
 TECH_CSS = THEME / "source" / "css" / "tech.css"
 MY_CSS = THEME / "source" / "css" / "my.css"
@@ -122,7 +124,7 @@ def test_the_home_page_class_is_only_for_the_first_home_page():
 
 
 def test_the_homepage_fills_the_viewport_with_the_learning_path():
-    """学习路径要吃掉首屏和统计条以外的空间。
+    """学习路径要吃掉统计条以外的空间。
 
     三条缺一不可：``body`` 定高（flex 的收缩要有一个确定的高度）、
     学习路径 ``flex: 1``、网格的行高跟着长高。
@@ -167,7 +169,7 @@ def test_the_fill_layout_is_scoped_to_wide_viewports():
 def test_the_learning_path_scrolls_itself_instead_of_the_page():
     """空间不够时滚的是面板自己，不是整页。
 
-    整页滚动会把首屏和统计条一起推走 —— 读者想回头看一眼那四个数字，
+    整页滚动会把统计条一起推走 —— 读者想回头看一眼那四个数字，
     得一路滚回顶部。
     """
     block = _home_page_block(_read(TECH_CSS))
@@ -180,8 +182,8 @@ def test_the_learning_path_scrolls_itself_instead_of_the_page():
 def test_the_layout_adapts_to_short_and_tall_screens():
     """屏幕高矮不一样，首页得给两种不一样的排版。
 
-    矮屏（老笔记本、开着开发者工具的浏览器）：先压首屏——打字机那行是
-    装饰性的，先让；再把卡片里那行简介收起来（整句在赛道页上有）。
+    矮屏（老笔记本、开着开发者工具的浏览器）：把卡片里那行简介收起来
+    （整句在赛道页上有）。
     统计条和学习路径本身不动，那是首页要看的东西。
 
     高屏（1920×1080 这类）：卡片被拉高，简介那行放开成两行——地方多，
@@ -303,14 +305,12 @@ def test_the_stats_banner_is_the_first_thing_in_the_flex_column():
     content = _read(HOME_CONTENT)
 
     stats_at = content.find("home-stats")
-    hero_at = content.find("partial('_partial/home-hero')")
     learning_at = content.find("partial('_partial/learning-path')")
 
     assert stats_at != -1, "home-content.ejs 里没有 home-stats"
-    assert hero_at != -1, "home-content.ejs 里没有渲染 home-hero"
     assert learning_at != -1, "home-content.ejs 里没有渲染学习路径"
-    assert stats_at < hero_at < learning_at, (
-        "首页从上到下应该是：统计条 → 定位句 → 学习路径"
+    assert stats_at < learning_at, (
+        "首页从上到下应该是：统计条 → 学习路径"
     )
 
     block = _home_page_block(_read(TECH_CSS))
@@ -323,15 +323,15 @@ def test_the_stats_banner_is_the_first_thing_in_the_flex_column():
 
 
 def test_the_start_cta_is_gone_from_the_hero():
-    """首屏不再有「从这里开始」按钮。
+    """首页不再有「从这里开始」按钮。
 
     它指的是 ``/learning/``，而首页下方就是学习路径面板本身——同一个去处
     在首屏摆一遍、下面再摆一遍没有意义，而且那 47px 是从学习路径那里
     借来的（首页要做成正好一屏）。
     """
-    hero = _read(HOME_HERO)
+    content = _read(HOME_CONTENT)
 
-    assert "home-hero__start" not in hero, (
+    assert "home-hero__start" not in content, (
         "首屏那块「从这里开始」又回来了 —— 入口在下面的学习路径面板里"
     )
     for css_path in (TECH_CSS, MY_CSS):

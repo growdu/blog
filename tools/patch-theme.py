@@ -714,27 +714,13 @@ else:
 #   * 打字机跟徽章是一块，徽章走了它也走；
 #   * 首屏搜索框也一并退休了 —— 顶部导航里本来就有全文搜索。
 #
-# 这一段原来负责往 home-hero.ejs 里注入那两块。**必须一起退休**：只删
-# 模板不删注入，CI 构建一次它就又长回来 —— 本地看着删干净了，线上又
-# 长出来。所以这里改成「发现就剥掉」。
-HERO_BADGES_BLOCK = re.compile(
-    r"\s*<div class=\"home-hero__badges\">.*?</script>\s*</div>", re.S
-)
-
-hero_path = os.path.join(theme_dir, "layout", "_partial", "home-hero.ejs")
-if os.path.isfile(hero_path):
-    with open(hero_path, encoding="utf-8") as f:
-        content = f.read()
-
-    if "hero-tech" in content or "home-hero__badges" in content:
-        content = HERO_BADGES_BLOCK.sub("", content)
-        with open(hero_path, "w", encoding="utf-8") as f:
-            f.write(content)
-        print("Stripped hero badges + typing from home-hero.ejs")
-    else:
-        print("hero badges + typing already gone from home-hero.ejs")
-else:
-    print("WARNING: home-hero.ejs not found — 首页首屏没有徽章和打字机")
+# **2026-11-19（第二次）：整块首屏退休了。** 那句定位搬到了顶部导航栏
+# （紧跟在站名「growdu」后面），home-hero.ejs 本身删掉了。
+#
+# 于是这里原来那段「注入徽章 + 打字机」和它的配套剥除逻辑一起退休：
+# 模板都不在了，注入的东西没有地方可去 —— 留着只会让人以为首页还有
+# 那么一块。（只删模板不删注入的老规矩，在「模板整个消失」之后不再
+# 适用：没有 partial 就没有渲染点，注入不出来。）
 
 # 8.3 副页（about / categories / archives…）的 cover 上仍然显示 motto 和
 #     副标题 —— 它们读 bg-cover-content.ejs，不受首屏换版影响。

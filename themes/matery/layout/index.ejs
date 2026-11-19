@@ -1,9 +1,10 @@
 <%#
   首页不再渲染主题自带的 index-cover（全屏照片 carousel）。
-  首屏换成 _partial/home-hero：一句定位。
   （tests/test_home_first_screen.py 守着这一条）
 
-  统计条、定位句、学习路径都由 home-content.ejs 渲染，这里只留内容面板。
+  首页正文只有两段：统计条 + 学习路径，都由 home-content.ejs 渲染，
+  这里只留内容面板。那句定位（.home-hero）在 2026-11-19 搬进了顶部
+  导航栏 —— 紧跟在站名「growdu」后面，见 _partial/header.ejs。
 %>
 <%- partial('_partial/home-content') %>
 <%- partial('_partial/bg-video') %>
