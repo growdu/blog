@@ -1,5 +1,5 @@
 <%/*
-  Homepage content panel —— 首屏之下的那一摞。
+  Homepage content panel —— 首页正文（统计条 + 定位句 + 学习路径）。
 
   2026-11-18：这里原来还有一块「文章区」——三个 tab（最新发布 / 编辑推荐 /
   近期热门），每格 6 张卡片，DOM 里一次躺着 18 张卡。首页因此又长又乱：
@@ -13,16 +13,20 @@
   该回答的是「这个站是什么、从哪儿开始」，不是「作者最近做了什么」。
   期号本身没消失：「播客」页和文章页的期号区块还在。
 
-  现在这一页剩下两段：
-  0. Home hero     (定位句 + 搜索 + 分类徽章 + 从这里开始) —— 必须在统计条之前
-  1. Stats banner  (4 cards: 文章数 / 字数 / 站龄 / 分类数)
+  **2026-11-19**：统计条挪到了**最上面**。首页第一眼看到的应该是
+  「这个站有多少东西」（580 篇 / 175w 字 / 2701 天 / 64 个分类），
+  定位句压在它下面，接着就是八条赛道 —— 读者不用往下翻就知道这站
+  是什么规模、从哪儿开始读。
+
+  现在这一页剩下三段：
+  0. Stats banner  (4 cards: 文章数 / 字数 / 站龄 / 分类数) —— 在最上面
+  1. Home hero     (定位句) —— 统计条下面
   2. 学习路径
 
   Render only on the very first page of the home paginator so the
   /page/2/ /page/3/ pseudo-pages stay clean.
 */%>
 <% if (is_home() && page.current === 1) { %>
-<%- partial('_partial/home-hero') %>
 <%
   // Compute site stats from site.posts (no comment count available at build time).
   var postCount = site.posts.length;
@@ -48,9 +52,9 @@
   });
 %>
 
-<section class="home-content" data-aos="fade-up">
+<%# ============== Stats banner（在最上面） ============== %>
+<section class="home-stats" data-aos="fade-up">
   <div class="container">
-    <%# ============== Stats banner ============== %>
     <div class="stats-banner">
       <a class="stat-card" href="<%- url_for('/archives/') %>">
         <div class="stat-num"><%= postCount %></div>
@@ -69,7 +73,13 @@
         <div class="stat-label">个分类</div>
       </a>
     </div>
+  </div>
+</section>
 
+<%- partial('_partial/home-hero') %>
+
+<section class="home-content" data-aos="fade-up">
+  <div class="container">
     <%- partial('_partial/learning-path') %>
   </div>
 </section>

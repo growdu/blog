@@ -1,169 +1,30 @@
 <%#
-  首页首屏 —— 一句定位 + 搜索 + 分类徽章。
+  首页首屏 —— 只剩一句定位。
 
   为什么不再用主题自带的 `index-cover`：那是一张全屏照片 carousel，
   把统计条、学习路径和文章列表全推到折线以下，第一眼只看到一张风景照。
   （tests/test_home_first_screen.py 守着这一条）
 
-  三块内容：
-    1. 一句定位 —— 读 `config.home_hero_lead`（站点配置里那句给人看的短话），
-       没配就退回 `config.description`。两处都不在模板里硬编码，改配置时
-       不会两处对不上。
-       注意跟 `config.description` 分工：description 是给搜索引擎看的那句
-       长描述（meta、分享卡片），当大标题读着像关键词堆砌，占四行。
-       原来这上面还有一行 13px 的小标签（`config.subtitle`
-       「技术·学习·实践·人生·哲学」），已经去掉：它列的就是下面那 9 个
-       徽章里的同一批东西。
-    2. 站内搜索框。
-    3. 分类徽章 + 打字机 —— 由 tools/patch-theme.py 注入到下面的徽章占位处，
-       徽章的链接要从 `site.categories` 反查真实分类路径，不能手写。
+  **2026-11-19**：这块原来有三样东西，现在都退休了：
+    1. 站内搜索框 —— 顶部导航里本来就有全文搜索，首屏再来一个只搜标题的
+       框，是同一个去处的第二个入口；它还带着一句「按标题搜索 · 全文搜索
+       用顶部导航」，等于在首屏提醒读者「真正的搜索在别处」。
+    2. 分类徽章（PostgreSQL / DPDK / VPP …）—— 导航栏里已经有「分类」，
+       徽章是同一份清单的第二份；而且它们把首屏撑到 220px，八张赛道卡
+       只好挤在剩下的空间里。
+    3. 打字机 —— 它跟徽章是一块，徽章走了它也走。
 
-  **2026-11-18**：原来这里还有第三块「三篇代表作」（清单在
-  `data/featured.json`），整块删掉了。三张卡上的分类全叫「源码主线」，
-  等于在首屏摆三个「读源码」的广告位；而且代表作是作者的私货，
-  读者更需要的「这个站有什么、从哪儿开始」已经在下面两块里了。
-  `data/featured.json` 随之退休，`sync-hexo.py` 里那份拷贝也删了。
+  随之退休的还有 tools/patch-theme.py 里往这儿注入徽章 + 打字机的那段：
+  只删模板不删注入，CI 构建一次它就又长回来。
+
+  现在这一块只剩一句定位 —— 读 `config.home_hero_lead`（站点配置里那句
+  给人看的短话），没配就退回 `config.description`。两处都不在模板里硬编码，
+  改配置时不会两处对不上。
+  注意跟 `config.description` 分工：description 是给搜索引擎看的那句
+  长描述（meta、分享卡片），当大标题读着像关键词堆砌，占四行。
 %>
 <section class="home-hero" data-aos="fade-up">
   <div class="container">
     <h1 class="home-hero__lead"><%= config.home_hero_lead || config.description %></h1>
-
-    <div class="home-hero__search">
-      <label class="home-hero__search-label" for="homeSearch">站内搜索</label>
-      <input type="search" id="homeSearch" class="home-hero__search-input"
-             data-index-url="<%- url_for('/search-lite.json') %>"
-             placeholder="按标题或分类搜索…" autocomplete="off" spellcheck="false" />
-      <ul class="home-hero__search-results" id="homeSearchResults" hidden></ul>
-      <p class="home-hero__search-hint">按标题搜索 · 全文搜索用顶部导航</p>
-    </div>
-
-    <%# 「从这里开始」原来在这里 —— 2026-11-18 删掉了。
-        首页要做成正好一屏，这一块（47px）省下来给下面的学习路径；而它指
-        的 /learning/ 在首页下方就是学习路径面板本身（八张赛道卡 + 右上角
-        「看完整的学习地图」），同一个去处摆两遍没有意义。 %>
-    <div class="home-hero__badges"><%
-  var heroBadges = [
-    { label: 'PostgreSQL',       icon: 'fas fa-database',   cat: 'PostgreSQL' },
-    { label: 'openGauss',        icon: 'fas fa-database',   cat: 'openGauss' },
-    { label: '分布式系统',        icon: 'fas fa-sitemap',    cat: '集群' },
-    { label: 'DPDK',             icon: 'fas fa-bolt',       cat: 'DPDK' },
-    { label: 'VPP',              icon: 'fas fa-bolt',       cat: 'VPP' },
-    { label: '股票 · 金融',       icon: 'fas fa-chart-line', cat: '股票与金融' },
-    { label: '工具 · 视频 · 培训', icon: 'fas fa-tools',     cat: '工具' },
-    { label: '哲学 · 人生',       icon: 'fas fa-yin-yang',   cat: '人生' },
-    { label: '社会观察',          icon: 'fas fa-city',       cat: '社会' }
-  ];
-  var heroCatIndex = {};
-  (site.categories || []).each(function (c) {
-    var cur = heroCatIndex[c.name];
-    // 同名分类可能既是顶级分类又是别的分类的子分类（Hexo 会把 front matter
-    // 里的分类列表当成一条层级链），优先取顶级的那一个。
-    if (!cur || (cur.parent && !c.parent)) heroCatIndex[c.name] = c;
-  });
-%>
-<div class="hero-tech">
-    <% heroBadges.forEach(function (b) {
-         var c = heroCatIndex[b.cat];
-         if (!c) {
-           console.warn('[hero-tech] 分类不存在，徽章已跳过: ' + b.cat);
-           return;
-         }
-    %>
-    <a class="hero-badge" href="<%- url_for(c.path) %>" aria-label="查看<%= b.label %>分类文章"><i class="<%= b.icon %>"></i> <%= b.label %></a>
-    <% }); %>
-</div>
-<div class="hero-typing" id="typing-text"></div>
-<script>
-(function(){
-  var texts=['PostgreSQL / openGauss 内核', 'Raft / DCF 分布式一致性', '逻辑解码与 DDL Replay', '数据库性能调优', 'eBPF / DPDK 数据面', '工具 / 视频 / 培训', '股票与金融观察', '哲学思辨 · 人生感悟', '社会观察 · 城市记录'];
-  var idx=0,ci=0,del=false;
-  function type(){
-    var el=document.getElementById('typing-text');
-    if(!el)return;
-    var t=texts[idx];
-    if(del){ci--;el.textContent=t.substring(0,ci);if(ci===0){del=false;idx=(idx+1)%texts.length;setTimeout(type,500);return;}setTimeout(type,40);}
-    else{ci++;el.textContent=t.substring(0,ci);if(ci===t.length){del=true;setTimeout(type,2000);return;}setTimeout(type,90);}
-  }
-  setTimeout(type,1000);
-})();
-</script>
-</div>
   </div>
 </section>
-
-<%# 首屏搜索：抓 /search-lite.json（78KB 的精简索引），不是 search.json
-    （13.5MB 全文索引，第一次击键就是 4.2MB 的下载）。
-
-    只匹配标题和分类——首屏不是全文搜索的地方，全文搜索在顶部导航里。
-    tests/test_home_search_box.py 守着这几条。 %>
-<!-- HOME-SEARCH -->
-<script>
-(function(){
-  var input = document.getElementById('homeSearch');
-  var list = document.getElementById('homeSearchResults');
-  if (!input || !list) return;
-
-  var index = null;
-  var timer = null;
-  var MAX = 8;
-
-  var esc = function (s) {
-    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
-      return {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c];
-    });
-  };
-
-  // 索引的地址由**模板**给出（带挂载点前缀）。
-  //
-  // 写死 '/search-lite.json' 的话，镜像站（挂在 /blog/ 下）会 404——
-  // 而下面那个 .catch() 会把 404 吞成一个空索引，用户看到的是
-  // 「没有匹配的文章」：一个坏掉的控件，看起来像「搜不到」。
-  var INDEX_URL = input.getAttribute('data-index-url') || '/search-lite.json';
-
-  var loadIndex = function () {
-    if (index) return Promise.resolve(index);
-    return fetch(INDEX_URL)
-      .then(function (r) { return r.json(); })
-      .then(function (d) { index = Array.isArray(d) ? d : []; return index; })
-      .catch(function () { index = []; return index; });
-  };
-
-  var render = function (q) {
-    if (!q) { list.innerHTML = ''; list.hidden = true; return; }
-    loadIndex().then(function (posts) {
-      var needle = q.toLowerCase();
-      var hits = posts.filter(function (p) {
-        var t = String(p.title || '').toLowerCase();
-        var c = String(p.cat || '').toLowerCase();
-        return t.indexOf(needle) >= 0 || c.indexOf(needle) >= 0;
-      }).slice(0, MAX);
-      if (!hits.length) {
-        list.innerHTML = '<li class="home-hero__search-empty">没有匹配的文章</li>';
-        list.hidden = false;
-        return;
-      }
-      list.innerHTML = hits.map(function (p) {
-        return '<li><a href="' + esc(p.url) + '">' +
-          '<span class="home-hero__search-title">' + esc(p.title) + '</span>' +
-          '<span class="home-hero__search-cat">' + esc(p.cat) + '</span>' +
-          '</a></li>';
-      }).join('');
-      list.hidden = false;
-    });
-  };
-
-  input.addEventListener('input', function () {
-    clearTimeout(timer);
-    var q = (input.value || '').trim();
-    // 200ms 防抖：每敲一个字母都过滤一遍 527 条，是白花的力气。
-    timer = setTimeout(function () { render(q); }, 200);
-  });
-
-  input.addEventListener('keydown', function (e) {
-    if (e.key !== 'Enter') return;
-    e.preventDefault();
-    var first = list.querySelector('a');
-    if (first) window.location.href = first.getAttribute('href');
-  });
-})();
-</script>

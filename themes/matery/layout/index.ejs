@@ -1,9 +1,9 @@
 <%#
   首页不再渲染主题自带的 index-cover（全屏照片 carousel）。
-  首屏换成 _partial/home-hero：一句定位 + 三篇代表作。
+  首屏换成 _partial/home-hero：一句定位。
   （tests/test_home_first_screen.py 守着这一条）
 
-  home-hero 由 home-content.ejs 渲染（它在统计条之前），这里只留内容面板。
+  统计条、定位句、学习路径都由 home-content.ejs 渲染，这里只留内容面板。
 %>
 <%- partial('_partial/home-content') %>
 <%- partial('_partial/bg-video') %>

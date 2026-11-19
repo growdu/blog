@@ -1,28 +1,35 @@
-"""首页要一屏放下：首屏 + 统计条 + 学习路径。
+"""首页要一屏放下：统计条 + 定位句 + 学习路径。
 
 **为什么**：2026-11-18 之前，首页是「首屏 + 统计条 + 最新一期 + 学习路径
 + 18 张文章卡片」—— 要滚两屏半才到底。那几块（文章区、最新一期、代表作）
 删掉之后，首页只剩三段，正好做得成一屏。
 
+**2026-11-19 再删两块**：首屏的搜索框和分类徽章（+ 打字机）也没了，
+只剩一句定位；统计条挪到了最上面。
+
 **怎么做的**：``layout.ejs`` 给首页的 ``<body>`` 加一个 ``home-page`` 类，
 ``tech.css`` 挂在它上面：
 
 * ``body.home-page`` 变成一个高度等于视口的 flex 列；
-* 首屏与统计条内容固定（各自压扁）；
+* 统计条与定位句内容固定（各自压扁）；
 * 学习路径吃掉剩下的空间，卡片网格跟着长高铺满。
 
-**这里守的是五件事**：
+**这里守的是六件事**：
 
 1. ``home-page`` 只加在**首页第一页**上 —— 别的页面带了这个类，
    文章页会被压成一屏（每篇文章只剩一屏高）；
 2. 这套布局是**自适应**的：窄屏（< 1100px）整段不生效，回到正常文档流；
    空间真的不够时滚的是学习路径面板自己，不是整页；
-3. 学习路径的卡片在首页只列**第一个阶段**，后面折成「+N 个阶段」——
-   八张卡各列全部阶段的话卡片高度翻三倍，一屏装不下；
+3. 学习路径的卡片按视口高度换排版：视口 900px 以上，卡片里竖着列出
+   **全部阶段**（卡片被拉高到 280px，只放一个角标的话中间空一大块，看着
+   像漏了内容）；视口不够高就把 4 列换成 2 列 × 4 行，卡片变宽变矮，
+   这时只列**第一个阶段**，后面折成「+N 个阶段」；
 4. 统计条和学习路径都还在首页上（这是用户点名要留的两块）；
 5. 首屏那块「从这里开始」已经退休 —— 它指的是 ``/learning/``，
    而首页下方就是学习路径面板本身，同一个去处摆两遍没有意义；
-   面板的入口挪进了标题行（「看完整的学习地图」），不再单独占一行。
+   面板的入口挪进了标题行（「看完整的学习地图」），不再单独占一行；
+6. 统计条在 flex 列里排在**最上面**（``flex: 0 0 auto``），定位句在它
+   下面，学习路径在最后 —— 顺序就是读者从上往下看到的顺序。
 """
 
 from __future__ import annotations
@@ -132,6 +139,10 @@ def test_the_homepage_fills_the_viewport_with_the_learning_path():
     assert "grid-auto-rows" in block, (
         "卡片网格没有 grid-auto-rows —— 卡片不会跟着长高铺满"
     )
+    assert re.search(r"grid-auto-rows:\s*minmax\(min-content,\s*1fr\)", block), (
+        "卡片行高不是 minmax(min-content, 1fr) —— 面板下方会空出一大块，"
+        "首页看着像少了一半内容"
+    )
 
 
 def test_the_fill_layout_is_scoped_to_wide_viewports():
@@ -209,14 +220,67 @@ def test_the_track_card_folds_the_stages_into_a_plus_n_chip():
     )
 
 
-def test_the_homepage_hides_the_other_stages():
-    """首页只留第一个阶段（和「+N 个阶段」那个角标）。"""
+def test_the_homepage_folds_the_stages_when_the_screen_is_short():
+    """卡片不够高的时候，首页只留第一个阶段（和「+N 个阶段」那个角标）。
+
+    竖着列出全部阶段是高屏那一档的事（见下一条测试）：卡片只有 90px 高
+    的时候，八个阶段列不下。
+    """
     block = _home_page_block(_read(TECH_CSS))
 
     assert re.search(
         r"\.lane-card__stage:not\(:first-child\):not\(\.lane-card__stage--rest\)",
         block,
     ), "首页没有把第一个以外的阶段藏起来"
+
+
+def test_tall_screens_list_every_stage_instead_of_the_plus_n_chip():
+    """高屏（视口 900px 以上）：卡片里竖着列出全部阶段。
+
+    卡片被拉高到 280px，里面只有标题、简介和一个角标的话，卡片中间空一
+    大块 —— 看着像漏了内容。列出阶段，空出来的地方就是阶段本身。
+
+    守三件事：折叠的阶段在高屏被放出来、「+N 个阶段」角标收起来（一个阶段
+    都没折，角标是多余的）、阶段竖着排（横着排的话卡片中间还是空的）。
+    """
+    css = _strip_css_comments(_read(TECH_CSS))
+    tall = [
+        block
+        for query, block in _media_blocks(css)
+        if "body.home-page" in block and "min-height: 900px" in query
+    ]
+    assert tall, "没有针对高屏（视口 900px 以上）的排版"
+    block = tall[0]
+
+    assert re.search(
+        r"\.lane-card__stages\s+\.lane-card__stage:not\(\.lane-card__stage--rest\)",
+        block,
+    ), "高屏那一档没有把折叠的阶段放出来"
+    assert re.search(r"\.lane-card__stage--rest\s*\{[^}]*display:\s*none", block), (
+        "高屏那一档还留着「+N 个阶段」角标 —— 一个阶段都没折，角标是多余的"
+    )
+    assert re.search(
+        r"\.lane-card__stages\s*\{[^}]*flex-direction:\s*column", block, re.S
+    ), "高屏那一档的阶段没有竖着排 —— 卡片中间还是空的"
+
+
+def test_short_screens_lay_the_cards_out_in_two_columns():
+    """视口不够高的时候，八张卡排 2 列 × 4 行。
+
+    4 列 × 2 行的话每张卡只有 150px 高 —— 标题、简介、角标挤在一起，
+    看清都看不清。2 列 × 4 行：卡片变宽变矮，八张卡正好占满面板。
+    """
+    css = _strip_css_comments(_read(TECH_CSS))
+    short = [
+        block
+        for query, block in _media_blocks(css)
+        if "body.home-page" in block and "max-height: 899px" in query
+    ]
+    assert short, "没有针对中屏（视口 800~899px）的排版"
+
+    assert re.search(
+        r"grid-template-columns:\s*repeat\(2,\s*1fr\)", short[0]
+    ), "中屏那一档没有把卡片改成 2 列 —— 每张卡只有 150px 高，字挤成一团"
 
 
 # --- 4. 要留的两块还在 ------------------------------------------------------
@@ -228,6 +292,31 @@ def test_the_stats_banner_and_the_learning_path_stay_on_the_homepage():
 
     assert "stats-banner" in content, "首页的统计条没了"
     assert "partial('_partial/learning-path')" in content, "首页的学习路径没了"
+
+
+def test_the_stats_banner_is_the_first_thing_in_the_flex_column():
+    """统计条排在最上面。
+
+    2026-11-19：统计条从「定位句下面」挪到了「最上面」。flex 列里的顺序
+    就是读者从上往下看到的顺序 —— 统计条得是那一列的第一项。
+    """
+    content = _read(HOME_CONTENT)
+
+    stats_at = content.find("home-stats")
+    hero_at = content.find("partial('_partial/home-hero')")
+    learning_at = content.find("partial('_partial/learning-path')")
+
+    assert stats_at != -1, "home-content.ejs 里没有 home-stats"
+    assert hero_at != -1, "home-content.ejs 里没有渲染 home-hero"
+    assert learning_at != -1, "home-content.ejs 里没有渲染学习路径"
+    assert stats_at < hero_at < learning_at, (
+        "首页从上到下应该是：统计条 → 定位句 → 学习路径"
+    )
+
+    block = _home_page_block(_read(TECH_CSS))
+    assert re.search(r"\.home-stats\s*\{[^}]*flex:\s*0 0 auto", block, re.S), (
+        ".home-stats 没有固定高度 —— 它是 flex 列的第一项，不能被压扁"
+    )
 
 
 # --- 5. 首屏那块「从这里开始」退休了 ----------------------------------------

@@ -21,13 +21,15 @@
     Menlo, Consolas, "Liberation Mono", monospace;
 
   position: relative;
-  /* 88px 顶部留白：navbar 是 fixed 的（navbar-fixed，高 64px），
-     不留这一段的话首屏第一行会被导航条压住。 */
-  padding: 88px 0 48px;
+  /* 2026-11-19：这块原来还有搜索框和分类徽章（+ 打字机），现在只剩
+     一句定位，上下留白也就跟着压扁了。
+     顶部不再留 88px —— navbar 是 position:relative，在文档流里占着
+     64px（实测），不需要额外让位。 */
+  padding: 20px 0 18px;
   color: var(--tech-ink);
   background-color: #fbfcfd;
   background-image:
-    linear-gradient(180deg, var(--tech-accent-soft) 0%, rgba(11, 114, 133, 0) 220px),
+    linear-gradient(180deg, var(--tech-accent-soft) 0%, rgba(11, 114, 133, 0) 160px),
     repeating-linear-gradient(
       90deg,
       rgba(31, 41, 51, .035) 0 1px,
@@ -51,140 +53,11 @@
   color: var(--tech-ink);
 }
 
-/* 徽章与打字机由 tools/patch-theme.py 注入 —— 那些规则是给「照片背景上的白字」
-   写的，这里改成浅底深字，否则在这个浅色首屏上根本看不见。 */
-.home-hero .hero-badge {
-  background: rgba(11, 114, 133, .08);
-  color: var(--tech-accent);
-  border: 1px solid rgba(11, 114, 133, .22);
-  text-shadow: none;
-}
-
-.home-hero .hero-badge:hover,
-.home-hero .hero-badge:focus-visible {
-  background: rgba(11, 114, 133, .16);
-}
-
-.home-hero .hero-typing {
-  color: var(--tech-muted);
-  font-family: var(--tech-mono);
-  font-size: 13.5px;
-  text-shadow: none;
-}
-
-.home-hero__badges {
-  margin: 22px 0 0;
-}
-
-/* --- 首屏搜索 ------------------------------------------------------------ */
-
-.home-hero__search {
-  position: relative;
-  max-width: 620px;
-  margin: 26px 0 0;
-}
-
-.home-hero__search-label {
-  display: block;
-  margin-bottom: 8px;
-  font-family: var(--tech-mono);
-  font-size: 11.5px;
-  letter-spacing: .1em;
-  color: var(--tech-muted);
-}
-
-.home-hero__search-input {
-  width: 100%;
-  height: 46px;
-  padding: 0 16px;
-  font-size: 15px;
-  font-family: inherit;
-  color: var(--tech-ink);
-  background: var(--tech-card);
-  border: 1px solid var(--tech-rule);
-  border-radius: 3px;
-  outline: none;
-  transition: border-color .2s ease, box-shadow .2s ease;
-}
-
-.home-hero__search-input::placeholder {
-  color: var(--tech-muted);
-}
-
-.home-hero__search-input:focus {
-  border-color: var(--tech-accent);
-  box-shadow: 0 0 0 3px var(--tech-accent-soft);
-}
-
-.home-hero__search-results {
-  position: absolute;
-  z-index: 20;
-  left: 0;
-  right: 0;
-  margin: 6px 0 0;
-  padding: 0;
-  list-style: none;
-  background: var(--tech-card);
-  border: 1px solid var(--tech-rule);
-  border-radius: 3px;
-  box-shadow: 0 10px 28px rgba(31, 41, 51, .12);
-  max-height: 320px;
-  overflow-y: auto;
-}
-
-.home-hero__search-results[hidden] {
-  display: none;
-}
-
-.home-hero__search-results a {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--tech-rule);
-  text-decoration: none;
-}
-
-.home-hero__search-results li:last-child a {
-  border-bottom: none;
-}
-
-.home-hero__search-results a:hover,
-.home-hero__search-results a:focus-visible {
-  background: var(--tech-accent-soft);
-}
-
-.home-hero__search-title {
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--tech-ink);
-}
-
-.home-hero__search-cat {
-  flex: 0 0 auto;
-  font-family: var(--tech-mono);
-  font-size: 11.5px;
-  color: var(--tech-accent);
-}
-
-.home-hero__search-empty {
-  padding: 12px 16px;
-  font-size: 13.5px;
-  color: var(--tech-muted);
-}
-
-.home-hero__search-hint {
-  margin: 8px 0 0;
-  font-size: 12.5px;
-  color: var(--tech-muted);
-}
-
 /* --- 响应式 -------------------------------------------------------------- */
 
 @media (max-width: 992px) {
   .home-hero {
-    padding: 44px 0 36px;
+    padding: 16px 0 14px;
   }
 }
 
@@ -205,20 +78,6 @@ body.DarkMode .home-hero {
   --tech-rule: rgba(223, 230, 234, .16);
   --tech-card: #1c2226;
   background-color: #15191c;
-}
-
-body.DarkMode .home-hero .hero-badge {
-  background: rgba(102, 194, 208, .12);
-  color: var(--tech-accent);
-  border-color: rgba(102, 194, 208, .3);
-}
-
-body.DarkMode .home-hero .hero-typing {
-  color: var(--tech-muted);
-}
-
-body.DarkMode .home-hero__search-results {
-  box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
 }
 
 /* learning-page ------------------------------------------------------------
@@ -450,26 +309,29 @@ body.DarkMode .learning-path__all-link:focus-visible {
   background: rgba(77, 182, 172, .20);
 }
 
-/* --- 首页占满一屏（首屏 + 统计条 + 学习路径）-----------------------------
+/* --- 首页占满一屏（统计条 + 定位句 + 学习路径）---------------------------
    2026-11-18：文章区、「最新一期」、代表作三块删掉之后，首页剩下
    首屏 + 统计条 + 学习路径。目标是这三块正好占满一屏 —— 读者不用滚动
    就能看完 8 条赛道。
 
-   做法（按 docs/blog/重构方案.md §5.4，新样式只放 tech.css，不进
-   patch-theme.py 注入的那份）：
+   2026-11-19：首屏里的搜索框和分类徽章也删了，只剩一句定位；统计条
+   挪到了最上面。于是 flex 列的顺序变成：
 
      body.home-page  → 一个「至少一屏高」的 flex 列
-       .home-hero      内容固定（flex: 0 0 auto），但压扁
-       .home-content   吃掉剩下的空间（flex: 1 1 auto）
-         .stats-banner  内容固定，压扁
+       .home-stats    统计条，内容固定（flex: 0 0 auto）
+       .home-hero     定位句，内容固定（flex: 0 0 auto）
+       .home-content  吃掉剩下的空间（flex: 1 1 auto）
          .learning-path 继续往下分
            .lane-grid    卡片跟着长高（grid-auto-rows）
+
+   做法（按 docs/blog/重构方案.md §5.4，新样式只放 tech.css，不进
+   patch-theme.py 注入的那份）：
 
    **自适应**的三条边界：
    * 视口不够宽（< 1100px）时整段不生效，回到正常文档流 —— 窄屏硬塞
      会把字压得没法看；
    * 空间真的不够时，滚动的是学习路径面板自己（overflow:auto），
-     不是整页 —— 整页滚动会把首屏和统计条一起推走；
+     不是整页 —— 整页滚动会把统计条和定位句一起推走；
    * body 用的是 height（不是 min-height）：flex 的「收缩到刚好装下」
      要有一个确定的高度才生效。内容装不下时是**溢出可见**的，
      页面照常能滚，不会被裁掉一块 —— 宁可多滚一屏，不丢内容。
@@ -488,38 +350,34 @@ body.DarkMode .learning-path__all-link:focus-visible {
     height: 100dvh;
   }
 
-  /* --- 首屏：压扁 -------------------------------------------------------
-     顶栏（navbar-fixed，33px）和区域横幅（58px）都在文档流里，
-     原来那 88px 顶部留白（怕被 fixed 的导航条压住）用不着了。
-     首屏里原来的「从这里开始」也删了 —— 它指的就是下面这块学习路径，
-     同一个去处摆两遍，白占 47px。 */
+  /* --- 统计条：最上面 ---------------------------------------------------- */
+  body.home-page .home-stats {
+    flex: 0 0 auto;
+    padding-top: 12px;
+  }
+
+  /* 统计条压扁：数字小一圈，省下来的高度给学习路径。 */
+  body.home-page .stats-banner {
+    flex: 0 0 auto;
+    margin: 0 0 8px;
+  }
+
+  body.home-page .stat-card { padding: 9px 12px; }
+  body.home-page .stat-num { font-size: 21px; margin-bottom: 0; }
+  body.home-page .stat-label { font-size: 12px; }
+
+  /* --- 定位句：统计条下面 ------------------------------------------------ */
   body.home-page .home-hero {
     flex: 0 0 auto;
-    padding: 24px 0 10px;
+    padding: 4px 0 6px;
   }
 
   body.home-page .home-hero__lead {
     font-size: 1.25rem;
     line-height: 1.6;
   }
-  body.home-page .home-hero__search { margin: 10px 0 0; }
-  /* 「按标题搜索 · 全文搜索用顶部导航」这句提示在首页省掉：搜索框下面
-     就是分类徽章，读者看得见；那行字留给别处的说明。 */
-  body.home-page .home-hero__search-hint { display: none; }
-  body.home-page .home-hero__search-label {
-    font-size: 10.5px;
-    margin-bottom: 2px;
-  }
-  body.home-page .home-hero__search-input { height: 34px; font-size: 14px; }
-  body.home-page .home-hero__badges { margin: 12px 0 0; }
-  /* 分类徽章：九个挤成一行（原来两行），字号也小一圈 */
-  body.home-page .hero-badge {
-    font-size: 11.5px;
-    padding: 3px 10px;
-  }
-  body.home-page .home-hero .hero-typing { font-size: 12px; }
 
-  /* --- 中间那块：统计条 + 学习路径 -------------------------------------- */
+  /* --- 下面那块：学习路径 ------------------------------------------------ */
   body.home-page .home-content {
     flex: 1 1 auto;
     display: flex;
@@ -535,16 +393,6 @@ body.DarkMode .learning-path__all-link:focus-visible {
     flex-direction: column;
     min-height: 0;
   }
-
-  /* 统计条压扁：数字小一圈，省下来的高度给学习路径。 */
-  body.home-page .stats-banner {
-    flex: 0 0 auto;
-    margin: 10px 0 10px;
-  }
-
-  body.home-page .stat-card { padding: 9px 12px; }
-  body.home-page .stat-num { font-size: 21px; margin-bottom: 0; }
-  body.home-page .stat-label { font-size: 12px; }
 
   body.home-page .learning-path {
     flex: 1 1 auto;
@@ -591,8 +439,15 @@ body.DarkMode .learning-path__all-link:focus-visible {
     font-size: 12.5px;
   }
 
-  /* 卡片网格：有多余空间就长高铺满；空间不够时**行不会比内容更矮**
-     （min-content），面板自己滚 —— 卡片不会被压扁成一排看不清的字。 */
+  /* 卡片网格：行高跟着面板走 —— 面板有多余的空间就分给行，卡片跟着长高，
+     **面板不留一整块空白**（首页看着像少了一半内容）。
+
+     min-content 是下限：卡片的内容比这一行该有的高度还高时，行不会被压
+     扁（字会挤成一团），面板自己滚（overflow: auto）—— 滚的是面板，不是
+     整页。
+
+     卡片内部会不会空，见下面两段：视口矮的时候卡片排 2 列，够高的时候
+     卡片里列出全部阶段。 */
   body.home-page .lane-grid--tracks {
     flex: 1 1 auto;
     min-height: 0;
@@ -622,9 +477,10 @@ body.DarkMode .learning-path__all-link:focus-visible {
     font-size: 12px;
     line-height: 1.45;
     min-height: 0;
-    /* margin-top:auto —— 卡片被拉高的时候（屏幕高），简介和阶段角标贴着
-       卡片底部走，标题留在顶部，中间空出来；不然简介会飘在卡片正中间。 */
-    margin: auto 0 4px;
+    /* 简介紧跟在标题下面。卡片被拉高的时候（屏幕高），空出来的地方在
+       简介和阶段角标之间 —— 那是一张「有页脚的卡片」的样子；
+       把简介推到卡片底部的话，空档就夹在标题和简介中间，像漏了内容。 */
+    margin: 0 0 4px;
     /* 简介最多一行：卡片等高，第二行不占地方。整句在赛道页上有。
        行数不能放开到两行 —— Chrome 算卡片的最小高度时按行数算，
        两行的话八张卡一屏就放不下了。 */
@@ -634,9 +490,11 @@ body.DarkMode .learning-path__all-link:focus-visible {
     overflow: hidden;
   }
   /* 阶段角标排成一行：第一行放不下的话让第一个角标里的标题省略，
-     不换行 —— 换行会把卡片撑高，两行卡片一屏就放不下。 */
+     不换行 —— 换行会把卡片撑高，两行卡片一屏就放不下。
+     margin-top:auto —— 角标钉在卡片底部，标题和简介留在顶部。 */
   body.home-page .lane-card__stages {
     flex-wrap: nowrap;
+    margin-top: auto;
     margin-bottom: 0;
     gap: 4px;
     /* 右边给卡片右下角那个箭头让出位置，别压在「+N 个阶段」上。 */
@@ -680,24 +538,74 @@ body.DarkMode .learning-path__all-link:focus-visible {
   }
 }
 
-/* 高屏幕（1920×1080 这类）：卡片被拉高，简介那行就放开成两行 ——
-   屏幕上地方多，一句话说不完的话没必要截断。 */
-@media (min-width: 1100px) and (min-height: 900px) {
+/* 屏幕够高（1440×900 的笔记本，视口 813px）：卡片被拉高，简介那行就放开
+   成两行 —— 地方多，一句话说不完的话没必要截断。 */
+@media (min-width: 1100px) and (min-height: 800px) {
   body.home-page .lane-card__desc { -webkit-line-clamp: 2; }
 }
 
+/* 高屏（视口 900px 以上，1920×1080 的桌面）：八张卡排 4 列 × 2 行的话，
+   每张卡有 240px 以上 —— 这时候把**全部阶段**竖着列出来（不是只留第一个
+   阶段 + 「+N 个阶段」角标）。
+
+   为什么：卡片被拉高到 280px，里面却只有标题、简介和一个角标 —— 卡的
+   中间空一大块，看着像漏了内容。把阶段列出来，空出来的地方就是阶段本身。
+   阶段行按卡片的高度平分（flex: 1），卡片越高行越高，最多 40px 一行。
+
+   放不下的时候（比如视口刚好 900px）：面板自己滚（overflow: auto），
+   页面照旧不滚 —— 滚的是面板，不是整页。 */
+@media (min-width: 1100px) and (min-height: 900px) {
+  /* 简介只留一行：竖着列阶段已经占了不少高度，简介一多卡片就放不下。 */
+  body.home-page .lane-card__desc { -webkit-line-clamp: 1; }
+
+  body.home-page .lane-card__stages {
+    flex-direction: column;
+    align-items: stretch;
+    flex: 1 1 auto;
+    /* 基础规则里是 margin-top: auto（角标钉在卡片底部）—— 竖排的时候
+       改成跟着简介走，让阶段把卡片剩下的高度填满。 */
+    margin-top: 6px;
+    gap: 3px;
+    /* 右边给卡片右下角那个箭头让出位置。 */
+    padding-right: 24px;
+  }
+  /* 全部阶段都露出来，「+N 个阶段」那个角标就没用了（它数的是被折起来
+     的阶段，现在一个都没折）。 */
+  body.home-page .lane-card__stages .lane-card__stage:not(.lane-card__stage--rest) {
+    display: inline-flex;
+  }
+  body.home-page .lane-card__stage--rest { display: none; }
+  body.home-page .lane-card__stage {
+    flex: 1 1 auto;
+    max-height: 40px;
+    padding: 1px 6px;
+  }
+}
+
+/* 中屏（视口 800~899px 高）：4 列 × 2 行的话每张卡只有 150px 高 ——
+   标题、简介、角标挤在一起，看不清。改成 2 列 × 4 行：卡片变宽变矮，
+   一行放得下标题、简介和第一个阶段，八张卡正好占满面板。
+
+   卡里只列第一个阶段（高屏那一段的「全部阶段」在这里用不上：卡片只有
+   90px 高，列不下）。 */
+@media (min-width: 1100px) and (max-height: 899px) {
+  body.home-page .lane-grid--tracks {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 6px;
+  }
+}
+
 /* 矮屏幕（老笔记本、开着开发者工具的浏览器）：视口不到 800px 高的时候，
-   首屏 + 统计条 + 8 张卡放不下，顺序是：先压首屏（打字机那行是装饰性的，
-   先让），再把卡片里那一行简介收起来 —— 简介整句在赛道页上有。
+   统计条 + 定位句 + 8 张卡放不下，顺序是：先压定位句，再把卡片里那一行
+   简介收起来 —— 简介整句在赛道页上有。
    统计条和学习路径本身不动，那是首页要看的东西。 */
 @media (min-width: 1100px) and (max-height: 800px) {
-  body.home-page .home-hero { padding: 16px 0 8px; }
+  body.home-page .home-stats { padding-top: 8px; }
+  body.home-page .home-hero { padding: 2px 0 4px; }
   body.home-page .home-hero__lead { font-size: 1.15rem; }
-  body.home-page .home-hero__search-input { height: 30px; }
-  body.home-page .home-hero .hero-typing { display: none; }
   body.home-page .lane-card__desc { display: none; }
   /* 统计条和页脚各让一点出来 —— 两张卡 + 标题要的那点高度。 */
-  body.home-page .stats-banner { margin: 6px 0; }
+  body.home-page .stats-banner { margin: 0 0 6px; }
   body.home-page .stat-card { padding: 6px 12px; }
   body.home-page .learning-path { padding: 4px 0; }
   body.home-page .learning-path .section-title { margin-bottom: 4px; }

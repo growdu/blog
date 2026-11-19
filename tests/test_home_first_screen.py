@@ -1,4 +1,4 @@
-"""首屏不该是一张风景照。
+"""首屏不该是一张风景照，也不该摆一堆入口。
 
 **背景**：首页的第一屏是 ``_partial/index-cover`` 渲染的一个 Materialize
 carousel——首张 ``about-cover`` 铺着主题默认的模糊橙树照片，上面是打字机、
@@ -12,8 +12,8 @@ carousel——首张 ``about-cover`` 铺着主题默认的模糊橙树照片，�
 **这里断言的是行为契约**：
 
 1. 首页不再渲染那个 cover carousel；
-2. 新的 ``home-hero`` 排在统计条**之前**——首屏要真的有内容，
-   而不是把内容推到折线以下；
+2. **统计条排在最上面**——读者第一眼看到的应该是「这个站有多少东西」
+   （580 篇 / 175w 字 / 2701 天 / 64 个分类），定位句压在它下面；
 3. 首屏不是全屏的（全屏 = 还是在卖风景）；
 4. 首屏带的是**站点定位**（读 ``config.home_hero_lead`` 那句短话，没配
    就退回 ``config.description``），不是一句硬编码的口号；首屏也不再有一行
@@ -21,10 +21,16 @@ carousel——首张 ``about-cover`` 铺着主题默认的模糊橙树照片，�
 5. 首屏不再摆「三篇代表作」——那三张卡上的分类全是「源码主线」，
    等于在首屏摆广告位。首屏要回答的是「这个站是什么、从哪儿开始」。
 
+**2026-11-19 再删两块**：首屏的站内搜索框和分类徽章（+ 打字机）。
+搜索框是顶部导航那个全文搜索的缩水版（只搜标题），徽章是导航栏「分类」
+入口的第二份清单 —— 两个都是同一个去处的第二个入口。删掉之后首屏只剩
+一句定位，统计条挪到了最上面。
+
 另外两条是给 ``patch-theme.py`` 的：它曾经拥有那段 hero CSS，也曾经往
-hero partial 里注入统计块和打字机。hero 换掉之后，这两样都得跟着走——
+hero partial 里注入分类徽章和打字机。hero 换掉之后，这两样都得跟着走——
 CSS 要**从 my.css 里剥掉**（不能只是不再注入，留下来的死规则照样
-占着 100vh），注入目标要改成新的 ``home-hero.ejs``。
+占着 100vh），注入也要跟着退休（只删模板不删注入，CI 构建一次它就又
+长回来）。
 
 放在根级 ``tests/``，随 ``site-guard.yml`` 进 CI。
 """
@@ -89,14 +95,17 @@ def test_the_cover_carousel_css_is_gone_from_the_patched_stylesheet():
     assert ".index-cover" not in css, "my.css 里还留着 .index-cover 规则"
 
 
-# --- 2. 首屏有内容，且排在统计条之前 ---------------------------------------
+# --- 2. 统计条在最上面 -----------------------------------------------------
 
 
-def test_the_hero_comes_before_the_stats_banner():
-    """``home-hero`` 必须在 ``stats-banner`` 之前。
+def test_the_stats_banner_comes_first():
+    """``stats-banner`` 必须在 ``home-hero`` 之前。
 
-    首屏的价值在于「上面有东西」。如果 hero 排在统计条之后，那
-    访客第一眼看到的仍然是统计数字，而不是这个站是什么。
+    2026-11-19：统计条挪到了最上面。访客第一眼看到的应该是「这个站有多
+    少东西」（580 篇 / 175w 字 / 2701 天 / 64 个分类），定位句压在它下面。
+
+    顺序反过来的话，第一眼是那一句口号 —— 而口号不回答「这站有多少内容」，
+    那是新访客最先想知道的事。
     """
     content = _read(HOME_CONTENT)
 
@@ -105,7 +114,26 @@ def test_the_hero_comes_before_the_stats_banner():
 
     assert hero_at != -1, "home-content.ejs 里没有渲染 home-hero"
     assert stats_at != -1, "home-content.ejs 里没有 stats-banner（结构变了？）"
-    assert hero_at < stats_at, "home-hero 必须排在 stats-banner 之前"
+    assert stats_at < hero_at, "stats-banner 必须排在 home-hero 之前"
+
+
+def test_the_stats_banner_sits_in_its_own_section_at_the_top():
+    """统计条有自己的 ``<section class="home-stats">``，在 hero 之前。
+
+    它是 body 的直接子元素（flex 列的第一项），不是塞在别的容器里 ——
+    「在最上面」得在 DOM 顺序上成立，才谈得上排在最上面。
+    """
+    content = _read(HOME_CONTENT)
+
+    assert '<section class="home-stats"' in content, (
+        "统计条没有自己的 section —— 它的位置就由外层容器决定了"
+    )
+    stats_at = content.find('<section class="home-stats"')
+    hero_at = content.find("<%- partial('_partial/home-hero') %>")
+
+    assert stats_at != -1, "home-content.ejs 里没有 home-stats 那一段"
+    assert hero_at != -1, "home-content.ejs 里没有渲染 home-hero"
+    assert stats_at < hero_at, "home-stats 必须在 home-hero 之前"
 
 
 # --- 3. 首屏不是全屏的 ------------------------------------------------------
@@ -303,18 +331,79 @@ def test_the_patcher_strips_the_hero_css_it_used_to_inject():
     assert "my.css" in patcher, "patch-theme.py 没有动过 my.css"
 
 
-def test_the_patcher_injects_the_hero_block_into_the_new_partial():
-    """hero 的统计/打字机/徽章要注入到 ``home-hero.ejs``。
+def test_the_patcher_no_longer_injects_the_hero_badges():
+    """``patch-theme.py`` 不再往 ``home-hero.ejs`` 注入分类徽章 + 打字机。
 
-    以前这段是注入到 ``bg-cover-content.ejs`` / ``index-cover.ejs`` /
-    ``bg-cover.ejs`` 里的。hero 换掉之后如果不改注入目标，这块内容
-    就跟着消失——首页少了四个统计和那行打字机。
+    2026-11-19：首屏只剩一句定位，徽章和打字机都退休了。
     """
     patcher = _read(PATCH_THEME)
 
-    assert "home-hero.ejs" in patcher, (
-        "patch-theme.py 的注入目标里没有 home-hero.ejs"
+    assert "HERO-BADGES" not in patcher, (
+        "patch-theme.py 还在往首页注入分类徽章 —— 只删模板不删注入，"
+        "CI 构建一次它就又长回来"
     )
+    assert "heroBadges" not in patcher, (
+        "patch-theme.py 里还留着分类徽章的清单 —— 那一块已经退休"
+    )
+
+
+def test_the_patcher_strips_the_hero_badges_it_used_to_inject():
+    """已经注入过的（老仓库 / 别人改回来）要能剥掉。
+
+    跟「最新一期」那块一个道理：停止注入只管得住以后，**已经注进去的
+    那份**得有人负责拆。
+    """
+    patcher = _read(PATCH_THEME)
+
+    assert "Stripped hero badges" in patcher or "home-hero__badges" in patcher, (
+        "patch-theme.py 没有剥掉已注入的徽章块 —— 老仓库构建一次它就回来了"
+    )
+
+
+# --- 7. 首屏的搜索框与分类徽章退休了 ---------------------------------------
+
+
+def test_the_hero_has_no_search_box():
+    """首屏不再有那个只搜标题的搜索框。
+
+    顶部导航里本来就有全文搜索（``_partial/search.ejs``）。首屏再来一个
+    只搜标题的框，是同一个去处的第二个入口 —— 而且它自己还写着
+    「按标题搜索 · 全文搜索用顶部导航」，等于在首屏提醒读者「真正的
+    搜索在别处」。
+    """
+    hero = re.sub(r"<%#.*?%>", "", _read(HOME_HERO), flags=re.S)
+
+    assert "homeSearch" not in hero, "首屏的搜索框还在"
+    assert "home-hero__search" not in hero, "首屏的搜索框还在"
+    assert "search-lite.json" not in hero, "首屏不该再抓精简索引"
+
+
+def test_the_hero_has_no_category_badges():
+    """首屏不再有那一排分类徽章。
+
+    导航栏里已经有「分类」入口，徽章是同一份清单的第二份。而且它们把
+    首屏从 50px 撑到 220px —— 八张赛道卡只好挤在剩下的空间里。
+    """
+    hero = re.sub(r"<%#.*?%>", "", _read(HOME_HERO), flags=re.S)
+
+    assert "hero-tech" not in hero, "首屏的分类徽章还在"
+    assert "hero-badge" not in hero, "首屏的分类徽章还在"
+    assert "hero-typing" not in hero, "首屏的打字机还在"
+    assert "home-hero__badges" not in hero, "首屏的徽章容器还在"
+
+
+def test_the_dead_hero_styles_are_gone():
+    """徽章 / 打字机 / 搜索框的样式都退休了。
+
+    死规则留着，下一个人会以为首页还有那么一块 —— 或者更糟：改首屏
+    样式时去改一段没人用的规则，改了半天看不出效果。
+    """
+    css = re.sub(r"/\*.*?\*/", "", _read(TECH_CSS), flags=re.S)
+    my_css = re.sub(r"/\*.*?\*/", "", _read(MY_CSS), flags=re.S)
+
+    for dead in ("home-hero__search", "hero-tech", "hero-badge", "hero-typing"):
+        assert dead not in css, "tech.css 里还留着 {} 的样式".format(dead)
+        assert dead not in my_css, "my.css 里还留着 {} 的样式".format(dead)
 
 
 def test_the_hero_stylesheet_is_linked_from_the_layout():

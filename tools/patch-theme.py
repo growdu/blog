@@ -705,99 +705,34 @@ else:
 
 
 # --- 8. Enrich the homepage hero ------------------------------------------
-# 2026-11-16：首页首屏从「全屏照片 carousel」换成了 _partial/home-hero。
-# hero 的内容（分类徽章 + 打字机）跟着搬过去 —— 首页已经不渲染 bg-cover，
-# 留在 bg-cover-content.ejs 里的那段 home-only 内容成了死代码（§5 把它剥掉）。
-hero_typing_texts = [
-    "PostgreSQL / openGauss 内核",
-    "Raft / DCF 分布式一致性",
-    "逻辑解码与 DDL Replay",
-    "数据库性能调优",
-    "eBPF / DPDK 数据面",
-    "工具 / 视频 / 培训",
-    "股票与金融观察",
-    "哲学思辨 · 人生感悟",
-    "社会观察 · 城市记录",
-]
+# 2026-11-16：首页首屏从「全屏照片 carousel」换成了 _partial/home-hero，
+# hero 的内容（分类徽章 + 打字机）跟着搬过去。
+#
+# **2026-11-19：徽章 + 打字机退休。** 首页首屏只剩一句定位（统计条也
+# 挪到了最上面）。理由：
+#   * 分类徽章是导航栏「分类」入口的第二份清单；
+#   * 打字机跟徽章是一块，徽章走了它也走；
+#   * 首屏搜索框也一并退休了 —— 顶部导航里本来就有全文搜索。
+#
+# 这一段原来负责往 home-hero.ejs 里注入那两块。**必须一起退休**：只删
+# 模板不删注入，CI 构建一次它就又长回来 —— 本地看着删干净了，线上又
+# 长出来。所以这里改成「发现就剥掉」。
+HERO_BADGES_BLOCK = re.compile(
+    r"\s*<div class=\"home-hero__badges\">.*?</script>\s*</div>", re.S
+)
 
-# 分类徽章 + 打字机。这段从 bg-cover-content.ejs 搬过来（那边是同一段代码，
-# 首页换版后成了死代码）。徽章的链接要从 site.categories 反查真实分类路径：
-# 手写 /categories/<名字>/ 会踩三个坑 —— 分类名带空格、级联分类的父路径、
-# 分类改名后手写链接直接 404。
-hero_block = """<%
-  var heroBadges = [
-    { label: 'PostgreSQL',       icon: 'fas fa-database',   cat: 'PostgreSQL' },
-    { label: 'openGauss',        icon: 'fas fa-database',   cat: 'openGauss' },
-    { label: '分布式系统',        icon: 'fas fa-sitemap',    cat: '集群' },
-    { label: 'DPDK',             icon: 'fas fa-bolt',       cat: 'DPDK' },
-    { label: 'VPP',              icon: 'fas fa-bolt',       cat: 'VPP' },
-    { label: '股票 · 金融',       icon: 'fas fa-chart-line', cat: '股票与金融' },
-    { label: '工具 · 视频 · 培训', icon: 'fas fa-tools',     cat: '工具' },
-    { label: '哲学 · 人生',       icon: 'fas fa-yin-yang',   cat: '人生' },
-    { label: '社会观察',          icon: 'fas fa-city',       cat: '社会' }
-  ];
-  var heroCatIndex = {};
-  (site.categories || []).each(function (c) {
-    var cur = heroCatIndex[c.name];
-    // 同名分类可能既是顶级分类又是别的分类的子分类（Hexo 会把 front matter
-    // 里的分类列表当成一条层级链），优先取顶级的那一个。
-    if (!cur || (cur.parent && !c.parent)) heroCatIndex[c.name] = c;
-  });
-%>
-<div class="hero-tech">
-    <% heroBadges.forEach(function (b) {
-         var c = heroCatIndex[b.cat];
-         if (!c) {
-           console.warn('[hero-tech] 分类不存在，徽章已跳过: ' + b.cat);
-           return;
-         }
-    %>
-    <a class="hero-badge" href="<%- url_for(c.path) %>" aria-label="查看<%= b.label %>分类文章"><i class="<%= b.icon %>"></i> <%= b.label %></a>
-    <% }); %>
-</div>
-<div class="hero-typing" id="typing-text"></div>
-<script>
-(function(){
-  var texts=__TEXTS__;
-  var idx=0,ci=0,del=false;
-  function type(){
-    var el=document.getElementById('typing-text');
-    if(!el)return;
-    var t=texts[idx];
-    if(del){ci--;el.textContent=t.substring(0,ci);if(ci===0){del=false;idx=(idx+1)%texts.length;setTimeout(type,500);return;}setTimeout(type,40);}
-    else{ci++;el.textContent=t.substring(0,ci);if(ci===t.length){del=true;setTimeout(type,2000);return;}setTimeout(type,90);}
-  }
-  setTimeout(type,1000);
-})();
-</script>
-"""
-
-# 打字机文案：写成一个 JS 数组字面量（不是整条语句）—— 注入时拼到
-# `var texts=...;` 后面，两处不能各写一半。
-_texts_js = repr(hero_typing_texts).replace("\\'", "'")
-
-# 8.1 hero 块（分类徽章 + 打字机）注入 home-hero.ejs
-HERO_BLOCK_MARKER = "<!-- HERO-BADGES -->"
 hero_path = os.path.join(theme_dir, "layout", "_partial", "home-hero.ejs")
 if os.path.isfile(hero_path):
     with open(hero_path, encoding="utf-8") as f:
         content = f.read()
 
-    if HERO_BLOCK_MARKER in content:
-        content = content.replace(
-            HERO_BLOCK_MARKER, hero_block.replace("__TEXTS__", _texts_js), 1
-        )
-        print("Injected hero badges + typing into home-hero.ejs")
-    elif "hero-tech" not in content:
-        print("WARNING: home-hero.ejs has no %s marker" % HERO_BLOCK_MARKER)
-
-    # 8.2 打字机文案以 patcher 为准：已经注入过的也要跟着更新
-    _pattern = re.compile(r"var\s+texts=\[.*?\];", re.S)
-    if _pattern.search(content):
-        content = _pattern.sub("var texts=" + _texts_js + ";", content, count=1)
-
-    with open(hero_path, "w", encoding="utf-8") as f:
-        f.write(content)
+    if "hero-tech" in content or "home-hero__badges" in content:
+        content = HERO_BADGES_BLOCK.sub("", content)
+        with open(hero_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        print("Stripped hero badges + typing from home-hero.ejs")
+    else:
+        print("hero badges + typing already gone from home-hero.ejs")
 else:
     print("WARNING: home-hero.ejs not found — 首页首屏没有徽章和打字机")
 
@@ -1850,11 +1785,9 @@ html{scroll-behavior:smooth}
 a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2px}
 /* Print styles */
 @media print{.reading-progress,.nav-wrapper,.bg-cover,footer,.prev-next,.gitalk-card,.related-posts-card,#back-top{display:none!important}#articleContent{font-size:12pt;line-height:1.5}main.content{margin:0!important;width:100%!important}.card{box-shadow:none!important;border:1px solid #ddd}}
-/* Hero typing effect */
-.hero-typing{text-align:center;color:#fff;font-size:18px;margin-top:14px;min-height:27px;text-shadow:0 2px 8px rgba(0,0,0,.4);font-weight:500}
-/* Hero tech badges */
-.hero-tech{display:flex;justify-content:center;gap:10px;margin-top:18px;flex-wrap:wrap}
-.hero-badge{background:rgba(255,255,255,.15);color:#fff;padding:5px 14px;border-radius:20px;font-size:13px;backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.2)}
+/* Hero typing effect + hero tech badges：2026-11-19 退休。
+   首页首屏的分类徽章和打字机删掉了（见 §8），这两条规则没人用了，
+   留着只是让下一个人以为首页还有那么一块。 */
 /* Skill bars */
 .skill-bar{margin:10px 0}
 .skill-bar .skill-row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:4px}
