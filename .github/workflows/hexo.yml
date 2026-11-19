@@ -103,10 +103,6 @@ jobs:
         # 必须在 sync-hexo.py 之后（它读 source/_posts/ 里的编译产物），
         # 必须在 patch-theme.py 之前（partial 在渲染时读它）。
         run: python3 tools/build-podcast-index.py
-      - name: Build series page
-        # 期号索引 → 系列页（/videos/）。一期一行：期号、钩子、时长、
-        # 完整版（母稿页）、平台。
-        run: python3 tools/build-series-page.py
       - name: Build podcast feed
         # 期号索引 → 播客 feed（/feed.xml）+ 旁白音频的站点副本。
         # 成片 mp4 不托管，旁白 mp3 托管——RSS 的 <enclosure> 需要
@@ -392,10 +388,6 @@ jobs:
         # 必须在 sync-hexo.py 之后（它读 source/_posts/ 里的编译产物），
         # 必须在 patch-theme.py 之前（partial 在渲染时读它）。
         run: python3 tools/build-podcast-index.py
-      - name: Build series page
-        # 期号索引 → 系列页（/videos/）。一期一行：期号、钩子、时长、
-        # 完整版（母稿页）、平台。
-        run: python3 tools/build-series-page.py
       - name: Build podcast feed
         # 期号索引 → 播客 feed（/feed.xml）+ 旁白音频的站点副本。
         # 成片 mp4 不托管，旁白 mp3 托管——RSS 的 <enclosure> 需要

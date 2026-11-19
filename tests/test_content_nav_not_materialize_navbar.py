@@ -18,7 +18,7 @@ nav{color:#fff;background-color:#ee6e73;width:100%;height:56px;line-height:56px}
    ``line-height:64px`` 让每行文字高 64px，卡片涨到 261px 高。
    首屏的盒子因此比内容矮 84px，**统计条（文章数 / 总字数 / 天数 / 分类数）
    直接盖在代表作卡片上**——分类是「数据库深入 / 数据库」的那几张被拦腰截断。
-2. 文章页 ``_partial/episode-block.ejs`` 的「上一期 / 下一期 / 全部期号」
+2. 文章页 ``_partial/episode-block.ejs`` 的「上一期 / 下一期」
    用的也是 ``<nav>``：它渲染成一条**红色横条**，白字，在文章中间非常突兀。
 
 **契约**：内容模板里不许出现 ``<nav>``；唯一允许的是头部那条
@@ -126,7 +126,7 @@ def test_the_home_hero_has_no_navigable_landing_blocks():
 
 
 def test_the_episode_nav_is_a_div_not_a_nav():
-    """文章页的「上一期 / 下一期 / 全部期号」不该是 ``<nav>``。
+    """文章页的「上一期 / 下一期」不该是 ``<nav>``。
 
     它现在渲染成一条红色横条（Materialize 的导航条颜色），
     白字，在文章正中间非常突兀。

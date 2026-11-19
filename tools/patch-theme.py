@@ -2920,8 +2920,10 @@ body.DarkMode .episode-block {
     padding-top: 12px;
 }
 .episode-nav-item { font-size: 13px; color: #455a64; text-decoration: none; }
+.episode-subscribe { font-size: 12.5px; color: #455a64; margin-top: 10px; }
+.episode-subscribe a { color: #009688; font-weight: 600; }
+body.DarkMode .episode-subscribe { color: #b0bec5; }
 .episode-nav-item:hover { color: #009688; }
-.episode-nav-all { margin-left: auto; font-weight: 600; color: #009688; }
 body.DarkMode .episode-title { color: #eceff1; }
 body.DarkMode .episode-hook { color: #cfd8dc; }
 body.DarkMode .episode-series,
@@ -2950,6 +2952,27 @@ if os.path.isfile(my_css_path):
         print("Appended EPISODE-BLOCK CSS to my.css")
 else:
     print("my.css not found, skipping episode-block CSS")
+
+# --- 13b. 系列页：退休（2026-11-19） ---
+# 「播客」系列页（/videos/）整个删掉了，文章页期号区块里那条
+# 「全部期号」的链接也跟着没了 —— 留着就是一条死链。
+#
+# 那条链接的样式（.episode-nav-all）在 EPISODE-BLOCK 那段里，
+# 上面已经把注入的那份改掉了；但仓库里现存的 my.css 还带着旧规则，
+# 这里主动剥掉 —— 否则本地和 CI 的 my.css 会差一行。
+episode_nav_all_rule = re.compile(
+    r"^\.episode-nav-all\s*\{[^\n]*\}\n", re.M
+)
+if os.path.isfile(my_css_path):
+    with open(my_css_path, encoding="utf-8") as f:
+        _mycss = f.read()
+    _stripped = episode_nav_all_rule.sub("", _mycss)
+    if _stripped != _mycss:
+        with open(my_css_path, "w", encoding="utf-8") as f:
+            f.write(_stripped)
+        print("Stripped .episode-nav-all CSS from my.css")
+    else:
+        print(".episode-nav-all CSS already gone, skipping")
 
 # --- 14. Latest episode：退休 ---
 # 2026-11-18：首页上的「最新一期」那一块（期号 + 一句话简介 + 看这一期 /

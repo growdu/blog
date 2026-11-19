@@ -98,6 +98,13 @@ var episodeFigure = (typeof figure !== 'undefined' && figure) ? figure : null;
     </div>
     <% } %>
 
+    <%# 2026-11-19：系列页（/videos/）退休了，订阅入口跟着搬到这里 ——
+        每一期文章页的顶部就是这条期号线，订阅链接放在这儿，读者不用
+        先找到一个合集页。 %>
+    <div class="episode-subscribe">
+      订阅播客：<a href="<%- url_for('/feed.xml') %>">RSS feed</a>（每期带旁白音频）
+    </div>
+
     <div class="episode-meta">
       <% if (episodeNow.duration_s) { %>
       <span class="episode-meta-item">时长 <%= Math.round(episodeNow.duration_s) %> 秒</span>
@@ -143,7 +150,9 @@ var episodeFigure = (typeof figure !== 'undefined' && figure) ? figure : null;
       <% if (episodeNext) { %>
       <a class="episode-nav-item" href="<%- url_for(episodeNext.url) %>">下一期 <%= episodeNext.episode_label %></a>
       <% } %>
-      <a class="episode-nav-item episode-nav-all" href="<%- url_for('/videos/') %>">全部期号</a>
+      <%# 2026-11-19：这一行「全部期号」删掉了 —— 它指向的系列页
+          （/videos/）整个退休了，留着就是一个死链。期号线本身还在：
+          上一期 / 下一期还能走，RSS 订阅（/feed.xml）也没动。 %>
     </div>
     <% } %>
 

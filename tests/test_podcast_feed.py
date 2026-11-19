@@ -232,16 +232,18 @@ def test_the_mount_point_is_not_added_twice(tmp_path, monkeypatch):
     assert "/blog/blog/" not in url
 
 
-def test_the_series_page_points_at_the_feed(tmp_path, monkeypatch):
-    """系列页上的订阅入口要指向 feed——带挂载点前缀。"""
-    series = load_tool("build-series-page")
-    monkeypatch.setattr(series, "PODCAST_INDEX", _write_index(tmp_path))
-    out = tmp_path / "index.md"
-    assert series.main(["--out", str(out)]) == 0
+def test_the_episode_page_points_at_the_feed():
+    """订阅入口要指向 feed——带挂载点前缀。
 
-    text = out.read_text(encoding="utf-8")
-    assert "/feed.xml" in text
-    assert "订阅" in text
+    2026-11-19：系列页（/videos/）退休了，订阅入口跟着搬进文章页顶部的
+    期号区块。feed 本身还在，订阅链路不能断。
+    """
+    partial = (
+        REPO_ROOT / "themes" / "matery" / "layout" / "_partial" / "episode-block.ejs"
+    ).read_text(encoding="utf-8")
+
+    assert "/feed.xml" in partial, "文章页的期号区块里没有指向 feed 的链接"
+    assert "订阅" in partial, "订阅入口的字样不见了"
 
 
 # --- 4. 装配 ---------------------------------------------------------------

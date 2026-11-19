@@ -21,7 +21,9 @@
 
 1. ``home-page`` 只加在**首页第一页**上 —— 别的页面带了这个类，
    文章页会被压成一屏（每篇文章只剩一屏高）；
-2. 这套布局是**自适应**的：窄屏（< 1100px）整段不生效，回到正常文档流；
+2. 这套布局是**自适应**的：手机（< 993px）整段不生效，回到正常文档流；
+   桌面宽度一律是「一屏」版面 —— 页面不滚，统计条就不会滑到固定导航栏
+   底下跟导航栏里的定位句撞在一起；
    空间真的不够时滚的是学习路径面板自己，不是整页；
 3. 学习路径的卡片按视口高度换排版：视口 900px 以上，卡片里竖着列出
    **全部阶段**（卡片被拉高到 280px，只放一个角标的话中间空一大块，看着
@@ -148,10 +150,14 @@ def test_the_homepage_fills_the_viewport_with_the_learning_path():
 
 
 def test_the_fill_layout_is_scoped_to_wide_viewports():
-    """窄屏不套这套布局。
+    """手机不套这套布局。
 
-    1100px 以下（平板、手机）强行塞进一屏，字会被压得没法看；那时候
-    页面就该正常滚动。
+    993px 以下（手机）强行塞进一屏，字会被压得没法看；那时候页面就该
+    正常滚动 —— 导航栏也收成汉堡菜单，定位句根本不显示。
+
+    **下限是 993px 不是 1100px**：1100px 以下整段不生效的话，1024px
+    那种「半屏窗口」的宽度上首页要滚将近一屏，而导航栏是固定的 ——
+    页面一滚，统计条就滑到导航栏底下，跟导航栏里那句定位压在一起。
     """
     css = _strip_css_comments(_read(TECH_CSS))
 
@@ -163,7 +169,7 @@ def test_the_fill_layout_is_scoped_to_wide_viewports():
             "那段布局没有 min-width 限制：{}".format(query)
         )
         width = int(re.search(r"min-width:\s*(\d+)px", query).group(1))
-        assert width >= 1024, "宽屏门槛太低了：{}px".format(width)
+        assert width >= 993, "宽屏门槛太低了：{}px".format(width)
 
 
 def test_the_learning_path_scrolls_itself_instead_of_the_page():
@@ -264,6 +270,28 @@ def test_tall_screens_list_every_stage_instead_of_the_plus_n_chip():
     assert re.search(
         r"\.lane-card__stages\s*\{[^}]*flex-direction:\s*column", block, re.S
     ), "高屏那一档的阶段没有竖着排 —— 卡片中间还是空的"
+
+
+def test_narrow_windows_lay_the_cards_out_in_two_columns():
+    """窗口不够宽的时候，八张卡也排 2 列 × 4 行。
+
+    1024px 那种「半屏窗口」：4 列的话每张卡只有 230px 宽，中文标题会
+    折成三四行，卡片高得离谱，一屏装不下 —— 页面就得滚，统计条就会滑
+    到固定导航栏底下去。
+
+    窗口窄（< 1200px）跟视口矮（< 900px）是同一件事：卡片要变宽变矮。
+    """
+    css = _strip_css_comments(_read(TECH_CSS))
+    narrow = [
+        block
+        for query, block in _media_blocks(css)
+        if "body.home-page" in block and "max-width: 1199px" in query
+    ]
+    assert narrow, "没有针对窄窗口（< 1200px）的排版"
+
+    assert re.search(
+        r"grid-template-columns:\s*repeat\(2,\s*1fr\)", narrow[0]
+    ), "窄窗口那一档没有把卡片改成 2 列 —— 卡片会折成三四行高"
 
 
 def test_short_screens_lay_the_cards_out_in_two_columns():

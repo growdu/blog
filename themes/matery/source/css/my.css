@@ -1843,8 +1843,10 @@ body.DarkMode .episode-block {
     padding-top: 12px;
 }
 .episode-nav-item { font-size: 13px; color: #455a64; text-decoration: none; }
+.episode-subscribe { font-size: 12.5px; color: #455a64; margin-top: 10px; }
+.episode-subscribe a { color: #009688; font-weight: 600; }
+body.DarkMode .episode-subscribe { color: #b0bec5; }
 .episode-nav-item:hover { color: #009688; }
-.episode-nav-all { margin-left: auto; font-weight: 600; color: #009688; }
 body.DarkMode .episode-title { color: #eceff1; }
 body.DarkMode .episode-hook { color: #cfd8dc; }
 body.DarkMode .episode-series,

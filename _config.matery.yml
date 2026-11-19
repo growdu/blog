@@ -47,9 +47,9 @@ menu:
   分类:
     url: /categories/
     icon: fa-solid fa-bookmark
-  播客:
-    url: /videos/
-    icon: fa-solid fa-video
+  # 2026-11-19：「播客」那一项退休了 —— 指向的系列页（/videos/）整个
+  # 删掉了，菜单里留着就是一个死链。期号线本身还在：每篇文章顶部的
+  # 期号区块（上一期 / 下一期）和 RSS 订阅（/feed.xml）都没动。
   标签:
     url: /tags/
     icon: fa-solid fa-tags

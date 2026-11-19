@@ -574,19 +574,6 @@ def _write_public_tree(root, row, html):
     return target
 
 
-def _write_series_page(root, row):
-    """系列页（/videos/）的渲染产物。"""
-    target = Path(root) / "videos" / "index.html"
-    target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(
-        "<h1>系列页</h1><h2>{} · {}</h2><p>{}</p>".format(
-            row["episode_label"], row["title"], row["hook"]
-        ),
-        encoding="utf-8",
-    )
-    return target
-
-
 def _write_index_file(root, row):
     path = Path(root) / "podcast_index.json"
     path.write_text(json.dumps({"episodes": [row]}, ensure_ascii=False), encoding="utf-8")
@@ -597,7 +584,6 @@ def test_the_checker_fails_the_build_when_the_block_is_missing(tmp_path):
     """命令行入口要真的以非零退出——CI 靠它拦下坏构建。"""
     row = _episode_row()
     _write_public_tree(tmp_path, row, "<div>普通文章，没有期号区块</div>")
-    _write_series_page(tmp_path, row)
     index_path = _write_index_file(tmp_path, row)
 
     assert (
@@ -611,7 +597,6 @@ def test_the_checker_fails_the_build_when_the_block_is_missing(tmp_path):
 def test_the_checker_passes_a_good_build(tmp_path):
     row = _episode_row()
     _write_public_tree(tmp_path, row, _good_page(row))
-    _write_series_page(tmp_path, row)
     index_path = _write_index_file(tmp_path, row)
 
     assert (
@@ -622,19 +607,20 @@ def test_the_checker_passes_a_good_build(tmp_path):
     )
 
 
-def test_the_checker_reports_a_series_page_that_missed_an_episode(tmp_path):
-    """系列页是期号线的入口——漏一期，那一期就等于没发布。"""
+def test_the_checker_no_longer_looks_at_the_retired_series_page(tmp_path):
+    """系列页（/videos/）2026-11-19 退休了，检查器不再看它。
+
+    检查器要是还去查那个页面，构建一定失败 —— 页面没了，检查永远通不过。
+    """
     row = _episode_row()
     _write_public_tree(tmp_path, row, _good_page(row))
-    series = _write_series_page(tmp_path, row)
-    series.write_text("<h1>系列页</h1>", encoding="utf-8")
     index_path = _write_index_file(tmp_path, row)
 
     assert (
         episode_checker.main(
             ["--public", str(tmp_path), "--index", str(index_path)]
         )
-        == 1
+        == 0
     )
 
 
