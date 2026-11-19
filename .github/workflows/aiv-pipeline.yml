@@ -32,7 +32,7 @@ jobs:
     name: Linux 上跑测试
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: 装系统依赖
         run: |
