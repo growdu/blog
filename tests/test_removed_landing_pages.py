@@ -1,7 +1,7 @@
 """``/database/`` 与 ``/projects/`` 两个落地页删掉了，旧 URL 变成重定向。
 
 **为什么删**：站点要做减法。这两块都是**重复入口**——
-数据库的文章在「分类」页里按分类找得到，开源项目在「关于我」页里有卡片，
+数据库的文章在「学习路径」里按赛道找得到，开源项目在「关于我」页里有卡片，
 两页各自维护一份清单，跟真正的内容目录各走各的，改一处就漏一处。
 
 **为什么不能直接 404**：这两个地址已经发布出去很久了。书签、搜索引擎的
@@ -53,7 +53,9 @@ def test_the_sync_writes_a_redirect_stub_for_both_pages(tmp_path):
     sync.SRC = str(tmp_path)
     sync.create_removed_landing_redirects()
 
-    for slug, target in (("database", "/categories/"), ("projects", "/about/")):
+    # 2026-11-19：/database/ 的正身从 /categories/ 换成了 /all/ ——
+    # 分类页整套退休了，再跳过去就是跳进一个空页面。
+    for slug, target in (("database", "/all/"), ("projects", "/about/")):
         page = tmp_path / slug / "index.md"
         assert page.is_file(), "/{}/ 的重定向页没生成".format(slug)
         content = page.read_text(encoding="utf-8")
@@ -76,9 +78,10 @@ def test_the_redirect_targets_still_exist(tmp_path):
     sync.SRC = str(tmp_path)
     sync.create_theme_pages()
 
-    for target in ("categories", "about"):
-        page = tmp_path / target / "index.md"
-        assert page.is_file(), "/{}/ 这个正身页没有生成".format(target)
+    # /about/ 由 sync-hexo 自己写出来；/all/ 是「全部文章」那一页，
+    # 由 source/all/ 下的文章目录渲染（这边只查文件在不在）。
+    assert (tmp_path / "about" / "index.md").is_file(), "/about/ 这个正身页没有生成"
+    assert (REPO_ROOT / "source" / "all").is_dir(), "/all/ 这个正身页没有生成"
 
 
 def test_the_old_landing_page_generator_is_gone():

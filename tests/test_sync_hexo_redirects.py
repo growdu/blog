@@ -1,6 +1,6 @@
 """重定向页生成器的三条硬规矩（tools/sync-hexo.py）。
 
-一是**旧 URL 必须还在**：文章换了目录、分类改了名，旧链接要能跳到新地方，
+一是**旧 URL 必须还在**：文章换了目录，旧链接要能跳到新地方，
 所以生成器在旧路径上放一个 meta refresh 的静态页。
 
 二是**日期段要对得上**：重定向页默认落在新文件的日期段上（文章搬家时
@@ -48,33 +48,89 @@ def out_dir(sync, tmp_path, monkeypatch):
     """把生成目录指到临时目录，并清空重定向表。"""
     monkeypatch.setattr(sync, "SRC", str(tmp_path))
     monkeypatch.setattr(sync, "REDIRECTS", {})
-    monkeypatch.setattr(sync, "CATEGORY_REDIRECTS", {})
+    monkeypatch.setattr(sync, "POSTS", str(tmp_path / "_posts"))
+    monkeypatch.setattr(sync, "RETIRED_TAXONOMY_PATHS", [])
+    (tmp_path / "_posts").mkdir()
     return tmp_path
 
 
-def test_category_redirect_page_is_written_at_the_old_url(sync, out_dir):
-    sync.CATEGORY_REDIRECTS["旧分类"] = "源码主线/新分类"
-    written = sync.write_category_redirects()
-    assert written == 1
-    page = out_dir / "categories" / "旧分类" / "index.md"
+def _write_post(sync, out_dir, name, categories=(), tags=()):
+    """造一篇假文章（只要 front matter）。"""
+    lines = ["---", "title: 假文章", "date: 2026-01-01 00:00:00"]
+    if categories:
+        lines.append("categories:")
+        lines.extend("  - {}".format(c) for c in categories)
+    if tags:
+        lines.append("tags:")
+        lines.extend("  - {}".format(t) for t in tags)
+    lines.append("---")
+    lines.append("")
+    path = out_dir / "_posts" / (name + ".md")
+    path.write_text("\n".join(lines), encoding="utf-8")
+
+
+def test_taxonomy_overviews_become_redirect_pages(sync, out_dir):
+    """/categories/ 与 /tags/ 的总览页退休了 —— 旧地址跳到「全部文章」。"""
+    written = sync.write_taxonomy_redirects()
+    assert written == 2
+    for slug in ("categories", "tags"):
+        page = out_dir / slug / "index.md"
+        assert page.is_file(), "/{}/ 的重定向页没生成".format(slug)
+        content = page.read_text(encoding="utf-8")
+        assert 'content="0; url=/all/"' in content
+        assert '<link rel="canonical" href="/all/">' in content
+        # 跳不过去的时候（meta refresh 被禁），人还能点过去。
+        assert '<a href="/all/">' in content
+
+
+def test_a_category_url_becomes_a_redirect_page(sync, out_dir):
+    """每篇用过的分类也要有去处 —— 那是发布出去过的地址。"""
+    _write_post(sync, out_dir, "post-1", categories=["数据库"])
+    written = sync.write_taxonomy_redirects()
+    assert written == 3  # 两个总览页 + 一个分类
+    page = out_dir / "categories" / "数据库" / "index.md"
     assert page.is_file()
-    assert "/categories/" in page.read_text(encoding="utf-8")
+    assert 'content="0; url=/all/"' in page.read_text(encoding="utf-8")
 
 
-def test_category_redirect_with_an_illegal_filename_char_is_skipped(sync, out_dir):
-    """旧分类名带冒号 —— 那个目录过不了 artifact 上传，宁可不发。"""
-    sync.CATEGORY_REDIRECTS["PostgreSQL 源码修炼之路:内核深度拆解专题"] = "源码主线/PostgreSQL"
-    written = sync.write_category_redirects()
-    assert written == 0
-    assert not (out_dir / "categories").exists()
+def test_a_tag_url_becomes_a_redirect_page(sync, out_dir):
+    _write_post(sync, out_dir, "post-1", tags=["PostgreSQL"])
+    written = sync.write_taxonomy_redirects()
+    assert written == 3
+    page = out_dir / "tags" / "PostgreSQL" / "index.md"
+    assert page.is_file()
+    assert 'content="0; url=/all/"' in page.read_text(encoding="utf-8")
+
+
+def test_a_nested_category_keeps_its_layers(sync, out_dir):
+    """层级分类（``人生/成长之路``）的地址也是发布过的。"""
+    _write_post(sync, out_dir, "post-1", categories=["人生/成长之路"])
+    sync.write_taxonomy_redirects()
+    page = out_dir / "categories" / "人生" / "成长之路" / "index.md"
+    assert page.is_file()
+
+
+def test_the_retired_paths_from_the_data_table_are_stubbed_too(sync, out_dir, monkeypatch):
+    """历史上用过、现在没有文章归进去的分类名也得有去处。"""
+    monkeypatch.setattr(sync, "RETIRED_TAXONOMY_PATHS", ["categories/集群"])
+    sync.write_taxonomy_redirects()
+    assert (out_dir / "categories" / "集群" / "index.md").is_file()
+
+
+def test_taxonomy_redirect_with_an_illegal_filename_char_is_skipped(sync, out_dir):
+    """分类名带冒号 —— 那个目录过不了 artifact 上传，宁可不发。"""
+    _write_post(sync, out_dir, "post-1", categories=["PostgreSQL 源码修炼之路:内核深度拆解专题"])
+    written = sync.write_taxonomy_redirects()
+    assert written == 2  # 只有两个总览页
+    assert not (out_dir / "categories" / "PostgreSQL 源码修炼之路:内核深度拆解专题").exists()
 
 
 @pytest.mark.parametrize("bad", list(INVALID))
 def test_no_illegal_char_ever_reaches_a_directory_name(sync, out_dir, bad):
     """每个非法字符都要被拦下来 —— 不是只拦冒号。"""
-    sync.CATEGORY_REDIRECTS[f"分类{bad}名字"] = "源码主线/新分类"
-    assert sync.write_category_redirects() == 0
-    assert not (out_dir / "categories").exists()
+    _write_post(sync, out_dir, "post-1", categories=["分类{}名字".format(bad)])
+    assert sync.write_taxonomy_redirects() == 2
+    assert not (out_dir / "categories" / "分类{}名字".format(bad)).exists()
 
 
 def test_article_redirect_with_an_illegal_filename_char_is_skipped(sync, out_dir, monkeypatch):

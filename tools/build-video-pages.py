@@ -25,10 +25,12 @@
 
     source/_posts/video/<期号>.md    每期一个内容单元
 
-**合集页（``source/videos/index.md``）不由这个脚本写**：它由
-``tools/build-series-page.py`` 生成——那一页是**系列页**，按期号排，
-每期带钩子、时长与完整版（母稿页）的链接，数据来自期号索引
-（母稿是唯一真相）。一个文件一个写入者。
+**合集页（``source/videos/index.md``）2026-11-19 退休了**：那一页是
+**系列页**，按期号排，每期带钩子、时长与完整版（母稿页）的链接。它跟
+生成它的工具（``tools/build-series-page.py``）一起删掉了 —— 现在没有
+任何工具写合集页，一个文件一个写入者的规矩靠「零个写入者」守住。
+期号线本身还在：文章页顶部的期号区块（上一期 / 下一期）和 RSS 订阅
+（``/feed.xml``）都不依赖那一页。
 """
 
 import argparse
@@ -243,7 +245,7 @@ def main(argv=None) -> int:
     print("生成视频内容单元 {} 个：{}".format(
         len(pages), "、".join(episode for episode, *_ in pages)
     ))
-    print("合集页（系列页）由 tools/build-series-page.py 生成")
+    print("合集页（系列页）2026-11-19 退休了 —— 没有工具写它")
     return 0
 
 

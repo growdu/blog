@@ -67,12 +67,16 @@ index_generator:
   order_by: -date
 
 # Category & Tag
+# 2026-11-19：分类页、标签页整套退休了 —— hexo-generator-category /
+# hexo-generator-tag 两个生成器从 package.json 里卸掉了（配置里关不掉：
+# 那两个插件只认 per_page，不认 false），所以每个分类/标签的子页面
+# 不会再生成。/categories/ 与 /tags/ 的旧地址由 sync-hexo.py 写成
+# 重定向页（跳到 /all/），不是 404 也不是 403。
+#
+# 文章 front matter 里的 categories / tags 字段**留着** —— 学习路径
+# 的归类规则、搜索索引的字段都还在用它们，只是不再往访客面前摆。
 default_category: uncategorized
 category_map:
-category_generator:
-  per_page: 0
-tag_generator:
-  per_page: 0
 
 tag_map:
 
@@ -96,6 +100,15 @@ feed:
   path: atom.xml
   limit: 20
   content: false
+
+# Sitemap
+# 2026-11-19：分类/标签那套页面退休了 —— sitemap 里不要再列它们的地址。
+# hexo-generator-sitemap 默认 tags/categories 都是 true，会把每个分类/标签的
+# permalink 列进去；那些地址现在是重定向页（noindex），列进 sitemap 等于
+# 叫搜索引擎收录一个跳转页。
+sitemap:
+  tags: false
+  categories: false
 
 # Extensions
 theme: matery

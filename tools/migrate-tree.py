@@ -572,9 +572,13 @@ PROJECT_DISPLAY_NAMES = {"postgresql": "PostgreSQL", "linux": "Linux"}
 def write_index_files(table, moves, report):
     """给新树写 `_index.md`。
 
-    每个目录页带 `cascade.categories` —— `sync-hexo.py:458
-    read_cascade_categories()` 靠它把分类链拼出来（源码主线 → PostgreSQL
-    → 存储引擎），三级分类页才会真的生成。
+    每个目录页带 `cascade.categories` —— `sync-hexo.py` 的
+    `read_cascade_categories()` 靠它把分类链拼出来（源码主线 → PostgreSQL
+    → 存储引擎）。
+
+    2026-11-19：分类页整套退休了，这条链不再生成任何页面 —— 它现在只
+    当**检索维度**用（学习路径的归类规则、搜索索引都读它）。链条本身
+    还得拼全：少一级，文章就归不进对应的赛道。
     """
     made = []
     tops_done = set()
@@ -611,8 +615,9 @@ def write_index_files(table, moves, report):
         # 项目层：项目目录页 + 它下面的系列目录页。
         #
         # 项目目录页**不能少** —— 少了它，分类链就少一级：文章的
-        # cascade 只有「源码主线」和系列名，`/categories/源码主线/存储引擎/`
-        # 而不是 `/categories/源码主线/PostgreSQL/存储引擎/`。
+        # cascade 只有「源码主线」和系列名（源码主线 → 存储引擎），
+        # 而不是完整的链条（源码主线 → PostgreSQL → 存储引擎）。
+        # 分类页退休后这条链只用于归类，缺一级文章就归不进对应赛道。
         proj_dir = target_root
         proj_name = parts[-1]
         proj_cn = (proj.get("display_name")
@@ -768,7 +773,7 @@ def _merge_article_section(old, body):
 
 
 # --------------------------------------------------------------------------
-# 常量补丁：REDIRECTS / DATE_OVERRIDES / CATEGORY_REDIRECTS
+# 常量补丁：REDIRECTS / DATE_OVERRIDES
 # --------------------------------------------------------------------------
 
 
@@ -833,9 +838,10 @@ def build_date_overrides(moves, dates_before, out_map=None):
     return out
 
 
-def build_category_redirects(table):
-    """旧分类 → 新分类。"""
-    return dict(table.get("category_redirects", {}))
+# 2026-11-19：分类/标签这套页面整套退休了 —— 「旧分类 → 新分类」的映射表
+# （data/category-redirects.json）不再需要：所有旧分类地址统一由
+# sync-hexo.py 写成跳到「全部文章」的重定向页，映射到哪一层都一样。
+# 所以这里不再生成那张表（原来那张表留着只会让人以为还在用）。
 
 
 # --------------------------------------------------------------------------
@@ -1027,16 +1033,13 @@ def main():
     redirects = build_redirects(moves, load_redirects())
     date_overrides = build_date_overrides(moves, dates_before,
                                           table.get("out_map", {}))
-    cat_redirects = build_category_redirects(table)
     for name, payload in (
         (DATE_FILE, date_overrides),
         ("data/redirects.json", redirects),
-        ("data/category-redirects.json", cat_redirects),
     ):
         with open(os.path.join(REPO, name), "w", encoding="utf-8") as fh:
             json.dump(payload, fh, ensure_ascii=False, indent=2, sort_keys=True)
     report.append(f"常量补丁：REDIRECTS +{len(redirects)} 条，"
-                  f"CATEGORY_REDIRECTS +{len(cat_redirects)} 条，"
                   f"DATE_OVERRIDES 写进 {DATE_FILE}（{len(date_overrides)} 条）")
 
     # 6. 外部引用

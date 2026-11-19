@@ -44,15 +44,12 @@ menu:
   归档:
     url: /archives/
     icon: fa-solid fa-archive
-  分类:
-    url: /categories/
-    icon: fa-solid fa-bookmark
-  # 2026-11-19：「播客」那一项退休了 —— 指向的系列页（/videos/）整个
-  # 删掉了，菜单里留着就是一个死链。期号线本身还在：每篇文章顶部的
-  # 期号区块（上一期 / 下一期）和 RSS 订阅（/feed.xml）都没动。
-  标签:
-    url: /tags/
-    icon: fa-solid fa-tags
+  # 2026-11-19：「分类」「标签」两项退休了 —— 分类页、标签页（/categories/、
+  # /tags/，以及它们底下的每个分类/标签子页）整套删掉了，菜单里留着
+  # 就是死链（而且那两个总览页本来就是 403）。
+  # 「播客」那一项也退休了 —— 指向的系列页（/videos/）整个删掉了。
+  # 期号线本身还在：每篇文章顶部的期号区块（上一期 / 下一期）和
+  # RSS 订阅（/feed.xml）都没动。
   关于:
     url: /about/
     icon: fa-solid fa-user

@@ -1,20 +1,9 @@
+<%# 2026-11-19：分类数、标签数两块退休了 —— 分类/标签这套页面整个删掉了，
+    那两个数字原来链的就是 /categories/ 和 /tags/（两个 403 的死链）。
+    分类信息还在 front matter 里，只是不再往访客面前摆。 %>
 <% if (site.posts && site.posts.length > 0) { %>
 <div class="statis">
     <span class="count"><a href="<%- url_for('/') %>"><%- site.posts.length %></a></span>
     <span class="name"><%- __('posts') %></span>
-</div>
-<% } %>
-
-<% if (site.categories && site.categories.length > 0) { %>
-<div class="statis">
-    <span class="count"><a href="<%- url_for('/categories') %>"><%- site.categories.length %></a></span>
-    <span class="name"><%- __('categories') %></span>
-</div>
-<% } %>
-
-<% if (site.tags && site.tags.length > 0) { %>
-<div class="statis">
-    <span class="count"><a href="<%- url_for('/tags') %>"><%- site.tags.length %></a></span>
-    <span class="name"><%- __('tags') %></span>
 </div>
 <% } %>

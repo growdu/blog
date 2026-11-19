@@ -2317,24 +2317,12 @@ if "carousel-3d-wrapper" not in recommend_content:
                                 <i class="far fa-clock fa-fw icon-date"></i><%= date(post.date, config.date_format) %>
                             </span>
                             <span class="publish-author">
-                                <% if (post.categories && post.categories.length > 0) { %>
-                                <i class="fas fa-bookmark fa-fw icon-category"></i>
-                                <% post.categories.forEach(category => { %>
-                                <a href="<%- url_for(category.path) %>" class="post-category"><%- category.name %></a>
-                                <% }); %>
-                                <% } else { %>
+                                <%# 分类名退休了 —— 分类页整套删掉了（2026-11-19），
+                                    这里只剩作者。 %>
                                 <i class="fas fa-user fa-fw"></i><%- config.author %>
-                                <% } %>
                             </span>
                         </div>
                     </div>
-                    <% if(post.tags && post.tags.length > 0) { %>
-                    <div class="card-action article-tags">
-                        <% post.tags.forEach(tag => { %>
-                        <a href="<%- url_for(tag.path) %>"><span class="chip bg-color"><%= tag.name %></span></a>
-                        <% }); %>
-                    </div>
-                    <% } %>
                 </div>
             </div>
             <% }); %>
@@ -2634,7 +2622,7 @@ else:
 # Idempotent: skip if marker already in my.css.
 home_content_marker = "/* HOME-CONTENT-PANEL */"
 my_css_path = os.path.join(theme_dir, "source", "css", "my.css")
-hc_css = '/* HOME-CONTENT-PANEL */\n.home-content {\n    margin-top: 24px;\n    padding-bottom: 24px;\n}\n.stats-banner {\n    display: grid;\n    grid-template-columns: repeat(4, 1fr);\n    gap: 14px;\n    margin: 24px 0 36px;\n}\n.stat-card {\n    display: block;\n    padding: 22px 14px;\n    text-align: center;\n    background: var(--stat-card-bg, #fff);\n    color: var(--stat-card-fg, #263238);\n    border-radius: 12px;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.06);\n    transition: transform .15s ease, box-shadow .15s ease;\n    text-decoration: none;\n}\n.stat-card:hover {\n    transform: translateY(-3px);\n    box-shadow: 0 6px 18px rgba(0,0,0,0.10);\n    color: #009688;\n}\n.stat-num {\n    font-size: 30px;\n    font-weight: 800;\n    margin-bottom: 4px;\n    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;\n}\n.stat-label {\n    font-size: 13px;\n    opacity: 0.7;\n}\nbody.DarkMode .stat-card {\n    background: #1e272c;\n    color: #eceff1;\n}\nbody.DarkMode .stat-card:hover { color: #4dd0e1; }\n\n/* Responsive */\n@media (max-width: 992px) {\n    .stats-banner { grid-template-columns: repeat(2, 1fr); }\n}\n@media (max-width: 600px) {\n    .stat-num { font-size: 24px; }\n}\n'
+hc_css = '/* HOME-CONTENT-PANEL */\n.home-content {\n    margin-top: 24px;\n    padding-bottom: 24px;\n}\n.stats-banner {\n    display: grid;\n    grid-template-columns: repeat(3, 1fr);\n    gap: 14px;\n    margin: 24px 0 36px;\n}\n.stat-card {\n    display: block;\n    padding: 22px 14px;\n    text-align: center;\n    background: var(--stat-card-bg, #fff);\n    color: var(--stat-card-fg, #263238);\n    border-radius: 12px;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.06);\n    transition: transform .15s ease, box-shadow .15s ease;\n    text-decoration: none;\n}\n.stat-card:hover {\n    transform: translateY(-3px);\n    box-shadow: 0 6px 18px rgba(0,0,0,0.10);\n    color: #009688;\n}\n.stat-num {\n    font-size: 30px;\n    font-weight: 800;\n    margin-bottom: 4px;\n    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;\n}\n.stat-label {\n    font-size: 13px;\n    opacity: 0.7;\n}\nbody.DarkMode .stat-card {\n    background: #1e272c;\n    color: #eceff1;\n}\nbody.DarkMode .stat-card:hover { color: #4dd0e1; }\n\n/* Responsive */\n@media (max-width: 992px) {\n    .stats-banner { grid-template-columns: repeat(2, 1fr); }\n}\n@media (max-width: 600px) {\n    .stat-num { font-size: 24px; }\n}\n'
 if os.path.isfile(my_css_path):
     with open(my_css_path, encoding="utf-8") as f:
         _mycss = f.read()
@@ -3033,8 +3021,8 @@ else:
 # Whitelist is intentionally explicit so a theme update that re-adds a
 # new lib won't accidentally be published without review.
 #
-# `echarts` belongs in the list: the archives page charts (post-charts.ejs,
-# post-calendar.ejs) load /libs/echarts/echarts.min.js and the theme
+# `echarts` belongs in the list: the archives page calendar
+# (post-calendar.ejs) loads /libs/echarts/echarts.min.js and the theme
 # ships no CDN fallback for it.
 THEME_LIBS = os.path.join(theme_dir, "source", "libs")
 USED_LIBS = {

@@ -51,14 +51,7 @@ var featureImages = theme.featureImages;
                             <i class="far fa-clock fa-fw icon-date"></i><%= date(page.prev.date, config.date_format) %>
                         </span>
                         <span class="publish-author">
-                            <% if (page.prev.categories && page.prev.categories.length > 0) { %>
-                            <i class="fas fa-bookmark fa-fw icon-category"></i>
-                            <% page.prev.categories.forEach(category => { %>
-                            <a href="<%- url_for(category.path) %>" class="post-category">
-                                    <%- category.name %>
-                                </a>
-                            <% }); %>
-                            <% } else if (page.prev.author && page.prev.author.length > 0) { %>
+                            <% if (page.prev.author && page.prev.author.length > 0) { %>
                             <i class="fas fa-user fa-fw"></i>
                             <%- page.prev.author %>
                             <% } else { %>
@@ -68,15 +61,7 @@ var featureImages = theme.featureImages;
                         </span>
                     </div>
                 </div>
-                <% if(page.prev.tags && page.prev.tags.length > 0) { %>
-                <div class="card-action article-tags">
-                    <% page.prev.tags.forEach(tag => { %>
-                    <a href="<%- url_for(tag.path) %>">
-                        <span class="chip bg-color"><%= tag.name %></span>
-                    </a>
-                    <% }); %>
-                </div>
-                <% } %>
+                
             </div>
         </div>
         <% } else { %>
@@ -111,14 +96,7 @@ var featureImages = theme.featureImages;
                                 <i class="far fa-clock fa-fw icon-date"></i><%= date(page.date, config.date_format) %>
                             </span>
                         <span class="publish-author">
-                            <% if (page.categories && page.categories.length > 0) { %>
-                            <i class="fas fa-bookmark fa-fw icon-category"></i>
-                            <% page.categories.forEach(category => { %>
-                            <a href="<%- url_for(category.path) %>" class="post-category">
-                                    <%- category.name %>
-                                </a>
-                            <% }); %>
-                            <% } else if (page.author && page.author.length > 0) { %>
+                            <% if (page.author && page.author.length > 0) { %>
                             <i class="fas fa-user fa-fw"></i>
                             <%- page.author %>
                             <% } else { %>
@@ -129,15 +107,7 @@ var featureImages = theme.featureImages;
                     </div>
                 </div>
 
-                <% if(page.tags && page.tags.length > 0) { %>
-                <div class="card-action article-tags">
-                    <% page.tags.forEach(tag => { %>
-                    <a href="<%- url_for(tag.path) %>">
-                        <span class="chip bg-color"><%= tag.name %></span>
-                    </a>
-                    <% }); %>
-                </div>
-                <% } %>
+                
             </div>
         </div>
         <% } %>
@@ -173,14 +143,7 @@ var featureImages = theme.featureImages;
                                 <i class="far fa-clock fa-fw icon-date"></i><%= date(page.next.date, config.date_format) %>
                             </span>
                         <span class="publish-author">
-                            <% if (page.next.categories && page.next.categories.length > 0) { %>
-                            <i class="fas fa-bookmark fa-fw icon-category"></i>
-                            <% page.next.categories.forEach(category => { %>
-                            <a href="<%- url_for(category.path) %>" class="post-category">
-                                    <%- category.name %>
-                                </a>
-                            <% }); %>
-                            <% } else if (page.next.author && page.next.author.length > 0) { %>
+                            <% if (page.next.author && page.next.author.length > 0) { %>
                             <i class="fas fa-user fa-fw"></i>
                             <%- page.next.author %>
                             <% } else { %>
@@ -190,15 +153,7 @@ var featureImages = theme.featureImages;
                         </span>
                     </div>
                 </div>
-                <% if(page.next.tags && page.next.tags.length > 0) { %>
-                <div class="card-action article-tags">
-                    <% page.next.tags.forEach(tag => { %>
-                    <a href="<%- url_for(tag.path) %>">
-                        <span class="chip bg-color"><%= tag.name %></span>
-                    </a>
-                    <% }); %>
-                </div>
-                <% } %>
+                
             </div>
         </div>
         <% } else { %>
@@ -233,14 +188,7 @@ var featureImages = theme.featureImages;
                                 <i class="far fa-clock fa-fw icon-date"></i><%= date(page.date, config.date_format) %>
                             </span>
                         <span class="publish-author">
-                            <% if (page.categories && page.categories.length > 0) { %>
-                            <i class="fas fa-bookmark fa-fw icon-category"></i>
-                            <% page.categories.forEach(category => { %>
-                            <a href="<%- url_for(category.path) %>" class="post-category">
-                                    <%- category.name %>
-                                </a>
-                            <% }); %>
-                            <% } else if (page.author && page.author.length > 0) { %>
+                            <% if (page.author && page.author.length > 0) { %>
                             <i class="fas fa-user fa-fw"></i>
                             <%- page.author %>
                             <% } else { %>
@@ -251,15 +199,7 @@ var featureImages = theme.featureImages;
                     </div>
                 </div>
 
-                <% if(page.tags && page.tags.length > 0) { %>
-                <div class="card-action article-tags">
-                    <% page.tags.forEach(tag => { %>
-                    <a href="<%- url_for(tag.path) %>">
-                        <span class="chip bg-color"><%= tag.name %></span>
-                    </a>
-                    <% }); %>
-                </div>
-                <% } %>
+                
             </div>
         </div>
         <% } %>

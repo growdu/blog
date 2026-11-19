@@ -56,25 +56,11 @@ var featureImages = theme.featureImages;
                                 <i class="far fa-clock fa-fw icon-date"></i><%= date(post.date, config.date_format) %>
                             </span>
                             <span class="publish-author">
-                                <% if (post.categories && post.categories.length > 0) { %>
-                                <i class="fas fa-bookmark fa-fw icon-category"></i>
-                                <% post.categories.forEach(function(cat, idx) { %>
-                                    <% if (idx > 0) { %> / <% } %>
-                                    <a href="<%- url_for(cat.path) %>" class="post-category"><%- cat.name %></a>
-                                <% }); %>
-                                <% } else { %>
                                 <i class="fas fa-user fa-fw"></i><%- config.author %>
-                                <% } %>
                             </span>
                         </div>
                     </div>
-                    <% if(post.tags && post.tags.length > 0) { %>
-                    <div class="card-action article-tags">
-                        <% post.tags.forEach(function(tag) { %>
-                        <a href="<%- url_for(tag.path) %>"><span class="chip bg-color"><%= tag.name %></span></a>
-                        <% }); %>
-                    </div>
-                    <% } %>
+                    
                 </div>
             </div>
             <% }); %>
@@ -122,25 +108,11 @@ var recentPosts = site.posts.sort('-date').limit(18).toArray();
                                 <i class="far fa-clock fa-fw icon-date"></i><%= date(post.date, config.date_format) %>
                             </span>
                             <span class="publish-author">
-                                <% if (post.categories && post.categories.length > 0) { %>
-                                <i class="fas fa-bookmark fa-fw icon-category"></i>
-                                <% post.categories.forEach(function(cat, idx) { %>
-                                    <% if (idx > 0) { %> / <% } %>
-                                    <a href="<%- url_for(cat.path) %>" class="post-category"><%- cat.name %></a>
-                                <% }); %>
-                                <% } else { %>
                                 <i class="fas fa-user fa-fw"></i><%- config.author %>
-                                <% } %>
                             </span>
                         </div>
                     </div>
-                    <% if(post.tags && post.tags.length > 0) { %>
-                    <div class="card-action article-tags">
-                        <% post.tags.forEach(function(tag) { %>
-                        <a href="<%- url_for(tag.path) %>"><span class="chip bg-color"><%= tag.name %></span></a>
-                        <% }); %>
-                    </div>
-                    <% } %>
+                    
                 </div>
             </div>
             <% } %>

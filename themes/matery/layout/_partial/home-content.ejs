@@ -14,15 +14,19 @@
   期号本身没消失：「播客」页和文章页的期号区块还在。
 
   **2026-11-19**：统计条挪到了**最上面**。首页第一眼看到的应该是
-  「这个站有多少东西」（580 篇 / 175w 字 / 2701 天 / 64 个分类），
+  「这个站有多少东西」（580 篇 / 175w 字 / 2701 天），
   接着就是八条赛道 —— 读者不用往下翻就知道这站是什么规模、从哪儿开始读。
 
   **2026-11-19（第二次）**：定位句（.home-hero）也退休了 —— 它搬到了
   顶部导航栏里，紧跟在站名「growdu」后面（见 _partial/header.ejs）。
   首页正文只剩两段：
 
-  0. Stats banner  (4 cards: 文章数 / 字数 / 站龄 / 分类数) —— 在最上面
+  0. Stats banner  (3 cards: 文章数 / 字数 / 站龄) —— 在最上面
   1. 学习路径
+
+  **2026-11-19（第三次）**：第四张「个分类」也退了 —— 分类页整套删掉了，
+  留着它就是一张链到 /categories/ 的死链。统计条从 4 张变 3 张
+  （CSS 那边 grid 也跟着从 4 列改成 3 列）。
 
   **这两段都不带 data-aos**：首页是一个「正好一屏」的固定版面，AOS 的
   fade-up 会把内容整体往下挪 100px 再淡入 —— 那 100px 让页面在动画
@@ -74,10 +78,8 @@
         <div class="stat-num"><%= totalDays %></div>
         <div class="stat-label">天持续更新</div>
       </a>
-      <a class="stat-card" href="<%- url_for('/categories/') %>">
-        <div class="stat-num"><%= site.categories.length %></div>
-        <div class="stat-label">个分类</div>
-      </a>
+      <%# 2026-11-19：「个分类」那块退休了 —— 分类页整个删掉了，
+          留着它就是一个链到 /categories/ 的死链。 %>
     </div>
   </div>
 </section>

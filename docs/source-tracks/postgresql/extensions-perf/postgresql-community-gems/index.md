@@ -33,7 +33,7 @@ description: "PostgreSQL 社区经过 30+ 年沉淀 留下来的精华资源:每
 
 ### 本文不是什么
 
-- 不是 PostgreSQL 教程(请配合 [PostgreSQL 源码修炼之路](/categories/%E6%BA%90%E7%A0%81%E4%B8%BB%E7%BA%BF/PostgreSQL/) 系列)
+- 不是 PostgreSQL 教程(请配合 [PostgreSQL 源码修炼之路](/learning/db-internals/) 系列)
 - 不是某一篇文档的中文翻译(更不是机器翻译)
 - 不是 SEO 性质的"推荐 100 个链接"水文
 
@@ -730,7 +730,7 @@ flowchart TD
 #### 路径 B:内核开发方向
 
 1. **第一周**:在 `~/cwork/postgresql` 编译成功,GDB 跟一条 SQL
-2. **第二周**:通读 [PostgreSQL 源码修炼之路](/categories/%E6%BA%90%E7%A0%81%E4%B8%BB%E7%BA%BF/PostgreSQL/) 14 章
+2. **第二周**:通读 [PostgreSQL 源码修炼之路](/learning/db-internals/) 14 章
 3. **第三周**:订阅 pgsql-hackers,跟踪一个 CF 周期
 4. **第四周**:尝试修一个 CF 上的"good first bug"
 
@@ -855,7 +855,7 @@ flowchart TD
 
 ## 附:本文与本站其它文章的关系
 
-- **PostgreSQL 源码修炼之路**: [PostgreSQL 源码修炼之路](/categories/%E6%BA%90%E7%A0%81%E4%B8%BB%E7%BA%BF/PostgreSQL/)
+- **PostgreSQL 源码修炼之路**: [PostgreSQL 源码修炼之路](/learning/db-internals/)
 - **PostgreSQL 行锁机制深度解析**: [PostgreSQL 行锁机制深度解析](../../transaction-mvcc/postgresql-row-lock/index.html)
 - **PostgreSQL 共享内存机制**: [PostgreSQL 共享内存机制](../../storage-engine/postgresql-shared-memory/index.html)
 - **PostgreSQL 逻辑复制 Stream Publisher**: [PostgreSQL 逻辑复制 Stream Publisher](../../logical-replication/postgresql-logical-replication-stream-publisher/index.html)

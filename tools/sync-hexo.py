@@ -172,20 +172,27 @@ comments: false
 <script>location.replace("{new_url}");</script>
 """
 
-# Category pages whose URL changed when a section gained/lost an _index.md
-# or was nested under a parent category.  Keyed by the OLD category path
-# (as it appeared under /categories/), value = the NEW category path.
-#
-#   成长之路  docs/road/  ->  docs/life/road/     (成长之路 becomes a child of 人生)
-#   随笔      docs/*.md   ->  docs/life/road/     (root docs fell back to 「随笔」)
-#   stock     docs/stock/ ->  title 股票与金融
-#   hometown  docs/hometown/ -> title 家乡 (now a child of 人生)
-CATEGORY_REDIRECTS = {
-    "成长之路": "人生/成长之路",
-    "随笔": "人生/成长之路",
-    "stock": "股票与金融",
-    "hometown": "人生/家乡",
-}
+# 分类/标签页退休后，旧地址留的重定向页（见 write_taxonomy_redirects）。
+# 跟文章重定向页是同一套机制，只是文案说的是「这一页删了」。
+TAXONOMY_REDIRECT_PAGE = """---
+title: "{title}"
+layout: false
+sitemap: false
+comments: false
+---
+
+<meta http-equiv="refresh" content="0; url={new_url}">
+<link rel="canonical" href="{new_url}">
+<meta name="robots" content="noindex, follow">
+<p>分类与标签这套页面已经删掉了，所有文章都在「全部文章」里，点击继续：
+<a href="{new_url}">{new_url}</a></p>
+<script>location.replace("{new_url}");</script>
+"""
+
+# 分类/标签这套页面 2026-11-19 整套退休了（见 write_taxonomy_redirects）。
+# 原来这里有一张「旧分类名 → 新分类名」的映射表：目录重排时分类 URL 会变，
+# 旧地址要有个去处。那张表现在不需要了 —— 所有旧分类地址统一跳到
+# 「全部文章」，映射表（连同 data/category-redirects.json）一起删掉。
 
 
 # --- `data/` 下的策展表 ---------------------------------------------------
@@ -210,7 +217,12 @@ def _load_data_table(name):
 # 上面写死的字面量保留为「这段历史是怎么来的」的记录。
 DATE_OVERRIDES.update(_load_data_table("data/date-overrides.json"))
 REDIRECTS.update(_load_data_table("data/redirects.json"))
-CATEGORY_REDIRECTS.update(_load_data_table("data/category-redirects.json"))
+
+# 历史上发布过的分类/标签地址（分类页退休之前用过的那批分类名）。
+# 2026-11-19 分类/标签整套退休，这些地址不能跟着 404 —— 它们发布出去很久了，
+# 书签、搜索引擎的索引、别人的博客都还链着。名字来自退休前那张
+# 「旧分类 → 新分类」映射表的键（连同当时写死在代码里的四条）。
+RETIRED_TAXONOMY_PATHS = _load_data_table("data/retired-taxonomy-paths.json") or []
 
 TOPIC_DEFS = [
     # (name, icon, color, blurb)
@@ -1815,23 +1827,19 @@ def process_html(filepath, section_titles, cascades):
 
 
 def create_theme_pages():
-    """Create Hexo pages that the matery theme expects for the
-    categories and tags overview pages.  hexo-generator-category/tag
-    only produce per-category/per-tag pages, not the index listing."""
-    pages = [
-        ("categories/index.md", "分类", "categories"),
-        ("tags/index.md", "标签", "tags"),
-    ]
-    for rel, title, layout in pages:
-        path = os.path.join(SRC, rel)
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        fm = f'---\ntitle: {title}\ndate: 2024-01-01 00:00:00\ntype: "{layout}"\nlayout: "{layout}"\n---\n\n'
-        with open(path, "w", encoding="utf-8") as f:
-            f.write(fm)
+    """Create the Hexo pages the theme expects.
 
-    # About page - generated from _config.matery.yml profile/myProjects/mySkills
-    # so updates to the config (e.g. career dates, project list) flow through
-    # to the rendered page automatically on the next sync.
+    2026-11-19：原来这里还写 ``source/categories/index.md`` 与
+    ``source/tags/index.md``（分类/标签总览页）。那两个页面整套退休了 ——
+    总览页要靠这里写出来才存在，hexo-generator-category 只管子页面；有一阵子
+    这里没写成，目录在、index.html 不在，nginx 又不开 autoindex，于是那两个
+    地址在访客面前是 **403**。现在旧地址由 write_taxonomy_redirects() 写成
+    重定向页，不再是页面。
+
+    About page - generated from _config.matery.yml profile/myProjects/mySkills
+    so updates to the config (e.g. career dates, project list) flow through
+    to the rendered page automatically on the next sync.
+    """
     about_path = os.path.join(SRC, "about", "index.md")
     os.makedirs(os.path.dirname(about_path), exist_ok=True)
     _profile, _my_projects, _my_skills, _my_education, _my_honors, _my_timeline = (
@@ -1985,40 +1993,79 @@ def write_redirects():
     return written
 
 
-def write_category_redirects():
-    """Generate redirect pages for category URLs that changed.
+def _collect_taxonomy_names():
+    """扫 ``source/_posts`` 的 front matter，收集用过的分类名与标签名。
 
-    A category page lives at /categories/<path>/.  When a section gains an
-    _index.md (its category name changes) or is nested under a parent
-    category (its path gains a prefix), the old URL 404s.  We emit a
-    static redirect page there so old links keep working.
+    分类名可能带层级（``人生/成长之路``）—— hexo 把它排在
+    ``/categories/人生/成长之路/``，重定向页也要建在同一层。
 
-    旧分类名里带文件名非法字符的**跳过并喊一声**：那个目录在 Linux 上
-    建得出来，可它会让整个产物传不上 GitHub（见 INVALID_PATH_CHARS）。
-    宁可不发这一页（那个 URL 就没有内链指向它），也不能让部署断掉。
+    返回两个集合：分类名、标签名。
+    """
+    cats, tags = set(), set()
+    for pattern in ("**/*.md", "**/*.html"):
+        for fp in glob.glob(os.path.join(POSTS, pattern), recursive=True):
+            try:
+                with open(fp, encoding="utf-8") as f:
+                    content = f.read()
+            except OSError:
+                continue
+            fm, _ = split_fm(content)
+            if fm is None:
+                continue
+            for name in _fm_list(fm, "categories") or []:
+                cats.add(name)
+            for name in _fm_list(fm, "tags") or []:
+                tags.add(name)
+    return cats, tags
+
+
+def _write_taxonomy_stub(rel_path, new_url, title):
+    """在 ``source/<rel_path>/index.md`` 写一个重定向页。返回 1 或 0。"""
+    bad = [c for c in INVALID_PATH_CHARS if c in rel_path]
+    if bad:
+        print(f"  ! 跳过重定向 {rel_path!r}：路径含文件名非法字符 {bad}"
+              f"（写出来的目录过不了 GitHub artifact 上传）",
+              file=sys.stderr)
+        return 0
+    out_dir = os.path.join(SRC, rel_path)
+    os.makedirs(out_dir, exist_ok=True)
+    with open(os.path.join(out_dir, "index.md"), "w", encoding="utf-8") as f:
+        f.write(TAXONOMY_REDIRECT_PAGE.format(new_url=new_url, title=title))
+    return 1
+
+
+def write_taxonomy_redirects():
+    """分类/标签这套页面退休了 —— 旧地址各留一个重定向页。
+
+    2026-11-19：``/categories/`` 与 ``/tags/`` 两个总览页，还有它们底下的
+    每个分类/标签子页，整套删掉了（生成器卸了、模板删了、菜单里的两项也
+    删了）。
+
+    **那两个总览页本来就是坏的**：总览页要靠本脚本写
+    ``source/categories/index.md``（hexo-generator-category 只管子页面），
+    有一阵子没写 → 目录在、index.html 不在 → nginx 不开 autoindex →
+    访客看到 403。既然这套页面已经不导航了，索性整套退休。
+
+    **为什么不能直接 404**：这些地址发布出去很久了 —— 书签、搜索引擎的
+    索引、别人的博客都还链着。重构方案 §7.4 把 URL 稳定性列成硬约束，
+    所以旧地址原地留一个重定向页，跳到「全部文章」（``/all/``）：那是现在
+    唯一能一口气看完所有文章的地方。
 
     Returns the number of redirect pages written.
     """
+    new_url = f"{SITE_ROOT}/all/"
     written = 0
-    for old_path, new_path in CATEGORY_REDIRECTS.items():
-        bad = [c for c in INVALID_PATH_CHARS if c in old_path]
-        if bad:
-            print(f"  ! 跳过分类重定向 {old_path!r}：旧分类名含文件名非法字符 {bad}"
-                  f"（写出来的目录过不了 GitHub artifact 上传）",
-                  file=sys.stderr)
-            continue
-        new_url = f"{SITE_ROOT}/categories/{quote(new_path)}/"
-        old_url = f"{SITE_ROOT}/categories/{quote(old_path)}/"
-        out_dir = os.path.join(SRC, "categories", old_path)
-        os.makedirs(out_dir, exist_ok=True)
-        with open(os.path.join(out_dir, "index.md"), "w", encoding="utf-8") as f:
-            f.write(
-                REDIRECT_PAGE.format(
-                    new_url=new_url,
-                    title=new_path,
-                )
-            )
-        written += 1
+    written += _write_taxonomy_stub("categories", new_url, "分类")
+    written += _write_taxonomy_stub("tags", new_url, "标签")
+    cats, tags = _collect_taxonomy_names()
+    for kind, names in (("categories", cats), ("tags", tags)):
+        for name in sorted(names):
+            written += _write_taxonomy_stub(
+                os.path.join(kind, name), new_url, name)
+    # 历史上用过、现在没有文章归进去的那些分类名（data/retired-taxonomy-paths.json）。
+    # 它们的地址发布出去很久了，同样得留个去处。
+    for rel in RETIRED_TAXONOMY_PATHS:
+        written += _write_taxonomy_stub(rel, new_url, os.path.basename(rel))
     return written
 
 
@@ -2192,8 +2239,8 @@ def main():
     n_redirect = write_redirects()
     print(f"Redirect pages: {n_redirect}")
 
-    n_cat_redirect = write_category_redirects()
-    print(f"Category redirects: {n_cat_redirect}")
+    n_cat_redirect = write_taxonomy_redirects()
+    print(f"Taxonomy redirects: {n_cat_redirect}")
 
     # robots.txt for SEO
     robots_path = os.path.join(SRC, "robots.txt")
@@ -2437,6 +2484,17 @@ footer a:hover{color:var(--c1)}
     # 留一个重定向页，指到各自还在的正身。
     create_removed_landing_redirects()
 
+    # 「关于我」页（/about/）。
+    #
+    # 2026-11-19：这个调用**曾经**被删掉了（2026-11-18 那次「做减法」，
+    # 连带把 create_theme_pages() 整个从 main() 里摘了），于是 /about/
+    # 再也没被生成 —— 而 nginx 的 SPA 兜底（try_files … /index.html）
+    # 把每个不存在的地址都变成 200 的首页，**没人看得出来**：菜单里的
+    # 「关于」点进去是首页，页面标题也是首页的。
+    # 分类/标签那套页面退休之后，这个函数只剩「关于我」一件事要做了。
+    create_theme_pages()
+    print("Created /about/ page")
+
 
 def create_removed_landing_redirects():
     """为已经删掉的两个落地页留下重定向页。
@@ -2451,14 +2509,15 @@ def create_removed_landing_redirects():
     人还能走）。
 
     指向的正身：
-      * ``/database/`` → ``/categories/``（分类总览，数据库文章在那儿）
+      * ``/database/`` → ``/all/``（全部文章；原来指的是分类总览，
+        分类页 2026-11-19 整套退休了，正身换成了「全部文章」）
       * ``/projects/`` → ``/about/``（「关于我」页有我的项目卡片）
 
     跟 ``write_redirects()`` 写的文章重定向页是同一套办法，只是这两页
     是**页面**而不是文章，日期段那套逻辑用不上。
     """
     pages = [
-        ("database", "数据库专题", "/categories/"),
+        ("database", "数据库专题", "/all/"),
         ("projects", "我的开源项目", "/about/"),
     ]
     for slug, title, target in pages:

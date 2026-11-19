@@ -951,7 +951,7 @@ html { scroll-behavior: smooth; }
 }
 .stats-banner {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(3, 1fr);
     gap: 14px;
     margin: 24px 0 36px;
 }
