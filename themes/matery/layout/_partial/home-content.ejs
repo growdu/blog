@@ -1,9 +1,17 @@
 <%/*
-  Homepage content panel — the first screen and everything under it.
-  Three stacked sections:
+  Homepage content panel —— 首屏之下的那一摞。
+
+  2026-11-18：这里原来还有一块「文章区」——三个 tab（最新发布 / 编辑推荐 /
+  近期热门），每格 6 张卡片，DOM 里一次躺着 18 张卡。首页因此又长又乱：
+  首屏、统计条、最新一期、学习路径、18 张卡片，全挤在一页里。
+
+  那一块**整块删掉**了，不留「最新文章」列表：想看文章去「归档」页
+  （时间轴 + 年度分页 + 搜索），那里才是看文章的地方。
+
+  现在这一页剩下三段：
   0. Home hero     (定位句 + 三篇代表作) —— 必须在统计条之前
   1. Stats banner  (4 cards: 文章数 / 字数 / 站龄 / 评论数)
-  2. Tabbed articles (推荐 / 热门 / 最新 + 查看全部)
+  2. 最新一期 + 学习路径
 
   Render only on the very first page of the home paginator so the
   /page/2/ /page/3/ pseudo-pages stay clean.
@@ -33,102 +41,6 @@
     }
     totalWords += w;
   });
-
-  // Tab data: 3 distinct sources, 6 cards each.
-  //   featured: **策展清单**（data/featured.json 的 featured 组）
-  //   hot:      **真实阅读量**（GoatCounter 快照）；没有快照才退回 top
-  //   latest:   newest by date
-  // site.posts 是 warehouse 的 Query，不是数组——filter/sort/slice 返回的
-  // 还是 Query，而 Query 没有 concat。所以先 toArray() 拿真正的数组。
-  var allPosts = site.posts.toArray();
-
-  // 「编辑推荐」是**策展**出来的：清单在仓库根的 data/featured.json
-  // （跟首屏那三篇代表作同一个文件），sync 复制到 source/_data/，
-  // 这里通过 site.data.featured 读到。作者改清单就能换这一格。
-  //
-  // 以前这里是 `top >= 70` —— 一个跟策展无关的阈值，而清单里那 6 条
-  // 谁都不读：作者改了清单，页面纹丝不动。
-  //
-  // 清单里的 slug 是 <相对路径>（不带日期段），而 post.path 形如
-  // 2026/08/18/db/aaa/ —— 所以先把日期段剥掉再匹配（跟首屏同一个口径）。
-  var _featData = (site.data && site.data.featured) || {};
-  var _featSlugs = _featData.featured || [];
-  var _featSlugOf = function (p) {
-    var m = String((p && p.path) || '').match(/\d{4}\/\d{2}\/\d{2}\/(.+)$/);
-    if (!m) return '';
-    var s = m[1].replace(/\/+$/, '');
-    if (s.slice(-11) === '/index.html') s = s.slice(0, -11);
-    return s;
-  };
-  var _featBySlug = {};
-  allPosts.forEach(function (p) {
-    var k = _featSlugOf(p);
-    if (k) _featBySlug[k] = p;
-  });
-  var featured = [];
-  _featSlugs.forEach(function (s) {
-    var p = _featBySlug[s];
-    if (p) featured.push(p);
-  });
-  if (!featured.length) {
-    // 清单缺失（sync 没跑 / 文件还没建），或者一条都对不上：
-    // 退回旧阈值，至少给六篇——这一格空着不像话。
-    featured = allPosts.filter(function (p) { return p.top && p.top >= 70; }).sort(function (a, b) { return b.top - a.top; }).slice(0, 6);
-  }
-
-  // 阅读量快照（GoatCounter 的真实 PV）。
-  //
-  // 真相在仓库根的 data/view-counts.json —— tools/fetch-view-counts.py 抓的，
-  // sync-hexo.py 复制到 source/_data/，hexo 挂到 site.data 上。
-  //
-  // 这个 tab 以前排的是手写的 top 分数：568 篇文章里只有 19 篇有 top，
-  // 跟真实热度无关。有真实 PV 就按 PV 排；没有就退回 top，**并改名**——
-  // 不要让一个叫「热门」的 tab 装着手动排序的内容。
-  var _vc = (site.data && site.data['view-counts']) || null;
-  var _counts = (_vc && _vc.counts) || {};
-  var _norm = function (p) {
-    // hexo 的 post.path 是 '2026/08/18/db/aaa/index.html'，
-    // GoatCounter 记的是 '/2026/08/18/db/aaa/'——两边归一到同一个键。
-    var s = String((p && p.path) || '');
-    if (s.charAt(0) === '/') { s = s.slice(1); }
-    if (s.slice(-11) === '/index.html') { s = s.slice(0, -11); }
-    else if (s === 'index.html') { s = ''; }
-    while (s.length > 0 && s.charAt(s.length - 1) === '/') { s = s.slice(0, -1); }
-    return s;
-  };
-  var _pv = function (p) {
-    var n = _counts[_norm(p)];
-    return typeof n === 'number' ? n : 0;
-  };
-  var _byPv = allPosts
-    .map(function (p) { return {post: p, pv: _pv(p)}; })
-    .filter(function (x) { return x.pv > 0; })
-    .sort(function (a, b) { return b.pv - a.pv; })
-    .slice(0, 6);
-
-  var hotTabName = '近期热门';
-  var hot;
-  // 「热门」得**分得出高下**才算热门：至少两篇有真实 PV，而且头两篇的
-  // PV 不一样。PV 全是 1 的时候，那个 tab 叫「近期热门」却给不出任何
-  // 热门——计划里说的是「PV 普遍低到无法区分」，不是「有几篇有 PV」。
-  if (_byPv.length >= 2 && _byPv[0].pv > _byPv[1].pv) {
-    // 有真实阅读量：按 PV 排。
-    hot = _byPv.map(function (x) { return x.post; });
-  } else {
-    // 快照缺失、或者 PV 少到分不出高下：退回 top 排序，并**改掉 tab 的名字**。
-    hotTabName = '编辑精选';
-    var featuredIds = new Set(featured.map(function (p) { return p._id; }));
-    hot = allPosts.filter(function (p) { return p.top && p.top >= 40 && p.top < 70; }).sort(function (a, b) { return b.top - a.top; });
-    var hotIds = new Set(hot.map(function (p) { return p._id; }));
-    // 补齐：不在 featured、也不在 hot 里的，按 top 从高到低。
-    // （老代码只排除了 featured，于是 hot 里已有的文章会被再补一遍——
-    //  同一个卡片出现两次。）
-    var more = allPosts
-      .filter(function (p) { return !featuredIds.has(p._id) && !hotIds.has(p._id); })
-      .sort(function (a, b) { return (b.top || 0) - (a.top || 0); });
-    hot = hot.concat(more).slice(0, 6);
-  }
-  var latest = allPosts.slice().sort(function (a, b) { return b.date - a.date; }).slice(0, 6);
 %>
 
 <section class="home-content" data-aos="fade-up">
@@ -156,48 +68,6 @@
     <%- partial('_partial/latest-episode') %>
 
     <%- partial('_partial/learning-path') %>
-
-    <%# ============== Tabbed articles ============== %>
-    <div class="home-tabs" data-aos="fade-up">
-      <ul class="tabs" role="tablist">
-        <%# 「最新发布」排第一并默认激活：新文章上线即可见。
-            Materialize 的 tabs 组件由 ``matery.js`` 初始化（``.tabs()``），
-            切换时它给激活面板加 ``active`` 类并用内联 ``display`` 切换显隐。
-            CSS 里另有「默认只显示第一个面板」的规则（``/* HOME-TABS */``），
-            所以即使 JS 没跑起来，首页也不会一次铺开 18 张卡片。 %>
-        <li class="tab col s4"><a class="active" href="#home-tab-latest" role="tab"><i class="fas fa-clock"></i>&nbsp;最新发布</a></li>
-        <li class="tab col s4"><a href="#home-tab-featured" role="tab"><i class="fas fa-star"></i>&nbsp;编辑推荐</a></li>
-        <li class="tab col s4"><a href="#home-tab-hot" role="tab"><i class="fas fa-fire"></i>&nbsp;<%= hotTabName %></a></li>
-      </ul>
-
-      <div id="home-tab-latest" class="col s12 home-tab-panel active" role="tabpanel">
-        <div class="post-grid">
-          <% latest.forEach(function (post) { %>
-            <%- partial('_partial/post-card', { post: post }) %>
-          <% }); %>
-        </div>
-      </div>
-      <div id="home-tab-featured" class="col s12 home-tab-panel" role="tabpanel">
-        <div class="post-grid">
-          <% featured.forEach(function (post) { %>
-            <%- partial('_partial/post-card', { post: post }) %>
-          <% }); %>
-        </div>
-      </div>
-      <div id="home-tab-hot" class="col s12 home-tab-panel" role="tabpanel">
-        <div class="post-grid">
-          <% hot.forEach(function (post) { %>
-            <%- partial('_partial/post-card', { post: post }) %>
-          <% }); %>
-        </div>
-      </div>
-
-      <div class="home-tabs__more">
-        <a href="<%- url_for('/archives/') %>" class="waves-effect waves-light btn-flat">
-          查看全部 <%= postCount %> 篇 <i class="fas fa-arrow-right"></i>
-        </a>
-      </div>
-    </div>
   </div>
 </section>
 <% } %>

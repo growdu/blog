@@ -44,15 +44,9 @@ menu:
   归档:
     url: /archives/
     icon: fa-solid fa-archive
-  项目:
-    url: /projects/
-    icon: fa-solid fa-rocket
   分类:
     url: /categories/
     icon: fa-solid fa-bookmark
-  数据库:
-    url: /database/
-    icon: fa-solid fa-database
   播客:
     url: /videos/
     icon: fa-solid fa-video

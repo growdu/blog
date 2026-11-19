@@ -169,11 +169,13 @@ def test_the_homepage_has_the_latest_episode_block():
     text = (THEME_PARTIALS / "home-content.ejs").read_text(encoding="utf-8")
 
     assert "partial('_partial/latest-episode')" in text
-    # 位置：在文章列表之前，也在学习路径之前——首页最上面就是它。
+    # 位置：在学习路径之前——首页最上面就是它。
+    # （2026-11-18：首页的文章区那三个 tab 整块删掉了，以前这里比的是
+    #  「最新一期」与文章列表的先后；现在文章区没了，锚点是学习路径。）
     block_at = text.find("partial('_partial/latest-episode')")
-    articles_at = text.find("home-tabs")
-    assert block_at != -1 and articles_at != -1
-    assert block_at < articles_at
+    learning_at = text.find("partial('_partial/learning-path')")
+    assert block_at != -1 and learning_at != -1
+    assert block_at < learning_at
 
 
 def test_the_latest_episode_block_is_in_the_repo():

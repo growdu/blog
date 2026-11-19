@@ -566,100 +566,6 @@ def categories_yaml(cats):
     return "\n".join(f"  - {c}" for c in cats)
 
 
-def collect_database_posts(section_titles, cascades):
-    """Collect database posts and their generated permalinks for the landing page."""
-    posts = []
-    for root, dirs, files in os.walk(DOCS):
-        prune_excluded_dirs(dirs)
-        for filename in sorted(files):
-            ext = os.path.splitext(filename)[1].lower()
-            if ext not in (".md", ".html", ".htm") or filename == "_index.md":
-                continue
-            filepath = os.path.join(root, filename)
-            rel = os.path.relpath(filepath, DOCS)
-            with open(filepath, encoding="utf-8") as f:
-                content = f.read()
-            fm, body = split_fm(content)
-            src = body if fm is not None else content
-            if ext == ".md":
-                title = extract_title(src) or fallback_title(filepath)
-                if has_fm_title(fm):
-                    title_match = re.search(
-                        r'^title:\s*["\']?(.+?)["\']?\s*$', fm, re.MULTILINE
-                    )
-                    if title_match:
-                        title = title_match.group(1).strip()
-            else:
-                title_match = re.search(
-                    r"<title[^>]*>(.*?)</title>", content, re.I | re.S
-                )
-                title = (
-                    re.sub(r"<[^>]+>", "", title_match.group(1)).strip()
-                    if title_match
-                    else fallback_title(filepath)
-                )
-            categories = resolve_post_categories(rel, section_titles, cascades)
-            # Database landing page surfaces three flavours:
-            #   1. Posts whose cascade tag is "数据库" or "PostgreSQL 源码修炼之路".
-            #   2. Posts under docs/source-tracks/postgresql/ — the PostgreSQL
-            #      source-code main line (the cascade tags there are the series
-            #      names: 存储引擎 / WAL 与恢复 / …, not "数据库").
-            #   3. The distributed-DB kernel articles (openGauss DCF, Raft) —
-            #      they used to live in docs/cluster/DCF/ and docs/cluster/raft/,
-            #      now they share one series with ZooKeeper / corosync articles,
-            #      so they are whitelisted one by one (DISTRIBUTED_DB_KERNEL).
-            #      Whitelisting them by path rather than whole-sale pulling in
-            #      the whole series keeps Patroni / snowflake / unrelated
-            #      cluster tools off this landing page.
-            if (
-                "数据库" not in categories
-                and "PostgreSQL 源码修炼之路" not in categories
-                and not rel.startswith("source-tracks/postgresql/")
-                and not any(rel.startswith(p) for p in DISTRIBUTED_DB_KERNEL)
-            ):
-                continue
-            fdir = os.path.dirname(rel)
-            if filename == "index.md":
-                slug = os.path.basename(fdir)
-            else:
-                slug = os.path.splitext(filename)[0]
-                if ext in (".html", ".htm") and not slug.endswith("-html"):
-                    slug += "-html"
-            date = git_date(filepath)
-            # Hexo derives the permalink slug from the post's full path under
-            # source/_posts. A page-bundle index.md is flattened to
-            # <parent>/<bundle-name>.md by process(), so its link must not
-            # include the bundle directory a second time.
-            source_dir = (
-                os.path.dirname(fdir) if filename == "index.md" and fdir else fdir
-            )
-            post_path = (
-                os.path.join(source_dir, slug)
-                if source_dir and source_dir != "."
-                else slug
-            )
-            url = _permalink(date, post_path)
-            posts.append(
-                {
-                    "title": title,
-                    "url": url,
-                    "date": date,
-                    "topics": infer_topics(rel, title),
-                }
-            )
-    unique = {post["url"]: post for post in posts}
-    posts_sorted = sorted(unique.values(), key=lambda post: post["date"], reverse=True)
-    # Group posts by inferred topic, preserving the canonical TOPIC_DEFS order.
-    topic_groups = {}
-    for name, _icon, _color, _blurb in TOPIC_DEFS:
-        topic_groups[name] = []
-    for post in posts_sorted:
-        for t in post.get("topics", []):
-            if t in topic_groups:
-                topic_groups[t].append(post)
-    return {"posts": posts_sorted, "topics": topic_groups}
-
-
 def git_date(filepath):
     """Get the earliest commit date across ALL branches.
 
@@ -2541,486 +2447,59 @@ footer a:hover{color:var(--c1)}
     else:
         print("WARNING: data/view-counts.json not found — 侧栏不显示阅读量")
 
-    # Database landing page
-    database_data = collect_database_posts(section_titles, cascade_map)
-    create_database_landing_page(database_data)
-    print("Created database landing page")
+    # 2026-11-18：/database/ 与 /projects/ 两个落地页删掉了。
+    # 旧 URL 不能 404（书签、搜索引擎、别人的博客都还链着），所以原地
+    # 留一个重定向页，指到各自还在的正身。
+    create_removed_landing_redirects()
 
 
-def create_database_landing_page(database_data):
-    """Copy the curated database landing page from tools/templates/ into
-    Hexo's source/ tree. The template is plain markdown + front matter,
-    editable in any editor with full syntax highlighting.
+def create_removed_landing_redirects():
+    """为已经删掉的两个落地页留下重定向页。
 
-    database_data: dict with 'posts' (flat list of all db posts) and
-    'topics' ({topic_name: [posts]}) keys.
+    2026-11-18：``/database/``（数据库专题聚合页）与 ``/projects/``
+    （GitHub 项目墙）删掉了 —— 站点要做减法，这两块属于「重复入口」：
+    数据库的文章在分类页里，项目卡片在「关于我」页里。
+
+    但**旧 URL 不能 404**：这两个地址已经发布出去很久了，书签、搜索引擎
+    的索引、别人的博客都还链着。所以原地留一个重定向页，各自带
+    ``meta refresh`` + ``canonical`` + 一个真链接（meta refresh 被禁掉时
+    人还能走）。
+
+    指向的正身：
+      * ``/database/`` → ``/categories/``（分类总览，数据库文章在那儿）
+      * ``/projects/`` → ``/about/``（「关于我」页有我的项目卡片）
+
+    跟 ``write_redirects()`` 写的文章重定向页是同一套办法，只是这两页
+    是**页面**而不是文章，日期段那套逻辑用不上。
     """
-    here = os.path.dirname(os.path.abspath(__file__))
-    template = os.path.join(here, "templates", "database.md")
-    db_path = os.path.join(SRC, "database", "index.md")
-    os.makedirs(os.path.dirname(db_path), exist_ok=True)
-    with open(template, encoding="utf-8") as f:
-        content = f.read()
-    content = rewrite_links(content, "database/index.md")
-
-    topics_marker = "<!-- DATABASE_TOPICS_START -->"
-    topics_end = "<!-- DATABASE_TOPICS_END -->"
-    recent_marker = "<!-- DATABASE_RECENT_START -->"
-    recent_end = "<!-- DATABASE_RECENT_END -->"
-    featured_marker = "<!-- DATABASE_FEATURED_START -->"
-    featured_end = "<!-- DATABASE_FEATURED_END -->"
-    topic_index_marker = "<!-- DATABASE_TOPIC_INDEX_START -->"
-    topic_index_end = "<!-- DATABASE_TOPIC_INDEX_END -->"
-
-    if topics_marker not in content or topics_end not in content:
-        raise ValueError("database template is missing DATABASE_TOPICS markers")
-    if recent_marker not in content or recent_end not in content:
-        raise ValueError("database template is missing DATABASE_RECENT markers")
-    if featured_marker not in content or featured_end not in content:
-        raise ValueError("database template is missing DATABASE_FEATURED markers")
-    if topic_index_marker not in content or topic_index_end not in content:
-        raise ValueError("database template is missing DATABASE_TOPIC_INDEX markers")
-
-    db_posts = database_data["posts"]
-    topic_groups = database_data["topics"]
-
-    # Recent N articles (chronological, top N)
-    RECENT_N = 10
-    recent = db_posts[:RECENT_N]
-    if recent:
-        recent_items = "\n".join(
-            f"- [{p['title']}]({p['url']}) · {p['date'][:10]}" for p in recent
-        )
-    else:
-        recent_items = "数据库专题文章正在整理中。"
-    content = content.replace(recent_marker, recent_items, 1)
-    content = content.replace(recent_end, "", 1)
-
-    # Featured: posts with top > 0 (parsed from FEATURED_POSTS via process())
-    # collect_database_posts doesn't carry the top value through, so we look it up here.
-    featured_paths = set(FEATURED_POSTS.keys())
-    featured_posts = []
-    for p in db_posts:
-        # p['url'] like '/2026/10/22/db%2Fpostgresql/postgresql-reorderbuffer-c-function-reference/'
-        # Re-derive the docs/-relative path from the URL body.
-        path_part = (
-            unquote(p["url"].rstrip("/").split("/", 4)[-1]) if "/" in p["url"] else ""
-        )
-        # Compare against FEATURED_POSTS keys (e.g. 'source-tracks/postgresql/logical-replication/逻辑解码DDL-Replay框架设计/index.md')
-        for fp in featured_paths:
-            slug = fp.replace("/", os.sep).replace(".md", "")
-            if path_part.endswith(slug) or slug.endswith(path_part):
-                featured_posts.append(p)
-                break
-    if featured_posts:
-        featured_items = "\n".join(
-            f"- [{p['title']}]({p['url']})" for p in featured_posts
-        )
-    else:
-        featured_items = "_（暂无置顶文章。在 `tools/sync-hexo.py` 的 `FEATURED_POSTS` 中配置即可展示在此处。）_"
-    content = content.replace(featured_marker, featured_items, 1)
-    content = content.replace(featured_end, "", 1)
-
-    # Topic index: compact one-line-per-topic with article count.
-    topic_index_lines = []
-    for name, icon, color, blurb in TOPIC_DEFS:
-        group = topic_groups.get(name, [])
-        count = len(group)
-        if count == 0:
-            continue
-        tag_url = f"{SITE_ROOT}/tags/{quote(slugize(name))}/"
-        topic_index_lines.append(
-            f'- <i class="fa-solid {icon}" style="color:{color}"></i> [{name}]({tag_url}) · **{count}** 篇 · {blurb}'
-        )
-    topic_index_items = (
-        "\n".join(topic_index_lines) if topic_index_lines else "_（暂无主题索引）_"
-    )
-    content = content.replace(topic_index_marker, topic_index_items, 1)
-    content = content.replace(topic_index_end, "", 1)
-
-    # Topic card grid: each topic renders as a card with icon, blurb,
-    # article count and up to 5 most-recent post titles linking to /tags/<topic>/
-    def _esc(s):
-        return (
-            (s or "")
-            .replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;")
-        )
-
-    topic_lines = ['<div class="db-topic-grid">']
-    for name, icon, color, blurb in TOPIC_DEFS:
-        group = topic_groups.get(name, [])
-        count = len(group)
-        if count == 0:
-            # Skip empty topics so the grid stays dense.
-            continue
-        preview = group[:5]
-        tag_slug = quote(slugize(name))
-        tag_url = f"{SITE_ROOT}/tags/{tag_slug}/"
-        cards = "".join(
-            f'<li><a href="{_esc(p["url"])}">{_esc(p["title"])}</a></li>'
-            for p in preview
-        )
-        more = ""
-        if count > len(preview):
-            more = f'<li class="db-topic-more"><a href="{tag_url}">还有 {count - len(preview)} 篇 →</a></li>'
-        topic_lines.append(f'''<div class="db-topic-card" style="--topic-color:{color}">
-  <a class="db-topic-link" href="{tag_url}" aria-label="查看{name}主题全部文章">
-    <div class="db-topic-head">
-      <i class="fa-solid {icon}"></i>
-      <span class="db-topic-name">{_esc(name)}</span>
-      <span class="db-topic-count">{count}</span>
-    </div>
-    <div class="db-topic-blurb">{_esc(blurb)}</div>
-    <ul class="db-topic-posts">{cards}{more}</ul>
-  </a>
-</div>''')
-    topic_lines.append("</div>")
-    topic_grid = "\n".join(topic_lines)
-    content = content.replace(topics_marker, topic_grid, 1)
-    content = content.replace(topics_end, "", 1)
-
-    with open(db_path, "w", encoding="utf-8") as f:
-        f.write(content)
-    n_topics = sum(1 for n, _, _, _ in TOPIC_DEFS if topic_groups.get(n))
-    print(
-        f"Created {os.path.relpath(db_path, '.')} ({len(db_posts)} posts, {n_topics} topics)"
-    )
-
-    # Projects page (custom page with card grid for growdu's GitHub projects)
-    create_projects_page()
-    print("Created projects landing page")
-
-    create_theme_pages()
-    print("Theme pages created")
-
-
-def create_projects_page():
-    """Generate the /projects/ page as a card grid of growdu's repos."""
-    # All non-fork, non-archived growdu repos, sorted by latest commit.
-    # Tuple: (name, description, language, stars, url).
-    projects = [
-        (
-            "ai_all_in_one",
-            "面向普通人的 AI 工具集合，封装主流大模型与办公 AI，一条命令跑起来。",
-            "Go",
-            0,
-            "https://github.com/growdu/ai_all_in_one",
-        ),
-        (
-            "blog",
-            "博客站点源码，本仓库 Hexo + matery 主题的构建来源。",
-            "Python",
-            0,
-            "https://github.com/growdu/blog",
-        ),
-        (
-            "ai_toubiao",
-            "AI 招投标助手，自动解析招标文件、生成应答方案，提升售前效率。",
-            "Go",
-            1,
-            "https://github.com/growdu/ai_toubiao",
-        ),
-        (
-            "growdu",
-            "个人 GitHub profile README 配置仓库。",
-            "",
-            1,
-            "https://github.com/growdu/growdu",
-        ),
-        (
-            "ai_teacher",
-            "AI 教师视频工作室，自动生成教学视频、字幕与讲稿。",
-            "Java",
-            0,
-            "https://github.com/growdu/ai_teacher",
-        ),
-        (
-            "learn_pg",
-            "PostgreSQL 内核学习笔记，边读源码边注释，吃透关键模块。",
-            "Go",
-            1,
-            "https://github.com/growdu/learn_pg",
-        ),
-        (
-            "dbt",
-            "日常数据库诊断与运维小工具合集，覆盖 PostgreSQL / openGauss 等场景。",
-            "C",
-            0,
-            "https://github.com/growdu/dbt",
-        ),
-        (
-            "ebpf_all",
-            "eBPF 一站式学习与实验仓库，覆盖内核观测、网络、安全、性能等场景。",
-            "Rust",
-            0,
-            "https://github.com/growdu/ebpf_all",
-        ),
-        (
-            "loving",
-            "提升生育率的小工具集合。",
-            "Vue",
-            0,
-            "https://github.com/growdu/loving",
-        ),
-        (
-            "aistock",
-            "面向个人的 AI 量化交易，集成大模型的选股、回测与策略生成实验。",
-            "Python",
-            1,
-            "https://github.com/growdu/aistock",
-        ),
-        (
-            "dbk",
-            "database kernel ai cli：让 AI 直接参与数据库内核开发、调试与性能分析的 CLI。",
-            "Python",
-            0,
-            "https://github.com/growdu/dbk",
-        ),
-        (
-            "Ace",
-            "千分/腰子分/百分等常见纸牌游戏的脚本与统计工具。",
-            "Makefile",
-            0,
-            "https://github.com/growdu/Ace",
-        ),
-        (
-            "ebpf_dev",
-            "eBPF 开发环境 Dockerfile，开箱即用的内核观测调试容器。",
-            "Dockerfile",
-            0,
-            "https://github.com/growdu/ebpf_dev",
-        ),
-        (
-            "children_study_guide",
-            "孩子学习调优指南，整理从小学到高中各阶段的学习方法与资源。",
-            "HTML",
-            0,
-            "https://github.com/growdu/children_study_guide",
-        ),
-        (
-            "db_god",
-            "数据库修仙之路，系统梳理数据库内核知识图谱，从单机存储到分布式事务。",
-            "JavaScript",
-            0,
-            "https://github.com/growdu/db_god",
-        ),
-        (
-            "docker-compose-home",
-            "常用服务的 docker-compose 配置合集，可直接被 Dockge 等面板挂载。",
-            "",
-            0,
-            "https://github.com/growdu/docker-compose-home",
-        ),
-        (
-            "k8s_god",
-            "k8s 修仙指南，从零搭建、调优到生产化部署的全景实战笔记。",
-            "JavaScript",
-            0,
-            "https://github.com/growdu/k8s_god",
-        ),
-        (
-            "autotest",
-            "自动化测试脚本与样例合集，覆盖前后端常见场景。",
-            "JavaScript",
-            0,
-            "https://github.com/growdu/autotest",
-        ),
-        (
-            "docusaurus_custom_table_width",
-            "Docusaurus 表格列宽自定义小插件，解决表格列内容截断问题。",
-            "JavaScript",
-            0,
-            "https://github.com/growdu/docusaurus_custom_table_width",
-        ),
-        (
-            "java-work",
-            "Java 学习与测试代码，按专题整理常见用法与踩坑记录。",
-            "Java",
-            0,
-            "https://github.com/growdu/java-work",
-        ),
-        (
-            "docsify-blog",
-            "docsify 风格的博客模板，自动渲染 Markdown 目录，开箱即用。",
-            "HTML",
-            0,
-            "https://github.com/growdu/docsify-blog",
-        ),
-        (
-            "anycode",
-            "database developer program anywhere：基于 Web 的在线数据库开发环境。",
-            "Vue",
-            0,
-            "https://github.com/growdu/anycode",
-        ),
-        (
-            "dockerfile",
-            "日常 Dockerfile 集合，按用途分类便于复用。",
-            "Dockerfile",
-            0,
-            "https://github.com/growdu/dockerfile",
-        ),
-        (
-            "db021",
-            "从零开始写数据库，手写存储引擎、SQL 解析与执行器。",
-            "C",
-            0,
-            "https://github.com/growdu/db021",
-        ),
-        (
-            "ctest",
-            "C 语言函数测试合集，涵盖常见系统调用与库函数的单元测试。",
-            "",
-            0,
-            "https://github.com/growdu/ctest",
-        ),
-        (
-            "growdu.github.io",
-            "GitHub Pages 上的早期博客版本，hexo-renderer 与 matery 主题实践。",
-            "JavaScript",
-            1,
-            "https://github.com/growdu/growdu.github.io",
-        ),
-        (
-            "deploy_vps",
-            "一键部署 shadowsocks 的安装脚本与运维工具。",
-            "Shell",
-            0,
-            "https://github.com/growdu/deploy_vps",
-        ),
-        (
-            "auto_email",
-            "自动收发邮件机器人，基于规则与 AI 的邮件分类、回复与提醒。",
-            "Python",
-            0,
-            "https://github.com/growdu/auto_email",
-        ),
-        (
-            "growdu.io",
-            "Hexo + matery 主题的博客源码，配套 GitHub Pages 部署实践。",
-            "JavaScript",
-            1,
-            "https://github.com/growdu/growdu.io",
-        ),
-        (
-            "easy_blog",
-            "将 GitHub 仓库一键变成可阅读博客，自动生成 Markdown 文章索引。",
-            "Python",
-            1,
-            "https://github.com/growdu/easy_blog",
-        ),
-        (
-            "mofang",
-            "魔方相关的小实验与可视化页面。",
-            "HTML",
-            0,
-            "https://github.com/growdu/mofang",
-        ),
-        (
-            "namer",
-            "随机起名小工具，支持多场景多风格。",
-            "CSS",
-            0,
-            "https://github.com/growdu/namer",
-        ),
-        (
-            "leetcode",
-            "LeetCode 刷题笔记与模板代码，按专题整理常见套路与高频题解。",
-            "C",
-            0,
-            "https://github.com/growdu/leetcode",
-        ),
-        (
-            "install-guide",
-            "开发工具的安装与配置指南，覆盖 macOS / Linux 常见环境。",
-            "",
-            0,
-            "https://github.com/growdu/install-guide",
-        ),
-        (
-            "go-work",
-            "Go 语言学习与练习代码。",
-            "Go",
-            0,
-            "https://github.com/growdu/go-work",
-        ),
-        (
-            "CSharpTest",
-            "C# 语言的测试与示例代码。",
-            "C#",
-            1,
-            "https://github.com/growdu/CSharpTest",
-        ),
+    pages = [
+        ("database", "数据库专题", "/categories/"),
+        ("projects", "我的开源项目", "/about/"),
     ]
-
-    def card(name, desc, lang, stars, url):
-        initial = name[0].upper()
-        lang_badge = (
-            ('<span class="proj-grid-lang">' + lang + "</span>") if lang else ""
-        )
-        star = (
-            (
-                '<span class="pg-stat"><i class="fa-solid fa-star"></i>'
-                + str(stars)
-                + "</span>"
+    for slug, title, target in pages:
+        path = os.path.join(SRC, slug, "index.md")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        new_url = SITE_ROOT + target
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(
+                "---\n"
+                'title: "{title}"\n'
+                "layout: false\n"
+                "sitemap: false\n"
+                "comments: false\n"
+                "---\n"
+                "\n"
+                '<meta http-equiv="refresh" content="0; url={new_url}">\n'
+                '<link rel="canonical" href="{new_url}">\n'
+                '<meta name="robots" content="noindex, follow">\n'
+                "<p>这一页已经合并到别处了，点击继续："
+                '<a href="{new_url}">{new_url}</a></p>\n'
+                '<script>location.replace("{new_url}");</script>\n'.format(
+                    title=title, new_url=new_url
+                )
             )
-            if stars > 0
-            else ""
-        )
-        return "".join(
-            [
-                '<a class="proj-grid-card" href="'
-                + url
-                + '" target="_blank" rel="noopener">',
-                '<div class="proj-grid-head">',
-                '<div class="proj-grid-icon">' + initial + "</div>",
-                '<div class="proj-grid-name">' + name + "</div>",
-                lang_badge,
-                "</div>",
-                '<div class="proj-grid-desc">' + desc + "</div>",
-                '<div class="proj-grid-foot">',
-                star,
-                '<span class="pg-link">查看仓库 →</span>',
-                "</div>",
-                "</a>",
-            ]
-        )
+        print("Created redirect stub for /%s/ -> %s" % (slug, target))
 
-    cards_html = chr(10).join(card(*p) for p in projects)
-
-    fm = '---\ntitle: 我的开源项目\ndate: 2026-07-29 00:00:00\ntype: "projects"\nlayout: "page"\n---\n\n'
-    intro = chr(10).join(
-        [
-            "# 我的开源项目",
-            "",
-            "这里收录了我在 GitHub 上开源的主要项目，覆盖数据库内核、eBPF、AI 工具、博客系统等多个方向。每个项目都配有独立仓库，欢迎前往围观、Star 或 Fork。",
-            "",
-            "> 数据来自 [github.com/growdu](https://github.com/growdu)，共 "
-            + str(len(projects))
-            + " 个非 fork 项目，按最近提交时间排序。",
-            "",
-            '<div class="proj-grid">',
-            cards_html,
-            "</div>",
-            "",
-            "更多小实验和练手项目可以在 [GitHub 个人主页](https://github.com/growdu) 上翻到，欢迎一起交流。",
-        ]
-    )
-
-    proj_path = os.path.join(SRC, "projects", "index.md")
-    os.makedirs(os.path.dirname(proj_path), exist_ok=True)
-    with open(proj_path, "w", encoding="utf-8") as f:
-        f.write(fm + intro + chr(10))
-    print(
-        "Created "
-        + os.path.relpath(proj_path, ".")
-        + " ("
-        + str(len(projects))
-        + " cards)"
-    )
 
 
 if __name__ == "__main__":

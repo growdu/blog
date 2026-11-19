@@ -896,42 +896,9 @@ responsive_fix_marker = "RESPONSIVE-FIX"
 responsive_fix_css = r"""/* RESPONSIVE-FIX */
 /* 这一段原本混在首页 hero 的响应式补丁里 —— 2026-11-16 首屏换版
    （主题自带的全屏照片 carousel 换成 .home-hero）之后单独拆了出来。
-   它与 hero 无关：侧边栏的断点、main.content 的边距、手机端的导航条 /
-   页脚 / 文章卡片间距。 */
-/* === L. 侧边栏断点 1400 → 1600 === */
-@media (max-width: 1599px) {
-    .cat-sidebar,
-    .hot-sidebar {
-        display: none !important;
-    }
-}
-
-/* === M. main.content 边距同步到新断点 === */
-@media (min-width: 1600px) {
-    main.content {
-        margin-left: 294px !important;
-        margin-right: 294px !important;
-        max-width: calc(100vw - 588px) !important;
-    }
-    body.cat-collapsed main.content {
-        margin-left: 60px !important;
-    }
-    body.hot-collapsed main.content {
-        margin-right: 60px !important;
-    }
-    body.cat-collapsed.hot-collapsed main.content {
-        margin-left: 60px !important;
-        margin-right: 60px !important;
-        max-width: calc(100vw - 120px) !important;
-    }
-}
-@media (min-width: 1401px) and (max-width: 1599px) {
-    main.content {
-        margin-left: 0 !important;
-        margin-right: 0 !important;
-        max-width: none !important;
-    }
-}
+   2026-11-18：左右两块侧栏（分类导航 / 最多阅读）整个删掉，
+   于是给侧栏让位的断点与 main.content 边距（L / M 两段）也跟着删了
+   —— 侧栏没了还留着 294px 的左右边距，正文会被挤成一条窄带。 */
 
 /* === S. Navbar 移动端优化 === */
 @media (max-width: 992px) {
@@ -1885,7 +1852,7 @@ custom_css = """<style id="custom-blog-style">
 html{scroll-behavior:smooth}
 a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2px}
 /* Print styles */
-@media print{.cat-sidebar,.hot-sidebar,.reading-progress,.nav-wrapper,.bg-cover,footer,.prev-next,.gitalk-card,.related-posts-card,#back-top{display:none!important}#articleContent{font-size:12pt;line-height:1.5}main.content{margin:0!important;width:100%!important}.card{box-shadow:none!important;border:1px solid #ddd}}
+@media print{.reading-progress,.nav-wrapper,.bg-cover,footer,.prev-next,.gitalk-card,.related-posts-card,#back-top{display:none!important}#articleContent{font-size:12pt;line-height:1.5}main.content{margin:0!important;width:100%!important}.card{box-shadow:none!important;border:1px solid #ddd}}
 /* Hero typing effect */
 .hero-typing{text-align:center;color:#fff;font-size:18px;margin-top:14px;min-height:27px;text-shadow:0 2px 8px rgba(0,0,0,.4);font-weight:500}
 /* Hero tech badges */
@@ -1932,33 +1899,6 @@ a:focus-visible,button:focus-visible{outline:2px solid #009688;outline-offset:2p
 .timeline-item{position:relative;padding-left:24px;margin:12px 0;border-left:2px solid #e0e0e0}
 .timeline-item::before{content:'';position:absolute;left:-6px;top:4px;width:10px;height:10px;border-radius:50%;background:#009688}
 .timeline-date{font-size:13px;color:#009688;font-weight:600}
-/* Category sidebar (left) */
-.cat-sidebar{position:fixed;left:12px;top:80px;width:270px;max-height:75vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
-.cat-sidebar .cat-title{font-size:18px;font-weight:700;padding:12px 16px;color:#fff;background:linear-gradient(135deg,#009688,#00bcd4);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px}
-.cat-sidebar .cat-list{padding:6px 0}
-.cat-sidebar a{display:flex;align-items:center;gap:8px;padding:8px 16px;font-size:15px;color:#555;transition:all .2s;border-left:3px solid transparent}
-.cat-sidebar a:hover{background:linear-gradient(90deg,rgba(0,150,136,.08),transparent);color:#009688;border-left-color:#009688}
-.cat-sidebar a i{font-size:13px;color:#009688;width:16px;flex-shrink:0}
-.cat-sidebar .cat-count{margin-left:auto;color:#999;font-size:13px;background:#f0f0f0;padding:1px 8px;border-radius:10px;flex-shrink:0}
-.cat-sidebar a:hover .cat-count{background:#009688;color:#fff}
-/* Hot posts sidebar (right) - matched width with cat-sidebar */
-.hot-sidebar{position:fixed;right:12px;top:80px;width:270px;max-height:75vh;overflow-y:auto;z-index:100;background:#fff;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.08);padding:0}
-.hot-sidebar .hot-title{font-size:18px;font-weight:700;padding:12px 16px;color:#fff;background:linear-gradient(135deg,#ee5a24,#ff6b6b);border-radius:12px 12px 0 0;display:flex;align-items:center;gap:8px}
-.hot-sidebar .hot-list{padding:6px 0}
-.hot-sidebar a{display:flex;align-items:flex-start;gap:8px;padding:9px 14px;font-size:14px;color:#555;transition:all .2s;border-left:3px solid transparent;border-bottom:1px solid #f5f5f5}
-.hot-sidebar a:last-child{border-bottom:none}
-.hot-sidebar a:hover{background:linear-gradient(90deg,rgba(238,90,36,.06),transparent);color:#ee5a24;border-left-color:#ee5a24}
-.hot-sidebar .hot-rank{display:flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:#e0e0e0;color:#888;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
-.hot-sidebar .rank-1{background:linear-gradient(135deg,#ffd700,#ffa500);color:#fff}
-.hot-sidebar .rank-2{background:linear-gradient(135deg,#e0e0e0,#bdbdbd);color:#555}
-.hot-sidebar .rank-3{background:linear-gradient(135deg,#cd7f32,#a0522d);color:#fff}
-.hot-sidebar .hot-content{flex:1;min-width:0}
-.hot-sidebar .hot-name{line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.hot-sidebar .hot-meta{display:flex;align-items:center;gap:6px;margin-top:3px}
-.hot-sidebar .hot-cat{font-size:11px;color:#888;background:#f5f5f5;padding:1px 6px;border-radius:4px}
-.hot-sidebar .hot-views{font-size:12px;color:#ee5a24;margin-left:auto;display:flex;align-items:center;gap:2px}
-.hot-sidebar .hot-views i{font-size:10px}
-@media(max-width:1400px){.cat-sidebar,.hot-sidebar{display:none}}
 
 /* --- Reward: button + inline-expand.  No modal/fixed positioning
        so it sits as a plain sibling of related-posts below the article
@@ -2496,112 +2436,15 @@ if "carousel-3d-wrapper" not in recommend_content:
 else:
     print("Recommend widget already uses 3D carousel")
 
-# --- 14. Constrain main content width on wide screens to avoid sidebars ---
-# On screens >1400px, fixed sidebars (270px each + 12px gap) appear.
-# Force main.content to stay within the safe zone between the two sidebars.
+# --- 14. 侧栏相关的两段 CSS 注入：退休 ---
+# 2026-11-18：左右两块侧栏（左侧分类导航 / 右侧最多阅读）整个删掉了，
+# 给它们让位的两段 CSS 也就没有意义了：
+#   * MAIN-CONTENT-SAFE-MARGIN —— 大屏上给 main.content 留出左右各 294px；
+#   * COLLAPSIBLE-SIDEBARS —— 侧栏折叠成 48px 细条、以及折叠时的边距。
+# 侧栏没了还留着那 294px，正文会被挤成一条窄带，所以两段一起删。
+# 仓库里 my.css 的对应段落也已一并删掉（不是「停止注入」就完事 ——
+# 停注入只会让旧段落一直留在 my.css 里）。
 
-main_css_marker = "/* MAIN-CONTENT-SAFE-MARGIN */"
-main_css_path = os.path.join(theme_dir, "source", "css", "my.css")
-if os.path.exists(main_css_path):
-    with open(main_css_path, encoding="utf-8") as f:
-        mc = f.read()
-    if main_css_marker not in mc:
-        mc += """
-
-/* MAIN-CONTENT-SAFE-MARGIN */
-/* On wide screens (>1400px), fixed sidebars (270px + 12px gap each) are visible.
-   Force main.content to stay within the safe zone so carousel nav buttons
-   and other content don't get hidden behind the sidebars. */
-@media (min-width: 1401px) {
-    main.content {
-        margin-left: 294px !important;
-        margin-right: 294px !important;
-        max-width: calc(100vw - 588px) !important;
-    }
-}
-"""
-        with open(main_css_path, "w", encoding="utf-8") as f:
-            f.write(mc)
-        print("Added main-content safe margin CSS")
-    else:
-        print("Main-content safe margin CSS already present")
-else:
-    print("my.css not found")
-
-# --- 15. Collapsible sidebars ---
-# Click sidebar title to collapse/expand. Collapsed = thin icon strip (48px).
-# State saved in localStorage. main.content margins adjust accordingly.
-
-collapse_css_marker = "/* COLLAPSIBLE-SIDEBARS */"
-collapse_css_path = os.path.join(theme_dir, "source", "css", "my.css")
-if os.path.exists(collapse_css_path):
-    with open(collapse_css_path, encoding="utf-8") as f:
-        cc = f.read()
-    if collapse_css_marker not in cc:
-        cc += """
-
-/* COLLAPSIBLE-SIDEBARS */
-/* Collapsed state: thin icon strip, only icon visible */
-.cat-sidebar.collapsed,
-.hot-sidebar.collapsed {
-    width: 48px;
-    overflow: hidden;
-}
-.cat-sidebar.collapsed .cat-title,
-.hot-sidebar.collapsed .hot-title {
-    font-size: 0;
-    padding: 12px 0;
-    justify-content: center;
-    border-radius: 12px 12px 0 0;
-}
-.cat-sidebar.collapsed .cat-title i,
-.hot-sidebar.collapsed .hot-title i {
-    font-size: 20px;
-}
-.cat-sidebar.collapsed .cat-list,
-.hot-sidebar.collapsed .hot-list {
-    display: none;
-}
-/* Cursor and hover hint */
-.cat-sidebar .cat-title,
-.hot-sidebar .hot-title {
-    cursor: pointer;
-    user-select: none;
-}
-.cat-sidebar .cat-title:hover,
-.hot-sidebar .hot-title:hover {
-    filter: brightness(1.08);
-}
-/* Smooth transition */
-.cat-sidebar,
-.hot-sidebar {
-    transition: width 0.3s ease;
-}
-
-/* Adjust main.content margins when sidebars are collapsed.
-   Each collapsed sidebar takes 48px + 12px gap = 60px.
-   Expanded sidebar takes 270px + 12px gap = 282px. */
-@media (min-width: 1401px) {
-    body.cat-collapsed main.content {
-        margin-left: 60px !important;
-    }
-    body.hot-collapsed main.content {
-        margin-right: 60px !important;
-    }
-    body.cat-collapsed.hot-collapsed main.content {
-        margin-left: 60px !important;
-        margin-right: 60px !important;
-        max-width: calc(100vw - 120px) !important;
-    }
-}
-"""
-        with open(collapse_css_path, "w", encoding="utf-8") as f:
-            f.write(cc)
-        print("Added collapsible sidebars CSS")
-    else:
-        print("Collapsible sidebars CSS already present")
-else:
-    print("my.css not found")
 
 # --- 16. View-all button between recent and all-articles carousel ---
 view_all_marker = "/* VIEW-ALL-BTN */"
@@ -2875,7 +2718,7 @@ else:
 # Idempotent: skip if marker already in my.css.
 home_content_marker = "/* HOME-CONTENT-PANEL */"
 my_css_path = os.path.join(theme_dir, "source", "css", "my.css")
-hc_css = '/* HOME-CONTENT-PANEL */\n.home-content {\n    margin-top: 24px;\n    padding-bottom: 24px;\n}\n.stats-banner {\n    display: grid;\n    grid-template-columns: repeat(4, 1fr);\n    gap: 14px;\n    margin: 24px 0 36px;\n}\n.stat-card {\n    display: block;\n    padding: 22px 14px;\n    text-align: center;\n    background: var(--stat-card-bg, #fff);\n    color: var(--stat-card-fg, #263238);\n    border-radius: 12px;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.06);\n    transition: transform .15s ease, box-shadow .15s ease;\n    text-decoration: none;\n}\n.stat-card:hover {\n    transform: translateY(-3px);\n    box-shadow: 0 6px 18px rgba(0,0,0,0.10);\n    color: #009688;\n}\n.stat-num {\n    font-size: 30px;\n    font-weight: 800;\n    margin-bottom: 4px;\n    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;\n}\n.stat-label {\n    font-size: 13px;\n    opacity: 0.7;\n}\nbody.DarkMode .stat-card {\n    background: #1e272c;\n    color: #eceff1;\n}\nbody.DarkMode .stat-card:hover { color: #4dd0e1; }\n\n.home-tabs {\n    margin-top: 16px;\n}\n.home-tabs .tabs {\n    background: transparent;\n    border-bottom: 1px solid rgba(0,0,0,0.08);\n    margin-bottom: 20px;\n}\n.home-tabs .tabs .tab a {\n    color: #555;\n    font-weight: 600;\n    font-size: 15px;\n    letter-spacing: 0.5px;\n}\n.home-tabs .tabs .tab a:hover,\n.home-tabs .tabs .tab a.active {\n    color: #009688;\n}\n.home-tabs .tabs .indicator {\n    background-color: #009688;\n    height: 3px;\n}\nbody.DarkMode .home-tabs .tabs { border-bottom-color: rgba(255,255,255,0.08); }\nbody.DarkMode .home-tabs .tabs .tab a { color: #b0bec5; }\nbody.DarkMode .home-tabs .tabs .tab a.active { color: #4dd0e1; }\n\n.post-grid {\n    display: grid;\n    grid-template-columns: repeat(3, 1fr);\n    gap: 20px;\n    margin: 8px 0 16px;\n}\n.post-card {\n    display: flex;\n    flex-direction: column;\n    background: #fff;\n    border-radius: 10px;\n    overflow: hidden;\n    text-decoration: none;\n    color: inherit;\n    box-shadow: 0 1px 4px rgba(0,0,0,0.06);\n    transition: transform .15s ease, box-shadow .15s ease;\n    height: 100%;\n}\n.post-card:hover {\n    transform: translateY(-4px);\n    box-shadow: 0 8px 22px rgba(0,0,0,0.12);\n    color: inherit;\n}\n.post-card__cover {\n    position: relative;\n    width: 100%;\n    aspect-ratio: 16 / 9;\n    overflow: hidden;\n    background: #eceff1;\n}\n.post-card__cover img {\n    width: 100%;\n    height: 100%;\n    object-fit: cover;\n    transition: transform .25s ease;\n}\n.post-card:hover .post-card__cover img {\n    transform: scale(1.05);\n}\n.post-card__cat {\n    position: absolute;\n    top: 10px;\n    left: 10px;\n    background: rgba(0,150,136,0.92);\n    color: #fff;\n    padding: 3px 10px;\n    border-radius: 10px;\n    font-size: 11px;\n    font-weight: 600;\n    letter-spacing: 0.5px;\n    backdrop-filter: blur(2px);\n}\n.post-card__body {\n    padding: 14px 16px 16px;\n    flex: 1;\n    display: flex;\n    flex-direction: column;\n}\n.post-card__title {\n    font-size: 16px;\n    font-weight: 700;\n    line-height: 1.45;\n    margin: 0 0 8px;\n    color: #263238;\n    display: -webkit-box;\n    -webkit-line-clamp: 2;\n    -webkit-box-orient: vertical;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n.post-card__meta {\n    display: flex;\n    gap: 12px;\n    font-size: 12px;\n    color: #78909c;\n    margin-bottom: 8px;\n    flex-wrap: wrap;\n}\n.post-card__meta i { margin-right: 3px; }\n.post-card__excerpt {\n    font-size: 13px;\n    color: #546e7a;\n    line-height: 1.55;\n    display: -webkit-box;\n    -webkit-line-clamp: 2;\n    -webkit-box-orient: vertical;\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\nbody.DarkMode .post-card { background: #1e272c; }\nbody.DarkMode .post-card__title { color: #eceff1; }\nbody.DarkMode .post-card__excerpt { color: #b0bec5; }\nbody.DarkMode .post-card__cover { background: #263238; }\n\n.home-tabs__more {\n    text-align: center;\n    margin: 12px 0 24px;\n}\n.home-tabs__more .btn-flat {\n    color: #009688;\n    font-weight: 600;\n}\n.home-tabs__more .btn-flat:hover {\n    background: rgba(0,150,136,0.08);\n}\n\n/* Responsive */\n@media (max-width: 992px) {\n    .post-grid { grid-template-columns: repeat(2, 1fr); }\n    .stats-banner { grid-template-columns: repeat(2, 1fr); }\n}\n@media (max-width: 600px) {\n    .post-grid { grid-template-columns: 1fr; }\n    .stat-num { font-size: 24px; }\n}\n'
+hc_css = '/* HOME-CONTENT-PANEL */\n.home-content {\n    margin-top: 24px;\n    padding-bottom: 24px;\n}\n.stats-banner {\n    display: grid;\n    grid-template-columns: repeat(4, 1fr);\n    gap: 14px;\n    margin: 24px 0 36px;\n}\n.stat-card {\n    display: block;\n    padding: 22px 14px;\n    text-align: center;\n    background: var(--stat-card-bg, #fff);\n    color: var(--stat-card-fg, #263238);\n    border-radius: 12px;\n    box-shadow: 0 2px 8px rgba(0,0,0,0.06);\n    transition: transform .15s ease, box-shadow .15s ease;\n    text-decoration: none;\n}\n.stat-card:hover {\n    transform: translateY(-3px);\n    box-shadow: 0 6px 18px rgba(0,0,0,0.10);\n    color: #009688;\n}\n.stat-num {\n    font-size: 30px;\n    font-weight: 800;\n    margin-bottom: 4px;\n    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;\n}\n.stat-label {\n    font-size: 13px;\n    opacity: 0.7;\n}\nbody.DarkMode .stat-card {\n    background: #1e272c;\n    color: #eceff1;\n}\nbody.DarkMode .stat-card:hover { color: #4dd0e1; }\n\n/* Responsive */\n@media (max-width: 992px) {\n    .stats-banner { grid-template-columns: repeat(2, 1fr); }\n}\n@media (max-width: 600px) {\n    .stat-num { font-size: 24px; }\n}\n'
 if os.path.isfile(my_css_path):
     with open(my_css_path, encoding="utf-8") as f:
         _mycss = f.read()
@@ -3291,49 +3134,16 @@ if os.path.isfile(my_css_path):
 else:
     print("my.css not found, skipping latest-episode CSS")
 
-# --- 15. Home tabs (首页文章区的 tab 切换) ---
-# 首页的三个 tab（最新发布 / 编辑推荐 / 近期热门）此前是**假控件**：
-# Materialize 的 tabs 组件从没被初始化过，三个面板依次平铺渲染，
-# 访客点「编辑推荐」看起来像切了，其实什么都没发生。
+# --- 15. Home tabs：退休 ---
+# 2026-11-18：首页文章区（三个 tab：最新发布 / 编辑推荐 / 近期热门，
+# 每格 6 张卡）整块删掉了，首页不再有文章列表。
 #
-# 修法是让 ``matery.js`` 调用 ``.tabs()``（Materialize 自带 Tabs）。
-# 这里补的是**兜底**：Materialize 用内联 ``display`` 切换显隐，
-# 而内联样式要等 JS 跑起来才写上——在它写上之前，三个面板会一起铺开
-# （首页一次出现 18 张卡片）。
-#
-# 所以默认只显示第一个面板，JS 跑起来后由 Materialize 接管。
-# 写成 ``.home-tab-panel`` 而不是 ``#home-tab-latest``：
-# 面板的 id 以后可能改，类名是这里与模板之间的约定。
-#
-# 幂等：marker 已在 my.css 里就跳过。
-#
-# marker 与 CSS 正文**同源**（正文由 marker 拼出来）：写成两个独立的
-# 字符串常量的话，改了其中一个就会对不上——而「对不上」的后果是
-# patch-theme 认为这段 CSS 已经注入过（marker 在 my.css 里），
-# 于是**永远不写正文**，兜底规则静默失效。
-home_tabs_marker = "/* HOME-TABS */"
-my_css_path = os.path.join(theme_dir, "source", "css", "my.css")
-ht_css = home_tabs_marker + """
-/* 默认只显示第一个面板：Materialize 的 tabs 没初始化时，首页不会一次
-   铺开三组共 18 张卡片。JS 跑起来后由 Materialize 用内联 display 接管。 */
-.home-tabs .home-tab-panel {
-    display: none;
-}
-.home-tabs .home-tab-panel.active {
-    display: block;
-}
-"""
-if os.path.isfile(my_css_path):
-    with open(my_css_path, encoding="utf-8") as f:
-        _mycss = f.read()
-    if home_tabs_marker in _mycss:
-        print("home-tabs CSS already present, skipping")
-    else:
-        with open(my_css_path, "a", encoding="utf-8") as f:
-            f.write(ht_css)
-        print("Appended HOME-TABS CSS to my.css")
-else:
-    print("my.css not found, skipping home-tabs CSS")
+# 随之删掉的还有：
+#   * 这段 HOME-TABS 兜底 CSS（默认只显示第一个面板）——没有面板了；
+#   * ``.home-tabs`` / ``.home-tabs__more`` 的样式（在 HOME-CONTENT-PANEL 里）；
+#   * ``themes/matery/source/js/matery.js`` 里 ``.tabs()`` 的初始化；
+#   * ``tools/check-home-tabs.py`` 与它的 CI 调用点。
+
 
 # --- 8. Drop unused vendored libs from themes/matery/source/libs/ ---
 # The vendored theme ships 30+ libs but the live templates only reference

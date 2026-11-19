@@ -1,16 +1,8 @@
 {
-  "_comment": "首屏与推荐位的策展清单。每条是 source/_posts/ 下的相对路径（不带 .md）。tools/sync-hexo.py 会把它复制到 source/_data/featured.json，hexo 通过 site.data.featured 读到。改这里就能换首屏的三篇代表作，不用动模板。",
+  "_comment": "首屏三篇代表作的策展清单。每条是 source/_posts/ 下的相对路径（不带 .md）。tools/sync-hexo.py 会把它复制到 source/_data/featured.json，hexo 通过 site.data.featured 读到。改这里就能换首屏的三篇代表作，不用动模板。（2026-11-18：原来还有一组 featured，是首页「编辑推荐」tab 用的——那一整块文章区已经删掉，这组随之删除。）",
   "hero": [
     "source-tracks/postgresql/index-and-query/learning-path/03-query-pipeline",
     "source-tracks/postgresql/logical-replication/postgresql-logical-replication-end-to-end-flow",
     "source-tracks/postgresql/logical-replication/postgresql-reorderbuffer-c-function-reference"
-  ],
-  "featured": [
-    "source-tracks/postgresql/getting-started/learning-path/01-build-and-codebase",
-    "source-tracks/postgresql/logical-replication/postgresql-logical-replication-end-to-end-flow",
-    "source-tracks/postgresql/index-and-query/postgresql-stream-execution-logic",
-    "source-tracks/postgresql/logical-replication/postgresql-reorderbuffer-c-function-reference",
-    "source-tracks/postgresql/index-and-query/learning-path/03-query-pipeline",
-    "ai/01_开场白目录"
   ]
 }

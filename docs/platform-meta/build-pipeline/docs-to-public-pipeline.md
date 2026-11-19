@@ -41,7 +41,8 @@ difficulty: 3
 
 1. **内容编译** —— 读 `docs/` 下的所有 markdown 与 HTML，
    套好前置元数据，写进 `source/_posts/`，
-   同时把图片复制到 `source/images/`，并现写现生成几个专题落地页。
+   同时把图片复制到 `source/images/`，并现写现生成几个页面
+   （分类总览、标签总览、关于我，以及已删除落地页留下的重定向页）。
 2. **素材搬运** —— 把 `node_modules/` 里的第三方资源搬进 `source/lib/`：
    Prism 语法高亮、Mermaid、Gitalk、Font Awesome 的字体。
    主题是按固定路径引用它们的，所以得在渲染前搬进产物目录。

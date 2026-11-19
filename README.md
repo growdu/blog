@@ -86,7 +86,7 @@
 
 | 模块 | 位置 | 干什么 |
 | --- | --- | --- |
-| 内容编译 | `tools/sync-hexo.py` | `docs/` → `source/_posts/` + `source/images/`，重建 front matter，生成 landing page |
+| 内容编译 | `tools/sync-hexo.py` | `docs/` → `source/_posts/` + `source/images/`，重建 front matter，生成分类/标签/关于等页面与旧 URL 的重定向页 |
 | 主题补丁 | `tools/patch-theme.py` | marker-based 幂等注入：SEO meta、相关文章、PV、OG 卡片等 |
 | 素材搬运 | `tools/copy-vendor.py` | logo、打赏图 → 主题 `medias/` |
 | 内容校验 | `tools/check-markdown.py` / `fix-markdown.py` | front matter、链接、格式校验与修复 |

@@ -1,15 +1,25 @@
-"""patch-theme.py 里，侧栏模板只有**一份**。
+"""左右两块侧栏（分类导航 / 最多阅读）已经整个删掉了。
 
-以前 patcher 里存着侧栏模板的抄本（一段三引号包着的 ``sidebar_ejs = ...``），
-跟主题文件 ``layout.ejs`` 里真正生效的那份早就对不上了——抄本少了折叠开关
-（``onclick="toggleSidebar('cat')"``）和定义 ``window.toggleSidebar`` 的那段脚本。
+**背景**：这两块侧栏在 2026-11-18 之前一直挂在 ``layout.ejs`` 里——
+左边一个分类导航，右边一个「最多阅读」排行榜。窄屏下它们被 CSS 藏起来，
+宽屏下占掉左右各 270px，把正文挤成中间一条窄带；首页首屏因此还多出一堆
+读者不点的东西。
 
-今天那份抄本注入不进去（主题的 layout.ejs 自己就带着 cat-sidebar，护栏挡着），
-所以今天没有**可见**的后果。但哪天它注入进去了，侧栏就再也折叠不了，
-而构建不会报错、测试也不会红。
+现在它们不在了：页面按整幅宽度排版，分类从顶部导航的「分类」进，
+文章从「归档」页看。
 
-一份抄本 = 两处真相 = 迟早漂。所以这里断的是：抄本不许再存在，
-留下的那一份（主题里生效的那份）必须带着折叠开关。
+这里守的是**「别又长回来」**：
+
+1. ``layout.ejs`` 里不许再有 ``cat-sidebar`` / ``hot-sidebar``；
+2. 不许再有 ``toggleSidebar``（折叠开关连着这两块侧栏，一起没）；
+3. ``patch-theme.py`` 里不许再注入侧栏的 CSS —— 模板没了、样式还在，
+   那一堆选择器就是纯死代码，下次有人读到会以为侧栏还在；
+4. 跑一遍 patcher 之后，侧栏**不会**被塞回来。
+
+第 4 条是关键：``patch-theme.py`` 里曾经存过一份侧栏模板的**抄本**，
+跟主题里真正生效的那份早就对不上了（抄本少了折叠开关
+``onclick="toggleSidebar('cat')"``）。哪天它真的注入进去，侧栏就再也
+折叠不了，而构建不会报错、测试也不会红。一份抄本 = 两处真相 = 迟早漂。
 """
 
 import shutil
@@ -23,37 +33,33 @@ PATCH_THEME = REPO_ROOT / "tools" / "patch-theme.py"
 LAYOUT_EJS = THEME / "layout" / "layout.ejs"
 
 
-def test_the_patcher_keeps_no_second_copy_of_the_sidebar():
-    """patcher 里不许再存一份侧栏模板。
+def test_the_layout_has_no_sidebar_markup():
+    """主题里不许再有侧栏的 DOM。"""
+    layout = LAYOUT_EJS.read_text(encoding="utf-8")
 
-    抄的那份早就跟主题里生效的那份对不上了（少了折叠开关）。
+    assert "cat-sidebar" not in layout, "左侧「分类导航」侧栏又回来了"
+    assert "hot-sidebar" not in layout, "右侧「最多阅读」侧栏又回来了"
+    assert "toggleSidebar" not in layout, "侧栏的折叠开关（toggleSidebar）还留着"
+
+
+def test_the_patcher_injects_no_sidebar_css():
+    """patcher 里不许再注入侧栏的样式。
+
+    侧栏没了还留着那几百行 CSS，是纯粹的噪声：下次有人读到
+    ``.cat-sidebar`` 会以为侧栏还在。
     """
     text = PATCH_THEME.read_text(encoding="utf-8")
 
-    assert 'sidebar_ejs = """' not in text, (
-        "patch-theme.py 里还存着第二份侧栏模板——它已经跟主题里生效的那份对不上了"
-    )
+    assert "cat-sidebar" not in text, "patch-theme.py 里还有侧栏的 CSS"
+    assert "hot-sidebar" not in text, "patch-theme.py 里还有侧栏的 CSS"
+    assert "sidebar_ejs" not in text, "patch-theme.py 里还存着侧栏模板的抄本"
 
 
-def test_the_sidebar_that_stays_in_the_theme_can_still_be_collapsed():
-    """留下的那一份（主题里生效的那份）必须带着折叠开关。
-
-    少了 ``onclick`` 就是点标题没反应；少了 ``window.toggleSidebar`` 的定义
-    就是点了直接抛错。两者都只在浏览器里才看得见。
-    """
-    layout = LAYOUT_EJS.read_text(encoding="utf-8")
-
-    assert "toggleSidebar('cat')" in layout, "分类导航的标题上没有折叠开关"
-    assert "toggleSidebar('hot')" in layout, "最多阅读的标题上没有折叠开关"
-    assert "window.toggleSidebar=" in layout, "侧栏里没有定义 window.toggleSidebar"
-
-
-def test_running_the_patcher_leaves_the_sidebar_alone(tmp_path):
-    """跑一遍 patcher，主题里的侧栏还是**那一份**。
+def test_running_the_patcher_does_not_bring_the_sidebar_back(tmp_path):
+    """跑一遍 patcher，主题里仍然没有侧栏。
 
     patcher 是在主题目录上跑的（``themes/matery``），所以在临时目录里放一份
-    主题的拷贝再跑它——跑完侧栏应该还在原处、还带着折叠开关、
-    而且**只有一份**。
+    主题的拷贝再跑它——跑完侧栏不该出现，折叠开关也不该出现。
     """
     theme_copy = tmp_path / "themes" / "matery"
     theme_copy.parent.mkdir(parents=True)
@@ -72,14 +78,19 @@ def test_running_the_patcher_leaves_the_sidebar_alone(tmp_path):
     )
 
     layout = (theme_copy / "layout" / "layout.ejs").read_text(encoding="utf-8")
-    assert layout.count('<div class="cat-sidebar">') == 1, (
-        "侧栏被塞了不止一份（分类导航出现 {} 次）".format(
-            layout.count('<div class="cat-sidebar">')
-        )
-    )
-    assert layout.count('<div class="hot-sidebar">') == 1, (
-        "侧栏被塞了不止一份（最多阅读出现 {} 次）".format(
-            layout.count('<div class="hot-sidebar">')
-        )
-    )
-    assert "toggleSidebar('cat')" in layout, "跑完 patcher，折叠开关没了"
+    assert "cat-sidebar" not in layout, "跑完 patcher，分类导航侧栏被塞回来了"
+    assert "hot-sidebar" not in layout, "跑完 patcher，最多阅读侧栏被塞回来了"
+    assert "toggleSidebar" not in layout, "跑完 patcher，折叠开关被塞回来了"
+
+
+def test_the_theme_css_has_no_sidebar_rules():
+    """``my.css`` 里也不许再有侧栏的规则。
+
+    这里必须查**文件本身**，而不是查 patcher：patcher 是幂等的，marker 还在
+    就整段跳过——只改 patcher 而不动 my.css，仓库里的样式会一直留着。
+    """
+    css = (THEME / "source" / "css" / "my.css").read_text(encoding="utf-8")
+
+    assert "cat-sidebar" not in css, "my.css 里还有分类导航侧栏的样式"
+    assert "hot-sidebar" not in css, "my.css 里还有最多阅读侧栏的样式"
+    assert "cat-collapsed" not in css, "my.css 里还有侧栏折叠态的样式"

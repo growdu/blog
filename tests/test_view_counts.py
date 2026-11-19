@@ -1,4 +1,4 @@
-"""侧栏的🔥阅读量是真的吗？——从「字数除以 50」到 GoatCounter 的真实 PV。
+"""GoatCounter 的真实 PV 快照：抓取、归一化、落到站点里。
 
 **背景**：阶段 1 的 Task 6。
 
@@ -10,343 +10,36 @@
 但它们的数字都是**页面运行时**由脚本填的，构建期拿不到——于是模板
 只好自己编一个。
 
-**这个任务把假数字删掉**：
-
-1. 侧栏的🔥读 ``data/view-counts.json``（GoatCounter 的真实 PV 快照）。
-   快照里没有这个页面 → **这一格不显示**，不显示一个假的🔥。
-2. 首页的「近期热门」tab 同样按真实 PV 排；快照缺失、或者 PV 少到
-   无法区分高下时，退回原来的 ``top`` 排序，并把 tab 改名成「编辑精选」——
-   **不要让一个叫「热门」的 tab 装着手动排序的内容**。
+**这个任务把假数字删掉**：阅读量改读 ``data/view-counts.json``
+（GoatCounter 的真实 PV 快照），快照里没有的页面**不显示**这一格，
+不显示一个假的🔥。
 
 快照由 ``tools/fetch-view-counts.py`` 生成。选 GoatCounter 而不是不蒜子：
 它的 API 是**只读**的，不会像不蒜子那样每查一次就给那个路径 +1。
 
-这里断言的是**行为**：模板渲染出来的 HTML 里有没有那个数字、数字是
-多少、tab 叫什么——不是「代码里有没有某个字符串」。
+**2026-11-18**：侧栏与首页的「近期热门」tab 都已经删掉了（站点做减法），
+这两个读者随之消失。**快照本身照旧抓、照旧存、照旧校验**——
+它是一份独立的数据资产，不是页面的一部分；哪天要再做一个「最热」入口，
+直接读它就行，不必重新造一遍抓取器。
+
+这里断言的是**行为**：抓取器怎么解析、怎么归一化路径、快照怎么进到
+``source/_data/``、刷新工作流怎么保证不把好数据抹掉。
 """
 
 from __future__ import annotations
 
 import importlib.util
 import json
-import re
-import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-THEME_LAYOUT = REPO_ROOT / "themes" / "matery" / "layout" / "layout.ejs"
-HOME_CONTENT = REPO_ROOT / "themes" / "matery" / "layout" / "_partial" / "home-content.ejs"
 FETCHER = REPO_ROOT / "tools" / "fetch-view-counts.py"
 SNAPSHOT = REPO_ROOT / "data" / "view-counts.json"
-NODE = shutil.which("node")
-
-needs_node = pytest.mark.skipif(NODE is None, reason="node 不在 PATH 上")
 
 
-# --- 取模板 -----------------------------------------------------------------
-
-
-def _theme_sidebar() -> str:
-    """主题文件里实际生效的那段侧栏模板。
-
-    侧栏模板现在**只有这一份**。``patch-theme.py`` 里原来还有一份抄本
-    （注入用的生成器），可它跟这份早就对不上了——抄本少了折叠开关
-    （``onclick="toggleSidebar('cat')"``）和定义 ``window.toggleSidebar``
-    的那段脚本。抄本已经删掉，见 tests/test_patch_theme_sidebar.py。
-    """
-    text = THEME_LAYOUT.read_text(encoding="utf-8")
-    start = text.find("<% if (site.categories && site.categories.length) { %>")
-    end = text.find("<%# Per-page view counter is handled by Vercount embed below. %>")
-    assert start >= 0, "layout.ejs 里找不到侧栏段"
-    assert end > start, "layout.ejs 里找不到侧栏段的结尾"
-    return text[start:end]
-
-
-SIDEBAR_TEMPLATES = {
-    "theme": _theme_sidebar,
-}
-
-
-def _home_script() -> str:
-    """home-content.ejs 里那个算 tab 数据的 ``<% ... %>`` 块。"""
-    text = HOME_CONTENT.read_text(encoding="utf-8")
-    for block in re.findall(r"<%(.*?)%>", text, re.S):
-        if "var allPosts" in block:
-            return block
-    raise AssertionError("home-content.ejs 里找不到算 tab 数据的代码块")
-
-
-# --- 在 node 里跑模板 -------------------------------------------------------
-
-# 一个**自带**的极简 EJS 渲染器。
-#
-# 为什么不用 npm 里的 ejs：site-guard 那条 CI 只装 pytest，**没有
-# node_modules**——契约测试不能依赖仓库里没装的东西（上一版就因为
-# require('ejs') 在 CI 里整条红了）。这个渲染器只用 node 自带的能力，
-# 支持侧栏模板用到的那几个标签：<% %> / <%= %> / <%- %> / <%# %>。
-#
-# 跟真 ejs 对过：同一份模板、同一份数据，渲染结果**逐字节相同**。
-SIDEBAR_HARNESS = r"""
-const fs = require('fs');
-function renderEjs(tmpl, scope) {
-  var code =
-    'var __out = [];\n' +
-    'function __lit(s){return s;}\n' +
-    'function __esc(s){if(s===null||s===undefined)return "";' +
-    'return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")' +
-    '.replace(/"/g,"&quot;").replace(/\'/g,"&#39;");}\n' +
-    'with (__scope) {\n';
-  var re = /<%([=\-#]?)([\s\S]*?)-?%>/g;
-  var last = 0, m;
-  function lit(text) {
-    if (text) { code += '__out.push(__lit(' + JSON.stringify(text) + '));\n'; }
-  }
-  while ((m = re.exec(tmpl)) !== null) {
-    lit(tmpl.slice(last, m.index));
-    var kind = m[1], body = m[2];
-    if (kind === '#') {
-      // 注释：不输出
-    } else if (kind === '=') {
-      code += '__out.push(__esc(' + body + '));\n';
-    } else if (kind === '-') {
-      code += '__out.push(' + body + ');\n';
-    } else {
-      code += body + '\n';
-    }
-    last = re.lastIndex;
-  }
-  lit(tmpl.slice(last));
-  code += '}\nreturn __out.join("");';
-  return new Function('__scope', code)(scope);
-}
-const tmpl = fs.readFileSync(process.argv[1], 'utf8');
-const spec = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const posts = spec.posts || [];
-const site = {
-  posts: {data: posts, length: posts.length},
-  categories: {length: spec.categories || 0, each: function () {}},
-  data: spec.data || {},
-};
-const out = renderEjs(tmpl, {
-  site: site,
-  config: {root: '/'},
-  url_for: function (p) { return p; },
-  is_home: function () { return true; },
-  __: function (s) { return s; },
-});
-// 客户端脚本里的 'hot-views' 与 '🔥' 是**代码**，不是渲染出来的数字。
-// 断言页面上有没有那个数字，只能看渲染出来的标记。
-const visible = out.replace(/<script[\s\S]*?<\/script>/g, '');
-process.stdout.write(JSON.stringify({visible: visible}));
-"""
-
-HOME_HARNESS = r"""
-const fs = require('fs');
-const script = fs.readFileSync(process.argv[1], 'utf8');
-const spec = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
-const posts = spec.posts || [];
-const site = {
-  posts: {
-    length: posts.length,
-    forEach: function (fn) { posts.forEach(fn); },
-    toArray: function () { return posts.slice(); },
-  },
-  categories: {length: spec.categories || 0},
-  data: spec.data || {},
-};
-const wordcount = function (s) { return String(s).length; };
-const theme = {time: {year: 2020, month: 1, date: 1}};
-const fn = new Function('site', 'wordcount', 'theme', script + '\n' +
-  'return {hot: hot.map(function (p) { return p.path; }),' +
-  ' hotTabName: (typeof hotTabName === "undefined" ? null : hotTabName)};');
-process.stdout.write(JSON.stringify(fn(site, wordcount, theme)));
-"""
-
-
-def _run_node(harness: str, script_path: Path, payload: dict, tmp_path: Path) -> dict:
-    payload_path = tmp_path / "payload.json"
-    payload_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
-    result = subprocess.run(
-        [NODE, "-e", harness, str(script_path), str(payload_path)],
-        cwd=str(REPO_ROOT),
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-    )
-    assert result.returncode == 0, "node 那段脚本抛异常了：\n{}\n{}".format(
-        result.stdout, result.stderr
-    )
-    return json.loads(result.stdout)
-
-
-def _render_sidebar(template: str, spec: dict, tmp_path: Path) -> str:
-    template_path = tmp_path / "sidebar.ejs"
-    template_path.write_text(template, encoding="utf-8")
-    return _run_node(SIDEBAR_HARNESS, template_path, spec, tmp_path)["visible"]
-
-
-def _home_tabs(spec: dict, tmp_path: Path) -> dict:
-    script_path = tmp_path / "home-script.js"
-    script_path.write_text(_home_script(), encoding="utf-8")
-    return _run_node(HOME_HARNESS, script_path, spec, tmp_path)
-
-
-# --- 假的文章 ---------------------------------------------------------------
-
-
-def _long_post(path: str, title: str, chars: int = 100000) -> dict:
-    """一篇十万字的文章——旧的假公式会把它显示成「🔥 2000」。"""
-    return {
-        "path": path,
-        "title": title,
-        "content": "<p>" + ("字" * chars) + "</p>",
-        "categories": {"data": []},
-    }
-
-
-# --- 1. 假数字没了 ---------------------------------------------------------
-
-
-@needs_node
-@pytest.mark.parametrize("source", sorted(SIDEBAR_TEMPLATES))
-def test_the_page_no_longer_shows_a_length_based_view_count(source, tmp_path):
-    """拿不到真实 PV 时，**这一格不显示**——不显示一个假的🔥。
-
-    旧行为：一篇十万字的文章显示「🔥 2000」（= 字数 / 50）。
-    """
-    template = SIDEBAR_TEMPLATES[source]()
-    html = _render_sidebar(template, {"posts": [_long_post("2026/08/18/db/aaa/index.html", "长文")]}, tmp_path)
-
-    assert "hot-views" not in html, (
-        "没有真实阅读量却还在显示那一格——宁可空着，也不显示假的"
-    )
-    assert "🔥" not in html, "页面里还留着假的🔥"
-    assert "2000" not in html, "页面里还留着按字数算出来的数字"
-
-
-@needs_node
-@pytest.mark.parametrize("source", sorted(SIDEBAR_TEMPLATES))
-def test_the_sidebar_shows_the_real_view_count_when_the_snapshot_has_one(source, tmp_path):
-    """快照里有这个页面 → 显示**快照里的那个数**，不是字数算的。"""
-    template = SIDEBAR_TEMPLATES[source]()
-    html = _render_sidebar(
-        template,
-        {
-            "posts": [_long_post("2026/08/18/db/aaa/index.html", "长文")],
-            "data": {"view-counts": {"counts": {"2026/08/18/db/aaa": 42}}},
-        },
-        tmp_path,
-    )
-
-    assert "🔥 42" in html, "真实阅读量没有显示出来"
-
-
-@needs_node
-def test_the_sidebar_leaves_out_the_number_for_a_page_the_snapshot_does_not_know(tmp_path):
-    """快照里没有的页面 → 那一格不显示（不是显示 0，也不是显示假的）。"""
-    template = _theme_sidebar()
-    html = _render_sidebar(
-        template,
-        {
-            "posts": [
-                _long_post("2026/08/18/db/aaa/index.html", "有 PV"),
-                _long_post("2026/08/18/db/bbb/index.html", "没 PV"),
-            ],
-            "data": {"view-counts": {"counts": {"2026/08/18/db/aaa": 42}}},
-        },
-        tmp_path,
-    )
-
-    assert html.count("hot-views") == 1, (
-        "只有快照里有数的那一篇才显示这一格，实际 {} 处".format(html.count("hot-views"))
-    )
-
-
-# --- 2. 首页 tab ------------------------------------------------------------
-
-
-def _three_posts() -> list:
-    return [
-        {"path": "2026/08/18/db/aaa/index.html", "title": "AAA", "date": 1000, "top": 90, "content": "<p>a</p>"},
-        {"path": "2026/08/18/db/bbb/index.html", "title": "BBB", "date": 2000, "top": 50, "content": "<p>b</p>"},
-        {"path": "2026/08/18/db/ccc/index.html", "title": "CCC", "date": 3000, "top": 45, "content": "<p>c</p>"},
-    ]
-
-
-@needs_node
-def test_the_hot_tab_reads_the_real_view_count_snapshot(tmp_path):
-    """「近期热门」按快照里的真实 PV 排——不是按手写的 top 分数。
-
-    这里故意让 PV 的高下与 ``top`` 的高下**相反**：CCC 的 top 只有 45，
-    真实 PV 却是最高的。排序听 PV 的，才算真的换了数据源。
-    """
-    got = _home_tabs(
-        {
-            "posts": _three_posts(),
-            "data": {
-                "view-counts": {
-                    "counts": {
-                        "2026/08/18/db/aaa": 5,
-                        "2026/08/18/db/bbb": 80,
-                        "2026/08/18/db/ccc": 200,
-                    }
-                }
-            },
-        },
-        tmp_path,
-    )
-
-    assert got["hot"][0] == "2026/08/18/db/ccc/index.html", got["hot"]
-    assert got["hotTabName"] == "近期热门", got["hotTabName"]
-
-
-@needs_node
-def test_the_hot_tab_falls_back_when_the_snapshot_is_missing(tmp_path):
-    """快照缺失 → 退回 ``top`` 排序，**并且 tab 改名成「编辑精选」**。
-
-    一个叫「热门」的 tab 装着手动排序的内容，是在骗读者——所以名字要跟着变。
-    """
-    got = _home_tabs({"posts": _three_posts()}, tmp_path)
-
-    assert got["hotTabName"] == "编辑精选", got["hotTabName"]
-    # 回退时按 top 排：bbb(50) 在 ccc(45) 前面。
-    assert got["hot"][:2] == [
-        "2026/08/18/db/bbb/index.html",
-        "2026/08/18/db/ccc/index.html",
-    ], got["hot"]
-
-
-@needs_node
-def test_the_hot_tab_falls_back_when_there_is_not_enough_real_data(tmp_path):
-    """只有一篇有 PV —— 分不出高下，退回 ``top`` 排序并改名。
-
-    一篇有 PV 的「热门」tab 装的是另一套排序的内容，比没有还糟。
-    """
-    got = _home_tabs(
-        {
-            "posts": _three_posts(),
-            "data": {"view-counts": {"counts": {"2026/08/18/db/ccc": 7}}},
-        },
-        tmp_path,
-    )
-
-    assert got["hotTabName"] == "编辑精选", got["hotTabName"]
-    assert got["hot"][0] == "2026/08/18/db/bbb/index.html", got["hot"]
-
-
-def test_the_hot_tab_label_is_bound_to_the_computed_name():
-    """标签要跟着算出来的名字走——写死「近期热门」的话改名就不算数。"""
-    text = HOME_CONTENT.read_text(encoding="utf-8")
-
-    assert "<%= hotTabName %>" in text, "tab 标签没有用算出来的名字"
-    assert "近期热门</a>" not in text, "tab 标签的名字写死了"
-
-
-# --- 3. 抓取器 --------------------------------------------------------------
+# --- 1. 抓取器 --------------------------------------------------------------
 
 
 def _load_fetcher():
@@ -397,7 +90,7 @@ def test_the_fetcher_normalizes_the_path_the_same_way_the_template_does():
     assert fetcher.normalize_path("/2026/08/18/db/aaa") == "2026/08/18/db/aaa"
 
 
-# --- 4. 快照怎么进到站点里 -------------------------------------------------
+# --- 2. 快照怎么进到站点里 -------------------------------------------------
 
 
 def test_the_snapshot_file_is_a_valid_counts_object():
@@ -431,7 +124,7 @@ def test_the_snapshot_reaches_the_hexo_data_dir(tmp_path):
     assert copied == json.loads(SNAPSHOT.read_text(encoding="utf-8"))
 
 
-# --- 6. 中文路径：GoatCounter 返回百分号编码，hexo 的 post.path 是原始 Unicode ---
+# --- 3. 中文路径：GoatCounter 返回百分号编码，hexo 的 post.path 是原始 Unicode ---
 
 
 def test_the_snapshot_key_matches_the_template_for_a_chinese_path():
@@ -468,7 +161,7 @@ def test_a_broken_escape_sequence_does_not_explode():
     assert fetcher.normalize_path("/2026/01/01/100%/") == "2026/01/01/100%"
 
 
-# --- 7. HTTP 契约：URL、请求头、翻页 ----------------------------------------
+# --- 4. HTTP 契约：URL、请求头、翻页 ----------------------------------------
 
 
 class _FakeGoatCounter:
@@ -599,33 +292,7 @@ def test_the_fetcher_stops_after_too_many_pages():
     assert counts == {"p0": 0, "p1": 1, "p2": 2}, counts
 
 
-def test_the_hot_tab_falls_back_when_every_post_has_the_same_view_count(tmp_path):
-    """所有文章的 PV **都一样** → 分不出高下 → 退回 top，并改名。
-
-    计划里写的是「PV 普遍低到**无法区分**」——不是「有几篇有 PV」。
-    三篇都是 1 的时候，那个 tab 叫「近期热门」却给不出任何热门。
-    """
-    got = _home_tabs(
-        {
-            "posts": _three_posts(),
-            "data": {
-                "view-counts": {
-                    "counts": {
-                        "2026/08/18/db/aaa": 1,
-                        "2026/08/18/db/bbb": 1,
-                        "2026/08/18/db/ccc": 1,
-                    }
-                }
-            },
-        },
-        tmp_path,
-    )
-
-    assert got["hotTabName"] == "编辑精选", got["hotTabName"]
-    assert got["hot"][0] == "2026/08/18/db/bbb/index.html", got["hot"]
-
-
-# --- 8. 刷新工作流不能把好数据悄悄抹掉 ---------------------------------------
+# --- 5. 刷新工作流不能把好数据悄悄抹掉 ---------------------------------------
 
 WORKFLOW = REPO_ROOT / ".github" / "workflows" / "fetch-view-counts.yml"
 
@@ -633,9 +300,8 @@ WORKFLOW = REPO_ROOT / ".github" / "workflows" / "fetch-view-counts.yml"
 def test_the_fetcher_refuses_to_wipe_a_good_snapshot(tmp_path, monkeypatch):
     """抓不到东西时**不能**把快照写成空的。
 
-    空快照 = 侧栏一个🔥都不显示 + 首页那个 tab 改名成「编辑精选」——
-    整个功能被悄悄关掉，而 CI 是绿的。API 形状变了、key 过期、站点改名，
-    都会让抓取结果变成空。
+    空快照 = 真实 PV 一个都没有 —— 数据被悄悄清空，而 CI 是绿的。
+    API 形状变了、key 过期、站点改名，都会让抓取结果变成空。
     """
     out = tmp_path / "view-counts.json"
     out.write_text(json.dumps({"counts": {"a": 1}}), encoding="utf-8")

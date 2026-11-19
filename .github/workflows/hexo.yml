@@ -124,20 +124,6 @@ jobs:
         # 这一步不能省——期号数据走三条通道（母稿透传 / 发布索引 / 主题
         # partial），任何一环断了页面照常渲染，只是那一块是空的。
         run: python3 tools/check-episode-block.py
-      - name: Verify home tabs
-        # 首页那三个 tab（最新发布 / 编辑推荐 / 近期热门）必须真的对应
-        # 三个面板：标签 href ↔ 面板 id 一一对应，面板带 home-tab-panel 类名，
-        # 默认激活「最新发布」。
-        # 这一步不能省——tab 曾经是**假控件**：模板写了、代码调了 .tabs()，
-        # 但面板 id 与 href 对不上时，页面照常渲染，那个 tab 点了不切换。
-        run: python3 tools/check-home-tabs.py
-      - name: Verify card excerpts
-        # 首页那 18 张卡片的摘要必须是真的摘要：不能以「TL;DR」「[TOC]」开头
-        # （那是正文漏出来了），不能以履历前缀开头（「初稿，」说的是这次改了
-        # 什么），也不能是空的。
-        # 这一步不能省——568 篇文章里只有 1 篇写了 <!-- more -->，摘要曾经
-        # 一律退回正文的前 80 个字，页面上好几张卡以「TL;DR」开头。
-        run: python3 tools/check-card-excerpts.py
       - name: Subset Font Awesome fonts
         # 字体裁剪是锦上添花：裁成功省 240 KB，裁失败就保持原样。
         # 所以这一步**不许**把整条流水线带崩——失败只发一条 ::warning:: 注解，
@@ -427,20 +413,6 @@ jobs:
         # 这一步不能省——期号数据走三条通道（母稿透传 / 发布索引 / 主题
         # partial），任何一环断了页面照常渲染，只是那一块是空的。
         run: python3 tools/check-episode-block.py
-      - name: Verify home tabs
-        # 首页那三个 tab（最新发布 / 编辑推荐 / 近期热门）必须真的对应
-        # 三个面板：标签 href ↔ 面板 id 一一对应，面板带 home-tab-panel 类名，
-        # 默认激活「最新发布」。
-        # 这一步不能省——tab 曾经是**假控件**：模板写了、代码调了 .tabs()，
-        # 但面板 id 与 href 对不上时，页面照常渲染，那个 tab 点了不切换。
-        run: python3 tools/check-home-tabs.py
-      - name: Verify card excerpts
-        # 首页那 18 张卡片的摘要必须是真的摘要：不能以「TL;DR」「[TOC]」开头
-        # （那是正文漏出来了），不能以履历前缀开头（「初稿，」说的是这次改了
-        # 什么），也不能是空的。
-        # 这一步不能省——568 篇文章里只有 1 篇写了 <!-- more -->，摘要曾经
-        # 一律退回正文的前 80 个字，页面上好几张卡以「TL;DR」开头。
-        run: python3 tools/check-card-excerpts.py
       - name: Subset Font Awesome fonts
         # 与 growdu.cn 那套 build 同一个裁剪步骤（两边的图标清单一样）。
         # 同样是"失败不阻断"：失败只发一条 ::warning:: 注解。
