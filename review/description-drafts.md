@@ -17,44 +17,44 @@
 
 | 文章 | 现在的摘要 | 起草的摘要 | 确认 |
 | --- | --- | --- | --- |
-| `linux/centos搭建离线仓库.md` | 我们知道centos是通过yum来下载和管理软件，通过yum工具我们可以直接将rpm软件包下载下来安装到系统，是管理和安装软件非常便捷的一个工具。 | 我们知道centos是通过yum来下载和管理软件，通过yum工具我们可以直接将rpm软件包下载下来安装到系统，是管理和安装软件非常便捷的一个工具。 | ☐ |
-| `linux/gcc attribute指北.md` | align属性不仅可以修饰变量，类型， 还可以修饰函数，用于地址对齐。 | align属性不仅可以修饰变量，类型， 还可以修饰函数，用于地址对齐。 | ☐ |
-| `linux/git指北.md` | git 使用备忘：git bash 里 git status 显示不了中文时该配什么。 | （没抽出来） | ☐ |
-| `linux/git高级指北.md` | git 进阶用法：分支之间的合并与冲突解决，以及那些容易把人绕进去的高级操作。 | logc参数说明如下： | ☐ |
-| `linux/kconfig和kbuild指北.md` | kconfig和kbuild是linux用来辅助配置和编译的工具。 | kconfig和kbuild是linux用来辅助配置和编译的工具。 | ☐ |
-| `linux/linux cache指北.md` | 计算机中数据存取满足“二八定律”(局部性原理)，为了以较低的成本大幅提高性能，现代cpu都有cache。cpu cache已经发展到了三级缓存结构，基本上现在买的个人电脑都是L3结构。其中L1和L2cache为每个核独有，L3则所有核共享。 | 计算机中数据存取满足“二八定律”(局部性原理)，为了以较低的成本大幅提高性能，现代cpu都有cache。cpu cache已经发展到了三级缓存结构，基本上现在买的个人电脑都是L3结构。其中L1和L2cache为每个核独有，L3则所有核共享。 | ☐ |
-| `linux/linux ptp指北.md` | PTP（Precision Time Protocol）精确时间协议，由IEEE1588规定，用于同步网络中两台机器的时间。1558使用延时-请求测量机制达到主从时间同步。 | PTP（Precision Time Protocol）精确时间协议，由IEEE1588规定，用于同步网络中两台机器的时间。1558使用延时-请求测量机制达到主从时间同步。 | ☐ |
-| `linux/linux socket编程指北.md` | 以下server和client的c代码均拷贝自博客，详细内容请阅读原文。在其上添加了错误码打印，修改了服务端ip和端口，并增加了makefile脚本。 | 以下server和client的c代码均拷贝自博客，详细内容请阅读原文。在其上添加了错误码打印，修改了服务端ip和端口，并增加了makefile脚本。 | ☐ |
-| `linux/linuxUIO指北.md` | 在基于kernel的IO模型中，所有的设备IO都要经过内核处理，在高并发的网络数据包收发的情况下，大量硬件中断会降低内核数据包处理能力，内核和用户空间的数据拷贝也会造成大量的计算资源浪费。所以，作为高并发大流量网络开发框架的DPDK，必须要找到一个能够避免内核中断爆炸和大量数据拷贝的方法，在用户空… | 在基于kernel的IO模型中，所有的设备IO都要经过内核处理，在高并发的网络数据包收发的情况下，大量硬件中断会降低内核数据包处理能力，内核和用户空间的数据拷贝也会造成大量的计算资源浪费。所以，作为高并发大流量网络开发框架的DPDK，必须要找到一个能够避免内核中断爆炸和大量数据拷贝的方法，在用户空… | ☐ |
-| `linux/linux下RANDOM和uuid的区别.md` | $RANDOM 和 uuid 有什么区别：一个生成 0 到 32767 的随机整数，一个保证分布式系统里的全局唯一。 | （没抽出来） | ☐ |
-| `linux/linux下svn吐血指北.md` | 在 Linux 上用 svn 的踩坑记录：安装、配置默认编辑器为 vim，以及日常使用里那些容易出错的地方。 | 设置默认编辑器为vim | ☐ |
-| `linux/linux内存管理指北.md` | 内存是一段连续的地址单元，linux内核接管内存管理后，会将内存划分为内核区和用户区。因而内存管理就分为两个层面： | 内存是一段连续的地址单元，linux内核接管内存管理后，会将内存划分为内核区和用户区。因而内存管理就分为两个层面： | ☐ |
-| `linux/linux内核指北.md` | Linux 内核相关资料的索引（内容还在整理）。 | （没抽出来） | ☐ |
-| `linux/linux内核模块指北.md` | linux内核提供在运行时可进行扩展的特性，这意味着当系统启动并运行时，我们可以向内核添加或移除部分功能。我们在运行时添加到内核中的代码就被成为动态可加载内核模块，我们简称为内核模块。可以将内核模块模块简单理解为linux内核的插件。 | linux内核提供在运行时可进行扩展的特性，这意味着当系统启动并运行时，我们可以向内核添加或移除部分功能。我们在运行时添加到内核中的代码就被成为动态可加载内核模块，我们简称为内核模块。可以将内核模块模块简单理解为linux内核的插件。 | ☐ |
-| `linux/linux字符设备指北.md` | 在Linux系统中，存在一类字符设备，它们拥有相同的主设备号（10），但次设备号不同，我们称这类设备为混杂设备(miscdevice)。所有的混杂设备形成一个链表，对设备访问时内核根据次设备号查找到相应的混杂设备。 | 在Linux系统中，存在一类字符设备，它们拥有相同的主设备号（10），但次设备号不同，我们称这类设备为混杂设备(miscdevice)。所有的混杂设备形成一个链表，对设备访问时内核根据次设备号查找到相应的混杂设备。 | ☐ |
-| `linux/linux巨页内存指北.md` | 巨页的实现，涉及到两个模块：hugetlb和hugetlbfs。 | 巨页的实现，涉及到两个模块：hugetlb和hugetlbfs。 | ☐ |
-| `linux/linux常用高级命令.md` | Linux 常用进阶命令速查：统计文件总数之类的组合用法。 | （没抽出来） | ☐ |
-| `linux/linux数据预取.md` | Linux 数据预取相关的资料索引（内容还在整理）。 | （没抽出来） | ☐ |
-| `linux/linux目录介绍.md` | sysfs是一种基于ram的文件系统，和proc一样。Sysfs文件系统是一个类似于proc文件系统的特殊文件系统，用于将系统中的设备组织成层次结构，并向用户模式程序提供详细的内核数据结构信息。其实，就是在用户态可以通过对sys文件系统的访问，来看内核态的一些驱动或者设备等。 | sysfs是一种基于ram的文件系统，和proc一样。Sysfs文件系统是一个类似于proc文件系统的特殊文件系统，用于将系统中的设备组织成层次结构，并向用户模式程序提供详细的内核数据结构信息。其实，就是在用户态可以通过对sys文件系统的访问，来看内核态的一些驱动或者设备等。 | ☐ |
-| `linux/linux系统接口.md` | open可以打开文件，读取文件内容。特别的，读取一些特别的文件可以获取一些系统信息。 | open可以打开文件，读取文件内容。特别的，读取一些特别的文件可以获取一些系统信息。 | ☐ |
-| `linux/linux锁指北.md` | 锁一般用于解决资源竞争，比如多进程或者多线程场景下。锁主要是为了保证同一个资源在同一时间只能被一名修改者修改。 | 锁一般用于解决资源竞争，比如多进程或者多线程场景下。锁主要是为了保证同一个资源在同一时间只能被一名修改者修改。 | ☐ |
-| `linux/logrotate机制详解.md` | logrotate 是一个 linux 系统日志的管理工具。可以对单个日志文件或者某个目录下的文件按时间 / 大小进行切割，压缩操作；指定日志保存数量；还可以在切割之后运行自定义命令。 | logrotate 是一个 linux 系统日志的管理工具。可以对单个日志文件或者某个目录下的文件按时间 / 大小进行切割，压缩操作；指定日志保存数量；还可以在切割之后运行自定义命令。 | ☐ |
-| `linux/lvm详解.md` | LVM（Logical Volume Manager）逻辑卷管理，是在硬盘分区和文件系统之间添加的一个逻辑层，为文件系统屏蔽下层硬盘分区布局，并提供一个抽象的盘卷，在盘卷上建立文件系统。它提供了一种灵活的方式来管理和操作磁盘空间，使管理员能够动态地创建、调整大小、合并和移动逻辑卷，而无需中断系统。 | LVM（Logical Volume Manager）逻辑卷管理，是在硬盘分区和文件系统之间添加的一个逻辑层，为文件系统屏蔽下层硬盘分区布局，并提供一个抽象的盘卷，在盘卷上建立文件系统。它提供了一种灵活的方式来管理和操作磁盘空间，使管理员能够动态地创建、调整大小、合并和移动逻辑卷，而无需中断系统。 | ☐ |
-| `linux/shell使用.md` | shell 使用备忘：字符串比较等基础判断的写法。 | （没抽出来） | ☐ |
-| `linux/uboot指北.md` | U-Boot 相关资料的索引（内容还在整理）。 | （没抽出来） | ☐ |
-| `linux/vlan使用指北.md` | vlan详细内容请参考博客。 | vlan详细内容请参考博客。 | ☐ |
-| `linux/不得不知道的linux库的装载、链接.md` | 在计算机世界里，一直有一个和现实世界一样非常重要的概念，那就是地址。就像是某个国家某个地点，才能找到某个人一样。 同样地，在计算机世界里，同样需要地址，在这样的地址能够找到某个文件或者某个符号。 换句话说，在计算机世界里，你要找到某个文件、某个进程、某个函数做某件事情，都需要知道他的地址。 在最上… | 在计算机世界里，一直有一个和现实世界一样非常重要的概念，那就是地址。就像是某个国家某个地点，才能找到某个人一样。 同样地，在计算机世界里，同样需要地址，在这样的地址能够找到某个文件或者某个符号。 换句话说，在计算机世界里，你要找到某个文件、某个进程、某个函数做某件事情，都需要知道他的地址。 在最上… | ☐ |
-| `linux/内存管理之dlmalloc.md` | 内存管理之 dlmalloc：allocator 与系统堆的关系，以及一块内存从申请到映射上物理页的全过程。 | （没抽出来） | ☐ |
-| `linux/抓包指北.md` | Mergecap 从名字上 可以看出该命令的功能是合并多个报文为一个报文。 | Mergecap 从名字上 可以看出该命令的功能是合并多个报文为一个报文。 | ☐ |
-| `linux/本地git仓库.md` | 本地搭一个 git 远程仓库：git init --bare 建库，再用 ssh 地址 clone 下来。 | （没抽出来） | ☐ |
-| `linux/解决SSH连接Linux超时自动断开.md` | 现在无论空闲多久，SSH客户端都不会自动断开了。 | 现在无论空闲多久，SSH客户端都不会自动断开了。 | ☐ |
-| `linux/银河麒麟V10 远程桌面_银河麒麟v10远程桌面-CSDN博客.md` | 运行命令然后输入口令，并且确认。 | 运行命令然后输入口令，并且确认。 | ☐ |
+| `source-tracks/linux/daily-ops/centos搭建离线仓库.md` | 我们知道centos是通过yum来下载和管理软件，通过yum工具我们可以直接将rpm软件包下载下来安装到系统，是管理和安装软件非常便捷的一个工具。 | 我们知道centos是通过yum来下载和管理软件，通过yum工具我们可以直接将rpm软件包下载下来安装到系统，是管理和安装软件非常便捷的一个工具。 | ☐ |
+| `source-tracks/linux/kernel-internals/gcc attribute指北.md` | align属性不仅可以修饰变量，类型， 还可以修饰函数，用于地址对齐。 | align属性不仅可以修饰变量，类型， 还可以修饰函数，用于地址对齐。 | ☐ |
+| `source-tracks/linux/daily-ops/git指北.md` | git 使用备忘：git bash 里 git status 显示不了中文时该配什么。 | （没抽出来） | ☐ |
+| `source-tracks/linux/daily-ops/git高级指北.md` | git 进阶用法：分支之间的合并与冲突解决，以及那些容易把人绕进去的高级操作。 | logc参数说明如下： | ☐ |
+| `source-tracks/linux/kernel-internals/kconfig和kbuild指北.md` | kconfig和kbuild是linux用来辅助配置和编译的工具。 | kconfig和kbuild是linux用来辅助配置和编译的工具。 | ☐ |
+| `source-tracks/linux/memory-and-linking/linux cache指北.md` | 计算机中数据存取满足“二八定律”(局部性原理)，为了以较低的成本大幅提高性能，现代cpu都有cache。cpu cache已经发展到了三级缓存结构，基本上现在买的个人电脑都是L3结构。其中L1和L2cache为每个核独有，L3则所有核共享。 | 计算机中数据存取满足“二八定律”(局部性原理)，为了以较低的成本大幅提高性能，现代cpu都有cache。cpu cache已经发展到了三级缓存结构，基本上现在买的个人电脑都是L3结构。其中L1和L2cache为每个核独有，L3则所有核共享。 | ☐ |
+| `source-tracks/linux/kernel-internals/linux ptp指北.md` | PTP（Precision Time Protocol）精确时间协议，由IEEE1588规定，用于同步网络中两台机器的时间。1558使用延时-请求测量机制达到主从时间同步。 | PTP（Precision Time Protocol）精确时间协议，由IEEE1588规定，用于同步网络中两台机器的时间。1558使用延时-请求测量机制达到主从时间同步。 | ☐ |
+| `source-tracks/linux/kernel-internals/linux socket编程指北.md` | 以下server和client的c代码均拷贝自博客，详细内容请阅读原文。在其上添加了错误码打印，修改了服务端ip和端口，并增加了makefile脚本。 | 以下server和client的c代码均拷贝自博客，详细内容请阅读原文。在其上添加了错误码打印，修改了服务端ip和端口，并增加了makefile脚本。 | ☐ |
+| `source-tracks/linux/kernel-internals/linuxUIO指北.md` | 在基于kernel的IO模型中，所有的设备IO都要经过内核处理，在高并发的网络数据包收发的情况下，大量硬件中断会降低内核数据包处理能力，内核和用户空间的数据拷贝也会造成大量的计算资源浪费。所以，作为高并发大流量网络开发框架的DPDK，必须要找到一个能够避免内核中断爆炸和大量数据拷贝的方法，在用户空… | 在基于kernel的IO模型中，所有的设备IO都要经过内核处理，在高并发的网络数据包收发的情况下，大量硬件中断会降低内核数据包处理能力，内核和用户空间的数据拷贝也会造成大量的计算资源浪费。所以，作为高并发大流量网络开发框架的DPDK，必须要找到一个能够避免内核中断爆炸和大量数据拷贝的方法，在用户空… | ☐ |
+| `source-tracks/linux/daily-ops/linux下RANDOM和uuid的区别.md` | $RANDOM 和 uuid 有什么区别：一个生成 0 到 32767 的随机整数，一个保证分布式系统里的全局唯一。 | （没抽出来） | ☐ |
+| `source-tracks/linux/daily-ops/linux下svn吐血指北.md` | 在 Linux 上用 svn 的踩坑记录：安装、配置默认编辑器为 vim，以及日常使用里那些容易出错的地方。 | 设置默认编辑器为vim | ☐ |
+| `source-tracks/linux/memory-and-linking/linux内存管理指北.md` | 内存是一段连续的地址单元，linux内核接管内存管理后，会将内存划分为内核区和用户区。因而内存管理就分为两个层面： | 内存是一段连续的地址单元，linux内核接管内存管理后，会将内存划分为内核区和用户区。因而内存管理就分为两个层面： | ☐ |
+| `source-tracks/linux/kernel-internals/linux内核指北.md` | Linux 内核相关资料的索引（内容还在整理）。 | （没抽出来） | ☐ |
+| `source-tracks/linux/kernel-internals/linux内核模块指北.md` | linux内核提供在运行时可进行扩展的特性，这意味着当系统启动并运行时，我们可以向内核添加或移除部分功能。我们在运行时添加到内核中的代码就被成为动态可加载内核模块，我们简称为内核模块。可以将内核模块模块简单理解为linux内核的插件。 | linux内核提供在运行时可进行扩展的特性，这意味着当系统启动并运行时，我们可以向内核添加或移除部分功能。我们在运行时添加到内核中的代码就被成为动态可加载内核模块，我们简称为内核模块。可以将内核模块模块简单理解为linux内核的插件。 | ☐ |
+| `source-tracks/linux/kernel-internals/linux字符设备指北.md` | 在Linux系统中，存在一类字符设备，它们拥有相同的主设备号（10），但次设备号不同，我们称这类设备为混杂设备(miscdevice)。所有的混杂设备形成一个链表，对设备访问时内核根据次设备号查找到相应的混杂设备。 | 在Linux系统中，存在一类字符设备，它们拥有相同的主设备号（10），但次设备号不同，我们称这类设备为混杂设备(miscdevice)。所有的混杂设备形成一个链表，对设备访问时内核根据次设备号查找到相应的混杂设备。 | ☐ |
+| `source-tracks/linux/memory-and-linking/linux巨页内存指北.md` | 巨页的实现，涉及到两个模块：hugetlb和hugetlbfs。 | 巨页的实现，涉及到两个模块：hugetlb和hugetlbfs。 | ☐ |
+| `source-tracks/linux/daily-ops/linux常用高级命令.md` | Linux 常用进阶命令速查：统计文件总数之类的组合用法。 | （没抽出来） | ☐ |
+| `source-tracks/linux/kernel-internals/linux数据预取.md` | Linux 数据预取相关的资料索引（内容还在整理）。 | （没抽出来） | ☐ |
+| `source-tracks/linux/daily-ops/linux目录介绍.md` | sysfs是一种基于ram的文件系统，和proc一样。Sysfs文件系统是一个类似于proc文件系统的特殊文件系统，用于将系统中的设备组织成层次结构，并向用户模式程序提供详细的内核数据结构信息。其实，就是在用户态可以通过对sys文件系统的访问，来看内核态的一些驱动或者设备等。 | sysfs是一种基于ram的文件系统，和proc一样。Sysfs文件系统是一个类似于proc文件系统的特殊文件系统，用于将系统中的设备组织成层次结构，并向用户模式程序提供详细的内核数据结构信息。其实，就是在用户态可以通过对sys文件系统的访问，来看内核态的一些驱动或者设备等。 | ☐ |
+| `source-tracks/linux/kernel-internals/linux系统接口.md` | open可以打开文件，读取文件内容。特别的，读取一些特别的文件可以获取一些系统信息。 | open可以打开文件，读取文件内容。特别的，读取一些特别的文件可以获取一些系统信息。 | ☐ |
+| `source-tracks/linux/kernel-internals/linux锁指北.md` | 锁一般用于解决资源竞争，比如多进程或者多线程场景下。锁主要是为了保证同一个资源在同一时间只能被一名修改者修改。 | 锁一般用于解决资源竞争，比如多进程或者多线程场景下。锁主要是为了保证同一个资源在同一时间只能被一名修改者修改。 | ☐ |
+| `source-tracks/linux/daily-ops/logrotate机制详解.md` | logrotate 是一个 linux 系统日志的管理工具。可以对单个日志文件或者某个目录下的文件按时间 / 大小进行切割，压缩操作；指定日志保存数量；还可以在切割之后运行自定义命令。 | logrotate 是一个 linux 系统日志的管理工具。可以对单个日志文件或者某个目录下的文件按时间 / 大小进行切割，压缩操作；指定日志保存数量；还可以在切割之后运行自定义命令。 | ☐ |
+| `source-tracks/linux/filesystem/lvm详解.md` | LVM（Logical Volume Manager）逻辑卷管理，是在硬盘分区和文件系统之间添加的一个逻辑层，为文件系统屏蔽下层硬盘分区布局，并提供一个抽象的盘卷，在盘卷上建立文件系统。它提供了一种灵活的方式来管理和操作磁盘空间，使管理员能够动态地创建、调整大小、合并和移动逻辑卷，而无需中断系统。 | LVM（Logical Volume Manager）逻辑卷管理，是在硬盘分区和文件系统之间添加的一个逻辑层，为文件系统屏蔽下层硬盘分区布局，并提供一个抽象的盘卷，在盘卷上建立文件系统。它提供了一种灵活的方式来管理和操作磁盘空间，使管理员能够动态地创建、调整大小、合并和移动逻辑卷，而无需中断系统。 | ☐ |
+| `source-tracks/linux/daily-ops/shell使用.md` | shell 使用备忘：字符串比较等基础判断的写法。 | （没抽出来） | ☐ |
+| `source-tracks/linux/kernel-internals/uboot指北.md` | U-Boot 相关资料的索引（内容还在整理）。 | （没抽出来） | ☐ |
+| `source-tracks/linux/networking/vlan使用指北.md` | vlan详细内容请参考博客。 | vlan详细内容请参考博客。 | ☐ |
+| `source-tracks/linux/memory-and-linking/不得不知道的linux库的装载、链接.md` | 在计算机世界里，一直有一个和现实世界一样非常重要的概念，那就是地址。就像是某个国家某个地点，才能找到某个人一样。 同样地，在计算机世界里，同样需要地址，在这样的地址能够找到某个文件或者某个符号。 换句话说，在计算机世界里，你要找到某个文件、某个进程、某个函数做某件事情，都需要知道他的地址。 在最上… | 在计算机世界里，一直有一个和现实世界一样非常重要的概念，那就是地址。就像是某个国家某个地点，才能找到某个人一样。 同样地，在计算机世界里，同样需要地址，在这样的地址能够找到某个文件或者某个符号。 换句话说，在计算机世界里，你要找到某个文件、某个进程、某个函数做某件事情，都需要知道他的地址。 在最上… | ☐ |
+| `source-tracks/linux/memory-and-linking/内存管理之dlmalloc.md` | 内存管理之 dlmalloc：allocator 与系统堆的关系，以及一块内存从申请到映射上物理页的全过程。 | （没抽出来） | ☐ |
+| `source-tracks/linux/networking/抓包指北.md` | Mergecap 从名字上 可以看出该命令的功能是合并多个报文为一个报文。 | Mergecap 从名字上 可以看出该命令的功能是合并多个报文为一个报文。 | ☐ |
+| `source-tracks/linux/daily-ops/本地git仓库.md` | 本地搭一个 git 远程仓库：git init --bare 建库，再用 ssh 地址 clone 下来。 | （没抽出来） | ☐ |
+| `source-tracks/linux/daily-ops/解决SSH连接Linux超时自动断开.md` | 现在无论空闲多久，SSH客户端都不会自动断开了。 | 现在无论空闲多久，SSH客户端都不会自动断开了。 | ☐ |
+| `source-tracks/linux/daily-ops/银河麒麟V10 远程桌面_银河麒麟v10远程桌面-CSDN博客.md` | 运行命令然后输入口令，并且确认。 | 运行命令然后输入口令，并且确认。 | ☐ |
 | `linux/cpu-affinity-top-guide/index.md` | Linux CFS(Completely Fair Scheduler)在多核系统上默认自由调度: | Linux CFS(Completely Fair Scheduler)在多核系统上默认自由调度: | ☐ |
-| `linux/ebpf/ebpf基础.md` | 使用下面的makefile进行编译： | 使用下面的makefile进行编译： | ☐ |
-| `linux/ebpf/oltp.md` | otlp，全称是opentelemetry protocol，主要用于可观测性领域。（trace、metrics、logs） | otlp，全称是opentelemetry protocol，主要用于可观测性领域。（trace、metrics、logs） | ☐ |
-| `linux/ebpf/pg-ferret.md` | pg-ferret主要跟踪如下信息： | pg-ferret主要跟踪如下信息： | ☐ |
-| `linux/ebpf/rust-ebpf编程基础.md` | 用 Rust 写 eBPF 程序：aya 框架的下载依赖、编译与加载，一步步走通。 | rust中有一个ebpf编程框架aya，其地址为https://github.com/aya-rs/aya。 | ☐ |
-| `linux/kernel/qemu-busybox调试linux.md` | 用 QEMU 和 BusyBox 搭建 Linux 内核的调试环境：下载源码、编译内核、启动调试。 | 执行如下命令进行编译： | ☐ |
+| `source-tracks/linux/memory-and-linking/ebpf/ebpf基础.md` | 使用下面的makefile进行编译： | 使用下面的makefile进行编译： | ☐ |
+| `source-tracks/linux/memory-and-linking/ebpf/oltp.md` | otlp，全称是opentelemetry protocol，主要用于可观测性领域。（trace、metrics、logs） | otlp，全称是opentelemetry protocol，主要用于可观测性领域。（trace、metrics、logs） | ☐ |
+| `source-tracks/linux/memory-and-linking/ebpf/pg-ferret.md` | pg-ferret主要跟踪如下信息： | pg-ferret主要跟踪如下信息： | ☐ |
+| `source-tracks/linux/memory-and-linking/ebpf/rust-ebpf编程基础.md` | 用 Rust 写 eBPF 程序：aya 框架的下载依赖、编译与加载，一步步走通。 | rust中有一个ebpf编程框架aya，其地址为https://github.com/aya-rs/aya。 | ☐ |
+| `source-tracks/linux/kernel-internals/kernel/qemu-busybox调试linux.md` | 用 QEMU 和 BusyBox 搭建 Linux 内核的调试环境：下载源码、编译内核、启动调试。 | 执行如下命令进行编译： | ☐ |
 | `ai/01-ai常用工具和开发框架.md` | MCP的目标，就是让AI像访问网页一样，轻松访问各种数据和功能。 | MCP的目标，就是让AI像访问网页一样，轻松访问各种数据和功能。 | ☐ |
 | `ai/01_开场白目录.md` | 你让 ChatGPT 帮你写一封邮件。 | 你让 ChatGPT 帮你写一封邮件。 | ☐ |
 | `ai/02_AI到底聪明在哪从手机人脸识别说起.md` | 每天早上，你拿起手机，看一眼屏幕，解锁。 | 每天早上，你拿起手机，看一眼屏幕，解锁。 | ☐ |
@@ -85,19 +85,19 @@
 | `ai/claude/claude配置.md` | Claude Code 的插件配置：怎么用 marketplace 添加插件源、怎么安装 superpowers，以及常用的插件命令。 | （没抽出来） | ☐ |
 | `ai/claude安装教程/index.md` | 当前openclaw（龙虾）比较火，但是配置比较复杂，可以先安装claude进行体验。 | 当前openclaw（龙虾）比较火，但是配置比较复杂，可以先安装claude进行体验。 | ☐ |
 | `alg/B-树如何使查询更快/index.md` | 本文翻译自How does B-tree make your queries fast?,部分内容翻译可能不准确，请以原文为准。 | 本文翻译自How does B-tree make your queries fast?,部分内容翻译可能不准确，请以原文为准。 | ☐ |
-| `base/data-struct.md` | 数据结构按照视点不同可分为：逻辑结构和物理结构 | 数据结构按照视点不同可分为：逻辑结构和物理结构 | ☐ |
-| `base/design-pattern.md` | 设计模式针对变化：哪些东西是变的、哪些是不变的，以及变化与稳定之间该怎么取舍。 | 变化意味着灵活，不稳定。 | ☐ |
-| `base/file.md` | 文件操作看着是四门语言各自的 API，底下却是同一套机制：文件描述符、缓冲、原子性。 本文会把这三件事摊开说，再把 C、Java、C#、Python、shell、bat 的调用摆在一起对照—— 重点不在「有哪些函数」，而在「哪些坑会让你以为写对了、其实没写对」。 | 文件操作看着是四门语言各自的 API，底下却是同一套机制：文件描述符、缓冲、原子性。 本文会把这三件事摊开说，再把 C、Java、C#、Python、shell、bat 的调用摆在一起对照—— 重点不在「有哪些函数」，而在「哪些坑会让你以为写对了、其实没写对」。 | ☐ |
-| `base/network.md` | 逐步检查网络的各个层次：物理链接、链路层、网络层直到应用层，熟悉使用各种如下的工具，包括 | 逐步检查网络的各个层次：物理链接、链路层、网络层直到应用层，熟悉使用各种如下的工具，包括 | ☐ |
-| `base/normal.md` | 该目录下主要存放所有支撑编程的材料，即编程的理论基础和编程逻辑。如： | 该目录下主要存放所有支撑编程的材料，即编程的理论基础和编程逻辑。如： | ☐ |
-| `base/process.md` | 程序是指令的集合，而进程则是程序执行的基本单元。程序运行起来成为进程，进而利用处理器资源、内存资源，进行各种I/O操作，从而完成特定任务。 | 程序是指令的集合，而进程则是程序执行的基本单元。程序运行起来成为进程，进而利用处理器资源、内存资源，进行各种I/O操作，从而完成特定任务。 | ☐ |
-| `base/sql.md` | 结论：union all的性能大约是union的好几倍。 | 结论：union all的性能大约是union的好几倍。 | ☐ |
-| `base/string.md` | 在 C 语言中，字符串实际上是使用 null 字符 '\\0' 终止的一维字符数组。因此，一个以 null 结尾的字符串，包含了组成字符串的字符。 | 在 C 语言中，字符串实际上是使用 null 字符 '\0' 终止的一维字符数组。因此，一个以 null 结尾的字符串，包含了组成字符串的字符。 | ☐ |
-| `base/use-tools/download.md` | 常用下载工具清单：Linux 下的 flareget、xdm、uget，以及 Windows 下的 idm。 | （没抽出来） | ☐ |
-| `base/use-tools/git.md` | 常用 git 命令速查：add、commit、push、pull、checkout、branch、tag 的日常用法。 | `` git add filename git commit -m "description" git push git pull git checkhout git branch git tag | ☐ |
-| `base/use-tools/google.md` | Google 浏览器扩展清单：油猴、广告拦截、二维码、右键搜索、octotree 等等，每一条是什么用途。 | （没抽出来） | ☐ |
-| `base/use-tools/other.md` | 几个日常小工具的用途速查：文本比较合并的 meld、跟踪系统调用的 strace，以及 man 的八章结构。 | （没抽出来） | ☐ |
-| `base/use-tools/vim.md` | vim 常用操作速查：横竖分屏、换屏、撤销、复制、删除分别按什么键。 | （没抽出来） | ☐ |
+| `engineering/foundations/data-struct.md` | 数据结构按照视点不同可分为：逻辑结构和物理结构 | 数据结构按照视点不同可分为：逻辑结构和物理结构 | ☐ |
+| `engineering/foundations/design-pattern.md` | 设计模式针对变化：哪些东西是变的、哪些是不变的，以及变化与稳定之间该怎么取舍。 | 变化意味着灵活，不稳定。 | ☐ |
+| `engineering/foundations/file.md` | 文件操作看着是四门语言各自的 API，底下却是同一套机制：文件描述符、缓冲、原子性。 本文会把这三件事摊开说，再把 C、Java、C#、Python、shell、bat 的调用摆在一起对照—— 重点不在「有哪些函数」，而在「哪些坑会让你以为写对了、其实没写对」。 | 文件操作看着是四门语言各自的 API，底下却是同一套机制：文件描述符、缓冲、原子性。 本文会把这三件事摊开说，再把 C、Java、C#、Python、shell、bat 的调用摆在一起对照—— 重点不在「有哪些函数」，而在「哪些坑会让你以为写对了、其实没写对」。 | ☐ |
+| `engineering/foundations/network.md` | 逐步检查网络的各个层次：物理链接、链路层、网络层直到应用层，熟悉使用各种如下的工具，包括 | 逐步检查网络的各个层次：物理链接、链路层、网络层直到应用层，熟悉使用各种如下的工具，包括 | ☐ |
+| `engineering/foundations/normal.md` | 该目录下主要存放所有支撑编程的材料，即编程的理论基础和编程逻辑。如： | 该目录下主要存放所有支撑编程的材料，即编程的理论基础和编程逻辑。如： | ☐ |
+| `engineering/foundations/process.md` | 程序是指令的集合，而进程则是程序执行的基本单元。程序运行起来成为进程，进而利用处理器资源、内存资源，进行各种I/O操作，从而完成特定任务。 | 程序是指令的集合，而进程则是程序执行的基本单元。程序运行起来成为进程，进而利用处理器资源、内存资源，进行各种I/O操作，从而完成特定任务。 | ☐ |
+| `engineering/foundations/sql.md` | 结论：union all的性能大约是union的好几倍。 | 结论：union all的性能大约是union的好几倍。 | ☐ |
+| `engineering/foundations/string.md` | 在 C 语言中，字符串实际上是使用 null 字符 '\\0' 终止的一维字符数组。因此，一个以 null 结尾的字符串，包含了组成字符串的字符。 | 在 C 语言中，字符串实际上是使用 null 字符 '\0' 终止的一维字符数组。因此，一个以 null 结尾的字符串，包含了组成字符串的字符。 | ☐ |
+| `engineering/foundations/use-tools/download.md` | 常用下载工具清单：Linux 下的 flareget、xdm、uget，以及 Windows 下的 idm。 | （没抽出来） | ☐ |
+| `engineering/foundations/use-tools/git.md` | 常用 git 命令速查：add、commit、push、pull、checkout、branch、tag 的日常用法。 | `` git add filename git commit -m "description" git push git pull git checkhout git branch git tag | ☐ |
+| `engineering/foundations/use-tools/google.md` | Google 浏览器扩展清单：油猴、广告拦截、二维码、右键搜索、octotree 等等，每一条是什么用途。 | （没抽出来） | ☐ |
+| `engineering/foundations/use-tools/other.md` | 几个日常小工具的用途速查：文本比较合并的 meld、跟踪系统调用的 strace，以及 man 的八章结构。 | （没抽出来） | ☐ |
+| `engineering/foundations/use-tools/vim.md` | vim 常用操作速查：横竖分屏、换屏、撤销、复制、删除分别按什么键。 | （没抽出来） | ☐ |
 | `blog/博客搭建指南.md` | 日常维护手册。仓库的总体布局、一次 push 之后的构建链路、各模块职责，详见 架构.md。本文只讲怎么动。 | 日常维护手册。仓库的总体布局、一次 push 之后的构建链路、各模块职责，详见 架构.md。本文只讲怎么动。 | ☐ |
 | `blog/同名文章-html-与-md-版本管理.md` | 仓库偶尔会出现 xxx.md 和 xxx.html 两个同主题、不同表达形式的源文件（一个 markdown 版、一个带丰富排版的 HTML 版）。本文说明 sync-hexo.py 处理这种情况的约定，为什么必须遵守，以及怎么做。 | 仓库偶尔会出现 xxx.md 和 xxx.html 两个同主题、不同表达形式的源文件（一个 markdown 版、一个带丰富排版的 HTML 版）。本文说明 sync-hexo.py 处理这种情况的约定，为什么必须遵守，以及怎么做。 | ☐ |
 | `blog/同步到公众号方案.md` | 把博客内容自动/半自动地发布到「growdu」微信公众号。本文先讲清楚微信公众号生态对程序化发布的硬约束，再给两套技术路线对比，最后给推荐方案与具体实施步骤。 | 把博客内容自动/半自动地发布到「growdu」微信公众号。本文先讲清楚微信公众号生态对程序化发布的硬约束，再给两套技术路线对比，最后给推荐方案与具体实施步骤。 | ☐ |
@@ -170,17 +170,17 @@
 | `distributed/consensus/zookeeper主备集群demo.md` | 使用zookeeper搭建主备集群，要求实现如下功能： | 使用zookeeper搭建主备集群，要求实现如下功能： | ☐ |
 | `distributed/consensus/zookeeper使用说明文档.md` | 需对每一台zookeeper集群节点做如下操作： | 需对每一台zookeeper集群节点做如下操作： | ☐ |
 | `distributed/consensus/zookeeper安装部署教程.md` | 需对每一台zookeeper集群节点做如下操作： | 需对每一台zookeeper集群节点做如下操作： | ☐ |
-| `code/assemble-work/readme.md` | This is about assemble. | This is about assemble. | ☐ |
-| `code/c-sharp-work/readme.md` | This is some code using C#. | This is some code using C#. | ☐ |
-| `code/c-work/readme.md` | This directory include some works using C. | This directory include some works using C. | ☐ |
-| `code/c-work/simple-editor/preview.md` | 插入、删除、保存为基本的文件读写功能，回退、前进要求可以在当前状态之前的各状态之间来回切换。 | 插入、删除、保存为基本的文件读写功能，回退、前进要求可以在当前状态之前的各状态之间来回切换。 | ☐ |
-| `code/c-work/ticket/readme.md` | This is code. | This is code. | ☐ |
-| `code/gui-work/readme.md` | This is GUI program. | This is GUI program. | ☐ |
-| `code/html-work/readme.md` | This is about html. | This is about html. | ☐ |
-| `code/java-work/readme.md` | This directory include some code using java. | This directory include some code using java. | ☐ |
-| `code/JavaScript-work/readme.md` | This is about JavaScript. | This is about JavaScript. | ☐ |
-| `code/shell-work/readme.md` | This directory include some code using shell. | This directory include some code using shell. | ☐ |
-| `code/shell-work/vim/readme.md` | vim 配置使用vimplus. | vim 配置使用vimplus. | ☐ |
+| `engineering/engineering-practice/code/assemble-work/readme.md` | This is about assemble. | This is about assemble. | ☐ |
+| `engineering/engineering-practice/code/c-sharp-work/readme.md` | This is some code using C#. | This is some code using C#. | ☐ |
+| `engineering/engineering-practice/code/c-work/readme.md` | This directory include some works using C. | This directory include some works using C. | ☐ |
+| `engineering/engineering-practice/code/c-work/simple-editor/preview.md` | 插入、删除、保存为基本的文件读写功能，回退、前进要求可以在当前状态之前的各状态之间来回切换。 | 插入、删除、保存为基本的文件读写功能，回退、前进要求可以在当前状态之前的各状态之间来回切换。 | ☐ |
+| `engineering/engineering-practice/code/c-work/ticket/readme.md` | This is code. | This is code. | ☐ |
+| `engineering/engineering-practice/code/gui-work/readme.md` | This is GUI program. | This is GUI program. | ☐ |
+| `engineering/engineering-practice/code/html-work/readme.md` | This is about html. | This is about html. | ☐ |
+| `engineering/engineering-practice/code/java-work/readme.md` | This directory include some code using java. | This directory include some code using java. | ☐ |
+| `engineering/engineering-practice/code/JavaScript-work/readme.md` | This is about JavaScript. | This is about JavaScript. | ☐ |
+| `engineering/engineering-practice/code/shell-work/readme.md` | This directory include some code using shell. | This directory include some code using shell. | ☐ |
+| `engineering/engineering-practice/code/shell-work/vim/readme.md` | vim 配置使用vimplus. | vim 配置使用vimplus. | ☐ |
 | `computer_communication/现代信息查询与检索技巧.md` | vfox是一个版本管理工具，可以方便的管理各种开发环境的版本，比如go、python、nodejs。 | vfox是一个版本管理工具，可以方便的管理各种开发环境的版本，比如go、python、nodejs。 | ☐ |
 | `source-tracks/postgresql/extensions-perf/polardb竞争力分析.md` | 云原生数据库 PolarDB 是阿里云自研产品，在存储计算分离架构下，利用了软硬件结合的优势，100%兼容 MySQL 和 PostgreSQL 生态，为用户提供秒级弹性、高性能、海量存储、安全可靠的数据库服务。PolarDB 分布式版历经十余年淬炼，始终保持对阿里集团“双十一购物狂欢节”所有相关… | 云原生数据库 PolarDB 是阿里云自研产品，在存储计算分离架构下，利用了软硬件结合的优势，100%兼容 MySQL 和 PostgreSQL 生态，为用户提供秒级弹性、高性能、海量存储、安全可靠的数据库服务。PolarDB 分布式版历经十余年淬炼，始终保持对阿里集团“双十一购物狂欢节”所有相关… | ☐ |
 | `source-tracks/postgresql/extensions-perf/citus-columnar-deep-dive/index.md` | 本文回答 4 个问题： | 本文回答 4 个问题： | ☐ |
@@ -336,16 +336,16 @@
 | `source-tracks/postgresql/logical-replication/sqlserver/支持逻辑复制同步ddl适配sqlserver方案.md` | Babelfish 是 PostgreSQL 的一个扩展，通过双端口设计支持 SQL Server 协议： | Babelfish 是 PostgreSQL 的一个扩展，通过双端口设计支持 SQL Server 协议： | ☐ |
 | `source-tracks/postgresql/logical-replication/sqlserver/逻辑复制同步ddl适配bbf面临的挑战.md` | 逻辑复制同步 DDL 适配 Babelfish（SQL Server 模式）时遇到的能力边界问题，以及为什么需要把需求拆开。 | （没抽出来） | ☐ |
 | `source-tracks/postgresql/extensions-perf/taos基本使用.md` | taos是一个开源的时序数据库，目前发展势头较好，走的开源路线。 | taos是一个开源的时序数据库，目前发展势头较好，走的开源路线。 | ☐ |
-| `docker/docker compose管理容器.md` | 使用docker-compose部署code-server容器开发环境。 | 使用docker-compose部署code-server容器开发环境。 | ☐ |
-| `docker/docker_communication_with_host.md` | docker中的进程要与宿主机使用共享内存通信，需要在启动容器的时候指定<font color=\"red\">“--ipc=host”</font>选项。然后再编写相应的共享内存的程序，一个跑在宿主机上，另一个跑在docker上面。 | docker中的进程要与宿主机使用共享内存通信，需要在启动容器的时候指定<font color="red">“--ipc=host”</font>选项。然后再编写相应的共享内存的程序，一个跑在宿主机上，另一个跑在docker上面。 | ☐ |
-| `docker/docker基础指北.md` | docker的实现主要依赖于linux内核提供的如下功能： | docker的实现主要依赖于linux内核提供的如下功能： | ☐ |
-| `docker/docker安装talebook.md` | 官方Github： https://github.com/talebook/talebook | 官方Github： https://github.com/talebook/talebook | ☐ |
-| `docker/docker容器权限设置--cap-add  --cap-drop  privileged - 进击的davis - 博客园.md` | Dcoker容器在使用的过程中，默认的docker run时都是以普通方式启动的，有的时候是需要使用在容器中使用iptables进行启动的，没有使用iptables的权限，那么怎样才能在容器中使用iptables呢？要如何开启权限呢？ | Dcoker容器在使用的过程中，默认的docker run时都是以普通方式启动的，有的时候是需要使用在容器中使用iptables进行启动的，没有使用iptables的权限，那么怎样才能在容器中使用iptables呢？要如何开启权限呢？ | ☐ |
-| `docker/docker搭建C语言开发环境.md` | 无网络环境下使用本地文件作为基础镜像： | 无网络环境下使用本地文件作为基础镜像： | ☐ |
-| `docker/docker搭建个人镜像仓库.md` | docker-compose.yml的内容如下： | docker-compose.yml的内容如下： | ☐ |
-| `docker/docker设置容器独立ip.md` | 在linux要设置容器或者其他虚拟机独立ip，需要如下步骤： | 在linux要设置容器或者其他虚拟机独立ip，需要如下步骤： | ☐ |
-| `docker/kali搭建docker.md` | 在 Kali Linux 上搭建 Docker 的过程记录：更新软件源、安装 Docker 并验证是否成功。 | 查看一下是否安装成功 | ☐ |
-| `docker/使用github作为docker镜像存储仓库.md` | docker因为其便利性和隔离性已经成为日常开发中非常常见的技术，使用docker可以把我们的编译开发环境打包，在任何机器上只要把docker镜像来取下来运行，不需要重复搭建编译开发环境。 | docker因为其便利性和隔离性已经成为日常开发中非常常见的技术，使用docker可以把我们的编译开发环境打包，在任何机器上只要把docker镜像来取下来运行，不需要重复搭建编译开发环境。 | ☐ |
+| `engineering/containers/docker compose管理容器.md` | 使用docker-compose部署code-server容器开发环境。 | 使用docker-compose部署code-server容器开发环境。 | ☐ |
+| `engineering/containers/docker_communication_with_host.md` | docker中的进程要与宿主机使用共享内存通信，需要在启动容器的时候指定<font color=\"red\">“--ipc=host”</font>选项。然后再编写相应的共享内存的程序，一个跑在宿主机上，另一个跑在docker上面。 | docker中的进程要与宿主机使用共享内存通信，需要在启动容器的时候指定<font color="red">“--ipc=host”</font>选项。然后再编写相应的共享内存的程序，一个跑在宿主机上，另一个跑在docker上面。 | ☐ |
+| `engineering/containers/docker基础指北.md` | docker的实现主要依赖于linux内核提供的如下功能： | docker的实现主要依赖于linux内核提供的如下功能： | ☐ |
+| `engineering/containers/docker安装talebook.md` | 官方Github： https://github.com/talebook/talebook | 官方Github： https://github.com/talebook/talebook | ☐ |
+| `engineering/containers/docker容器权限设置--cap-add  --cap-drop  privileged - 进击的davis - 博客园.md` | Dcoker容器在使用的过程中，默认的docker run时都是以普通方式启动的，有的时候是需要使用在容器中使用iptables进行启动的，没有使用iptables的权限，那么怎样才能在容器中使用iptables呢？要如何开启权限呢？ | Dcoker容器在使用的过程中，默认的docker run时都是以普通方式启动的，有的时候是需要使用在容器中使用iptables进行启动的，没有使用iptables的权限，那么怎样才能在容器中使用iptables呢？要如何开启权限呢？ | ☐ |
+| `engineering/containers/docker搭建C语言开发环境.md` | 无网络环境下使用本地文件作为基础镜像： | 无网络环境下使用本地文件作为基础镜像： | ☐ |
+| `engineering/containers/docker搭建个人镜像仓库.md` | docker-compose.yml的内容如下： | docker-compose.yml的内容如下： | ☐ |
+| `engineering/containers/docker设置容器独立ip.md` | 在linux要设置容器或者其他虚拟机独立ip，需要如下步骤： | 在linux要设置容器或者其他虚拟机独立ip，需要如下步骤： | ☐ |
+| `engineering/containers/kali搭建docker.md` | 在 Kali Linux 上搭建 Docker 的过程记录：更新软件源、安装 Docker 并验证是否成功。 | 查看一下是否安装成功 | ☐ |
+| `engineering/containers/使用github作为docker镜像存储仓库.md` | docker因为其便利性和隔离性已经成为日常开发中非常常见的技术，使用docker可以把我们的编译开发环境打包，在任何机器上只要把docker镜像来取下来运行，不需要重复搭建编译开发环境。 | docker因为其便利性和隔离性已经成为日常开发中非常常见的技术，使用docker可以把我们的编译开发环境打包，在任何机器上只要把docker镜像来取下来运行，不需要重复搭建编译开发环境。 | ☐ |
 | `docker/docker与宿主机共享内存通信/index.md` | docker中的进程要与宿主机使用共享内存通信，需要在启动容器的时候指定<font color=\"red\">“--ipc=host”</font>选项。然后再编写相应的共享内存的程序，一个跑在宿主机上，另一个跑在docker上面。 | docker中的进程要与宿主机使用共享内存通信，需要在启动容器的时候指定<font color="red">“--ipc=host”</font>选项。然后再编写相应的共享内存的程序，一个跑在宿主机上，另一个跑在docker上面。 | ☐ |
 | `dpdk/day1.md` | VFIO是一个可以安全的把设备I/O、中断、DMA等暴露到用户空间（userspace），从而可以在用户空间完成设备驱动的框架。用户空间直接设备访问，虚拟机设备分配可以获得更高的IO性能。 | VFIO是一个可以安全的把设备I/O、中断、DMA等暴露到用户空间（userspace），从而可以在用户空间完成设备驱动的框架。用户空间直接设备访问，虚拟机设备分配可以获得更高的IO性能。 | ☐ |
 | `dpdk/dpdk之kni使用.md` | 和igb uio模块一样，kni模块分成内核以及用户态代码，内核模块在编译出来之后为rte_kni.ko，首先插入内核，dpdk提供了一个用户态的例子。首先看下kni内核模块代码,在kni_misc.c中，ko代码入口为 | 和igb uio模块一样，kni模块分成内核以及用户态代码，内核模块在编译出来之后为rte_kni.ko，首先插入内核，dpdk提供了一个用户态的例子。首先看下kni内核模块代码,在kni_misc.c中，ko代码入口为 | ☐ |
@@ -373,32 +373,32 @@
 | `dpdk/lx2160使用dpdk/index.md` | 底层驱动同事负责在操作系统启动的时候同时启动网卡，其中dpni.3为对外的10G网卡，是我们需要使用的网卡。 | 底层驱动同事负责在操作系统启动的时候同时启动网卡，其中dpni.3为对外的10G网卡，是我们需要使用的网卡。 | ☐ |
 | `dpdk/nxp测试报告/index.md` | 测试验证fastup在nxp2160 10G网口上的收发包能力。 | 测试验证fastup在nxp2160 10G网口上的收发包能力。 | ☐ |
 | `dpdk/用户态驱动-UIOVFIO/index.md` | 硬件设备可以根据功能分为网络设备，块设备，字符设备，或者根据与CPU相连的方式分为PCI设备，USB设备等。它们被不同的内核子系统支持。这些标准的设备的驱动编写较为容易而且容易维护。很容易加入主内核源码树。但是，又有很多设备难以划分到这些子系统中，比如I/O卡，现场总线接口或者定制的FPGA。 | 硬件设备可以根据功能分为网络设备，块设备，字符设备，或者根据与CPU相连的方式分为PCI设备，USB设备等。它们被不同的内核子系统支持。这些标准的设备的驱动编写较为容易而且容易维护。很容易加入主内核源码树。但是，又有很多设备难以划分到这些子系统中，比如I/O卡，现场总线接口或者定制的FPGA。 | ☐ |
-| `edit/docusaurus文档编译为pdf.md` | docusaurus是一个基于markdown的现代化文档框架，可以基于makrdown编写产品的手册并发布。 | docusaurus是一个基于markdown的现代化文档框架，可以基于makrdown编写产品的手册并发布。 | ☐ |
-| `edit/docusaurus自定义渲染内容.md` | 使用docusaurus编写文档时，docusaurus仅支持编译成网页，在编译成pdf时需要做一些特殊处理。 | 使用docusaurus编写文档时，docusaurus仅支持编译成网页，在编译成pdf时需要做一些特殊处理。 | ☐ |
-| `edit/texlive安装.md` | TeX Live 的安装步骤：下载 iso、挂载、安装以及配置环境变量。 | （没抽出来） | ☐ |
+| `engineering/engineering-practice/docusaurus文档编译为pdf.md` | docusaurus是一个基于markdown的现代化文档框架，可以基于makrdown编写产品的手册并发布。 | docusaurus是一个基于markdown的现代化文档框架，可以基于makrdown编写产品的手册并发布。 | ☐ |
+| `engineering/engineering-practice/docusaurus自定义渲染内容.md` | 使用docusaurus编写文档时，docusaurus仅支持编译成网页，在编译成pdf时需要做一些特殊处理。 | 使用docusaurus编写文档时，docusaurus仅支持编译成网页，在编译成pdf时需要做一些特殊处理。 | ☐ |
+| `engineering/engineering-practice/texlive安装.md` | TeX Live 的安装步骤：下载 iso、挂载、安装以及配置环境变量。 | （没抽出来） | ☐ |
 | `edit/pandoc自定义过滤器/index.md` | pandoc是一个强大的文本转换工具，可以实现各种文本格式的互相转换。 | pandoc是一个强大的文本转换工具，可以实现各种文本格式的互相转换。 | ☐ |
-| `es/Search UI with Elasticsearch  Elastic docs --- 使用 Elasticsearch 的搜索用户界面 弹性文档.md` | Elasticsearch connector for Search UI is currently in technical preview status. It is not ready for production use. 适用于搜索 UI 的 Elasticsearch 连接器目前处于技… | Elasticsearch connector for Search UI is currently in technical preview status. It is not ready for production use. 适用于搜索 UI 的 Elasticsearch 连接器目前处于技… | ☐ |
-| `es/es_search_ui.md` | 用 ElasticSearch、FSCrawler 和 SearchUI 搭建文件搜索引擎：从需求分析到运行测试的完整步骤。 | ©著作权归作者所有：来自51CTO博客作者zhuhuix的原创作品，请联系作者获取转载授权，否则将追究法律责任 | ☐ |
-| `es/oh-my-search.md` | 使用elasticsearch和search-ui搭建自己的搜索引擎，快速查找资源和文件。如果对代码感兴趣，相关代码已在github上开源，欢迎fork代码。 | 使用elasticsearch和search-ui搭建自己的搜索引擎，快速查找资源和文件。如果对代码感兴趣，相关代码已在github上开源，欢迎fork代码。 | ☐ |
-| `es/手把手教你通过ElasticSearch、FSCrawler及 SearchUI搭建文件搜索引擎.md` | 用 ElasticSearch、FSCrawler 和 SearchUI 搭建文件搜索引擎：从需求分析到运行测试的完整步骤。 | ©著作权归作者所有：来自51CTO博客作者zhuhuix的原创作品，请联系作者获取转载授权，否则将追究法律责任 | ☐ |
-| `faq/faq汇总.md` | 开发中遇到的零碎问题与解法汇总，比如 git status 里中文文件名乱码怎么解决。 | （没抽出来） | ☐ |
-| `go_web/go_web.md` | Go Web 开发笔记：用 gin 框架写 REST API，以及 cors 中间件解决跨域问题的配置。 | https://github.com/gin-contrib/cors | ☐ |
-| `language/C语言内存使用血与泪教训.md` | C 语言内存管理的教训：malloc 的正确用法、常见的内存错误，以及写 C 时必须遵守的原则。 | malloc函数原型返回值为void*， | ☐ |
-| `language/autoconf使用.md` | 使用autoconf的最终目的是生成能够根据不同系统生成Makefile的configure文件，一般情况下我们需要准备如下内容： | 使用autoconf的最终目的是生成能够根据不同系统生成Makefile的configure文件，一般情况下我们需要准备如下内容： | ☐ |
-| `language/cmake使用指南.md` | CMake 使用指南：常用变量、list 的操作，以及添加库、可执行程序、头文件路径和链接库的写法。 | （没抽出来） | ☐ |
-| `language/c语言变长数组.md` | C99支持变长数组，定义时可以不指定数组长度，分配时再根据实际长度进行分配。 | C99支持变长数组，定义时可以不指定数组长度，分配时再根据实际长度进行分配。 | ☐ |
-| `language/如何阅读autotool管理的C语言项目.md` | autotool管理C语言项目的流程请参考autoconf使用. | autotool管理C语言项目的流程请参考autoconf使用. | ☐ |
-| `language/程序基本构造.md` | 程序的目的就是等待输入，进行处理，完成后输出。 | 程序的目的就是等待输入，进行处理，完成后输出。 | ☐ |
-| `language/词法分析与语法分析教程.md` | 在如下网址下载flex和bison，安装后将其bin目录配置到环境变量，在shell中能正确使用这两个命令表示配置成功。 | 在如下网址下载flex和bison，安装后将其bin目录配置到环境变量，在shell中能正确使用这两个命令表示配置成功。 | ☐ |
-| `language/软件质量.md` | 软件质量分为内在质量和外在质量。 | 软件质量分为内在质量和外在质量。 | ☐ |
-| `language/python/pytest自动化测试.md` | 用 pytest 写自动化测试：yaml 配置文件的语法规则，以及测试用例的组织方式。 | 使用如下命令下载安装： | ☐ |
-| `language/python/python爬虫教程.md` | 可以使用fake_useragent构建user-agent。 | 可以使用fake_useragent构建user-agent。 | ☐ |
-| `language/python/python跨平台下载离线安装包.md` | 以allure-pytest为例 | 以allure-pytest为例 | ☐ |
-| `language/python/uv管理python.md` | 首先需要安装 uv 工具： 1. 在 Linux/macOS 上安装 | 首先需要安装 uv 工具： 1. 在 Linux/macOS 上安装 | ☐ |
-| `language/python/pytest/pytest进阶.md` | pytest 的进阶用法：fixture、allure 报告，以及与命令行交互的方式。 | （没抽出来） | ☐ |
-| `language/rust/rust设计原则.md` | Rust 的设计原则：没有 GC、所有权、借用，以及同一生命周期内只能有一个可变借用。 | （没抽出来） | ☐ |
-| `language/rust/使用mdbook编译html和pdf.md` | 往book.toml里添加如下内容： | 往book.toml里添加如下内容： | ☐ |
-| `language/rust/搭建内网rust仓库.md` | 此时会在项目目录下生成vendor目录，里面存放了相关依赖。 | 此时会在项目目录下生成vendor目录，里面存放了相关依赖。 | ☐ |
+| `engineering/web-and-frontend/Search UI with Elasticsearch  Elastic docs --- 使用 Elasticsearch 的搜索用户界面 弹性文档.md` | Elasticsearch connector for Search UI is currently in technical preview status. It is not ready for production use. 适用于搜索 UI 的 Elasticsearch 连接器目前处于技… | Elasticsearch connector for Search UI is currently in technical preview status. It is not ready for production use. 适用于搜索 UI 的 Elasticsearch 连接器目前处于技… | ☐ |
+| `engineering/web-and-frontend/es_search_ui.md` | 用 ElasticSearch、FSCrawler 和 SearchUI 搭建文件搜索引擎：从需求分析到运行测试的完整步骤。 | ©著作权归作者所有：来自51CTO博客作者zhuhuix的原创作品，请联系作者获取转载授权，否则将追究法律责任 | ☐ |
+| `engineering/web-and-frontend/oh-my-search.md` | 使用elasticsearch和search-ui搭建自己的搜索引擎，快速查找资源和文件。如果对代码感兴趣，相关代码已在github上开源，欢迎fork代码。 | 使用elasticsearch和search-ui搭建自己的搜索引擎，快速查找资源和文件。如果对代码感兴趣，相关代码已在github上开源，欢迎fork代码。 | ☐ |
+| `engineering/web-and-frontend/手把手教你通过ElasticSearch、FSCrawler及 SearchUI搭建文件搜索引擎.md` | 用 ElasticSearch、FSCrawler 和 SearchUI 搭建文件搜索引擎：从需求分析到运行测试的完整步骤。 | ©著作权归作者所有：来自51CTO博客作者zhuhuix的原创作品，请联系作者获取转载授权，否则将追究法律责任 | ☐ |
+| `engineering/cheatsheets/faq汇总.md` | 开发中遇到的零碎问题与解法汇总，比如 git status 里中文文件名乱码怎么解决。 | （没抽出来） | ☐ |
+| `engineering/web-and-frontend/go_web.md` | Go Web 开发笔记：用 gin 框架写 REST API，以及 cors 中间件解决跨域问题的配置。 | https://github.com/gin-contrib/cors | ☐ |
+| `engineering/foundations/C语言内存使用血与泪教训.md` | C 语言内存管理的教训：malloc 的正确用法、常见的内存错误，以及写 C 时必须遵守的原则。 | malloc函数原型返回值为void*， | ☐ |
+| `engineering/foundations/autoconf使用.md` | 使用autoconf的最终目的是生成能够根据不同系统生成Makefile的configure文件，一般情况下我们需要准备如下内容： | 使用autoconf的最终目的是生成能够根据不同系统生成Makefile的configure文件，一般情况下我们需要准备如下内容： | ☐ |
+| `engineering/foundations/cmake使用指南.md` | CMake 使用指南：常用变量、list 的操作，以及添加库、可执行程序、头文件路径和链接库的写法。 | （没抽出来） | ☐ |
+| `engineering/foundations/c语言变长数组.md` | C99支持变长数组，定义时可以不指定数组长度，分配时再根据实际长度进行分配。 | C99支持变长数组，定义时可以不指定数组长度，分配时再根据实际长度进行分配。 | ☐ |
+| `engineering/foundations/如何阅读autotool管理的C语言项目.md` | autotool管理C语言项目的流程请参考autoconf使用. | autotool管理C语言项目的流程请参考autoconf使用. | ☐ |
+| `engineering/foundations/程序基本构造.md` | 程序的目的就是等待输入，进行处理，完成后输出。 | 程序的目的就是等待输入，进行处理，完成后输出。 | ☐ |
+| `engineering/foundations/词法分析与语法分析教程.md` | 在如下网址下载flex和bison，安装后将其bin目录配置到环境变量，在shell中能正确使用这两个命令表示配置成功。 | 在如下网址下载flex和bison，安装后将其bin目录配置到环境变量，在shell中能正确使用这两个命令表示配置成功。 | ☐ |
+| `engineering/foundations/软件质量.md` | 软件质量分为内在质量和外在质量。 | 软件质量分为内在质量和外在质量。 | ☐ |
+| `engineering/foundations/python/pytest自动化测试.md` | 用 pytest 写自动化测试：yaml 配置文件的语法规则，以及测试用例的组织方式。 | 使用如下命令下载安装： | ☐ |
+| `engineering/foundations/python/python爬虫教程.md` | 可以使用fake_useragent构建user-agent。 | 可以使用fake_useragent构建user-agent。 | ☐ |
+| `engineering/foundations/python/python跨平台下载离线安装包.md` | 以allure-pytest为例 | 以allure-pytest为例 | ☐ |
+| `engineering/foundations/python/uv管理python.md` | 首先需要安装 uv 工具： 1. 在 Linux/macOS 上安装 | 首先需要安装 uv 工具： 1. 在 Linux/macOS 上安装 | ☐ |
+| `engineering/foundations/python/pytest/pytest进阶.md` | pytest 的进阶用法：fixture、allure 报告，以及与命令行交互的方式。 | （没抽出来） | ☐ |
+| `engineering/foundations/rust/rust设计原则.md` | Rust 的设计原则：没有 GC、所有权、借用，以及同一生命周期内只能有一个可变借用。 | （没抽出来） | ☐ |
+| `engineering/foundations/rust/使用mdbook编译html和pdf.md` | 往book.toml里添加如下内容： | 往book.toml里添加如下内容： | ☐ |
+| `engineering/foundations/rust/搭建内网rust仓库.md` | 此时会在项目目录下生成vendor目录，里面存放了相关依赖。 | 此时会在项目目录下生成vendor目录，里面存放了相关依赖。 | ☐ |
 | `life/aiv/index.md` | 这条线要解决的问题只有一个： | 这条线要解决的问题只有一个： | ☐ |
 | `life/aiv/人格规范.md` | Growdu 是小象，也是这个站点的作者。本文规定他是谁、怎么想、怎么讲。 | Growdu 是小象，也是这个站点的作者。本文规定他是谁、怎么想、怎么讲。 | ☐ |
 | `life/aiv/形象与音色规范.md` | 后续视频统一使用这套「模型形象」与「音色」。本文记录规范本身（入库、可评审）， 图像与音频成品留本机（character/、voice/，不入库）。 | 后续视频统一使用这套「模型形象」与「音色」。本文记录规范本身（入库、可评审）， 图像与音频成品留本机（character/、voice/，不入库）。 | ☐ |
@@ -434,32 +434,32 @@
 | `life/shehui/economic-downturn-strategy/index.md` | 我不想预测 GDP 明年是 4.2% 还是 3.8%，那种精确度是假的。我只说我能观察到的结构。 | 我不想预测 GDP 明年是 4.2% 还是 3.8%，那种精确度是假的。我只说我能观察到的结构。 | ☐ |
 | `life/shehui/media-account/index.md` | 运营的第一步不是\"我想做什么内容\"，是把已有的东西数一遍。很多人做自媒体失败在第一步就错了——从零想选题，结果想出来的东西和自己已有的 100 篇文档毫无关系，做不到 50 篇就放弃了。 | 运营的第一步不是"我想做什么内容"，是把已有的东西数一遍。很多人做自媒体失败在第一步就错了——从零想选题，结果想出来的东西和自己已有的 100 篇文档毫无关系，做不到 50 篇就放弃了。 | ☐ |
 | `life/shehui/self-host/index.md` | 原文最有价值的不是那 28 个服务清单，而是他反复强调的 4 条判断原则。清单会过时，原则不会。 | 原文最有价值的不是那 28 个服务清单，而是他反复强调的 4 条判断原则。清单会过时，原则不会。 | ☐ |
-| `network/C语言网络编程库选择.md` | C 语言网络编程库怎么选：libqb、libevent、libcurl、libev、libuv 各自的定位。 | （没抽出来） | ☐ |
-| `network/mtu路径发现pmtu详解.md` | 路径 MTU 发现的详解（内容还在整理）。 | （没抽出来） | ☐ |
-| `network/pmtu概述.md` | Path MTU 简述：PMTU 是什么、PMTU 发现机制怎么工作，以及它对报文传输（尤其是 GRE 隧道叠加）的影响。 | 发表于 2017-12-19 更新于 2019-04-17 分类于 c 评论数： 0 Comments | ☐ |
-| `network/【网络】MTU相关网络丢包问题分析处理.md` | MTU 与 MSS 的概念辨析，以及线上遇到 MTU 导致的网络丢包问题该怎么分析和处理。 | MTU是数据链路层的概念，限制的是数据链路层payload的大小，即上层协议大小(包括上层协议头) | ☐ |
-| `network/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md` | 开了 IPv6 之后，家里网络跟着变慢：网页有时加载很慢甚至打不开，视频卡顿，手机 App 也不流畅。把 IPv6 关掉，一切又正常。装宽带的师傅给的建议是「IPv6 不成熟，关掉吧」。 | 开了 IPv6 之后，家里网络跟着变慢：网页有时加载很慢甚至打不开，视频卡顿，手机 App 也不流畅。把 IPv6 关掉，一切又正常。装宽带的师傅给的建议是「IPv6 不成熟，关掉吧」。 | ☐ |
-| `network/如何安装Shadowsocks 影梭.md` | Shadowsocks 中文名称影梭，是一个跨平台软件、基于 Apache 许可证的开放源代码软件，用于保护网络流量、加密数据传输。 | Shadowsocks 中文名称影梭，是一个跨平台软件、基于 Apache 许可证的开放源代码软件，用于保护网络流量、加密数据传输。 | ☐ |
-| `network/网络编程注意事项.md` | 当我们使用原生socket编程时，需要自己处理send/recv的行为，需要自己定义超时，并管理链路的生命周期。 | 当我们使用原生socket编程时，需要自己处理send/recv的行为，需要自己定义超时，并管理链路的生命周期。 | ☐ |
-| `network/vpn/MonoCloudios使用教程.md` | Rule-Based：常规代理模式，会依据代理规则进行分流代理，除国内 IP 都会走代理进行连接。 | Rule-Based：常规代理模式，会依据代理规则进行分流代理，除国内 IP 都会走代理进行连接。 | ☐ |
-| `network/vpn/MonoCloud安卓使用教程.md` | 请注意，知识库内提供的客户端版本可能不是最新的，且我们只提供了 arm64-v8a 版本（适用于目前市面上的绝大多数 Android 设备），若上述客户端不适合您的手机使用或者我们提供的文件版本较旧您需要更新的版本，可以在 Clash For Android 官方项目页内找到最新的最全版本的安装包… | 请注意，知识库内提供的客户端版本可能不是最新的，且我们只提供了 arm64-v8a 版本（适用于目前市面上的绝大多数 Android 设备），若上述客户端不适合您的手机使用或者我们提供的文件版本较旧您需要更新的版本，可以在 Clash For Android 官方项目页内找到最新的最全版本的安装包… | ☐ |
-| `opc/opc.md` | 继续开发完善，边实现过程记录到code.md，需要记录设计决策、偏离、权衡和待确认问题。 | 继续开发完善，边实现过程记录到code.md，需要记录设计决策、偏离、权衡和待确认问题。 | ☐ |
+| `source-tracks/linux/networking/C语言网络编程库选择.md` | C 语言网络编程库怎么选：libqb、libevent、libcurl、libev、libuv 各自的定位。 | （没抽出来） | ☐ |
+| `source-tracks/linux/networking/mtu路径发现pmtu详解.md` | 路径 MTU 发现的详解（内容还在整理）。 | （没抽出来） | ☐ |
+| `source-tracks/linux/networking/pmtu概述.md` | Path MTU 简述：PMTU 是什么、PMTU 发现机制怎么工作，以及它对报文传输（尤其是 GRE 隧道叠加）的影响。 | 发表于 2017-12-19 更新于 2019-04-17 分类于 c 评论数： 0 Comments | ☐ |
+| `source-tracks/linux/networking/【网络】MTU相关网络丢包问题分析处理.md` | MTU 与 MSS 的概念辨析，以及线上遇到 MTU 导致的网络丢包问题该怎么分析和处理。 | MTU是数据链路层的概念，限制的是数据链路层payload的大小，即上层协议大小(包括上层协议头) | ☐ |
+| `source-tracks/linux/networking/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md` | 开了 IPv6 之后，家里网络跟着变慢：网页有时加载很慢甚至打不开，视频卡顿，手机 App 也不流畅。把 IPv6 关掉，一切又正常。装宽带的师傅给的建议是「IPv6 不成熟，关掉吧」。 | 开了 IPv6 之后，家里网络跟着变慢：网页有时加载很慢甚至打不开，视频卡顿，手机 App 也不流畅。把 IPv6 关掉，一切又正常。装宽带的师傅给的建议是「IPv6 不成熟，关掉吧」。 | ☐ |
+| `source-tracks/linux/networking/如何安装Shadowsocks 影梭.md` | Shadowsocks 中文名称影梭，是一个跨平台软件、基于 Apache 许可证的开放源代码软件，用于保护网络流量、加密数据传输。 | Shadowsocks 中文名称影梭，是一个跨平台软件、基于 Apache 许可证的开放源代码软件，用于保护网络流量、加密数据传输。 | ☐ |
+| `source-tracks/linux/networking/网络编程注意事项.md` | 当我们使用原生socket编程时，需要自己处理send/recv的行为，需要自己定义超时，并管理链路的生命周期。 | 当我们使用原生socket编程时，需要自己处理send/recv的行为，需要自己定义超时，并管理链路的生命周期。 | ☐ |
+| `source-tracks/linux/networking/vpn/MonoCloudios使用教程.md` | Rule-Based：常规代理模式，会依据代理规则进行分流代理，除国内 IP 都会走代理进行连接。 | Rule-Based：常规代理模式，会依据代理规则进行分流代理，除国内 IP 都会走代理进行连接。 | ☐ |
+| `source-tracks/linux/networking/vpn/MonoCloud安卓使用教程.md` | 请注意，知识库内提供的客户端版本可能不是最新的，且我们只提供了 arm64-v8a 版本（适用于目前市面上的绝大多数 Android 设备），若上述客户端不适合您的手机使用或者我们提供的文件版本较旧您需要更新的版本，可以在 Clash For Android 官方项目页内找到最新的最全版本的安装包… | 请注意，知识库内提供的客户端版本可能不是最新的，且我们只提供了 arm64-v8a 版本（适用于目前市面上的绝大多数 Android 设备），若上述客户端不适合您的手机使用或者我们提供的文件版本较旧您需要更新的版本，可以在 Clash For Android 官方项目页内找到最新的最全版本的安装包… | ☐ |
+| `engineering/engineering-practice/opc.md` | 继续开发完善，边实现过程记录到code.md，需要记录设计决策、偏离、权衡和待确认问题。 | 继续开发完善，边实现过程记录到code.md，需要记录设计决策、偏离、权衡和待确认问题。 | ☐ |
 | `distributed/consensus/opengauss dcf搭建 - 墨天轮.md` | openGauss 的搭建记录：不用 om 工具安装，以及 DCF 集群的 iplist、端口和数据目录怎么配。 | （没抽出来） | ☐ |
 | `distributed/consensus/openguass dcf启动详解.md` | dcf收到消息处理函数如下： | dcf收到消息处理函数如下： | ☐ |
 | `distributed/consensus/openguass升级机制.md` | openGauss 的升级机制：集群配置文件 cluster_config.xml 里都有哪些参数。 | （没抽出来） | ☐ |
 | `distributed/consensus/openguass架构详解.md` | openguass从postgresql演化而来，最主要的区别为：openguass是多线程架构，postgresql是多进程架构。除此而外，openguass还支持paxos分布式一致性协议。 | openguass从postgresql演化而来，最主要的区别为：openguass是多线程架构，postgresql是多进程架构。除此而外，openguass还支持paxos分布式一致性协议。 | ☐ |
-| `page/Csharp.md` | sender最终会被转换为触发该事件的控件。 | sender最终会被转换为触发该事件的控件。 | ☐ |
-| `page/devExpress.md` | 对于各种控件的使用，需掌握以下几点： | 对于各种控件的使用，需掌握以下几点： | ☐ |
-| `page/gui.md` | 在 Ubuntu 上换主题和图标的步骤：下载主题与图标，再放进 /usr/share/themes 和 /usr/share/icons。 | （没抽出来） | ☐ |
-| `page/how-to-learn-program.md` | 基础是指一些计算机基础知识，如计算机组成原理、数据结构、操作系统、C语言等基础知识。 | 基础是指一些计算机基础知识，如计算机组成原理、数据结构、操作系统、C语言等基础知识。 | ☐ |
-| `page/java.md` | 在Java中，final关键字可以用来修饰类、方法和变量（包括成员变量和局部变量）。 | 在Java中，final关键字可以用来修饰类、方法和变量（包括成员变量和局部变量）。 | ☐ |
-| `page/pdf-coordinate.md` | 一个变换矩阵指定了2个坐标空间之间的关系。通过修改变换矩阵，对象可以缩放、旋转、平移等等。 | 一个变换矩阵指定了2个坐标空间之间的关系。通过修改变换矩阵，对象可以缩放、旋转、平移等等。 | ☐ |
-| `page/pdf.md` | 按照PDF格式规范的规定，内嵌字体可以采用自己的编码，这个编码可以与常规字符编码不一样。 而在复制、另存为文本的时候，需要能够将自定义编码转换成Unciode，才能正常复制、另存为，否则直接用自己的编码，到了别的程序后就是所谓的“乱码”。 | 按照PDF格式规范的规定，内嵌字体可以采用自己的编码，这个编码可以与常规字符编码不一样。 而在复制、另存为文本的时候，需要能够将自定义编码转换成Unciode，才能正常复制、另存为，否则直接用自己的编码，到了别的程序后就是所谓的“乱码”。 | ☐ |
-| `page/pdfParse.md` | 根据坐标来判断表格，主要是根据坐标的对应关系，而坐标的对应关系最终落实在单元格起始和结束。 | 根据坐标来判断表格，主要是根据坐标的对应关系，而坐标的对应关系最终落实在单元格起始和结束。 | ☐ |
-| `page/python.md` | Find path the pip install package uses follow code: | Find path the pip install package uses follow code: | ☐ |
-| `page/read-pdfbox-source-code.md` | pdfbox 源码阅读笔记（内容还在整理）。 | （没抽出来） | ☐ |
-| `page/regexp.md` | 普通字符包括没有显式指定为元字符的所有可打印和不可打印字符。这包括所有大写和小写字母、所有数字、所有标点符号和一些其他符号。 | 普通字符包括没有显式指定为元字符的所有可打印和不可打印字符。这包括所有大写和小写字母、所有数字、所有标点符号和一些其他符号。 | ☐ |
-| `page/ssh.md` | ssh is remote connect tools which has rsa and dsa. | ssh is remote connect tools which has rsa and dsa. | ☐ |
+| `engineering/cheatsheets/Csharp.md` | sender最终会被转换为触发该事件的控件。 | sender最终会被转换为触发该事件的控件。 | ☐ |
+| `engineering/cheatsheets/devExpress.md` | 对于各种控件的使用，需掌握以下几点： | 对于各种控件的使用，需掌握以下几点： | ☐ |
+| `engineering/cheatsheets/gui.md` | 在 Ubuntu 上换主题和图标的步骤：下载主题与图标，再放进 /usr/share/themes 和 /usr/share/icons。 | （没抽出来） | ☐ |
+| `engineering/foundations/how-to-learn-program.md` | 基础是指一些计算机基础知识，如计算机组成原理、数据结构、操作系统、C语言等基础知识。 | 基础是指一些计算机基础知识，如计算机组成原理、数据结构、操作系统、C语言等基础知识。 | ☐ |
+| `engineering/cheatsheets/java.md` | 在Java中，final关键字可以用来修饰类、方法和变量（包括成员变量和局部变量）。 | 在Java中，final关键字可以用来修饰类、方法和变量（包括成员变量和局部变量）。 | ☐ |
+| `engineering/cheatsheets/pdf-coordinate.md` | 一个变换矩阵指定了2个坐标空间之间的关系。通过修改变换矩阵，对象可以缩放、旋转、平移等等。 | 一个变换矩阵指定了2个坐标空间之间的关系。通过修改变换矩阵，对象可以缩放、旋转、平移等等。 | ☐ |
+| `engineering/cheatsheets/pdf.md` | 按照PDF格式规范的规定，内嵌字体可以采用自己的编码，这个编码可以与常规字符编码不一样。 而在复制、另存为文本的时候，需要能够将自定义编码转换成Unciode，才能正常复制、另存为，否则直接用自己的编码，到了别的程序后就是所谓的“乱码”。 | 按照PDF格式规范的规定，内嵌字体可以采用自己的编码，这个编码可以与常规字符编码不一样。 而在复制、另存为文本的时候，需要能够将自定义编码转换成Unciode，才能正常复制、另存为，否则直接用自己的编码，到了别的程序后就是所谓的“乱码”。 | ☐ |
+| `engineering/cheatsheets/pdfParse.md` | 根据坐标来判断表格，主要是根据坐标的对应关系，而坐标的对应关系最终落实在单元格起始和结束。 | 根据坐标来判断表格，主要是根据坐标的对应关系，而坐标的对应关系最终落实在单元格起始和结束。 | ☐ |
+| `engineering/cheatsheets/python.md` | Find path the pip install package uses follow code: | Find path the pip install package uses follow code: | ☐ |
+| `engineering/cheatsheets/read-pdfbox-source-code.md` | pdfbox 源码阅读笔记（内容还在整理）。 | （没抽出来） | ☐ |
+| `engineering/cheatsheets/regexp.md` | 普通字符包括没有显式指定为元字符的所有可打印和不可打印字符。这包括所有大写和小写字母、所有数字、所有标点符号和一些其他符号。 | 普通字符包括没有显式指定为元字符的所有可打印和不可打印字符。这包括所有大写和小写字母、所有数字、所有标点符号和一些其他符号。 | ☐ |
+| `engineering/cheatsheets/ssh.md` | ssh is remote connect tools which has rsa and dsa. | ssh is remote connect tools which has rsa and dsa. | ☐ |
 | `source-tracks/postgresql/wal-and-recovery/PostgreSQL 时间线解析.md` | “时间线”（Timeline）是PG一个很有特色的概念，在备份恢复方面的文档里面时有出现。但针对这个概念的详细解释却很少，也让人不太好理解。我们在此仔细解析一下。 | “时间线”（Timeline）是PG一个很有特色的概念，在备份恢复方面的文档里面时有出现。但针对这个概念的详细解释却很少，也让人不太好理解。我们在此仔细解析一下。 | ☐ |
 | `source-tracks/postgresql/getting-started/Postgres中postmaster代码解析(--boot和--single).md` | 之前我的一些文章都是在说Postgres的一些查询相关的代码。但是对于Postgres服务端是如何启动，后台进程是如何加载，服务端在哪里以及如何监听客户端的连接都没有一个清晰的逻辑。那么今天我来说说Postgres中的postmaster模块的代码，试着解答这些问题。 | 之前我的一些文章都是在说Postgres的一些查询相关的代码。但是对于Postgres服务端是如何启动，后台进程是如何加载，服务端在哪里以及如何监听客户端的连接都没有一个清晰的逻辑。那么今天我来说说Postgres中的postmaster模块的代码，试着解答这些问题。 | ☐ |
 | `source-tracks/postgresql/wal-and-recovery/checkpoint机制浅析.md` | 上一篇《WAL 机制浅析》简单介绍了 PostgreSQL 中的 WAL 机制，其中讲到创建 checkpoint 会触发刷新 xlog 日志页到磁盘。本文接着讲 checkpoint 机制本身。 | 上一篇《WAL 机制浅析》简单介绍了 PostgreSQL 中的 WAL 机制，其中讲到创建 checkpoint 会触发刷新 xlog 日志页到磁盘。本文接着讲 checkpoint 机制本身。 | ☐ |
@@ -532,26 +532,26 @@
 | `storage/sshfs-win精讲.md` | sshfs-win 精讲笔记（内容还在整理）。 | （没抽出来） | ☐ |
 | `storage/win10实现非标（非445）端口访问samba服务_smb服务能使用其他端口吗-CSDN博客.md` | 在 Windows 10 上访问使用非标准端口的 Samba 服务：为什么默认的 445 端口用不了，以及该怎么配置。 | 糖果墙 于 2023-11-14 01:58:11 发布 | ☐ |
 | `storage/windows的139、445端口到底在做什么.md` | NBT 协议（NetBIOS over TCP/IP）是一种用于在 TCP/IP 网络上实现 NetBIOS 服务的协议。 NBT使用137（UDP）、138（UDP）和139（TCP）来实现基于TCP/IP的NETBIOS网际互联。 而139端口的作用就是获得NETBIOS/SMB服务（即Net… | NBT 协议（NetBIOS over TCP/IP）是一种用于在 TCP/IP 网络上实现 NetBIOS 服务的协议。 NBT使用137（UDP）、138（UDP）和139（TCP）来实现基于TCP/IP的NETBIOS网际互联。 而139端口的作用就是获得NETBIOS/SMB服务（即Net… | ☐ |
-| `tools/15 个提高 Google 搜索效率的小技巧 - 少数派.md` | 为了得到更加「多元化」的搜索结果，虽然 Google 目前访问起来并不是那么方便，但是仍然有很多人把它作为常用搜索引擎在使用。 | 为了得到更加「多元化」的搜索结果，虽然 Google 目前访问起来并不是那么方便，但是仍然有很多人把它作为常用搜索引擎在使用。 | ☐ |
-| `tools/Jellyfin+Kodi打造个人媒体中心.md` | 「一台7×24小时运行的电脑可以用来做什么？」系列第二篇。作为一个数字收集癖和整理癖患者，从十几年前在VeryCD上用迅雷慢慢下载TLF组的奥斯卡全集，几KB的速度下几周，到现在对比不同的压制组作品的质量，千兆的网络压得磁盘跟不上下载速度，硬盘容量存不下想要收藏的电影。回望过去，观看的速度永远跟不… | 「一台7×24小时运行的电脑可以用来做什么？」系列第二篇。作为一个数字收集癖和整理癖患者，从十几年前在VeryCD上用迅雷慢慢下载TLF组的奥斯卡全集，几KB的速度下几周，到现在对比不同的压制组作品的质量，千兆的网络压得磁盘跟不上下载速度，硬盘容量存不下想要收藏的电影。回望过去，观看的速度永远跟不… | ☐ |
-| `tools/Shell脚本的简单排错法及调试程序bashdb.md` | 与众多脚本语言一样，Shell 脚本在执行时出错是很常见的，最简单的原因无外乎脚本在编写的过程中出现了语法错误或者不小心输错了命令等。找出脚本中的错误是很重要的能力。比如，我经常不小心会把 echo 命令写成了 ehco，那么执行就会出现下面这种情况： | 与众多脚本语言一样，Shell 脚本在执行时出错是很常见的，最简单的原因无外乎脚本在编写的过程中出现了语法错误或者不小心输错了命令等。找出脚本中的错误是很重要的能力。比如，我经常不小心会把 echo 命令写成了 ehco，那么执行就会出现下面这种情况： | ☐ |
-| `tools/bashdb安装及调试shell脚本.md` | 解压安装 bashdb是在linux环境下使用的，将资源下载下来后，解压上传到linux系统，再执行以下指令完成安装。 | 解压安装 bashdb是在linux环境下使用的，将资源下载下来后，解压上传到linux系统，再执行以下指令完成安装。 | ☐ |
-| `tools/clash-meta-mihomo-install-guide.md` | Clash 是一个基于 Go 实现的代理客户端，凭借规则分流、YAML 配置、TUN 模式、relay（链式代理）等特性，长期是代理工具的事实标准。原始 Clash 项目自 2023 年作者删库后，社区分叉出三个主流分支： | Clash 是一个基于 Go 实现的代理客户端，凭借规则分流、YAML 配置、TUN 模式、relay（链式代理）等特性，长期是代理工具的事实标准。原始 Clash 项目自 2023 年作者删库后，社区分叉出三个主流分支： | ☐ |
-| `tools/clash-meta-user-guide.md` | 简单说：Clash 是一款帮你\"科学上网\"的工具。它本身不带线路，你只需要把别人给你的\"订阅链接\"（一串网址）填进去，它就会自动帮你连接好服务器，然后你打开浏览器就能上 Google、Github、YouTube 了。 | 简单说：Clash 是一款帮你"科学上网"的工具。它本身不带线路，你只需要把别人给你的"订阅链接"（一串网址）填进去，它就会自动帮你连接好服务器，然后你打开浏览器就能上 Google、Github、YouTube 了。 | ☐ |
-| `tools/code-server.md` | code-server是C/S架构，一般将服务端部署在linux机器上，然后我们就可以在windows端通过浏览器来访问linux机器上的代码。 | code-server是C/S架构，一般将服务端部署在linux机器上，然后我们就可以在windows端通过浏览器来访问linux机器上的代码。 | ☐ |
-| `tools/codeserver_docker.md` | dockerfile如下： | dockerfile如下： | ☐ |
-| `tools/cunit单元测试使用.md` | cunit安装测试注册表，测试套，测试用例三个层级来管理单元测试。一般来说，一个项目对应一个测试注册表，一个测试套对应一个c文件，一个测试用例对应一个测试函数。当然一个c函数可能会有多个测试用例。 | cunit安装测试注册表，测试套，测试用例三个层级来管理单元测试。一般来说，一个项目对应一个测试注册表，一个测试套对应一个c文件，一个测试用例对应一个测试函数。当然一个c函数可能会有多个测试用例。 | ☐ |
-| `tools/doxygen使用指南.md` | 官网下载二进制或者直接用yum或apt工具下载。 | 官网下载二进制或者直接用yum或apt工具下载。 | ☐ |
-| `tools/leanote使用教程.md` | leanote的特点就是简约、免费、开源、支持 Markdown 语法，支持程序代码高亮、笔记历史记录、支持笔记分享协作、将笔记发布成博客等功能。 | leanote的特点就是简约、免费、开源、支持 Markdown 语法，支持程序代码高亮、笔记历史记录、支持笔记分享协作、将笔记发布成博客等功能。 | ☐ |
-| `tools/nc.md` | NC（netcat）被称为网络工具中的瑞士军刀，体积小巧，但功能强大。 | NC（netcat）被称为网络工具中的瑞士军刀，体积小巧，但功能强大。 | ☐ |
-| `tools/shell常用脚本.md` | shell 常用脚本合集：计算程序运行时间（秒与毫秒两种）、循环执行等日常写法。 | （没抽出来） | ☐ |
-| `tools/shell脚本进阶.md` | 可以看到成功调用了caller中main函数，同时由于先导入caller.sh文件，后再声明var1变量，最终打印出var1变量值为call。 | 可以看到成功调用了caller中main函数，同时由于先导入caller.sh文件，后再声明var1变量，最终打印出var1变量值为call。 | ☐ |
-| `tools/vim + ctags + cscope = 强大的IDE_ctags cscope.md` | vim 的最大痛点在于它就是文本编辑器，难以实现函数/变量的跳转。但有了 ctags 和 cscope 这两个插件，它就能实现非常方便的函数/变量跳转以及查找功能。 | vim 的最大痛点在于它就是文本编辑器，难以实现函数/变量的跳转。但有了 ctags 和 cscope 这两个插件，它就能实现非常方便的函数/变量跳转以及查找功能。 | ☐ |
-| `tools/一文教你选择局域网文件服务器.md` | apache是linux下常用的web服务器，可以使用yum、apt等工具直接安装，其一般用于生产环境或者大规模场景。 | apache是linux下常用的web服务器，可以使用yum、apt等工具直接安装，其一般用于生产环境或者大规模场景。 | ☐ |
-| `tools/不得不会的代码注释工具——doxygen.md` | 官网下载二进制或者直接用yum或apt工具下载。 | 官网下载二进制或者直接用yum或apt工具下载。 | ☐ |
-| `tools/你一定要知道的黑客小技巧.md` | 几个常用排查手段：用 nmap 扫端口、用 nc 测试 tcp/udp 端口是否在监听，以及常见服务端口与连接方式。 | （没抽出来） | ☐ |
-| `tools/如何调试bash脚本.md` | 你可以让bash打印出你脚本执行的过程中的所有语句。这很简单，只需要使用bash的-x选项就可以做到，下面让我们来看一下。 | 你可以让bash打印出你脚本执行的过程中的所有语句。这很简单，只需要使用bash的-x选项就可以做到，下面让我们来看一下。 | ☐ |
-| `tools/那些你不得不会的提高工作效率的软件神器.md` | vscode服务器版本，可以在浏览器中开发调试代码，尤其适用于windows端开发linux服务器程序。 | vscode服务器版本，可以在浏览器中开发调试代码，尤其适用于windows端开发linux服务器程序。 | ☐ |
+| `engineering/web-and-frontend/15 个提高 Google 搜索效率的小技巧 - 少数派.md` | 为了得到更加「多元化」的搜索结果，虽然 Google 目前访问起来并不是那么方便，但是仍然有很多人把它作为常用搜索引擎在使用。 | 为了得到更加「多元化」的搜索结果，虽然 Google 目前访问起来并不是那么方便，但是仍然有很多人把它作为常用搜索引擎在使用。 | ☐ |
+| `engineering/containers/Jellyfin+Kodi打造个人媒体中心.md` | 「一台7×24小时运行的电脑可以用来做什么？」系列第二篇。作为一个数字收集癖和整理癖患者，从十几年前在VeryCD上用迅雷慢慢下载TLF组的奥斯卡全集，几KB的速度下几周，到现在对比不同的压制组作品的质量，千兆的网络压得磁盘跟不上下载速度，硬盘容量存不下想要收藏的电影。回望过去，观看的速度永远跟不… | 「一台7×24小时运行的电脑可以用来做什么？」系列第二篇。作为一个数字收集癖和整理癖患者，从十几年前在VeryCD上用迅雷慢慢下载TLF组的奥斯卡全集，几KB的速度下几周，到现在对比不同的压制组作品的质量，千兆的网络压得磁盘跟不上下载速度，硬盘容量存不下想要收藏的电影。回望过去，观看的速度永远跟不… | ☐ |
+| `engineering/engineering-practice/Shell脚本的简单排错法及调试程序bashdb.md` | 与众多脚本语言一样，Shell 脚本在执行时出错是很常见的，最简单的原因无外乎脚本在编写的过程中出现了语法错误或者不小心输错了命令等。找出脚本中的错误是很重要的能力。比如，我经常不小心会把 echo 命令写成了 ehco，那么执行就会出现下面这种情况： | 与众多脚本语言一样，Shell 脚本在执行时出错是很常见的，最简单的原因无外乎脚本在编写的过程中出现了语法错误或者不小心输错了命令等。找出脚本中的错误是很重要的能力。比如，我经常不小心会把 echo 命令写成了 ehco，那么执行就会出现下面这种情况： | ☐ |
+| `engineering/engineering-practice/bashdb安装及调试shell脚本.md` | 解压安装 bashdb是在linux环境下使用的，将资源下载下来后，解压上传到linux系统，再执行以下指令完成安装。 | 解压安装 bashdb是在linux环境下使用的，将资源下载下来后，解压上传到linux系统，再执行以下指令完成安装。 | ☐ |
+| `engineering/web-and-frontend/clash-meta-mihomo-install-guide.md` | Clash 是一个基于 Go 实现的代理客户端，凭借规则分流、YAML 配置、TUN 模式、relay（链式代理）等特性，长期是代理工具的事实标准。原始 Clash 项目自 2023 年作者删库后，社区分叉出三个主流分支： | Clash 是一个基于 Go 实现的代理客户端，凭借规则分流、YAML 配置、TUN 模式、relay（链式代理）等特性，长期是代理工具的事实标准。原始 Clash 项目自 2023 年作者删库后，社区分叉出三个主流分支： | ☐ |
+| `engineering/web-and-frontend/clash-meta-user-guide.md` | 简单说：Clash 是一款帮你\"科学上网\"的工具。它本身不带线路，你只需要把别人给你的\"订阅链接\"（一串网址）填进去，它就会自动帮你连接好服务器，然后你打开浏览器就能上 Google、Github、YouTube 了。 | 简单说：Clash 是一款帮你"科学上网"的工具。它本身不带线路，你只需要把别人给你的"订阅链接"（一串网址）填进去，它就会自动帮你连接好服务器，然后你打开浏览器就能上 Google、Github、YouTube 了。 | ☐ |
+| `engineering/containers/code-server.md` | code-server是C/S架构，一般将服务端部署在linux机器上，然后我们就可以在windows端通过浏览器来访问linux机器上的代码。 | code-server是C/S架构，一般将服务端部署在linux机器上，然后我们就可以在windows端通过浏览器来访问linux机器上的代码。 | ☐ |
+| `engineering/containers/codeserver_docker.md` | dockerfile如下： | dockerfile如下： | ☐ |
+| `engineering/engineering-practice/cunit单元测试使用.md` | cunit安装测试注册表，测试套，测试用例三个层级来管理单元测试。一般来说，一个项目对应一个测试注册表，一个测试套对应一个c文件，一个测试用例对应一个测试函数。当然一个c函数可能会有多个测试用例。 | cunit安装测试注册表，测试套，测试用例三个层级来管理单元测试。一般来说，一个项目对应一个测试注册表，一个测试套对应一个c文件，一个测试用例对应一个测试函数。当然一个c函数可能会有多个测试用例。 | ☐ |
+| `engineering/engineering-practice/doxygen使用指南.md` | 官网下载二进制或者直接用yum或apt工具下载。 | 官网下载二进制或者直接用yum或apt工具下载。 | ☐ |
+| `engineering/web-and-frontend/leanote使用教程.md` | leanote的特点就是简约、免费、开源、支持 Markdown 语法，支持程序代码高亮、笔记历史记录、支持笔记分享协作、将笔记发布成博客等功能。 | leanote的特点就是简约、免费、开源、支持 Markdown 语法，支持程序代码高亮、笔记历史记录、支持笔记分享协作、将笔记发布成博客等功能。 | ☐ |
+| `engineering/engineering-practice/nc.md` | NC（netcat）被称为网络工具中的瑞士军刀，体积小巧，但功能强大。 | NC（netcat）被称为网络工具中的瑞士军刀，体积小巧，但功能强大。 | ☐ |
+| `engineering/engineering-practice/shell常用脚本.md` | shell 常用脚本合集：计算程序运行时间（秒与毫秒两种）、循环执行等日常写法。 | （没抽出来） | ☐ |
+| `engineering/engineering-practice/shell脚本进阶.md` | 可以看到成功调用了caller中main函数，同时由于先导入caller.sh文件，后再声明var1变量，最终打印出var1变量值为call。 | 可以看到成功调用了caller中main函数，同时由于先导入caller.sh文件，后再声明var1变量，最终打印出var1变量值为call。 | ☐ |
+| `engineering/engineering-practice/vim + ctags + cscope = 强大的IDE_ctags cscope.md` | vim 的最大痛点在于它就是文本编辑器，难以实现函数/变量的跳转。但有了 ctags 和 cscope 这两个插件，它就能实现非常方便的函数/变量跳转以及查找功能。 | vim 的最大痛点在于它就是文本编辑器，难以实现函数/变量的跳转。但有了 ctags 和 cscope 这两个插件，它就能实现非常方便的函数/变量跳转以及查找功能。 | ☐ |
+| `engineering/web-and-frontend/一文教你选择局域网文件服务器.md` | apache是linux下常用的web服务器，可以使用yum、apt等工具直接安装，其一般用于生产环境或者大规模场景。 | apache是linux下常用的web服务器，可以使用yum、apt等工具直接安装，其一般用于生产环境或者大规模场景。 | ☐ |
+| `engineering/engineering-practice/不得不会的代码注释工具——doxygen.md` | 官网下载二进制或者直接用yum或apt工具下载。 | 官网下载二进制或者直接用yum或apt工具下载。 | ☐ |
+| `engineering/engineering-practice/你一定要知道的黑客小技巧.md` | 几个常用排查手段：用 nmap 扫端口、用 nc 测试 tcp/udp 端口是否在监听，以及常见服务端口与连接方式。 | （没抽出来） | ☐ |
+| `engineering/engineering-practice/如何调试bash脚本.md` | 你可以让bash打印出你脚本执行的过程中的所有语句。这很简单，只需要使用bash的-x选项就可以做到，下面让我们来看一下。 | 你可以让bash打印出你脚本执行的过程中的所有语句。这很简单，只需要使用bash的-x选项就可以做到，下面让我们来看一下。 | ☐ |
+| `engineering/containers/那些你不得不会的提高工作效率的软件神器.md` | vscode服务器版本，可以在浏览器中开发调试代码，尤其适用于windows端开发linux服务器程序。 | vscode服务器版本，可以在浏览器中开发调试代码，尤其适用于windows端开发linux服务器程序。 | ☐ |
 | `video_work/video.md` | 程序员，码农，数据库内核开发，分布式存储开发，用户态协议栈开发。 | 程序员，码农，数据库内核开发，分布式存储开发，用户态协议栈开发。 | ☐ |
 | `vpp/cdu_nxp2160_ptp1588v2实现方案.md` | ptp1588v2是一套软件协议标准，借助于软硬件时间戳来进行时间同步。因而其需要两方面的支持： | ptp1588v2是一套软件协议标准，借助于软硬件时间戳来进行时间同步。因而其需要两方面的支持： | ☐ |
 | `vpp/fastgtpu配置及cli说明文档.md` | vpp加载时会读取startup.conf的配置，fastgtpu的配置如下： | vpp加载时会读取startup.conf的配置，fastgtpu的配置如下： | ☐ |
@@ -571,17 +571,17 @@
 | `vpp/fastup-kni设计实现说明文档/index.md` | 当前5G小基站CDU控制面和数据面需要使用两个网口与核心网进行通信。但对于CDU而言，控制面数据量较小，且属于突发性流量；而数据面数据量较大，为持续性流量。相对于数据面来说，控制面流量几乎可以忽略不计。在当前设计中，控制面却需要占用一张网卡，这带来了巨大的资源消耗和维护成本。 | 当前5G小基站CDU控制面和数据面需要使用两个网口与核心网进行通信。但对于CDU而言，控制面数据量较小，且属于突发性流量；而数据面数据量较大，为持续性流量。相对于数据面来说，控制面流量几乎可以忽略不计。在当前设计中，控制面却需要占用一张网卡，这带来了巨大的资源消耗和维护成本。 | ☐ |
 | `vpp/fatsup-cpu间转发测试报告/index.md` | cpub对外网口1接入数据包，经mac层转发到cpub对内网口2，经mac层转发到cpua对内网口1进行业务逻辑处理。在cpub上未进行业务处理，在cpub上报文仅到达mac层。 | cpub对外网口1接入数据包，经mac层转发到cpub对内网口2，经mac层转发到cpua对内网口1进行业务逻辑处理。在cpub上未进行业务处理，在cpub上报文仅到达mac层。 | ☐ |
 | `vpp/vpp-ip分片测试验证/index.md` | fastup后续需考虑大包，会涉及到ip分片，需要分析验证fastup是否支持分片报文重组，以及大包分片发送。 | fastup后续需考虑大包，会涉及到ip分片，需要分析验证fastup是否支持分片报文重组，以及大包分片发送。 | ☐ |
-| `vue/5种回到顶部的写法从实现到增强 - 小火柴的蓝色理想 - 博客园.md` | 本文先详细介绍回到顶部的5种写法，然后对其实现功能增加，最后得到最终实现 | 本文先详细介绍回到顶部的5种写法，然后对其实现功能增加，最后得到最终实现 | ☐ |
-| `vue/CORS相关问题.md` | CORS 是什么、为什么会报错，以及跨域请求该怎么处理。 | （没抽出来） | ☐ |
-| `vue/cargo构建.md` | cargo 构建技巧：把 crates.io 换成国内镜像源，以及 rustup 升级。 | （没抽出来） | ☐ |
-| `vue/gitbook教程.md` | 即将graceful-fs更新到最新。请参考Stack Overflow. | 即将graceful-fs更新到最新。请参考Stack Overflow. | ☐ |
-| `vue/html简单教程.md` | 以下是一个简单的HTML登录页面的代码，你可以根据自己的需要进行修改： | 以下是一个简单的HTML登录页面的代码，你可以根据自己的需要进行修改： | ☐ |
-| `vue/oh-my-code.md` | 选择Postgresql作为我们的数据库环境，然后使用如下配置文件启动容器： | 选择Postgresql作为我们的数据库环境，然后使用如下配置文件启动容器： | ☐ |
-| `vue/python环境搭建.md` | python 环境搭建：装 anaconda、用 conda 建各版本环境，以及 django 项目的创建与运行。 | （没抽出来） | ☐ |
-| `vue/react app教程.md` | 安装chrome dev tools插件，然后npm start，再按f5或者运行中开始调试。 | 安装chrome dev tools插件，然后npm start，再按f5或者运行中开始调试。 | ☐ |
-| `vue/vue后端api开发.md` | 前端界面写好后，一般需要开发后端进程，提供相关的接口给前端展示。 一般前端用js之类的语言编写，后端采用restful api提供，实现的话可以采用java、go、python等语言实现。 | 前端界面写好后，一般需要开发后端进程，提供相关的接口给前端展示。 一般前端用js之类的语言编写，后端采用restful api提供，实现的话可以采用java、go、python等语言实现。 | ☐ |
-| `vue/vue开发环境搭建.md` | 下载node.js安装包安装。 | 下载node.js安装包安装。 | ☐ |
-| `vue/vue项目开发流程.md` | 修改vite.config.js,修改如下所示，添加server的host和port。 | 修改vite.config.js,修改如下所示，添加server的host和port。 | ☐ |
-| `vue/从登陆注册开始.md` | 要写一个网页界面，一般都是从登陆注册开始的。 | 要写一个网页界面，一般都是从登陆注册开始的。 | ☐ |
-| `vue/搭建npm离线仓库.md` | 要在离线环境下使用 Docker 和 Verdaccio 搭建私有的 npm 镜像仓库，你可以按照以下步骤进行操作： | 要在离线环境下使用 Docker 和 Verdaccio 搭建私有的 npm 镜像仓库，你可以按照以下步骤进行操作： | ☐ |
-| `web/tauri将docusruaus网站打包成桌面应用.md` | tauri可以将vue、react等打包成桌面应用 | tauri可以将vue、react等打包成桌面应用 | ☐ |
+| `engineering/web-and-frontend/5种回到顶部的写法从实现到增强 - 小火柴的蓝色理想 - 博客园.md` | 本文先详细介绍回到顶部的5种写法，然后对其实现功能增加，最后得到最终实现 | 本文先详细介绍回到顶部的5种写法，然后对其实现功能增加，最后得到最终实现 | ☐ |
+| `engineering/web-and-frontend/CORS相关问题.md` | CORS 是什么、为什么会报错，以及跨域请求该怎么处理。 | （没抽出来） | ☐ |
+| `engineering/web-and-frontend/cargo构建.md` | cargo 构建技巧：把 crates.io 换成国内镜像源，以及 rustup 升级。 | （没抽出来） | ☐ |
+| `engineering/web-and-frontend/gitbook教程.md` | 即将graceful-fs更新到最新。请参考Stack Overflow. | 即将graceful-fs更新到最新。请参考Stack Overflow. | ☐ |
+| `engineering/web-and-frontend/html简单教程.md` | 以下是一个简单的HTML登录页面的代码，你可以根据自己的需要进行修改： | 以下是一个简单的HTML登录页面的代码，你可以根据自己的需要进行修改： | ☐ |
+| `engineering/web-and-frontend/oh-my-code.md` | 选择Postgresql作为我们的数据库环境，然后使用如下配置文件启动容器： | 选择Postgresql作为我们的数据库环境，然后使用如下配置文件启动容器： | ☐ |
+| `engineering/web-and-frontend/python环境搭建.md` | python 环境搭建：装 anaconda、用 conda 建各版本环境，以及 django 项目的创建与运行。 | （没抽出来） | ☐ |
+| `engineering/web-and-frontend/react app教程.md` | 安装chrome dev tools插件，然后npm start，再按f5或者运行中开始调试。 | 安装chrome dev tools插件，然后npm start，再按f5或者运行中开始调试。 | ☐ |
+| `engineering/web-and-frontend/vue后端api开发.md` | 前端界面写好后，一般需要开发后端进程，提供相关的接口给前端展示。 一般前端用js之类的语言编写，后端采用restful api提供，实现的话可以采用java、go、python等语言实现。 | 前端界面写好后，一般需要开发后端进程，提供相关的接口给前端展示。 一般前端用js之类的语言编写，后端采用restful api提供，实现的话可以采用java、go、python等语言实现。 | ☐ |
+| `engineering/web-and-frontend/vue开发环境搭建.md` | 下载node.js安装包安装。 | 下载node.js安装包安装。 | ☐ |
+| `engineering/web-and-frontend/vue项目开发流程.md` | 修改vite.config.js,修改如下所示，添加server的host和port。 | 修改vite.config.js,修改如下所示，添加server的host和port。 | ☐ |
+| `engineering/web-and-frontend/从登陆注册开始.md` | 要写一个网页界面，一般都是从登陆注册开始的。 | 要写一个网页界面，一般都是从登陆注册开始的。 | ☐ |
+| `engineering/web-and-frontend/搭建npm离线仓库.md` | 要在离线环境下使用 Docker 和 Verdaccio 搭建私有的 npm 镜像仓库，你可以按照以下步骤进行操作： | 要在离线环境下使用 Docker 和 Verdaccio 搭建私有的 npm 镜像仓库，你可以按照以下步骤进行操作： | ☐ |
+| `engineering/web-and-frontend/tauri将docusruaus网站打包成桌面应用.md` | tauri可以将vue、react等打包成桌面应用 | tauri可以将vue、react等打包成桌面应用 | ☐ |

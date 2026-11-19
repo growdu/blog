@@ -8,7 +8,7 @@ git 历史里取的「该路径在所有分支上的最早提交时间」。`git
 日期去拼旧 URL 的日期段，日期一漂，旧链接照样 404。
 
 **实测过的事实**（2026-11-17）：620 篇里 **314 篇（50%）**的 `git_date()`
-与裸 `git log` 的结果**不一致**。例：`docs/base/data-struct.md` 的
+与裸 `git log` 的结果**不一致**。例：`docs/engineering/foundations/data-struct.md` 的
 `git_date()` 是 `2018-10-05`，裸 git log 是 `2025-04-16`。所以「跑一遍
 git log 把结果存下来」这个朴素做法是错的 —— 必须**调用 `git_date()` 本身**
 （它会走「仓库根 → docs/ → bundle 父目录」这条候选链）。
@@ -23,7 +23,7 @@ python3 tools/capture-dates.py --out data/date-overrides.json
 python3 tools/capture-dates.py --check data/date-overrides.json --map data/tree-migration.json
 
 # 3. 单独看某几篇
-python3 tools/capture-dates.py --show docs/base/data-struct.md
+python3 tools/capture-dates.py --show docs/engineering/foundations/data-struct.md
 ```
 
 `--check` 是**逐篇比**，不靠抽查 —— 几百篇文章共用同一个批量导入日期，

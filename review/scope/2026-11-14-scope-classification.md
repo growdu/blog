@@ -1,7 +1,7 @@
 # 全树范围分类：哪些不是面向读者的技术文章
 
 - 日期：2026-11-14
-- 依据：`tools/review-check.py` 对 `docs/` 全树（639 篇）跑出的信号，加逐篇读原文的判断
+- 依据：`tools/review-check.py` 对 `docs/` 全树（631 篇）跑出的信号，加逐篇读原文的判断
 - 目的：把审校范围从「四支柱 282 篇」扩到全树之前，先把**不面向读者的技术文章**筛掉，
   免得把站点目录页、内部工作文档、命令速查表也按技术深度五要素去审。
 
@@ -9,7 +9,7 @@
 
 | 桶 | 含义 | 篇数 | 技术深度五要素 |
 | --- | --- | --- | --- |
-| 1 非内容 | 根本不面向读者：站点目录页、代码仓库说明、内部工作文档、外链指北、只有标题的未成稿 | 113 | 不审 |
+| 1 非内容 | 根本不面向读者：站点目录页、代码仓库说明、内部工作文档、外链指北、只有标题的未成稿 | 105 | 不审 |
 | 2 速查/清单/操作类 | 面向读者，但形态是命令表、步骤、清单，没有成篇解释 | 49 | 不适用 |
 | 3 非技术内容 | 面向读者，但写的是生活、备考、内部规范 | 38 | 不适用 |
 | 4 转载内容 | 标了来源、署名他人的转载稿 | 17 | 不按原创稿审改 |
@@ -24,7 +24,7 @@
 机械层（可复跑）：
 
 - 目录页：文件名为 `_index.md`
-- 代码仓库说明：路径在 `docs/code/` 下
+- 代码仓库说明：路径在 `docs/engineering/engineering-practice/code/` 下
 - 只有标题的未成稿：散文字符数为 0、无表格、无代码块、总字符 < 150
   （散文字符数 = 排开标题、代码块、表格、列表后的正文长度，引用块计入）
 
@@ -51,52 +51,36 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 | life | 42 | 11 | 0 | 31 | 0 | 0 | 29 | 6 |
 | ai | 30 | 1 | 0 | 4 | 17 | 8 | 36 | 4 |
 | dpdk | 27 | 3 | 7 | 0 | 0 | 17 | 15 | 9 |
-| tools | 21 | 1 | 4 | 0 | 0 | 16 | 18 | 9 |
+| engineering | 115 | 24 | 24 | 0 | 0 | 67 | 95 | 62 |
 | vpp | 19 | 1 | 2 | 0 | 0 | 16 | 15 | 9 |
-| language | 17 | 3 | 5 | 0 | 0 | 9 | 11 | 11 |
-| base | 14 | 3 | 4 | 0 | 0 | 7 | 12 | 9 |
-| vue | 14 | 1 | 4 | 0 | 0 | 9 | 9 | 4 |
-| page | 13 | 3 | 2 | 0 | 0 | 8 | 13 | 11 |
-| code | 12 | 12 | 0 | 0 | 0 | 0 | 12 | 12 |
-| docker | 12 | 1 | 2 | 0 | 0 | 9 | 5 | 2 |
 | protocol | 12 | 2 | 0 | 0 | 0 | 10 | 9 | 7 |
 | blog | 11 | 2 | 0 | 0 | 0 | 9 | 5 | 2 |
 | platform-meta | 13 | 7 | 0 | 0 | 0 | 6 | 6 | 6 |
 | storage | 6 | 2 | 0 | 0 | 0 | 4 | 4 | 2 |
-| edit | 5 | 1 | 1 | 0 | 0 | 3 | 5 | 4 |
-| es | 5 | 1 | 0 | 0 | 0 | 4 | 6 | 1 |
 | chatgpt | 3 | 1 | 0 | 2 | 0 | 0 | 3 | 3 |
-| alg | 2 | 1 | 0 | 0 | 0 | 1 | 3 | 1 |
 | computer_communication | 2 | 1 | 0 | 0 | 0 | 1 | 2 | 2 |
-| faq | 2 | 1 | 1 | 0 | 0 | 0 | 2 | 2 |
-| go_web | 2 | 1 | 1 | 0 | 0 | 0 | 2 | 2 |
-| opc | 2 | 2 | 0 | 0 | 0 | 0 | 1 | 1 |
 | programmer_self_cultivation | 2 | 1 | 0 | 0 | 0 | 1 | 1 | 1 |
 | stock | 2 | 1 | 0 | 1 | 0 | 0 | 2 | 1 |
 | video_work | 2 | 2 | 0 | 0 | 0 | 0 | 2 | 2 |
-| web | 2 | 1 | 0 | 0 | 0 | 1 | 2 | 2 |
 | mail | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 |
 | environment | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 |
 | pcap | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 |
 | src | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 |
 | wiki | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 |
-| **合计** | **639** | **113** | **49** | **38** | **17** | **422** | **515** | **219** |
+| **合计** | **631** | **105** | **49** | **38** | **17** | **422** | **509** | **210** |
 
 ## 排除清单
 
 下面三桶逐篇列出。**桶 4 = `docs/` 全集减去这份清单**，不单独列。
 契约测试守着两件事：清单里的路径不许悬空；审校记录的原文不许落在清单里。
 
-### 桶 1 非内容（113 篇）
+### 桶 1 非内容（105 篇）
 
-#### 站点目录页（68 篇）
+#### 站点目录页（60 篇）
 - `docs/ai/_index.md`
-- `docs/alg/_index.md`
-- `docs/base/_index.md`
 - `docs/blog/_index.md`
 - `docs/blog/mermaid/_index.md`
 - `docs/chatgpt/_index.md`
-- `docs/code/_index.md`
 - `docs/computer_communication/_index.md`
 - `docs/distributed/_index.md`
 - `docs/distributed/consensus/_index.md`
@@ -105,14 +89,14 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 - `docs/distributed/foundations/_index.md`
 - `docs/distributed/ha-and-dr/_index.md`
 - `docs/distributed/selection/_index.md`
-- `docs/docker/_index.md`
 - `docs/dpdk/_index.md`
-- `docs/edit/_index.md`
+- `docs/engineering/_index.md`
+- `docs/engineering/cheatsheets/_index.md`
+- `docs/engineering/containers/_index.md`
+- `docs/engineering/engineering-practice/_index.md`
+- `docs/engineering/foundations/_index.md`
+- `docs/engineering/web-and-frontend/_index.md`
 - `docs/environment/_index.md`
-- `docs/es/_index.md`
-- `docs/faq/_index.md`
-- `docs/go_web/_index.md`
-- `docs/language/_index.md`
 - `docs/life/_index.md`
 - `docs/life/blog-to-wechat/_index.md`
 - `docs/life/daxue/_index.md`
@@ -121,8 +105,6 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 - `docs/life/road/_index.md`
 - `docs/life/shehui/_index.md`
 - `docs/mail/_index.md`
-- `docs/opc/_index.md`
-- `docs/page/_index.md`
 - `docs/pcap/_index.md`
 - `docs/platform-meta/_index.md`
 - `docs/platform-meta/build-pipeline/_index.md`
@@ -152,15 +134,12 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 - `docs/src/_index.md`
 - `docs/stock/_index.md`
 - `docs/storage/_index.md`
-- `docs/tools/_index.md`
 - `docs/video_work/_index.md`
 - `docs/vpp/_index.md`
-- `docs/vue/_index.md`
-- `docs/web/_index.md`
 - `docs/wiki/_index.md`
 #### 只有标题的未成稿（24 篇）
 
-- `docs/base/use-tools/download.md`
+- `docs/engineering/foundations/use-tools/download.md`
 - `docs/distributed/ha-and-dr/Patroni详解.md`
 - `docs/distributed/consensus/corosy-qdevice源码阅读.md`
 - `docs/distributed/selection/业界高可用解决方案.md`
@@ -170,14 +149,14 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 - `docs/distributed/foundations/分布式系统设计必知必会.md`
 - `docs/source-tracks/postgresql/logical-replication/ai_coding/逻辑复制支持ddl ai配置流程.md`
 - `docs/dpdk/vpp插件开发.md`
-- `docs/language/python/pytest/pytest进阶.md`
-- `docs/language/rust/rust设计原则.md`
+- `docs/engineering/foundations/python/pytest/pytest进阶.md`
+- `docs/engineering/foundations/rust/rust设计原则.md`
 - `docs/source-tracks/linux/kernel-internals/linux数据预取.md`
 - `docs/source-tracks/linux/daily-ops/shell使用.md`
 - `docs/source-tracks/linux/networking/C语言网络编程库选择.md`
 - `docs/source-tracks/linux/networking/mtu路径发现pmtu详解.md`
-- `docs/page/gui.md`
-- `docs/page/read-pdfbox-source-code.md`
+- `docs/engineering/cheatsheets/gui.md`
+- `docs/engineering/cheatsheets/read-pdfbox-source-code.md`
 - `docs/source-tracks/postgresql/wal-and-recovery/Checkpoint.md`
 - `docs/source-tracks/postgresql/replication-ha/pg_logic_decode.md`
 - `docs/source-tracks/postgresql/replication-ha/pg_slot.md`
@@ -187,27 +166,27 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 
 #### 代码仓库说明（11 篇）
 
-- `docs/code/JavaScript-work/readme.md`
-- `docs/code/assemble-work/readme.md`
-- `docs/code/c-sharp-work/readme.md`
-- `docs/code/c-work/readme.md`
-- `docs/code/c-work/simple-editor/preview.md`
-- `docs/code/c-work/ticket/readme.md`
-- `docs/code/gui-work/readme.md`
-- `docs/code/html-work/readme.md`
-- `docs/code/java-work/readme.md`
-- `docs/code/shell-work/readme.md`
-- `docs/code/shell-work/vim/readme.md`
+- `docs/engineering/engineering-practice/code/JavaScript-work/readme.md`
+- `docs/engineering/engineering-practice/code/assemble-work/readme.md`
+- `docs/engineering/engineering-practice/code/c-sharp-work/readme.md`
+- `docs/engineering/engineering-practice/code/c-work/readme.md`
+- `docs/engineering/engineering-practice/code/c-work/simple-editor/preview.md`
+- `docs/engineering/engineering-practice/code/c-work/ticket/readme.md`
+- `docs/engineering/engineering-practice/code/gui-work/readme.md`
+- `docs/engineering/engineering-practice/code/html-work/readme.md`
+- `docs/engineering/engineering-practice/code/java-work/readme.md`
+- `docs/engineering/engineering-practice/code/shell-work/readme.md`
+- `docs/engineering/engineering-practice/code/shell-work/vim/readme.md`
 
 #### 内部工作文档与记录（8 篇）
 
-- `docs/base/normal.md`
+- `docs/engineering/foundations/normal.md`
 - `docs/dpdk/fastup测试优化完成情况.md`
 - `docs/life/aiv/人格规范.md`
 - `docs/life/aiv/形象与音色规范.md`
 - `docs/life/aiv/背景音乐规范.md`
 - `docs/life/shehui/zhuangxiu.md`
-- `docs/opc/opc.md`
+- `docs/engineering/engineering-practice/opc.md`
 - `docs/video_work/video.md`
 
 #### 只有外链的指北页（2 篇）
@@ -217,14 +196,14 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 
 ### 桶 2 速查/清单/操作类（49 篇）
 
-- `docs/base/use-tools/git.md`
-- `docs/base/use-tools/google.md`
-- `docs/base/use-tools/other.md`
-- `docs/base/use-tools/vim.md`
+- `docs/engineering/foundations/use-tools/git.md`
+- `docs/engineering/foundations/use-tools/google.md`
+- `docs/engineering/foundations/use-tools/other.md`
+- `docs/engineering/foundations/use-tools/vim.md`
 - `docs/source-tracks/postgresql/extensions-perf/macos安装mysql.md`
 - `docs/source-tracks/postgresql/getting-started/使用meson编译pg.md`
-- `docs/docker/docker compose管理容器.md`
-- `docs/docker/docker搭建个人镜像仓库.md`
+- `docs/engineering/containers/docker compose管理容器.md`
+- `docs/engineering/containers/docker搭建个人镜像仓库.md`
 - `docs/dpdk/fastup模拟UE测试.md`
 - `docs/dpdk/pktgen.md`
 - `docs/dpdk/pktgen编译使用.md`
@@ -232,14 +211,14 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 - `docs/dpdk/vpp使用.md`
 - `docs/dpdk/交叉编译.md`
 - `docs/dpdk/抓包.md`
-- `docs/edit/texlive安装.md`
-- `docs/faq/faq汇总.md`
-- `docs/go_web/go_web.md`
-- `docs/language/cmake使用指南.md`
-- `docs/language/python/pytest自动化测试.md`
-- `docs/language/python/python跨平台下载离线安装包.md`
-- `docs/language/rust/使用mdbook编译html和pdf.md`
-- `docs/language/rust/搭建内网rust仓库.md`
+- `docs/engineering/engineering-practice/texlive安装.md`
+- `docs/engineering/cheatsheets/faq汇总.md`
+- `docs/engineering/web-and-frontend/go_web.md`
+- `docs/engineering/foundations/cmake使用指南.md`
+- `docs/engineering/foundations/python/pytest自动化测试.md`
+- `docs/engineering/foundations/python/python跨平台下载离线安装包.md`
+- `docs/engineering/foundations/rust/使用mdbook编译html和pdf.md`
+- `docs/engineering/foundations/rust/搭建内网rust仓库.md`
 - `docs/source-tracks/linux/memory-and-linking/ebpf/oltp.md`
 - `docs/source-tracks/linux/daily-ops/git指北.md`
 - `docs/source-tracks/linux/daily-ops/git高级指北.md`
@@ -248,24 +227,24 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 - `docs/source-tracks/linux/daily-ops/本地git仓库.md`
 - `docs/source-tracks/linux/daily-ops/解决SSH连接Linux超时自动断开.md`
 - `docs/distributed/consensus/openguass升级机制.md`
-- `docs/page/python.md`
-- `docs/page/ssh.md`
+- `docs/engineering/cheatsheets/python.md`
+- `docs/engineering/cheatsheets/ssh.md`
 - `docs/source-tracks/postgresql/getting-started/code-server调试postgresql.md`
 - `docs/source-tracks/postgresql/getting-started/initdb.md`
 - `docs/source-tracks/postgresql/getting-started/pg_ctl.md`
 - `docs/source-tracks/postgresql/getting-started/pg_complie_and_run.md`
 - `docs/source-tracks/postgresql/getting-started/postgresql源码编译.md`
 - `docs/source-tracks/postgresql/replication-ha/repmgr_cluster.md`
-- `docs/tools/codeserver_docker.md`
-- `docs/tools/doxygen使用指南.md`
-- `docs/tools/shell常用脚本.md`
-- `docs/tools/你一定要知道的黑客小技巧.md`
+- `docs/engineering/containers/codeserver_docker.md`
+- `docs/engineering/engineering-practice/doxygen使用指南.md`
+- `docs/engineering/engineering-practice/shell常用脚本.md`
+- `docs/engineering/engineering-practice/你一定要知道的黑客小技巧.md`
 - `docs/vpp/fastgtpu配置及cli说明文档.md`
 - `docs/vpp/vpp调试指北.md`
-- `docs/vue/cargo构建.md`
-- `docs/vue/python环境搭建.md`
-- `docs/vue/react app教程.md`
-- `docs/vue/vue开发环境搭建.md`
+- `docs/engineering/web-and-frontend/cargo构建.md`
+- `docs/engineering/web-and-frontend/python环境搭建.md`
+- `docs/engineering/web-and-frontend/react app教程.md`
+- `docs/engineering/web-and-frontend/vue开发环境搭建.md`
 
 ### 桶 3 非技术内容（38 篇）
 

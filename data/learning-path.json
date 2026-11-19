@@ -1,7 +1,7 @@
 {
   "version": 1,
   "updated": "2026-11-17",
-  "note": "学习路径的分类规则表。**这里是人工策展的部分**，tools/build-learning-path.py 按它把每篇文章落到「赛道 + 阶段」。改这个文件就能改路径，不用改代码。\n\n规则从上往下第一条命中即生效；track_match 决定文章属于哪条赛道，stages[].match 决定落在哪个阶段。\n\n**每篇文章都该有一条自己的规则**：fallback_stage 只是防崩溃的兜底（没有专属规则的文章会落进去），守卫测试 tests/test_learning_path.py 钉住它是空的 —— 加了新文章，就得给它写规则。\n\n`platform-meta/`（平台元数据赛道：讲这个站本身怎么造）目前**临时挂在「博客与自媒体」这条赛道下** —— 按语义它属于「把内容变成作品：建站、排版、传播、视频生产线」，等赛道树整体重排时再决定要不要单独立一条赛道。\n\n可用的匹配键：path_prefix（前缀）、path_regex（正则）、path_exact（全等）、category（分类）、tag（标签）、title_contains（标题含）、any / all（组合）、catch_all（无条件，只能写在最后一个阶段）。",
+  "note": "学习路径的分类规则表。**这里是人工策展的部分**，tools/build-learning-path.py 按它把每篇文章落到「赛道 + 阶段」。改这个文件就能改路径，不用改代码。\n\n规则从上往下第一条命中即生效；track_match 决定文章属于哪条赛道，stages[].match 决定落在哪个阶段。\n\n**每篇文章都该有一条自己的规则**：fallback_stage 只是防崩溃的兜底（没有专属规则的文章会落进去），守卫测试 tests/test_learning_path.py 钉住它是空的 —— 加了新文章，就得给它写规则。\n\n`platform-meta/`（平台元数据赛道：讲这个站本身怎么造）目前**临时挂在「博客与自媒体」这条赛道下** —— 按语义它属于「把内容变成作品：建站、排版、传播、视频生产线」，等赛道树整体重排时再决定要不要单独立一条赛道。\n\n可用的匹配键：path_prefix（前缀）、path_regex（正则）、path_exact（全等）、category（分类）、tag（标签）、title_contains（标题含）、any / all（组合）、catch_all（无条件，只能写在最后一个阶段）。 「工程与语言」这一块按**系列 = 一个教学阶段**重排：foundations + cheatsheets → L1，engineering-practice → L2，containers → L3，web-and-frontend → L4，规则全部写成 path_prefix。「速查与清单」这个系列原来散在 L2/L4，收进 L1（语言与基础那一层）。",
   "tracks": [
     {
       "id": "db-internals",
@@ -432,46 +432,7 @@
       "goal": "走完这条线，你能在一天内跑起一个陌生语言的项目，能读懂它的构建脚本，并给它加上自动化测试。",
       "track_match": [
         {
-          "path_prefix": "language/"
-        },
-        {
-          "path_prefix": "vue/"
-        },
-        {
-          "path_prefix": "docker/"
-        },
-        {
-          "path_prefix": "code/"
-        },
-        {
-          "path_prefix": "es/"
-        },
-        {
-          "path_prefix": "edit/"
-        },
-        {
-          "path_prefix": "page/"
-        },
-        {
-          "path_prefix": "web/"
-        },
-        {
-          "path_prefix": "go_web/"
-        },
-        {
-          "path_prefix": "base/"
-        },
-        {
-          "path_prefix": "alg/"
-        },
-        {
-          "path_prefix": "faq/"
-        },
-        {
-          "path_prefix": "opc/"
-        },
-        {
-          "path_prefix": "tools/"
+          "path_prefix": "engineering/"
         }
       ],
       "fallback_stage": "L4",
@@ -482,25 +443,10 @@
           "goal": "数据结构、编译工具链、内存、版本控制 —— 语言的底子和天天要用的那几个基础工具。",
           "match": [
             {
-              "path_prefix": "language/python/"
+              "path_prefix": "engineering/foundations/"
             },
             {
-              "path_prefix": "language/rust/"
-            },
-            {
-              "path_regex": "^language/(C语言内存使用血与泪教训|c语言变长数组|程序基本构造|词法分析与语法分析教程|软件质量|autoconf使用|cmake使用指南|如何阅读autotool管理的C语言项目)$"
-            },
-            {
-              "path_prefix": "alg/"
-            },
-            {
-              "path_regex": "^base/(data-struct|design-pattern)$"
-            },
-            {
-              "path_prefix": "page/how-to-learn-program"
-            },
-            {
-              "path_prefix": "base/"
+              "path_prefix": "engineering/cheatsheets/"
             }
           ]
         },
@@ -510,49 +456,7 @@
           "goal": "Make/CMake、单测、调试器、代码注释工具。",
           "match": [
             {
-              "path_prefix": "code/"
-            },
-            {
-              "path_prefix": "edit/"
-            },
-            {
-              "path_prefix": "faq/"
-            },
-            {
-              "path_prefix": "opc/"
-            },
-            {
-              "path_exact": "tools/shell常用脚本"
-            },
-            {
-              "path_exact": "tools/shell脚本进阶"
-            },
-            {
-              "path_exact": "tools/Shell脚本的简单排错法及调试程序bashdb"
-            },
-            {
-              "path_exact": "tools/bashdb安装及调试shell脚本"
-            },
-            {
-              "path_exact": "tools/如何调试bash脚本"
-            },
-            {
-              "path_exact": "tools/doxygen使用指南"
-            },
-            {
-              "path_exact": "tools/不得不会的代码注释工具——doxygen"
-            },
-            {
-              "path_exact": "tools/cunit单元测试使用"
-            },
-            {
-              "path_exact": "tools/vim + ctags + cscope = 强大的IDE_ctags cscope"
-            },
-            {
-              "path_exact": "tools/nc"
-            },
-            {
-              "path_exact": "tools/你一定要知道的黑客小技巧"
+              "path_prefix": "engineering/engineering-practice/"
             }
           ]
         },
@@ -562,19 +466,7 @@
           "goal": "Docker 把环境问题关进盒子里；自建服务（code-server、媒体中心）也是这一层的事。",
           "match": [
             {
-              "path_prefix": "docker/"
-            },
-            {
-              "path_exact": "tools/code-server"
-            },
-            {
-              "path_exact": "tools/codeserver_docker"
-            },
-            {
-              "path_exact": "tools/那些你不得不会的提高工作效率的软件神器"
-            },
-            {
-              "path_exact": "tools/Jellyfin+Kodi打造个人媒体中心"
+              "path_prefix": "engineering/containers/"
             }
           ]
         },
@@ -584,34 +476,7 @@
           "goal": "前端框架、页面技术栈、Elasticsearch 文件搜索，以及上网和检索的工具。",
           "match": [
             {
-              "path_prefix": "vue/"
-            },
-            {
-              "path_prefix": "es/"
-            },
-            {
-              "path_prefix": "web/"
-            },
-            {
-              "path_prefix": "go_web/"
-            },
-            {
-              "path_regex": "^page/(Csharp|devExpress|gui|java|pdf|pdf-coordinate|pdfParse|python|read-pdfbox-source-code|regexp|ssh)$"
-            },
-            {
-              "path_exact": "tools/15 个提高 Google 搜索效率的小技巧 - 少数派"
-            },
-            {
-              "path_exact": "tools/clash-meta-mihomo-install-guide"
-            },
-            {
-              "path_exact": "tools/clash-meta-user-guide"
-            },
-            {
-              "path_exact": "tools/leanote使用教程"
-            },
-            {
-              "path_exact": "tools/一文教你选择局域网文件服务器"
+              "path_prefix": "engineering/web-and-frontend/"
             }
           ]
         }

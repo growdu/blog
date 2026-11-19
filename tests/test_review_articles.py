@@ -42,9 +42,9 @@ KNOWN_BARE_URL_ARTICLES = frozenset({
     "docs/source-tracks/linux/memory-and-linking/linux内存管理指北.md",
     "docs/source-tracks/linux/kernel-internals/linux系统接口.md",
     "docs/source-tracks/linux/networking/【网络】MTU相关网络丢包问题分析处理.md",
-    "docs/tools/clash-meta-mihomo-install-guide.md",
-    "docs/tools/clash-meta-user-guide.md",
-    "docs/vue/html简单教程.md",
+    "docs/engineering/web-and-frontend/clash-meta-mihomo-install-guide.md",
+    "docs/engineering/web-and-frontend/clash-meta-user-guide.md",
+    "docs/engineering/web-and-frontend/html简单教程.md",
 })
 
 # 扫描用的三个正则。顺序有讲究：先去掉围栏代码块与行内代码（里面的 URL

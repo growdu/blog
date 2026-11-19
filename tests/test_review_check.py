@@ -169,7 +169,7 @@ REVIEWED_ARTICLES = (
     "docs/source-tracks/postgresql/transaction-mvcc/learning-path/06-heap-and-mvcc.md",
     "docs/source-tracks/postgresql/wal-and-recovery/checkpoint机制浅析.md",
     "docs/distributed/foundations/分布式一致性协议.md",
-    "docs/base/file.md",
+    "docs/engineering/foundations/file.md",
     "docs/distributed/field-notes/corosync-down网卡仍处于多数派/index.md",
     "docs/distributed/ha-and-dr/tptc.md",
     "docs/source-tracks/linux/networking/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md",

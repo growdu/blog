@@ -275,9 +275,9 @@
   即整段中文。
 - [x] 全树同类问题的规模 —— 按上述规则逐行扫描 `docs/`（排除代码块、
   行内代码与 markdown 链接）：**15 篇 / 30 处**，分布为
-  `docs/network/【网络】MTU相关网络丢包问题分析处理.md` 7 处、
-  `docs/tools/clash-meta-mihomo-install-guide.md` 5 处、
-  `docs/tools/clash-meta-user-guide.md` 4 处、
+  `docs/source-tracks/linux/networking/【网络】MTU相关网络丢包问题分析处理.md` 7 处、
+  `docs/engineering/web-and-frontend/clash-meta-mihomo-install-guide.md` 5 处、
+  `docs/engineering/web-and-frontend/clash-meta-user-guide.md` 4 处、
   `docs/distributed/field-notes/corosync-down网卡仍处于多数派/index.md` 与
   `-1/index.md` 各 2 处，其余 9 篇各 1 处。本轮只改本篇与 `-1` 那两处，
   其余 26 处留给后续批次。

@@ -1,20 +1,36 @@
 {
   "category_redirects": {
     "BenchmarkSQL 基准测试": "源码主线/PostgreSQL/扩展、性能与生态",
+    "Docker": "工程与语言/容器与环境",
+    "Elasticsearch": "工程与语言/Web、前端与搜索",
+    "FAQ": "工程与语言/速查与清单",
+    "Go Web": "工程与语言/Web、前端与搜索",
     "Linux": "源码主线/Linux",
+    "OPC": "工程与语言/编译、测试与调试",
     "PostgreSQL": "源码主线/PostgreSQL",
     "PostgreSQL 共享内存机制(深入版)": "源码主线/PostgreSQL/存储引擎",
     "PostgreSQL 源码修炼之路": "源码主线/PostgreSQL",
     "PostgreSQL 源码修炼之路:内核深度拆解专题": "源码主线/PostgreSQL",
     "PostgreSQL 逻辑解码完整目录": "源码主线/PostgreSQL/逻辑复制与流式",
+    "Vue": "工程与语言/Web、前端与搜索",
+    "Web": "工程与语言/Web、前端与搜索",
     "openGauss": "分布式与架构/一致性协议",
+    "代码示例": "工程与语言/编译、测试与调试",
+    "工具": "工程与语言",
     "数据库": "源码主线/PostgreSQL",
     "数据库深入": "源码主线/PostgreSQL",
     "数据库深入/数据库": "源码主线/PostgreSQL",
+    "算法": "工程与语言/计算机基础与语言入门",
+    "编程语言": "工程与语言/计算机基础与语言入门",
+    "编辑工具": "工程与语言/编译、测试与调试",
     "网络": "源码主线/Linux/网络协议与抓包",
-    "集群": "分布式与架构"
+    "计算机基础": "工程与语言/计算机基础与语言入门",
+    "集群": "分布式与架构",
+    "页面": "工程与语言/速查与清单"
   },
   "dir_map": {
+    "alg/": "engineering/foundations/",
+    "base/": "engineering/foundations/",
     "cluster/DCF/": "distributed/consensus/",
     "cluster/corosync/": "distributed/field-notes/",
     "cluster/ha/": "distributed/ha-and-dr/",
@@ -24,6 +40,7 @@
     "cluster/postgresql/": "distributed/distributed-storage/",
     "cluster/raft/": "distributed/consensus/",
     "cluster/zookeeper/": "distributed/consensus/",
+    "code/": "engineering/engineering-practice/code/",
     "db/benchmarksql/": "source-tracks/postgresql/extensions-perf/",
     "db/linux-shared-memory/": "source-tracks/postgresql/storage-engine/",
     "db/logical_decode/": "source-tracks/postgresql/logical-replication/",
@@ -33,10 +50,18 @@
     "db/performance/": "source-tracks/postgresql/extensions-perf/",
     "db/sqlserver/": "source-tracks/postgresql/logical-replication/sqlserver/",
     "db/taos/": "source-tracks/postgresql/extensions-perf/",
+    "docker/": "engineering/containers/",
+    "edit/": "engineering/engineering-practice/",
+    "es/": "engineering/web-and-frontend/",
+    "faq/": "engineering/cheatsheets/",
+    "go_web/": "engineering/web-and-frontend/",
+    "language/": "engineering/foundations/",
     "linux/ebpf/": "source-tracks/linux/memory-and-linking/ebpf/",
     "linux/kernel/": "source-tracks/linux/kernel-internals/kernel/",
     "network/": "source-tracks/linux/networking/",
+    "opc/": "engineering/engineering-practice/",
     "openguass/": "distributed/consensus/",
+    "page/": "engineering/cheatsheets/",
     "pgsql/debug/": "source-tracks/postgresql/getting-started/",
     "pgsql/executor/": "source-tracks/postgresql/index-and-query/",
     "pgsql/extension/": "source-tracks/postgresql/extensions-perf/",
@@ -49,7 +74,10 @@
     "pgsql/repmgr/": "source-tracks/postgresql/replication-ha/",
     "pgsql/stats/": "source-tracks/postgresql/index-and-query/",
     "pgsql/storage/": "source-tracks/postgresql/storage-engine/",
-    "pgsql/storage/full_page_writes/": "source-tracks/postgresql/wal-and-recovery/full_page_writes/"
+    "pgsql/storage/full_page_writes/": "source-tracks/postgresql/wal-and-recovery/full_page_writes/",
+    "tools/": "engineering/engineering-practice/",
+    "vue/": "engineering/web-and-frontend/",
+    "web/": "engineering/web-and-frontend/"
   },
   "drop_index": [
     "cluster/_index.md",
@@ -64,7 +92,21 @@
     "linux/_index.md",
     "network/_index.md",
     "openguass/_index.md",
-    "pgsql/_index.md"
+    "pgsql/_index.md",
+    "alg/_index.md",
+    "base/_index.md",
+    "code/_index.md",
+    "docker/_index.md",
+    "edit/_index.md",
+    "es/_index.md",
+    "faq/_index.md",
+    "go_web/_index.md",
+    "language/_index.md",
+    "opc/_index.md",
+    "page/_index.md",
+    "tools/_index.md",
+    "vue/_index.md",
+    "web/_index.md"
   ],
   "file_map": {
     "cluster/C语言实现分布式自增有序的唯一ID生成算法-snowflake算法.md": "distributed/foundations/C语言实现分布式自增有序的唯一ID生成算法-snowflake算法.md",
@@ -233,6 +275,7 @@
     "linux/本地git仓库.md": "source-tracks/linux/daily-ops/本地git仓库.md",
     "linux/解决SSH连接Linux超时自动断开.md": "source-tracks/linux/daily-ops/解决SSH连接Linux超时自动断开.md",
     "linux/银河麒麟V10 远程桌面_银河麒麟v10远程桌面-CSDN博客.md": "source-tracks/linux/daily-ops/银河麒麟V10 远程桌面_银河麒麟v10远程桌面-CSDN博客.md",
+    "page/how-to-learn-program.md": "engineering/foundations/how-to-learn-program.md",
     "pgsql/PostgreSQL 时间线解析.md": "source-tracks/postgresql/wal-and-recovery/PostgreSQL 时间线解析.md",
     "pgsql/Postgres中postmaster代码解析(--boot和--single).md": "source-tracks/postgresql/getting-started/Postgres中postmaster代码解析(--boot和--single).md",
     "pgsql/checkpoint机制浅析.md": "source-tracks/postgresql/wal-and-recovery/checkpoint机制浅析.md",
@@ -252,9 +295,18 @@
     "pgsql/storage/pg_checksum.md": "source-tracks/postgresql/wal-and-recovery/pg_checksum.md",
     "pgsql/storage/xlog.md": "source-tracks/postgresql/wal-and-recovery/xlog.md",
     "pgsql/wal机制浅析.md": "source-tracks/postgresql/wal-and-recovery/wal机制浅析.md",
-    "pgsql/数据库崩溃恢复.md": "source-tracks/postgresql/wal-and-recovery/数据库崩溃恢复.md"
+    "pgsql/数据库崩溃恢复.md": "source-tracks/postgresql/wal-and-recovery/数据库崩溃恢复.md",
+    "tools/15 个提高 Google 搜索效率的小技巧 - 少数派.md": "engineering/web-and-frontend/15 个提高 Google 搜索效率的小技巧 - 少数派.md",
+    "tools/Jellyfin+Kodi打造个人媒体中心.md": "engineering/containers/Jellyfin+Kodi打造个人媒体中心.md",
+    "tools/clash-meta-mihomo-install-guide.md": "engineering/web-and-frontend/clash-meta-mihomo-install-guide.md",
+    "tools/clash-meta-user-guide.md": "engineering/web-and-frontend/clash-meta-user-guide.md",
+    "tools/code-server.md": "engineering/containers/code-server.md",
+    "tools/codeserver_docker.md": "engineering/containers/codeserver_docker.md",
+    "tools/leanote使用教程.md": "engineering/web-and-frontend/leanote使用教程.md",
+    "tools/一文教你选择局域网文件服务器.md": "engineering/web-and-frontend/一文教你选择局域网文件服务器.md",
+    "tools/那些你不得不会的提高工作效率的软件神器.md": "engineering/containers/那些你不得不会的提高工作效率的软件神器.md"
   },
-  "note": "源码主线迁移表。dir_map = 整目录搬（后者覆盖前者）；file_map = 逐篇例外（优先于 dir_map）；out_map = 内部工作文档移出 docs/ 到 internal/。路径均为 docs/ 相对路径。projects = 每条主线项目一块：target_root 是落点，series 是系列 slug → 中文名，series_meta 是系列目录页的描述。 「分布式」这一块（cluster/ + openguass/，65 篇）按**学习路径的阶段**分系列：一个系列只装一个阶段，学习路径的规则就能全部写成 path_prefix，阶段归属搬完一个字都不变。corosync 一目录劈两半 —— 协议与源码进「一致性协议」，用法与现场进「实战与故障现场」，逐篇例外写在 file_map 里。 cluster/multi_cluster.tar.gz 这个压缩包按「与文章同目录」的通用规则会跟着 cluster/ 根目录那篇（分布式一致性协议.md）去「分布式基础」—— 但它装的是 multi_cluster 的原始素材，跟 multi_cluster/ 那一组文章是一回事，所以单独 记到「实战与故障现场」。",
+  "note": "源码主线迁移表。dir_map = 整目录搬（后者覆盖前者）；file_map = 逐篇例外（优先于 dir_map）；out_map = 内部工作文档移出 docs/ 到 internal/。路径均为 docs/ 相对路径。projects = 每条主线项目一块：target_root 是落点，series 是系列 slug → 中文名，series_meta 是系列目录页的描述。 「分布式」这一块（cluster/ + openguass/，65 篇）按**学习路径的阶段**分系列：一个系列只装一个阶段，学习路径的规则就能全部写成 path_prefix，阶段归属搬完一个字都不变。corosync 一目录劈两半 —— 协议与源码进「一致性协议」，用法与现场进「实战与故障现场」，逐篇例外写在 file_map 里。 cluster/multi_cluster.tar.gz 这个压缩包按「与文章同目录」的通用规则会跟着 cluster/ 根目录那篇（分布式一致性协议.md）去「分布式基础」—— 但它装的是 multi_cluster 的原始素材，跟 multi_cluster/ 那一组文章是一回事，所以单独 记到「实战与故障现场」。 「工程与语言」这一块（language/、base/、code/、docker/、edit/、es/、vue/、tools/、page/、faq/ 等，122 篇）按**学习路径的阶段**分系列：一个系列只装一个阶段，规则就都能写成 path_prefix。tools/ 一目录劈三半（编译调试 / 容器 / Web），page/ 与 faq/ 收成「速查与清单」。",
   "out_map": {
     "db/logical_decode/逻辑复制支持DDL开发交付计划.md": "internal/db/logical_decode/逻辑复制支持DDL开发交付计划.md",
     "db/logical_decode/逻辑复制验证步骤.md": "internal/db/logical_decode/逻辑复制验证步骤.md"
@@ -321,6 +373,24 @@
         "selection": "选型与对比：业界方案综述与横向对比 —— 读完知道该选哪条路。"
       },
       "target_root": "distributed"
+    },
+    {
+      "display_name": "工程与语言",
+      "series": {
+        "cheatsheets": "速查与清单",
+        "containers": "容器与环境",
+        "engineering-practice": "编译、测试与调试",
+        "foundations": "计算机基础与语言入门",
+        "web-and-frontend": "Web、前端与搜索"
+      },
+      "series_meta": {
+        "cheatsheets": "速查与清单：C#、Java、Python、PDF、正则、SSH 这些随手就要查的东西。",
+        "containers": "容器与环境：Docker 与容器化环境 —— 从基础指北到镜像仓库与权限。",
+        "engineering-practice": "编译、测试与调试：构建系统、单元测试、调试器、注释与文档工具链。",
+        "foundations": "计算机基础与语言入门：数据结构、算法、C/Rust/Python、正则与那些绕不开的基础。",
+        "web-and-frontend": "Web、前端与搜索：Vue、React、Elasticsearch 搜索界面与桌面打包。"
+      },
+      "target_root": "engineering"
     }
   ],
   "ref_rewrites": [
@@ -386,6 +456,26 @@
     },
     {
       "file": "tests/test_review_check.py",
+      "form": "docs"
+    },
+    {
+      "file": "review/INDEX.md",
+      "form": "flat"
+    },
+    {
+      "file": "review/description-drafts.md",
+      "form": "flat"
+    },
+    {
+      "file": "review/scope/2026-11-14-scope-classification.md",
+      "form": "docs"
+    },
+    {
+      "file": "aiv/人格规范.md",
+      "form": "docs"
+    },
+    {
+      "file": "docs/life/aiv/人格规范.md",
       "form": "docs"
     }
   ],

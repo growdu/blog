@@ -308,9 +308,10 @@ mindmap
 | 首页 | [docs/(/) |
 | 数据库深入(旧) | [docs/db/](/categories/%E6%BA%90%E7%A0%81%E4%B8%BB%E7%BA%BF/PostgreSQL/) |
 | PostgreSQL(旧) | [docs/pgsql/(/categories/%E6%BA%90%E7%A0%81%E4%B8%BB%E7%BA%BF/PostgreSQL/) |
-| openGauss(旧) | [docs/openguass/(../openguass/index.html) |
+| openGauss(旧) | [docs/openguass/](/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E4%B8%8E%E6%9E%B6%E6%9E%84/%E4%B8%80%E8%87%B4%E6%80%A7%E5%8D%8F%E8%AE%AE/) |
 | 分布式与架构 | [docs/distributed/](/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E4%B8%8E%E6%9E%B6%E6%9E%84/) |
 | Linux 内核 | [docs/source-tracks/linux/](/categories/%E6%BA%90%E7%A0%81%E4%B8%BB%E7%BA%BF/Linux/) |
+| 工程与语言 | [docs/engineering/](/categories/%E5%B7%A5%E7%A8%8B%E4%B8%8E%E8%AF%AD%E8%A8%80/) |
 
 ## 参考
 - PostgreSQL 官方文档 [postgresql.org/docs/18](https://www.postgresql.org/docs/18/)

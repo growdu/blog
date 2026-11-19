@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "engineering/containers/codeserver_docker",
+  "draft_id": "7708376888846090815",
+  "package_dir": "toutiao/out/engineering-containers-codeserver_docker",
+  "platform": "toutiao",
+  "published_url": null,
+  "reason": "草稿已在头条号后台的草稿箱里，等人工补图并发表",
+  "status": "drafted",
+  "title": "codeserver_docker",
+  "updated_at": "2026-11-15T20:43:59+08:00"
+}

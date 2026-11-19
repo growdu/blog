@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "engineering/containers/docker与宿主机共享内存通信",
+  "draft_id": "7708376692766655018",
+  "package_dir": "toutiao/out/engineering-containers-docker与宿主机共享内存通信",
+  "platform": "toutiao",
+  "published_url": null,
+  "reason": "草稿已在头条号后台的草稿箱里，等人工补图并发表",
+  "status": "drafted",
+  "title": "docker与宿主机共享内存通信",
+  "updated_at": "2026-11-15T20:43:48+08:00"
+}

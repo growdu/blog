@@ -75,7 +75,8 @@ def mechanically_non_article(path: Path) -> bool:
     """
     if path.name == "_index.md":
         return True
-    if path.relative_to(REPO_ROOT).as_posix().startswith("docs/code/"):
+    if path.relative_to(REPO_ROOT).as_posix().startswith(
+            "docs/engineering/engineering-practice/code/"):
         return True
     text = path.read_text(encoding="utf-8", errors="replace")
     if REPRINT_MARKER_RE.search(text[:1200]):

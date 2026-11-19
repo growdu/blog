@@ -1,0 +1,12 @@
+{
+  "automation": "manual",
+  "content_id": "engineering/cheatsheets/regexp",
+  "draft_id": "7708376959037833770",
+  "package_dir": "toutiao/out/engineering-cheatsheets-regexp",
+  "platform": "toutiao",
+  "published_url": null,
+  "reason": "草稿已在头条号后台的草稿箱里，等人工补图并发表",
+  "status": "drafted",
+  "title": "正则表达式",
+  "updated_at": "2026-11-15T20:43:55+08:00"
+}
