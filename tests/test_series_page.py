@@ -164,42 +164,49 @@ def test_the_menu_has_an_entry_for_the_series():
     )
 
 
-def test_the_homepage_has_the_latest_episode_block():
-    """首页上要能一眼看到「最新一期是什么」。"""
+def test_the_homepage_no_longer_has_the_latest_episode_block():
+    """首页上不再有「最新一期」那一块。
+
+    2026-11-18：首页首屏要回答的是「这个站是什么、从哪儿开始」，
+    不是「作者最近做了什么视频」。期号本身没消失——「播客」页和文章页
+    的期号区块都还在（下面两条守着）。
+    """
     text = (THEME_PARTIALS / "home-content.ejs").read_text(encoding="utf-8")
 
-    assert "partial('_partial/latest-episode')" in text
-    # 位置：在学习路径之前——首页最上面就是它。
-    # （2026-11-18：首页的文章区那三个 tab 整块删掉了，以前这里比的是
-    #  「最新一期」与文章列表的先后；现在文章区没了，锚点是学习路径。）
-    block_at = text.find("partial('_partial/latest-episode')")
-    learning_at = text.find("partial('_partial/learning-path')")
-    assert block_at != -1 and learning_at != -1
-    assert block_at < learning_at
+    assert "partial('_partial/latest-episode')" not in text, (
+        "首页还在渲染 latest-episode —— 首屏又摆上一个「作者推荐」"
+    )
+    assert "partial('_partial/learning-path')" in text, (
+        "首页的学习路径没了（这一块要留着）"
+    )
 
 
-def test_the_latest_episode_block_is_in_the_repo():
-    """partial 是**入库**的（不是构建期生成的）。"""
+def test_the_latest_episode_partial_is_gone():
+    """partial 退休了 —— 没人渲染它，就不该留在仓库里。"""
     path = THEME_PARTIALS / "latest-episode.ejs"
-    assert path.is_file()
-    text = path.read_text(encoding="utf-8")
-    assert "site.data.podcast_index" in text
-    assert "latest-episode-link" in text
-    # 首页不放播放器：B站播放器要拉 1 MB 左右的 JS，首页是最热的页面。
-    assert "player.bilibili.com" not in text
+
+    assert not path.exists(), (
+        "latest-episode.ejs 还在 —— 首页已经不渲染它了"
+    )
 
 
-def test_the_patch_theme_injects_the_block_and_the_styles():
+def test_the_patch_theme_no_longer_injects_the_block_or_its_styles():
+    """patcher 不再注入这一块。
+
+    **这一条最要紧**：只删 home-content.ejs 里的渲染位而不删注入，
+    CI 构建一次就把「最新一期」原样加回来——本地看着删干净了，线上
+    又长出来。样式同理：``my.css`` 里那段 LATEST-EPISODE 也得被剥掉。
+    """
     text = (TOOLS / "patch-theme.py").read_text(encoding="utf-8")
 
-    assert "partial('_partial/latest-episode')" in text
-    assert "/* LATEST-EPISODE */" in text
-    assert "f.write(le_css)" in text
+    assert "f.write(le_css)" not in text, (
+        "patch-theme.py 还在注入 LATEST-EPISODE 的样式"
+    )
     css = (REPO_ROOT / "themes" / "matery" / "source" / "css" / "my.css").read_text(
         encoding="utf-8"
     )
-    assert "/* LATEST-EPISODE */" in css
-    assert ".latest-episode-link" in css
+    assert "/* LATEST-EPISODE */" not in css, "my.css 里还留着 LATEST-EPISODE 那段"
+    assert ".latest-episode-link" not in css, "my.css 里还留着 .latest-episode 的样式"
 
 
 # --- 3. 装配与流水线 -------------------------------------------------------

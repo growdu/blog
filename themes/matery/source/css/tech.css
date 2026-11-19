@@ -76,48 +76,6 @@
   margin: 22px 0 0;
 }
 
-/* --- 从这里开始（学习路径入口）-------------------------------------------- */
-
-.home-hero__start {
-  margin: 24px 0 0;
-}
-
-.home-hero__start-link {
-  display: inline-flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 12px 18px;
-  color: var(--tech-ink);
-  background: var(--tech-card);
-  border: 1px solid var(--tech-rule);
-  border-left: 3px solid var(--tech-accent);
-  border-radius: 3px;
-  text-decoration: none;
-  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
-}
-
-.home-hero__start-link:hover,
-.home-hero__start-link:focus-visible {
-  transform: translateY(-1px);
-  border-color: var(--tech-accent);
-  box-shadow: 0 6px 18px rgba(31, 41, 51, .08);
-}
-
-.home-hero__start-link i {
-  color: var(--tech-accent);
-}
-
-.home-hero__start-label {
-  font-size: 15.5px;
-  font-weight: 600;
-}
-
-.home-hero__start-hint {
-  font-size: 13px;
-  color: var(--tech-muted);
-}
-
 /* --- 首屏搜索 ------------------------------------------------------------ */
 
 .home-hero__search {
@@ -222,70 +180,11 @@
   color: var(--tech-muted);
 }
 
-/* --- 三篇代表作 ---------------------------------------------------------- */
-
-.home-hero__featured {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18px;
-  margin: 34px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.home-hero__card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 18px 20px 20px;
-  background: var(--tech-card);
-  border: 1px solid var(--tech-rule);
-  border-top: 2px solid var(--tech-accent);
-  border-radius: 3px;
-  text-decoration: none;
-  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
-}
-
-.home-hero__card:hover,
-.home-hero__card:focus-visible {
-  transform: translateY(-2px);
-  border-color: var(--tech-accent);
-  box-shadow: 0 8px 24px rgba(31, 41, 51, .09);
-}
-
-.home-hero__card-cat {
-  font-family: var(--tech-mono);
-  font-size: 11.5px;
-  letter-spacing: .08em;
-  color: var(--tech-accent);
-}
-
-.home-hero__card-title {
-  margin: 0;
-  font-size: 15.5px;
-  font-weight: 600;
-  line-height: 1.55;
-  color: var(--tech-ink);
-}
-
-.home-hero__card-date {
-  margin-top: auto;
-  font-family: var(--tech-mono);
-  font-size: 12px;
-  color: var(--tech-muted);
-}
-
 /* --- 响应式 -------------------------------------------------------------- */
 
 @media (max-width: 992px) {
   .home-hero {
     padding: 44px 0 36px;
-  }
-
-  .home-hero__featured {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    margin-top: 26px;
   }
 }
 
@@ -320,11 +219,6 @@ body.DarkMode .home-hero .hero-typing {
 
 body.DarkMode .home-hero__search-results {
   box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
-}
-
-body.DarkMode .home-hero__card:hover,
-body.DarkMode .home-hero__card:focus-visible {
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
 }
 
 /* learning-page ------------------------------------------------------------
@@ -489,11 +383,8 @@ body.DarkMode .learning-page__crumb a:focus-visible {
   color: var(--lane-color, #009688);
 }
 
-.learning-path__all {
-  margin-top: 28px;
-  text-align: center;
-}
-
+/* 「看完整的学习地图」这条链接在标题行里（首页只这么用），
+   单独占一行的 .learning-path__all 外壳 2026-11-18 已删。 */
 .learning-path__all-link {
   display: inline-flex;
   align-items: center;
@@ -557,4 +448,258 @@ body.DarkMode .learning-path__all-link {
 body.DarkMode .learning-path__all-link:hover,
 body.DarkMode .learning-path__all-link:focus-visible {
   background: rgba(77, 182, 172, .20);
+}
+
+/* --- 首页占满一屏（首屏 + 统计条 + 学习路径）-----------------------------
+   2026-11-18：文章区、「最新一期」、代表作三块删掉之后，首页剩下
+   首屏 + 统计条 + 学习路径。目标是这三块正好占满一屏 —— 读者不用滚动
+   就能看完 8 条赛道。
+
+   做法（按 docs/blog/重构方案.md §5.4，新样式只放 tech.css，不进
+   patch-theme.py 注入的那份）：
+
+     body.home-page  → 一个「至少一屏高」的 flex 列
+       .home-hero      内容固定（flex: 0 0 auto），但压扁
+       .home-content   吃掉剩下的空间（flex: 1 1 auto）
+         .stats-banner  内容固定，压扁
+         .learning-path 继续往下分
+           .lane-grid    卡片跟着长高（grid-auto-rows）
+
+   **自适应**的三条边界：
+   * 视口不够宽（< 1100px）时整段不生效，回到正常文档流 —— 窄屏硬塞
+     会把字压得没法看；
+   * 空间真的不够时，滚动的是学习路径面板自己（overflow:auto），
+     不是整页 —— 整页滚动会把首屏和统计条一起推走；
+   * body 用的是 height（不是 min-height）：flex 的「收缩到刚好装下」
+     要有一个确定的高度才生效。内容装不下时是**溢出可见**的，
+     页面照常能滚，不会被裁掉一块 —— 宁可多滚一屏，不丢内容。
+
+   用 dvh 而不是 vh：手机上地址栏收放时 vh 会跳，dvh 跟着实际视口走。
+   ---------------------------------------------------------------------- */
+
+@media (min-width: 1100px) {
+  body.home-page {
+    display: flex;
+    flex-direction: column;
+    /* height 而不是 min-height：flex 的「收缩到刚好装下」要有一个确定的
+       高度才生效。装不下时内容是**溢出可见**的（body 的 overflow-y:auto
+       兜着），页面照常能滚，不会被裁掉一块。 */
+    height: 100vh;
+    height: 100dvh;
+  }
+
+  /* --- 首屏：压扁 -------------------------------------------------------
+     顶栏（navbar-fixed，33px）和区域横幅（58px）都在文档流里，
+     原来那 88px 顶部留白（怕被 fixed 的导航条压住）用不着了。
+     首屏里原来的「从这里开始」也删了 —— 它指的就是下面这块学习路径，
+     同一个去处摆两遍，白占 47px。 */
+  body.home-page .home-hero {
+    flex: 0 0 auto;
+    padding: 24px 0 10px;
+  }
+
+  body.home-page .home-hero__lead {
+    font-size: 1.25rem;
+    line-height: 1.6;
+  }
+  body.home-page .home-hero__search { margin: 10px 0 0; }
+  /* 「按标题搜索 · 全文搜索用顶部导航」这句提示在首页省掉：搜索框下面
+     就是分类徽章，读者看得见；那行字留给别处的说明。 */
+  body.home-page .home-hero__search-hint { display: none; }
+  body.home-page .home-hero__search-label {
+    font-size: 10.5px;
+    margin-bottom: 2px;
+  }
+  body.home-page .home-hero__search-input { height: 34px; font-size: 14px; }
+  body.home-page .home-hero__badges { margin: 12px 0 0; }
+  /* 分类徽章：九个挤成一行（原来两行），字号也小一圈 */
+  body.home-page .hero-badge {
+    font-size: 11.5px;
+    padding: 3px 10px;
+  }
+  body.home-page .home-hero .hero-typing { font-size: 12px; }
+
+  /* --- 中间那块：统计条 + 学习路径 -------------------------------------- */
+  body.home-page .home-content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin-top: 0;
+    padding-bottom: 0;
+  }
+
+  body.home-page .home-content > .container {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* 统计条压扁：数字小一圈，省下来的高度给学习路径。 */
+  body.home-page .stats-banner {
+    flex: 0 0 auto;
+    margin: 10px 0 10px;
+  }
+
+  body.home-page .stat-card { padding: 9px 12px; }
+  body.home-page .stat-num { font-size: 21px; margin-bottom: 0; }
+  body.home-page .stat-label { font-size: 12px; }
+
+  body.home-page .learning-path {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin: 0;
+    padding: 10px 0 12px;
+  }
+
+  body.home-page .learning-path > .container {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /* 标题行：标题 + 副标题 +「看完整的学习地图」排成一行。
+     那条链接原来自己占一行（32px），首页一屏放不下，就挪到标题右边了。 */
+  body.home-page .learning-path .section-title {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    text-align: left;
+    margin-bottom: 8px;
+  }
+  body.home-page .learning-path .section-title h2 {
+    font-size: 18px;
+    margin: 0;
+    white-space: nowrap;
+  }
+  body.home-page .learning-path .section-subtitle {
+    font-size: 12px;
+    margin: 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  body.home-page .learning-path .learning-path__all-link {
+    margin-left: auto;
+    flex: 0 0 auto;
+    padding: 4px 12px;
+    font-size: 12.5px;
+  }
+
+  /* 卡片网格：有多余空间就长高铺满；空间不够时**行不会比内容更矮**
+     （min-content），面板自己滚 —— 卡片不会被压扁成一排看不清的字。 */
+  body.home-page .lane-grid--tracks {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-auto-rows: minmax(min-content, 1fr);
+    align-content: stretch;
+    overflow: auto;
+  }
+
+  body.home-page .lane-card {
+    /* height:auto —— my.css 里那条 height:100% 在这里是循环依赖
+       （行高由卡片决定，卡片又按行高算），Chrome 会算出比内容更高的高度。
+       放开之后卡片就是内容的高度，多出来的空间给网格去分。 */
+    height: auto;
+    position: relative;
+    padding: 8px 12px 10px;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  body.home-page .lane-card__head { gap: 8px; margin-bottom: 4px; }
+  body.home-page .lane-card__icon { font-size: 19px; width: 24px; height: 24px; }
+  /* 13px + 行高 1.35：最长的那个赛道名（「数据面：DPDK · VPP」）也要一行放得下，
+     放不下就折两行 —— 折行的那张卡比别的卡高 25px，一屏就装不下了。 */
+  body.home-page .lane-card__title { font-size: 13px; line-height: 1.35; }
+  body.home-page .lane-card__count { font-size: 11px; padding: 2px 6px; }
+  body.home-page .lane-card__desc {
+    font-size: 12px;
+    line-height: 1.45;
+    min-height: 0;
+    /* margin-top:auto —— 卡片被拉高的时候（屏幕高），简介和阶段角标贴着
+       卡片底部走，标题留在顶部，中间空出来；不然简介会飘在卡片正中间。 */
+    margin: auto 0 4px;
+    /* 简介最多一行：卡片等高，第二行不占地方。整句在赛道页上有。
+       行数不能放开到两行 —— Chrome 算卡片的最小高度时按行数算，
+       两行的话八张卡一屏就放不下了。 */
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* 阶段角标排成一行：第一行放不下的话让第一个角标里的标题省略，
+     不换行 —— 换行会把卡片撑高，两行卡片一屏就放不下。 */
+  body.home-page .lane-card__stages {
+    flex-wrap: nowrap;
+    margin-bottom: 0;
+    gap: 4px;
+    /* 右边给卡片右下角那个箭头让出位置，别压在「+N 个阶段」上。 */
+    padding-right: 16px;
+    overflow: hidden;
+  }
+  body.home-page .lane-card__stage {
+    font-size: 11px;
+    padding: 2px 6px;
+    min-width: 0;
+    overflow: hidden;
+  }
+  body.home-page .lane-card__stage-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  body.home-page .lane-card__stage--rest { flex-shrink: 0; }
+
+  /* 卡片本身就是一个链接（<a>），「从这条赛道开始」那行字是重复的提示 ——
+     首页把它收成右下角一个小箭头，那 22px 的高度让给卡片内容。 */
+  body.home-page .lane-card__more {
+    position: absolute;
+    right: 12px;
+    bottom: 8px;
+    margin: 0;
+    font-size: 0;
+    line-height: 1;
+  }
+  body.home-page .lane-card__more i { font-size: 13px; }
+
+  /* 八张卡各列全部阶段的话，卡片高度翻三倍、页面要滚两屏。
+     首页只留第一个阶段，后面折成「+N 个阶段」（完整阶段表在赛道页）。 */
+  body.home-page .lane-card__stage:not(:first-child):not(.lane-card__stage--rest) {
+    display: none;
+  }
+  body.home-page .lane-card__stage--rest {
+    color: var(--tech-muted);
+    background: transparent;
+    border: 1px dashed var(--tech-rule);
+  }
+}
+
+/* 高屏幕（1920×1080 这类）：卡片被拉高，简介那行就放开成两行 ——
+   屏幕上地方多，一句话说不完的话没必要截断。 */
+@media (min-width: 1100px) and (min-height: 900px) {
+  body.home-page .lane-card__desc { -webkit-line-clamp: 2; }
+}
+
+/* 矮屏幕（老笔记本、开着开发者工具的浏览器）：视口不到 800px 高的时候，
+   首屏 + 统计条 + 8 张卡放不下，顺序是：先压首屏（打字机那行是装饰性的，
+   先让），再把卡片里那一行简介收起来 —— 简介整句在赛道页上有。
+   统计条和学习路径本身不动，那是首页要看的东西。 */
+@media (min-width: 1100px) and (max-height: 800px) {
+  body.home-page .home-hero { padding: 16px 0 8px; }
+  body.home-page .home-hero__lead { font-size: 1.15rem; }
+  body.home-page .home-hero__search-input { height: 30px; }
+  body.home-page .home-hero .hero-typing { display: none; }
+  body.home-page .lane-card__desc { display: none; }
+  /* 统计条和页脚各让一点出来 —— 两张卡 + 标题要的那点高度。 */
+  body.home-page .stats-banner { margin: 6px 0; }
+  body.home-page .stat-card { padding: 6px 12px; }
+  body.home-page .learning-path { padding: 4px 0; }
+  body.home-page .learning-path .section-title { margin-bottom: 4px; }
+  body.home-page .page-footer { padding-top: 10px; padding-bottom: 8px; }
 }

@@ -18,8 +18,8 @@ carousel——首张 ``about-cover`` 铺着主题默认的模糊橙树照片，�
 4. 首屏带的是**站点定位**（读 ``config.home_hero_lead`` 那句短话，没配
    就退回 ``config.description``），不是一句硬编码的口号；首屏也不再有一行
    重复分类清单的小标签——那 9 个徽章已经列过一遍了；
-5. 首屏有三篇代表作，而且代表作清单来自 ``data/featured.json``
-   （作者可维护的文件），不是硬编码在模板里的标题。
+5. 首屏不再摆「三篇代表作」——那三张卡上的分类全是「源码主线」，
+   等于在首屏摆广告位。首屏要回答的是「这个站是什么、从哪儿开始」。
 
 另外两条是给 ``patch-theme.py`` 的：它曾经拥有那段 hero CSS，也曾经往
 hero partial 里注入统计块和打字机。hero 换掉之后，这两样都得跟着走——
@@ -227,90 +227,52 @@ def test_the_built_home_page_shows_the_short_lead():
     )
 
 
-# --- 5. 三篇代表作，来自可维护的数据文件 ------------------------------------
+# --- 5. 首屏不再摆「三篇代表作」 --------------------------------------------
 
 
-def test_the_hero_shows_three_curated_posts_from_the_data_file():
-    """首屏的三篇代表作来自 ``data/featured.json``。
+def test_the_hero_has_no_curated_post_cards():
+    """首屏不再有三篇代表作。
 
-    清单必须在数据文件里：作者要能改它，而不用去改模板。
+    2026-11-18：那三张卡上的分类全是「源码主线」——等于在首屏摆三个
+    「读源码」的广告位。首屏该回答的是「这个站是什么、从哪儿开始」，
+    那两件事已经由定位句 + 分类徽章 + 「从这里开始」回答了。
     """
-    assert FEATURED_JSON.is_file(), "找不到 data/featured.json"
+    hero = _read(HOME_HERO)
 
-    data = json.loads(FEATURED_JSON.read_text(encoding="utf-8"))
-    hero = data.get("hero")
-    assert isinstance(hero, list), "featured.json 里应当有 hero 列表"
-    assert len(hero) == 3, "首屏应当有 3 篇代表作，实际 {}".format(len(hero))
+    assert "home-hero__featured" not in hero, "首屏的三篇代表作还在"
+    assert "home-hero__card" not in hero, "首屏的代表作卡片还在"
 
-    template = _read(HOME_HERO)
-    assert "site.data.featured" in template or "site.data['featured']" in template, (
-        "home-hero.ejs 应当读 site.data.featured 来取代表作"
+
+def test_the_hero_does_not_read_the_curated_list():
+    """首屏不再读 ``site.data.featured``。"""
+    hero = _read(HOME_HERO)
+
+    assert "site.data.featured" not in hero, (
+        "home-hero.ejs 不该再读 site.data.featured —— 策展清单已经退休"
     )
 
 
-def test_the_hero_can_match_the_slugs_against_a_real_permalink():
-    """首屏的清单匹配必须能从文章的真实 permalink 里认出那条 slug。
+def test_the_curated_list_file_is_gone():
+    """``data/featured.json`` 退休了。
 
-    文章的 ``post.path`` 形如 ``2026/08/18/db/postgresql/learning-path/
-    03-query-pipeline/`` —— **没有前导斜杠**（``url_for`` 之后才有）。
-    早先的正则要求有前导斜杠，于是三张卡一张都渲染不出来：构建不报错、
-    页面只是少三张卡，肉眼很容易看漏。
-
-    这里从模板里把那条正则抠出来，用真实的 permalink 形态跑一遍 ——
-    两种形态（有前导斜杠 / 没有）都要能认出 slug。
+    留着它就是留一份没人读的清单：作者改了它以为首屏会变，其实不会。
     """
-    template = _read(HOME_HERO)
-
-    m = re.search(r"\.match\((/.*?/)\)", template)
-    assert m, "home-hero.ejs 里找不到匹配 permalink 的正则"
-
-    # 去掉正则字面量的首尾斜杠，JS 的转义 `\/` 在 Python 里同样成立。
-    py_pattern = m.group(1)[1:-1].replace("\\/", "/")
-
-    slug = "source-tracks/postgresql/index-and-query/learning-path/03-query-pipeline"
-    for path in (
-        "2026/08/18/{}/".format(slug),
-        "/2026/08/18/{}/".format(slug),
-    ):
-        got = re.search(py_pattern, path)
-        assert got is not None, "正则认不出 permalink：{}".format(path)
-        assert got.group(1).rstrip("/") == slug, (
-            "正则从 {} 里认出的不是清单里那条 slug：{}".format(path, got.group(1))
-        )
+    assert not FEATURED_JSON.exists(), (
+        "data/featured.json 还在 —— 但已经没有人读它了"
+    )
 
 
-def test_the_featured_entries_point_at_real_posts():
-    """清单里的每一条都对应一篇真实存在的文章。
+def test_the_sync_no_longer_copies_the_curated_list():
+    """``sync-hexo.py`` 不再往 ``source/_data/`` 拷 featured.json。
 
-    清单是手写的，文章会改名、会删。指着一个不存在的 slug，
-    首屏就少一张卡——而构建不会报错。
-
-    对着 ``docs/`` 查，不是 ``source/_posts/``：后者是 gitignore 的构建
-    产物，而 CI 的 site-guard **不跑** sync-hexo.py——在那边查，
-    这条测试就成了「本地绿、CI 红」。
-    """
-    data = json.loads(FEATURED_JSON.read_text(encoding="utf-8"))
-    docs_root = REPO / "docs"
-
-    for group in ("hero", "featured"):
-        for slug in data.get(group, []):
-            assert (
-                (docs_root / (slug + ".md")).is_file()
-                or (docs_root / slug / "index.md").is_file()
-            ), "featured.json 的 {} 指向不存在的文章：{}".format(group, slug)
-
-
-def test_the_sync_copies_the_featured_file_into_the_hexo_data_dir():
-    """``sync-hexo.py`` 要把 ``data/featured.json`` 复制到 ``source/_data/``。
-
-    ``source/`` 是 gitignore 的，仓库根的 ``data/`` 才是真相；
-    hexo 的 ``site.data`` 机制读的是 ``source/_data/``。少这一步，
-    ``site.data.featured`` 就是 undefined，首屏一张卡都渲染不出来。
+    ``source/`` 是 gitignore 的构建目录；拷贝这一步没了，那份 JSON 也就
+    不会被挂到 ``site.data`` 上——首屏少一个数据源，而模板已经不读它了。
     """
     sync = _read(SYNC_HEXO)
 
-    assert "featured.json" in sync, "sync-hexo.py 里没有提到 featured.json"
-    assert re.search(r"_data", sync), "sync-hexo.py 没有写 _data 目录"
+    assert "featured.json" not in sync, (
+        "sync-hexo.py 里还提到 featured.json —— 策展清单已经退休"
+    )
 
 
 # --- 6. patch-theme.py 的两处跟着走 -----------------------------------------

@@ -8,10 +8,15 @@
   那一块**整块删掉**了，不留「最新文章」列表：想看文章去「归档」页
   （时间轴 + 年度分页 + 搜索），那里才是看文章的地方。
 
-  现在这一页剩下三段：
-  0. Home hero     (定位句 + 三篇代表作) —— 必须在统计条之前
-  1. Stats banner  (4 cards: 文章数 / 字数 / 站龄 / 评论数)
-  2. 最新一期 + 学习路径
+  同一天，「最新一期」那一块也删掉了（期号 / B站 / 视频号 / 全部期号）：
+  它和首屏的代表作一起把首页变成了三张「作者推荐」的广告位——首屏
+  该回答的是「这个站是什么、从哪儿开始」，不是「作者最近做了什么」。
+  期号本身没消失：「播客」页和文章页的期号区块还在。
+
+  现在这一页剩下两段：
+  0. Home hero     (定位句 + 搜索 + 分类徽章 + 从这里开始) —— 必须在统计条之前
+  1. Stats banner  (4 cards: 文章数 / 字数 / 站龄 / 分类数)
+  2. 学习路径
 
   Render only on the very first page of the home paginator so the
   /page/2/ /page/3/ pseudo-pages stay clean.
@@ -64,8 +69,6 @@
         <div class="stat-label">个分类</div>
       </a>
     </div>
-
-    <%- partial('_partial/latest-episode') %>
 
     <%- partial('_partial/learning-path') %>
   </div>

@@ -1783,12 +1783,12 @@ if os.path.isfile(post_detail):
 else:
     print("WARNING: post-detail.ejs not found for episode-block")
 
-# --- 3.9. Latest episode (首页的「最新一期」) -----------------------------
-# 站点入口之一（契约七 §7.2）：首页上要能一眼看到「最新一期是什么」。
+# --- 3.9. Latest episode：退休 ---
+# 2026-11-18：首页上的「最新一期」块删掉了（见 §14）。
 #
-# partial 手写入库（themes/matery/layout/_partial/latest-episode.ejs），
-# 这里只注入渲染位。数据源是 ``source/_data/podcast_index.json``——
-# 与文章页的期号区块同一个源，首页与期号页说的必须是同一件事。
+# 这一段原来负责往 home-content.ejs 里注入渲染位。**必须一起退休**：
+# 只删 home-content.ejs 里的那行调用而不删注入，CI 构建一次就会把它
+# 原样加回来——本地看着删干净了，线上又长出来。
 LATEST_EPISODE_ANCHORS = (
     "<%- partial('_partial/learning-path') %>",
 )
@@ -1797,21 +1797,18 @@ home_content = os.path.join(theme_dir, "layout", "_partial", "home-content.ejs")
 if os.path.isfile(home_content):
     with open(home_content, encoding="utf-8") as f:
         hc = f.read()
-    if "latest-episode" not in hc:
-        anchor = next((a for a in LATEST_EPISODE_ANCHORS if a in hc), None)
-        if anchor is None:
-            print("WARNING: home-content.ejs has no anchor for latest-episode")
-        else:
-            hc = hc.replace(
-                anchor,
-                "<%- partial('_partial/latest-episode') %>\n\n    " + anchor,
-                1,
-            )
-            with open(home_content, "w", encoding="utf-8") as f:
-                f.write(hc)
-            print("Injected latest-episode before " + anchor)
+    if "latest-episode" in hc:
+        # 已经注入过的（老仓库 / 别人改了又加回来）：把渲染位拆掉。
+        hc = re.sub(
+            r"\s*<%- partial\('_partial/latest-episode'\) %>",
+            "",
+            hc,
+        )
+        with open(home_content, "w", encoding="utf-8") as f:
+            f.write(hc)
+        print("Removed latest-episode render slot from home-content.ejs")
     else:
-        print("latest-episode already present")
+        print("latest-episode not in home-content.ejs, nothing to remove")
 else:
     print("WARNING: home-content.ejs not found for latest-episode")
 
@@ -3035,102 +3032,41 @@ if os.path.isfile(my_css_path):
 else:
     print("my.css not found, skipping episode-block CSS")
 
-# --- 14. Latest episode (首页的「最新一期」) ---
-# 契约七 §7.2 的站点入口。幂等：marker 已在 my.css 里就跳过。
+# --- 14. Latest episode：退休 ---
+# 2026-11-18：首页上的「最新一期」那一块（期号 + 一句话简介 + 看这一期 /
+# 在B站看 / 在视频号看 / 全部期号）删掉了。
+#
+# 理由：首页首屏要回答的是「这个站是什么、从哪儿开始」，不是「作者最近
+# 做了什么视频」。三张「作者推荐」（代表作 + 最新一期）把首屏变成了
+# 三块广告位。期号本身没消失——「播客」页和文章页的期号区块还在
+# （EPISODE-BLOCK 那段没动）。
+#
+# 随之删掉的还有：
+#   * §3.9 里「往 home-content.ejs 注入 latest-episode 渲染位」的那段——
+#     只删渲染位不删注入，CI 构建一次就把这一块又加回来了；
+#   * 这段 LATEST-EPISODE 样式；
+#   * ``themes/matery/layout/_partial/latest-episode.ejs`` 这个 partial。
+
+# 只停止注入不够：仓库里的 my.css 会永远留着旧段——本地构建一次、
+# CI 构建一次，两边的 my.css 就不一样了。这里主动把它剥掉。
 latest_episode_marker = "/* LATEST-EPISODE */"
 my_css_path = os.path.join(theme_dir, "source", "css", "my.css")
-le_css = """/* LATEST-EPISODE */
-.latest-episode {
-    margin: 0 0 28px;
-}
-.latest-episode-inner {
-    padding: 18px 22px;
-    border: 1px solid rgba(0,150,136,.22);
-    border-left: 4px solid #009688;
-    border-radius: 8px;
-    background: linear-gradient(135deg, #f0faf8 0%, #e6f4f1 100%);
-}
-body.DarkMode .latest-episode-inner {
-    background: linear-gradient(135deg, rgba(0,150,136,0.10) 0%, rgba(0,150,136,0.04) 100%);
-    border-color: rgba(77,208,225,.25);
-    border-left-color: #4dd0e1;
-}
-.latest-episode-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: #009688;
-    letter-spacing: 1px;
-    margin-bottom: 8px;
-}
-.latest-episode-head {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 8px 10px;
-}
-.latest-episode-title {
-    font-size: 18px;
-    font-weight: 700;
-    color: #263238;
-    line-height: 1.5;
-}
-.latest-episode-hook {
-    font-size: 14px;
-    line-height: 1.75;
-    color: #37474f;
-    margin-top: 8px;
-}
-.latest-episode-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    margin-top: 12px;
-}
-.latest-episode-link {
-    font-size: 14px;
-    font-weight: 600;
-    color: #fff;
-    background: #009688;
-    padding: 6px 18px;
-    border-radius: 18px;
-    text-decoration: none;
-}
-.latest-episode-link:hover { background: #00796b; color: #fff; }
-.latest-episode-platform {
-    font-size: 13px;
-    color: #009688;
-    border: 1px solid rgba(0,150,136,.35);
-    border-radius: 16px;
-    padding: 5px 14px;
-    text-decoration: none;
-}
-.latest-episode-platform:hover { background: rgba(0,150,136,.10); }
-.latest-episode-all {
-    margin-left: auto;
-    font-size: 13px;
-    color: #455a64;
-    text-decoration: none;
-}
-.latest-episode-all:hover { color: #009688; }
-body.DarkMode .latest-episode-title { color: #eceff1; }
-body.DarkMode .latest-episode-hook { color: #cfd8dc; }
-body.DarkMode .latest-episode-all { color: #b0bec5; }
-@media (max-width: 600px) {
-    .latest-episode-title { font-size: 16px; }
-    .latest-episode-hook { font-size: 13px; }
-    .latest-episode-all { margin-left: 0; }
-}
-"""
 if os.path.isfile(my_css_path):
     with open(my_css_path, encoding="utf-8") as f:
         _mycss = f.read()
     if latest_episode_marker in _mycss:
-        print("latest-episode CSS already present, skipping")
+        _stripped = re.sub(
+            re.escape(latest_episode_marker) + r".*?(?=\n/\* [A-Z]|\Z)",
+            "",
+            _mycss,
+            flags=re.S,
+        )
+        if _stripped != _mycss:
+            with open(my_css_path, "w", encoding="utf-8") as f:
+                f.write(_stripped)
+            print("Stripped LATEST-EPISODE CSS from my.css")
     else:
-        with open(my_css_path, "a", encoding="utf-8") as f:
-            f.write(le_css)
-        print("Appended LATEST-EPISODE CSS to my.css")
+        print("LATEST-EPISODE CSS already gone, skipping")
 else:
     print("my.css not found, skipping latest-episode CSS")
 

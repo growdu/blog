@@ -108,19 +108,17 @@ def test_no_content_template_uses_a_nav_element():
     )
 
 
-def test_the_featured_grid_is_a_section_not_a_nav():
-    """首页的「三篇代表作」不该是 ``<nav>``。
+def test_the_home_hero_has_no_navigable_landing_blocks():
+    """首屏里不许再出现「代表作」那一块。
 
-    它是三篇文章的列表，不是站点导航；而且 ``<nav>`` 的固定 64px 高度
-    正好是「统计条盖住代表作」那件事的成因。
+    2026-11-18：三篇代表作整块删掉了（首屏要回答的是「这个站是什么」，
+    不是「作者推荐什么」）。这一条留着是为了防它改回来——它当初是
+    ``<nav>``，被 Materialize 压成 64px 的红条，把底下的统计条盖住了；
+    改回 ``<section>`` 治的是症状，删掉整块才是根治。
     """
     html = _read(HOME_HERO)
-    assert '<nav class="home-hero__featured"' not in html, (
-        "代表作那一块还是 <nav>：Materialize 会给它 64px 固定高度和 64px 行高，"
-        "卡片会溢出首屏盒子、被下面的统计条盖住"
-    )
-    assert '<section class="home-hero__featured"' in html, (
-        "代表作那一块应该改成 <section class=\"home-hero__featured\">"
+    assert "home-hero__featured" not in html, (
+        "首屏的三篇代表作又回来了 —— 那三张卡上的分类全是「源码主线」"
     )
 
 

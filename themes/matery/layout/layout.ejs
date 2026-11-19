@@ -2,7 +2,10 @@
 <html lang="<%= config.language %>">
 <%- partial('_partial/head') %>
 
-<body class="<%- is_home() && page.current === 1 ? 'home-cn-banner' : '' %>">
+<%# home-page：只有首页第一页有。tech.css 用它把首屏 + 统计条 + 学习路径
+    做成正好一屏（不用滚动就能看完 8 条赛道）。其余页面不带这个类，
+    布局完全不受影响。 %>
+<body class="<%- is_home() && page.current === 1 ? 'home-cn-banner home-page' : '' %>">
     <%- partial('_partial/header') %>
 
     <%- partial('_partial/cn-banner', { cnTarget: 'https://growdu.cn/' }) %>

@@ -20,15 +20,22 @@
 <% if (is_home() && page.current === 1 && _lpTracks.length) { %>
 <section class="learning-path" data-aos="fade-up">
   <div class="container">
+    <%# 标题行：左边标题 + 副标题，右边「看完整的学习地图」。
+        2026-11-18：这条链接原来单独占一行（32px），首页要做成正好一屏，
+        就挪到标题行右边去了 —— 位置一样好找，高度省下来给卡片。 %>
     <div class="section-title">
       <h2><i class="fas fa-compass"></i>&nbsp; 学习路径</h2>
       <p class="section-subtitle">
         全站 <%= _lpData.total %> 篇文章分成 <%= _lpTracks.length %> 条赛道 —— 每条都排好了顺序，挑一条走
       </p>
+      <a class="learning-path__all-link" href="<%- url_for('/learning/') %>">
+        看完整的学习地图<i class="fas fa-arrow-right"></i>
+      </a>
     </div>
 
     <div class="lane-grid lane-grid--tracks">
-      <% _lpTracks.forEach(function (track) { %>
+      <% _lpTracks.forEach(function (track) {
+           var _stages = track.stages || []; %>
       <a class="lane-card lane-card--<%= track.id %>" href="<%- url_for('/learning/' + track.id + '/') %>">
         <div class="lane-card__head">
           <i class="<%= track.icon %> lane-card__icon"></i>
@@ -37,20 +44,23 @@
         </div>
         <p class="lane-card__desc"><%= track.summary %></p>
         <ul class="lane-card__stages">
-          <% (track.stages || []).forEach(function (stage) { %>
-            <li class="lane-card__stage"><span class="lane-card__stage-id"><%= stage.id %></span><%= stage.title %></li>
+          <% _stages.forEach(function (stage) { %>
+            <li class="lane-card__stage">
+              <span class="lane-card__stage-id"><%= stage.id %></span>
+              <span class="lane-card__stage-title"><%= stage.title %></span>
+            </li>
           <% }); %>
+          <%# 「+N 个阶段」——首页的卡片只放得下第一个阶段，后面几个折成
+              一个数字（完整阶段表在 /learning/<track>/ 那一页）。
+              2026-11-18：首页要做成正好一屏，八张卡各列出全部阶段的话
+              卡片高度翻三倍，页面就得滚两屏。 %>
+          <% if (_stages.length > 1) { %>
+            <li class="lane-card__stage lane-card__stage--rest">+<%= _stages.length - 1 %> 个阶段</li>
+          <% } %>
         </ul>
         <span class="lane-card__more">从这条赛道开始 <i class="fas fa-arrow-right"></i></span>
       </a>
       <% }); %>
-    </div>
-
-    <div class="learning-path__all">
-      <a class="learning-path__all-link" href="<%- url_for('/learning/') %>">
-        看完整的学习地图 —— <%= _lpTracks.length %> 条赛道 · <%= _lpData.total %> 篇文章，每一篇都有位置
-        <i class="fas fa-arrow-right"></i>
-      </a>
     </div>
   </div>
 </section>
