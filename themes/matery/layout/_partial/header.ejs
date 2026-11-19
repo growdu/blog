@@ -6,7 +6,19 @@
                     <% if (theme.logo !== undefined && theme.logo.length > 0) { %>
                     <img src="<%- theme.jsDelivr.url %><%- url_for(theme.logo) %>" class="logo-img" alt="LOGO">
                     <% } %>
+                    <%# 2026-11-19：首页上站名是 h1 —— 首页的 h1 就是站名。
+
+                        定位句原来在首页上也是 h1（搬进导航栏的时候），
+                        现在首页不显示它了：首页只有统计条 + 学习路径，
+                        导航栏里再挂一句口号，读者第一眼看到的应该是
+                        「这个站有多少东西」，不是一句自夸。
+
+                        别的页面 h1 是文章标题，定位句用 span —— 两处不打架。 %>
+                    <% if (is_home()) { %>
+                    <h1 class="logo-span"><%= config.title %></h1>
+                    <% } else { %>
                     <span class="logo-span"><%= config.title %></span>
+                    <% } %>
                 </a>
                 <%# 2026-11-19：定位句从首屏搬到了这儿 —— 紧跟在站名后面。
 
@@ -15,14 +27,12 @@
                     读者的第一眼就是它，而且每一页都在（文章页的站名旁边
                     也有一句，比首屏那句更常被看到）。
 
-                    首页上它是 h1 —— 首页的 h1 就是这句定位；别的页面
-                    文章标题才是 h1，那里用 span，两处不会打架。
+                    **首页不显示它**（上面那个 h1 的注释里说了为什么）：
+                    别的页面上它是 span，跟着站名走。
 
                     读的是 config.home_hero_lead（给人看的短句），没配就
                     退回 config.description（给搜索引擎看的那句长描述）。 %>
-                <% if (is_home()) { %>
-                <h1 class="logo-tagline"><%= config.home_hero_lead || config.description %></h1>
-                <% } else { %>
+                <% if (!is_home()) { %>
                 <span class="logo-tagline"><%= config.home_hero_lead || config.description %></span>
                 <% } %>
             </div>

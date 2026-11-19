@@ -182,7 +182,11 @@ def test_the_tagline_sits_right_after_the_site_title_in_the_navbar():
     """定位句住在导航栏里，**紧跟在站名后面**。
 
     2026-11-19：定位句从首屏搬到了导航栏。站名「growdu」后面跟一句
-    「让写代码成为一种习惯」——第一眼看到的是它，而不是要往下滚才看到。
+    「让写代码成为一种习惯」——不用往下滚就看到。
+
+    同一天再调一次：**首页不显示它**（首页只有统计条 + 学习路径，
+    导航栏里挂着口号，第一眼看到的应该是「这个站有多少东西」）。
+    别的页面照旧显示。
 
     守两件事：一是在导航栏模板里（不在首页正文里），二是排在
     ``logo-span``（站名）**之后** —— 顺序反了就成了「口号 · 站名」。
@@ -247,8 +251,11 @@ def test_the_tagline_does_not_repeat_the_category_list():
     )
 
 
-def test_the_built_home_page_shows_the_short_lead_in_the_navbar():
-    """构建产物里，导航栏里是那句短句——不是 SEO 的长描述。
+def test_the_built_home_page_does_not_show_the_tagline():
+    """构建产物里，**首页导航栏里没有那句定位**。
+
+    2026-11-19：定位句在别的页面照旧显示，首页不显示 —— 首页只有统计条
+    + 学习路径，第一眼看到的应该是「这个站有多少东西」，不是一句口号。
 
     对着 ``public/index.html`` 查，不是对着模板查：模板对了、产物没对，
     中间隔着的正是 sync-hexo 和 patch-theme 那两步。
@@ -260,16 +267,15 @@ def test_the_built_home_page_shows_the_short_lead_in_the_navbar():
         pytest.skip("还没构建（public/index.html 不存在）")
 
     html = built.read_text(encoding="utf-8")
-    m = re.search(r'<h1 class="logo-tagline">(.*?)</h1>', html, re.S)
-    assert m, "首页导航栏里的 h1 不见了"
-    lead = m.group(1).strip()
+
+    assert "logo-tagline" not in html, "首页导航栏里还有那句定位"
 
     config = _read(REPO / "_config.yml")
     m2 = re.search(r"^home_hero_lead:\s*(.+)$", config, re.M)
     assert m2, "_config.yml 里没有 home_hero_lead"
     expect = m2.group(1).strip().strip("'\"")
-    assert lead == expect, "导航栏里的是「{}」，配置里写的是「{}」".format(lead, expect)
-    assert len(lead) <= 24, "导航栏里那句太长了：{}".format(lead)
+    assert expect not in html, "首页还在显示「{}」".format(expect)
+
     assert "home-hero__eyebrow" not in html, "首页还有那行重复分类清单的小标签"
     assert "技术·学习·实践·人生·哲学" not in html, (
         "首页还在显示那行「技术·学习·实践·人生·哲学」"
@@ -277,11 +283,12 @@ def test_the_built_home_page_shows_the_short_lead_in_the_navbar():
 
 
 def test_the_home_page_only_has_one_h1():
-    """首页只有一个 h1 —— 导航栏里那句定位。
+    """首页只有一个 h1 —— 站名「growdu」。
 
-    首页原来那个 h1 在首屏那块里，首屏退休后就没有了。定位句搬到导航栏
-    之后，h1 跟着它走（首页的 h1 就是这句定位）；别的页面 h1 是文章标题，
-    那里用的是 span —— 两处不会打架。
+    首页原来那个 h1 在首屏那块里，首屏退休后就没有了。定位句搬进导航栏
+    之后，h1 跟着它走；后来首页不显示定位句了，h1 就落到**站名**身上
+    （``<h1 class="logo-span">``）—— 首页总得有一个 h1，别的页面 h1 是
+    文章标题，两处不会打架。
     """
     built = REPO / "public" / "index.html"
     if not built.is_file():
@@ -293,7 +300,9 @@ def test_the_home_page_only_has_one_h1():
     h1s = re.findall(r"<h1\b[^>]*>(.*?)</h1>", html, re.S)
 
     assert len(h1s) == 1, "首页有 {} 个 h1：{}".format(len(h1s), h1s)
-    assert "logo-tagline" in html, "首页的 h1 不是导航栏里那句定位"
+    assert re.search(r'<h1 class="logo-span">.*?</h1>', html, re.S), (
+        "首页的 h1 不是站名"
+    )
 
 
 # --- 4. 首页那两段不要入场动画 ---------------------------------------------
@@ -475,12 +484,42 @@ def test_the_tagline_has_a_style_of_its_own():
     """导航栏里那句定位有自己的样式。
 
     新样式只放 ``tech.css``（docs/blog/重构方案.md §5.4）—— 而且得
-    真的有：定位句是 ``<h1>``（首页），matery 的 h1 是 4.2rem，不重置
-    的话它会把这个导航栏撑成两行。
+    真的有：定位句是 ``<span>``，matery 的 h1 是 2.0rem；首页上站名是
+    ``<h1>``，那一处得单独重置（``h1.logo-span``），不然会把导航栏撑成
+    两行。
     """
     css = _strip_comments(_read(TECH_CSS))
 
     assert ".logo-tagline" in css, "tech.css 里没有 .logo-tagline 的样式"
+
+
+def test_the_home_page_h1_is_reset_so_the_navbar_does_not_grow():
+    """首页的站名是 ``<h1>``，样式得按 ``.logo-span`` 重置。
+
+    matery 的 ``h1`` 是**块级**元素，还带 48px 的上外边距：不重置的话，
+    它会把导航栏里的 LOGO 挤到下一行，导航栏凭空高一块 —— 首页又是
+    「正好一屏」的版面，多出来的那一块就把学习路径面板挤扁了。
+
+    重置的三样：``display: inline``（别变成块级）、``margin: 0``（去掉
+    48px 外边距）、字重行高继承（matery 的 h1 是 bold + 2.0rem 行高）。
+    """
+    css = _strip_comments(_read(TECH_CSS))
+
+    block = re.search(
+        r"header \.brand-logo h1\.logo-span\s*\{([^}]*)\}", css, re.S
+    )
+    assert block, "tech.css 里没有 h1.logo-span 的重置 —— 首页的站名会把导航栏撑破"
+
+    rules = block.group(1)
+    assert "display: inline" in rules, (
+        "h1 默认是块级元素 —— 它会把导航栏里的 LOGO 挤到下一行"
+    )
+    assert "margin: 0" in rules, (
+        "h1 默认有 48px 的上外边距 —— 导航栏会凭空高一块"
+    )
+    assert "font-weight: inherit" in rules and "line-height: inherit" in rules, (
+        "h1 默认是 bold + 2.0rem 行高 —— 站名会比别的页面粗一号"
+    )
 
 
 def test_the_hero_stylesheet_is_linked_from_the_layout():
