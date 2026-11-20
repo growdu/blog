@@ -166,7 +166,7 @@ def test_other_pages_keep_the_footer_counters():
         )
 
 
-# --- 3. 统计条是五列 --------------------------------------------------------
+# --- 3. 统计条是五列，而且**永远**是五列 -----------------------------------
 
 
 def test_the_stats_banner_has_five_columns():
@@ -176,13 +176,45 @@ def test_the_stats_banner_has_five_columns():
     """
     css = _strip_comments(_read(MY_CSS))
 
-    m = re.search(r"\.stats-banner\s*\{[^}]*grid-template-columns:\s*repeat\((\d+),\s*1fr\)", css)
+    m = re.search(
+        r"\.stats-banner\s*\{[^}]*grid-template-columns:\s*repeat\(\s*(\d+)\s*,",
+        css,
+    )
     assert m, "my.css 里读不出统计条的列数"
     assert int(m.group(1)) == 5, (
         "统计条是 {} 列 —— 应该是 5 列（文章 / 字数 / 天数 / 访问量 / 访问人数）".format(
             m.group(1)
         )
     )
+
+
+def test_the_stats_banner_is_never_allowed_to_wrap_into_two_rows():
+    """统计条**任何宽度下都是一行**。
+
+    2026-11-20：≤992px 那条媒体查询把列数改成了 3，五个格子于是排成
+    「3 + 2」两排 —— 访客看到的是一条断成两截的统计带。窄屏上靠缩小
+    字号来放下，而不是让它折行。
+
+    所以：``.stats-banner`` 上所有 ``grid-template-columns`` 都得是 5 列，
+    媒体查询里也不许再出现别的列数。
+    """
+    css = _strip_comments(_read(MY_CSS))
+
+    counts = re.findall(
+        r"\.stats-banner\s*\{[^}]*grid-template-columns:\s*repeat\(\s*(\d+)\s*,",
+        css,
+    )
+    assert counts, "my.css 里读不出统计条的列数"
+    for count in counts:
+        assert int(count) == 5, (
+            "统计条在某处被改成了 {} 列 —— 五个格子会排成两排".format(count)
+        )
+
+    # 也不许用别的方式改列数（比如 grid-template-columns: 1fr 那种写法）
+    other = re.findall(
+        r"\.stats-banner\s*\{[^}]*grid-template-columns:(?!\s*repeat\()", css
+    )
+    assert not other, "my.css 里还有别的 grid-template-columns 写法 —— 统计条会折行"
 
 
 def test_the_patcher_and_the_stylesheet_agree_on_the_column_count():
@@ -193,12 +225,40 @@ def test_the_patcher_and_the_stylesheet_agree_on_the_column_count():
     """
     patcher = _read(PATCH_THEME)
 
-    m = re.search(
-        r"\.stats-banner \{\\n    display: grid;\\n"
-        r"    grid-template-columns: repeat\((\d+), 1fr\);",
-        patcher,
+    # 先把注入的那段 CSS 抠出来（hc_css = '...'），再在里面找列数
+    start = patcher.index("hc_css = '")
+    end = patcher.index("\nif os.path.isfile(my_css_path):", start)
+    literal = patcher[start:end]
+
+    counts = re.findall(r"grid-template-columns:\s*repeat\(\s*(\d+)\s*,", literal)
+    assert counts, "patch-theme.py 里读不出统计条的列数"
+    for count in counts:
+        assert int(count) == 5, (
+            "patch-theme.py 注入的统计条是 {} 列 —— 应该是 5 列".format(count)
+        )
+
+
+def test_the_homepage_renders_five_stat_cards():
+    """构建产物里，统计条是五格。
+
+    五格都在一行上 —— DOM 里的格子数对了，CSS 再排成两排就还是不对；
+    CSS 那条由 ``test_the_stats_banner_is_never_allowed_to_wrap_into_two_rows``
+    守着。
+    """
+    built = REPO / "public" / "index.html"
+    if not built.is_file():
+        import pytest
+
+        pytest.skip("还没构建（public/index.html 不存在）")
+
+    html = built.read_text(encoding="utf-8")
+
+    banner_at = html.find('class="stats-banner"')
+    assert banner_at != -1, "构建产物里没有 stats-banner"
+    banner_end = html.find("</section>", banner_at)
+
+    banner = html[banner_at:banner_end]
+    assert banner.count('class="stat-card') == 5, (
+        "统计条里是 {} 格 —— 应该是 5 格".format(banner.count('class="stat-card'))
     )
-    assert m, "patch-theme.py 里读不出统计条的列数"
-    assert int(m.group(1)) == 5, (
-        "patch-theme.py 注入的统计条是 {} 列 —— 应该是 5 列".format(m.group(1))
-    )
+

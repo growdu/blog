@@ -366,8 +366,11 @@ body.DarkMode .learning-path__all-link:focus-visible {
     margin: 0 0 8px;
   }
 
-  body.home-page .stat-card { padding: 9px 12px; }
-  body.home-page .stat-num { font-size: 21px; margin-bottom: 0; }
+  /* 统计条压扁：数字小一圈，省下来的高度给学习路径。
+     它现在是一整条（五格并排，格间一道细线），所以只调内边距和字号，
+     颜色和分隔线归 my.css 管。 */
+  body.home-page .stat-card { padding: 12px 8px; }
+  body.home-page .stat-num { font-size: 20px; margin-bottom: 2px; }
   body.home-page .stat-label { font-size: 12px; }
 
   /* --- 下面那块：学习路径 ------------------------------------------------ */

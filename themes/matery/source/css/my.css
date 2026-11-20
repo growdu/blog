@@ -949,59 +949,85 @@ html { scroll-behavior: smooth; }
     margin-top: 24px;
     padding-bottom: 24px;
 }
+/* 2026-11-20：统计条重做成**一整条**，不再是五张各自独立的卡片。
+
+   原来五张白卡片各带一个 30px 的黑体数字，一眼看过去是一排黑字 ——
+   又重又吵。现在它们合成一条：白底、圆角、格与格之间一道细分隔线，
+   数字改成站点的青绿（#009688），标签压成灰字。数字是「事实」，标签
+   是「说明」，两者分开。
+
+   **永远一行**：五个格子用 grid 固定成五列，任何宽度都不换行 ——
+   窄屏上靠缩小字号来放下，而不是让统计条折成两三排（折行会让首页
+   从「一屏」变成「一屏半」）。 */
 .stats-banner {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 14px;
+    /* minmax(0, 1fr) 而不是 1fr：1fr 的下限是 auto（= 内容的最小宽度），
+       一个长数字就能把整条撑到比视口还宽 —— 窄屏上整页跟着横向滚动。
+       下限归零之后格子可以被压窄，数字自己截断。 */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     margin: 24px 0 36px;
+    background: var(--stat-card-bg, #fff);
+    border: 1px solid rgba(0,0,0,0.05);
+    border-radius: 14px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    overflow: hidden;
 }
 .stat-card {
     display: block;
-    padding: 22px 14px;
+    padding: 16px 10px;
     text-align: center;
-    background: var(--stat-card-bg, #fff);
     color: var(--stat-card-fg, #263238);
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    transition: transform .15s ease, box-shadow .15s ease;
     text-decoration: none;
+    border-right: 1px solid rgba(0,0,0,0.06);
+    transition: background .15s ease;
+    /* grid 项默认 min-width:auto —— 数字太长时会把整条撑宽、页面横向
+       滚动。归零之后格子可以被压窄，数字自己截断。 */
+    min-width: 0;
 }
-.stat-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.10);
-    color: #009688;
+/* 最后一格不画右边那条线，否则贴着圆角会出现一道孤零零的竖线。 */
+.stat-card:last-child { border-right: none; }
+a.stat-card:hover {
+    background: rgba(0,150,136,0.06);
+    color: inherit;
 }
-/* 访问量那两格不是链接（没有去处），所以不跟着鼠标抬起来。 */
+/* 访问量那两格不是链接（没有去处），所以不跟着鼠标变色。 */
 .stat-card--counter { cursor: default; }
-.stat-card--counter:hover {
-    transform: none;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    color: var(--stat-card-fg, #263238);
-}
 .stat-num {
-    font-size: 30px;
-    font-weight: 800;
-    margin-bottom: 4px;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 2px;
+    color: #009688;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    /* 数字再长也不许把这一条撑宽（窄屏上五格并排，最长的那个说了算）。 */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .stat-label {
-    font-size: 13px;
-    opacity: 0.7;
+    font-size: 12.5px;
+    color: #78909c;
+    letter-spacing: 0.2px;
 }
-body.DarkMode .stat-card {
+body.DarkMode .stats-banner {
     background: #1e272c;
-    color: #eceff1;
+    border-color: rgba(255,255,255,0.06);
 }
-body.DarkMode .stat-card:hover { color: #4dd0e1; }
-body.DarkMode .stat-card--counter:hover { color: #eceff1; }
+body.DarkMode .stat-card { border-right-color: rgba(255,255,255,0.07); }
+body.DarkMode .stat-num { color: #4dd0e1; }
+body.DarkMode .stat-label { color: #90a4ae; }
+body.DarkMode a.stat-card:hover { background: rgba(77,208,225,0.08); }
 
-/* Responsive */
+/* Responsive —— 只缩字号，不换行 */
 @media (max-width: 992px) {
-    .stats-banner { grid-template-columns: repeat(3, 1fr); }
+    .stat-num { font-size: 22px; }
+    .stat-label { font-size: 12px; }
 }
 @media (max-width: 600px) {
-    .stats-banner { grid-template-columns: repeat(2, 1fr); }
-    .stat-num { font-size: 24px; }
+    .stats-banner { margin: 16px 0 24px; }
+    .stat-card { padding: 12px 6px; }
+    .stat-num { font-size: 13px; }
+    .stat-label { font-size: 11px; letter-spacing: 0; }
 }
 /* LEARNING-PATH-PANEL */
 .learning-path {
@@ -1560,11 +1586,12 @@ body.wechat-qr-modal-open { overflow: hidden; }
     .section-title h2 { font-size: 20px; }
     .section-subtitle { font-size: 12px; padding: 0 8px; line-height: 1.5; }
 
-    /* 统计横幅：保留 2 列布局（<=992px 时已切换），只压缩 padding 与字号 */
-    .stats-banner { gap: 10px; margin: 16px 0 24px; }
-    .stat-card { padding: 16px 8px; }
-    .stat-num { font-size: 22px; margin-bottom: 2px; }
-    .stat-label { font-size: 12px; }
+    /* 统计横幅：**还是一行**（五列），只压缩 padding 与字号。
+       折成两排会让首页从「一屏」变成「一屏半」。 */
+    .stats-banner { margin: 16px 0 24px; }
+    .stat-card { padding: 12px 6px; }
+    .stat-num { font-size: 13px; margin-bottom: 2px; }
+    .stat-label { font-size: 11px; letter-spacing: 0; }
 
     /* 学习路径整体：缩小外边距与内边距 */
     .learning-path { margin: 24px 0 12px; padding: 18px 0; border-radius: 12px; }
@@ -1585,11 +1612,12 @@ body.wechat-qr-modal-open { overflow: hidden; }
 
 }
 
-/* 极小屏（<=400px，老 iPhone/SE 1 代等）：stats-banner 改为单列 */
+/* 极小屏（<=400px，老 iPhone/SE 1 代等）：统计条**还是一行**，
+   靠更小的字号把五个格子塞下 —— 折行会让首页多出一屏。 */
 @media (max-width: 400px) {
-    .stats-banner { grid-template-columns: 1fr; gap: 8px; }
-    .stat-card { padding: 14px 10px; }
-    .stat-num { font-size: 22px; }
+    .stat-card { padding: 10px 3px; }
+    .stat-num { font-size: 12px; }
+    .stat-label { font-size: 10px; }
 }
 
 /* ============================================================
