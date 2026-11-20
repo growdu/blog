@@ -951,7 +951,7 @@ html { scroll-behavior: smooth; }
 }
 .stats-banner {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 14px;
     margin: 24px 0 36px;
 }
@@ -971,6 +971,13 @@ html { scroll-behavior: smooth; }
     box-shadow: 0 6px 18px rgba(0,0,0,0.10);
     color: #009688;
 }
+/* 访问量那两格不是链接（没有去处），所以不跟着鼠标抬起来。 */
+.stat-card--counter { cursor: default; }
+.stat-card--counter:hover {
+    transform: none;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    color: var(--stat-card-fg, #263238);
+}
 .stat-num {
     font-size: 30px;
     font-weight: 800;
@@ -986,12 +993,14 @@ body.DarkMode .stat-card {
     color: #eceff1;
 }
 body.DarkMode .stat-card:hover { color: #4dd0e1; }
+body.DarkMode .stat-card--counter:hover { color: #eceff1; }
 
 /* Responsive */
 @media (max-width: 992px) {
-    .stats-banner { grid-template-columns: repeat(2, 1fr); }
+    .stats-banner { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 600px) {
+    .stats-banner { grid-template-columns: repeat(2, 1fr); }
     .stat-num { font-size: 24px; }
 }
 /* LEARNING-PATH-PANEL */

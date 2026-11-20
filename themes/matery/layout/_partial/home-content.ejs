@@ -28,6 +28,16 @@
   留着它就是一张链到 /categories/ 的死链。统计条从 4 张变 3 张
   （CSS 那边 grid 也跟着从 4 列改成 3 列）。
 
+  **2026-11-20**：「总访问数」「总访问人数」也搬到了最上面，统计条
+  从 3 张变 5 张。这两个数原来只在 footer 里，读者要滚到底才看得到；
+  它们是「这站有多少人看过」的答案，跟「有多少篇文章」是同一层级的
+  事实，应该并排摆在最上面。
+
+  这两个数是不蒜子的脚本在浏览器里填的，脚本按**固定的 id** 找元素
+  （busuanzi_value_site_pv / busuanzi_value_site_uv）—— 一个页面里
+  同名的 id 只能有一个，脚本只会填到第一个。所以首页这两格用的就是
+  footer 那两个 id，首页的 footer 就不再重复渲染一次（见 footer.ejs）。
+
   **这两段都不带 data-aos**：首页是一个「正好一屏」的固定版面，AOS 的
   fade-up 会把内容整体往下挪 100px 再淡入 —— 那 100px 让页面在动画
   期间比视口高出一截，滚动条会闪一下，内容还会跳一下。一屏的版面
@@ -80,6 +90,19 @@
       </a>
       <%# 2026-11-19：「个分类」那块退休了 —— 分类页整个删掉了，
           留着它就是一个链到 /categories/ 的死链。 %>
+      <%# 2026-11-20：总访问数 / 总访问人数 也摆到最上面。
+          这两格的值由不蒜子的脚本在浏览器里填 —— 脚本按固定的 id 找
+          元素，所以这里用的就是 footer 那两个 id（同一个页面里同名的
+          id 只能有一个，首页的 footer 因此不再重复渲染，见 footer.ejs）。
+          脚本没加载出来之前先显示一个占位符。 %>
+      <div class="stat-card stat-card--counter">
+        <div class="stat-num"><span id="busuanzi_value_site_pv">—</span></div>
+        <div class="stat-label"><%- __('siteTotalVisits') %></div>
+      </div>
+      <div class="stat-card stat-card--counter">
+        <div class="stat-num"><span id="busuanzi_value_site_uv">—</span></div>
+        <div class="stat-label"><%- __('siteTotalVisitors') %></div>
+      </div>
     </div>
   </div>
 </section>

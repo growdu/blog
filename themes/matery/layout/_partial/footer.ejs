@@ -28,13 +28,20 @@
             <% if (theme.busuanziStatistics && theme.busuanziStatistics.enable) { %>
                 <% socialClass = 'social-statis' %>
             <% } %>
-            <% if (theme.busuanziStatistics && theme.busuanziStatistics.totalTraffic) { %>
+            <%# 2026-11-20：首页的统计条顶上已经有「总访问数 / 总访问人数」
+                了（见 home-content.ejs）。不蒜子的脚本按固定的 id 填值，
+                一个页面里同名的 id 只能有一个 —— 首页要是再渲染一遍，
+                脚本只会填到第一个（顶上那两格），footer 里这两个就剩
+                一个空壳（标签还在、数字没了）。所以首页的 footer 不重复
+                渲染这两个数；别的页面照旧。 %>
+            <% const showSiteCounters = !(is_home() && page.current === 1); %>
+            <% if (showSiteCounters && theme.busuanziStatistics && theme.busuanziStatistics.totalTraffic) { %>
                 <span id="busuanzi_container_site_pv">
                 &nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;<%- __('siteTotalVisits') %>:&nbsp;
                     <span id="busuanzi_value_site_pv" class="white-color"></span>
             </span>
             <% } %>
-            <% if (theme.busuanziStatistics && theme.busuanziStatistics.totalNumberOfvisitors) { %>
+            <% if (showSiteCounters && theme.busuanziStatistics && theme.busuanziStatistics.totalNumberOfvisitors) { %>
                 <span id="busuanzi_container_site_uv">
                 &nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;<%- __('siteTotalVisitors') %>:&nbsp;
                     <span id="busuanzi_value_site_uv" class="white-color"></span>
