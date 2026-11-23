@@ -398,3 +398,101 @@ def test_the_learning_map_link_sits_in_the_title_row():
     assert ".learning-path__all " not in css and ".learning-path__all{" not in css, (
         "my.css/tech.css 里还留着 .learning-path__all 那层外壳的样式"
     )
+
+
+# --- 7. 首页放宽、字放大、顶部压短（2026-11-23） -----------------------------
+
+
+def _decl(block: str, selector: str, prop: str) -> str:
+    """从一段 CSS 里取某个选择器的某个属性的值。
+
+    选择器后面必须紧跟 ``{`` —— 所以查 ``.lane-card`` 不会撞上
+    ``.lane-card__title``。
+    """
+    m = re.search(re.escape(selector) + r"\s*\{([^}]*)\}", block, re.S)
+    assert m, "tech.css 这段里没有 {}".format(selector)
+    d = re.search(re.escape(prop) + r"\s*:\s*([^;]+)", m.group(1))
+    assert d, "{} 里没有 {}".format(selector, prop)
+    return d.group(1).strip()
+
+
+def _px(value: str) -> float:
+    m = re.search(r"([\d.]+)px", value)
+    assert m, "不是一个 px 值：{}".format(value)
+    return float(m.group(1))
+
+
+def test_the_homepage_is_wider_than_the_rest_of_the_site():
+    """首页的内容区要比全站宽。
+
+    全站的 ``.container`` 上限是 1125px（``matery.css``）：首页在 1440 屏
+    上左右各空 158px、1920 屏上各空 398px —— 边上的空白比中间的内容还
+    抢眼（用户原话：「两边空白太多」）。首页单独放宽到 1560px，
+    1440 屏上边距收到 43px。
+
+    放宽的规则必须落在 ``body.home-page`` 上 —— 只放宽首页，别把文章页
+    也拉宽（文章页的正文宽度是另一回事）。
+    """
+    block = _home_page_block(_read(TECH_CSS))
+
+    width = _px(_decl(block, "body.home-page .container", "max-width"))
+    assert width >= 1400, (
+        "首页的内容区还是全站那个窄版（{}px）—— 两边的空白比内容还抢眼".format(width)
+    )
+    assert width <= 1600, "首页放宽到 {}px 了，太宽了行".format(width)
+
+
+def test_the_learning_path_grid_lines_up_with_the_stats_banner():
+    """卡片网格要和统计条贴着同一条边。
+
+    学习路径面板里面还套着一个 ``.container``（卡片网格就在它里面）。
+    面板自己已经在 94% 的外层容器里了，里面那层再乘一次 94%，
+    卡片会比统计条往里缩 40px —— 一页里两排东西左边对不齐。
+    里面这层回到 100%，卡片网格自己的 16px 内边距就是面板的留白。
+    """
+    block = _home_page_block(_read(TECH_CSS))
+
+    value = _decl(block, "body.home-page .learning-path > .container", "width")
+    assert value == "100%", (
+        "面板里面那层容器不是 100% —— 卡片网格会比统计条往里缩一块"
+    )
+
+
+def test_the_homepage_type_is_big_enough_to_read():
+    """卡片和统计条上的字不能是小字。
+
+    用户原话：「中间的内容太小了」。首页的卡片标题 16px、简介 13.5px、
+    阶段角标 12.5px，统计数字 22px，段落标题 22px —— 比改之前大一号。
+
+    这里守的是**下限**：再往小压，首页就回到「看不清」的状态了。
+    """
+    block = _home_page_block(_read(TECH_CSS))
+
+    floors = [
+        ("body.home-page .lane-card__title", 16),
+        ("body.home-page .lane-card__desc", 13),
+        ("body.home-page .lane-card__stage", 12),
+        ("body.home-page .stat-num", 22),
+        ("body.home-page .learning-path .section-title h2", 22),
+    ]
+    for selector, floor in floors:
+        size = _px(_decl(block, selector, "font-size"))
+        assert size >= floor, (
+            "{} 只有 {}px —— 太小了（至少 {}px）".format(selector, size, floor)
+        )
+
+
+def test_the_top_of_the_homepage_is_compressed():
+    """统计条上面和下面的留白要收紧。
+
+    用户原话：「顶部也太长」。统计条上下的留白各收一收，省下来的高度
+    给下面的卡片 —— 一屏还是一屏，但卡片更高、网格上沿更靠上。
+    """
+    block = _home_page_block(_read(TECH_CSS))
+
+    top = _px(_decl(block, "body.home-page .home-stats", "padding-top"))
+    assert top <= 8, "统计条上面的留白还是 {}px —— 顶部太长".format(top)
+
+    margin = _decl(block, "body.home-page .stats-banner", "margin")
+    bottom = _px(margin.split()[-1])
+    assert bottom <= 8, "统计条下面的留白还是 {}px —— 顶部太长".format(bottom)
