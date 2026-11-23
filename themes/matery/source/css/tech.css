@@ -423,7 +423,19 @@ body.DarkMode .learning-path__all-link:focus-visible {
     flex-direction: column;
     min-height: 0;
     margin: 0;
-    padding: 6px 0 10px;
+    padding: 6px 0 4px;
+  }
+
+  /* 页脚：社交图标落到版权下面一行（见文件末尾那条 .page-footer 规则 ——
+     版权居中、页脚收窄），页脚因此高了三四十像素。首页正好一屏，
+     这点高度从页脚自己身上找回来：上下留白收紧、行距压一档。 */
+  body.home-page .page-footer {
+    padding-top: 4px;
+    padding-bottom: 8px;
+  }
+  body.home-page .page-footer .copy-right {
+    /* 15px 的字，行高 1.5 → 1.4：四行省出 6px，给图标那行的下留白。 */
+    line-height: 1.4;
   }
 
   body.home-page .learning-path > .container {
@@ -650,5 +662,47 @@ body.DarkMode .learning-path__all-link:focus-visible {
   body.home-page .stat-card { padding: 6px 12px; }
   body.home-page .learning-path { padding: 4px 0; }
   body.home-page .learning-path .section-title { margin-bottom: 4px; }
-  body.home-page .page-footer { padding-top: 10px; padding-bottom: 8px; }
+  body.home-page .page-footer { padding-top: 4px; padding-bottom: 4px; }
 }
+
+/* --- 页脚：版权居中，内容别摊开 --------------------------------------------
+
+   2026-11-23：首页放宽到 1560px 之后，页脚也跟着摊开了 —— 版权那行字
+   被塞在左边八列里（页面的四分之一处），社交图标甩到最右边，中间空一大
+   片。用户的话：「页脚的 copyright 没居中，然后页脚也太宽了」。
+
+   两处一起改：
+   - **版权居中**：那一行现在是 `col m8 l8`（三分之二宽），文字在这半边
+     里居中 —— 不管页面多宽，它都离页面正中差着四分之一页。改成竖排：
+     版权占满一整行，社交图标落到下面一行，两行都在页面正中。
+   - **页脚别太宽**：内容收到 860px 宽居中。版权那几行字（版权、字数、
+     运行天数、ICP 备案）加起来不到 500px，摊到 1560px 上只是把两堆
+     东西推得更远。页脚的绿底还是满宽的 —— 收窄的只是里面的内容。
+
+   这条是全站的，不只首页：版权那句本来就该在页面正中，首页摊开了、
+   文章页缩着，两边一个样才对。 */
+.page-footer .container.row {
+  /* materialize 的 .row **不是 flex**，里面的列是 `float: left` ——
+     光写 flex-direction 没用，列还是并排浮着。改成 flex 容器，
+     竖着排：版权一行、图标一行。 */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 90%;
+  max-width: 860px;
+}
+/* 两块各占满一行 —— 不再是「左边三分之二 + 右边三分之一」。
+   选择器里带上 .container.row：materialize 那条是 `.row .col.m8`
+   （**三个**类，比 `.page-footer .copy-right` 特异性高，不带就压不住它）。
+   float 在 flex 容器里不起作用，但清掉更保险。 */
+.page-footer .container.row .copy-right,
+.page-footer .container.row .social-link {
+  float: none;
+  width: 100%;
+  max-width: 100%;
+}
+/* 社交图标落到版权下面那行，居中；离版权那几行字留一点距离。 */
+.page-footer .social-link {
+  margin-top: 8px;
+}
+
