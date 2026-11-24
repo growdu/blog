@@ -40,7 +40,7 @@ jobs:
           # 那条检查只能跳过——拉完整历史才能让它真的在 CI 里跑起来。
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
