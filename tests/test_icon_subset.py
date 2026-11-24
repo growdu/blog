@@ -259,6 +259,71 @@ def test_every_used_icon_lives_in_the_font_of_its_family() -> None:
     assert checked > 30, f"只核对了 {checked} 个图标，扫描多半没生效"
 
 
+# --- 脚本里换上去的图标 ----------------------------------------------------
+
+
+def test_the_icons_swapped_in_by_javascript_are_not_cut_out() -> None:
+    """脚本里 ``addClass`` 上去的图标，码位不能被裁掉。
+
+    白天/黑夜那个切换按钮：HTML 里写的是 ``<i id="sum-moon-icon"
+    class="fas fa-sun">``，脚本会把它换成 ``fa-moon``。``fa-moon`` 从来
+    没进过任何 ``class="..."`` 属性 —— 只扫 class 属性的做法会把它漏掉，
+    码位被裁掉，线上那个按钮就是一个豆腐块（框里一个叉）。
+    2026-11-24 上线后才在真机上发现。
+
+    这条守的是「补上那一步」：脚本里的图标类要进清单，而且要落进对的
+    字体族（``fa-moon`` 的码位在 solid 字体里）。
+    """
+    css = FA_CSS.read_text(encoding="utf-8")
+    icons, modifiers = subset_icons._parse_css(css)
+
+    texts = _theme_texts()
+    used = subset_icons._used_icons(texts)
+    assert "fa-moon" not in used["solid"], (
+        "fa-moon 竟然已经在 class 属性里找到了 —— 那这条测试的前提变了，"
+        "day-night.ejs 里的 addClass('fa-moon') 没了？"
+    )
+
+    webfonts = THEME / "source" / "libs" / "awesome" / "webfonts"
+    original_cmaps = {
+        "solid": subset_icons._cmap_codepoints(webfonts / "fa-solid-900.ttf"),
+        "regular": subset_icons._cmap_codepoints(webfonts / "fa-regular-400.ttf"),
+        "brands": subset_icons._cmap_codepoints(webfonts / "fa-brands-400.ttf"),
+    }
+    added = subset_icons._add_script_icons(
+        texts, used, icons, modifiers, original_cmaps
+    )
+
+    assert "fa-moon" in added, (
+        "fa-moon 没被补进清单 —— 它的码位会被裁掉，线上那个切换按钮是豆腐块"
+    )
+    assert "fa-moon" in used["solid"], "fa-moon 落错字体族了"
+    assert "fa-moon" not in used["regular"], "fa-moon 不该落进 regular 字体"
+    assert icons["fa-moon"] in original_cmaps["solid"], (
+        "fa-moon 的码位本来就不在 solid 字体里"
+    )
+    # regular 字体里也有月亮 —— 两个字体共用一部分字形，所以反查只能定到
+    # 「候选有两个」，最后按 solid 优先定下来（站点的图标一律是 `fas`）。
+    assert icons["fa-moon"] in original_cmaps["regular"], (
+        "fa-moon 在 regular 字体里没有 —— 那族就能靠码位唯一确定，"
+        "这条测试的前提变了"
+    )
+
+
+def test_the_modifier_classes_are_not_pulled_in_as_icons() -> None:
+    """``fa-fw`` / ``fa-spin`` 这些修饰类不能当成图标补进去。"""
+    css = FA_CSS.read_text(encoding="utf-8")
+    icons, modifiers = subset_icons._parse_css(css)
+    texts = _theme_texts()
+    used = subset_icons._used_icons(texts)
+    added = subset_icons._add_script_icons(texts, used, icons, modifiers, {})
+
+    assert not set(added) & modifiers, (
+        "修饰类被当成图标补进去了："
+        + " ".join(sorted(set(added) & modifiers))
+    )
+
+
 # --- 裁剪本身 -------------------------------------------------------------
 
 

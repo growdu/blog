@@ -455,14 +455,14 @@ body.DarkMode .learning-path__all-link:focus-visible {
     margin-bottom: 6px;
   }
   body.home-page .learning-path .section-title h2 {
-    /* 标题放大（18 → 22px）：「学习路径」这一行是首页的分界线，
+    /* 标题放大（18 → 22 → 24px）：「学习路径」这一行是首页的分界线，
        大一号才压得住下面八张卡。 */
-    font-size: 22px;
+    font-size: 24px;
     margin: 0;
     white-space: nowrap;
   }
   body.home-page .learning-path .section-subtitle {
-    font-size: 13.5px;
+    font-size: 15px;
     margin: 0;
     min-width: 0;
     overflow: hidden;
@@ -473,7 +473,7 @@ body.DarkMode .learning-path__all-link:focus-visible {
     margin-left: auto;
     flex: 0 0 auto;
     padding: 4px 12px;
-    font-size: 14px;
+    font-size: 15px;
   }
 
   /* 卡片网格：行高跟着面板走 —— 面板有多余的空间就分给行，卡片跟着长高，
@@ -517,13 +517,13 @@ body.DarkMode .learning-path__all-link:focus-visible {
   }
 
   body.home-page .lane-card__head { gap: 10px; margin-bottom: 6px; }
-  body.home-page .lane-card__icon { font-size: 22px; width: 30px; height: 30px; }
-  /* 16px + 行高 1.4：卡片放宽到 317px 宽之后，赛道名一行放得下，
+  body.home-page .lane-card__icon { font-size: 24px; width: 32px; height: 32px; }
+  /* 18px + 行高 1.4：卡片放宽到 317px 宽之后，赛道名一行放得下，
      不用再压到 13px 那种「小字」的感觉了。 */
-  body.home-page .lane-card__title { font-size: 16px; line-height: 1.4; }
-  body.home-page .lane-card__count { font-size: 12.5px; padding: 3px 8px; }
+  body.home-page .lane-card__title { font-size: 18px; line-height: 1.4; }
+  body.home-page .lane-card__count { font-size: 13.5px; padding: 3px 8px; }
   body.home-page .lane-card__desc {
-    font-size: 13.5px;
+    font-size: 15px;
     line-height: 1.5;
     min-height: 0;
     /* 简介紧跟在标题下面。卡片被拉高的时候（屏幕高），空出来的地方在
@@ -551,7 +551,7 @@ body.DarkMode .learning-path__all-link:focus-visible {
     overflow: hidden;
   }
   body.home-page .lane-card__stage {
-    font-size: 12.5px;
+    font-size: 13.5px;
     padding: 3px 8px;
     min-width: 0;
     overflow: hidden;

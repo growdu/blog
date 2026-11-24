@@ -461,19 +461,20 @@ def test_the_learning_path_grid_lines_up_with_the_stats_banner():
 def test_the_homepage_type_is_big_enough_to_read():
     """卡片和统计条上的字不能是小字。
 
-    用户原话：「中间的内容太小了」。首页的卡片标题 16px、简介 13.5px、
-    阶段角标 12.5px，统计数字 22px，段落标题 22px —— 比改之前大一号。
+    用户原话：「中间的内容太小了」，后来又追了一句「学习路径的文字可以再
+    大一些」。首页的卡片标题 18px、简介 15px、阶段角标 13.5px，
+    统计数字 22px，段落标题 24px。
 
     这里守的是**下限**：再往小压，首页就回到「看不清」的状态了。
     """
     block = _home_page_block(_read(TECH_CSS))
 
     floors = [
-        ("body.home-page .lane-card__title", 16),
-        ("body.home-page .lane-card__desc", 13),
-        ("body.home-page .lane-card__stage", 12),
+        ("body.home-page .lane-card__title", 18),
+        ("body.home-page .lane-card__desc", 15),
+        ("body.home-page .lane-card__stage", 13.5),
         ("body.home-page .stat-num", 22),
-        ("body.home-page .learning-path .section-title h2", 22),
+        ("body.home-page .learning-path .section-title h2", 24),
     ]
     for selector, floor in floors:
         size = _px(_decl(block, selector, "font-size"))

@@ -24,6 +24,13 @@ Font Awesome 全集几千个字形，一个图标少一个，文件大小几乎�
    码位了，看起来一切正常，页面上却是个豆腐块。所以这里在裁之前先拿
    **原字体**的 cmap 对一遍：码位本来就不在这个字体里，就是族判错了，
    直接报错退出。
+4. **有些图标只出现在脚本里**。白天/黑夜那个切换按钮，HTML 里写的是
+   ``<i id="sum-moon-icon" class="fas fa-sun">``，可脚本会把它换成
+   ``fa-moon``——``fa-moon`` 从来没进过任何 ``class="..."`` 属性。
+   只扫 class 属性的做法会把它漏掉，码位被裁掉，线上那个按钮就是一个
+   豆腐块（框里一个叉）。所以这里除了 class 属性，还把文本里出现的
+   图标类一并收进来（族靠码位反查：哪个字体的 cmap 里有这个码位就是
+   哪个族）。
 
 怎么做
 ------
@@ -31,7 +38,8 @@ Font Awesome 全集几千个字形，一个图标少一个，文件大小几乎�
    fontawesome 的 metadata，两者版本对不上时 CSS 才是浏览器真正认的东西；
 2. 从构建产物 ``public/**/*.html`` 和主题模板里找出真正用到的图标类，
    并从**同一段 class** 里认出字体族；
-3. 用 fontTools 把每个字体裁到用到的码位，原地替换 ``public`` 里的字体文件。
+3. 把脚本里动态换上去的图标（class 属性里扫不到的那些）补进来；
+4. 用 fontTools 把每个字体裁到用到的码位，原地替换 ``public`` 里的字体文件。
 
 用法::
 
@@ -120,6 +128,58 @@ def _used_icons(texts: list[str]) -> dict[str, set[str]]:
     return used
 
 
+def _loose_icons(texts: list[str], modifiers: set[str]) -> set[str]:
+    """文本里出现过的所有图标类 —— 不管它出现在哪儿。
+
+    只认 ``class="..."`` 属性会漏掉一类图标：脚本里 ``addClass('fa-moon')``
+    换上去的。它们从来没进过 class 属性，码位被裁掉之后页面上就是一个
+    豆腐块（框里一个叉），不报任何错。
+    """
+    names: set[str] = set()
+    for text in texts:
+        for name in _ICON_CLASS.findall(text):
+            if name not in modifiers:
+                names.add(name)
+    return names
+
+
+def _add_script_icons(
+    texts: list[str],
+    used: dict[str, set[str]],
+    codepoints: dict[str, int],
+    modifiers: set[str],
+    original_cmaps: dict[str, set[int]],
+) -> list[str]:
+    """把脚本里动态换上去的图标补进 ``used``，返回补进去的图标名。
+
+    这些图标没有同段的族前缀（``addClass('fa-moon')`` 里只有图标名），
+    族靠码位反查：哪个字体的 cmap 里有这个码位，就是哪个族；solid 和
+    regular 都有的话算 solid；反查不了就先按 solid 算 —— 真裁错了，
+    裁之前那道「码位本来就不在这个字体里」的核对会兜住（宁可放弃裁剪，
+    也不上线空白图标）。
+    """
+    already: set[str] = set()
+    for names in used.values():
+        already |= names
+
+    added: list[str] = []
+    for icon in sorted(_loose_icons(texts, modifiers)):
+        if icon in already:
+            continue
+        code = codepoints.get(icon)
+        if code is None:
+            continue
+        candidates = [f for f, cps in original_cmaps.items() if code in cps]
+        if candidates and "solid" not in candidates:
+            family = candidates[0]
+        else:
+            family = "solid"
+        used[family].add(icon)
+        already.add(icon)
+        added.append(icon)
+    return added
+
+
 def _read_texts(root: Path, suffixes: tuple[str, ...]) -> list[str]:
     out: list[str] = []
     for suffix in suffixes:
@@ -164,6 +224,16 @@ def _cmap_codepoints(path: Path) -> set[int]:
             if table.isUnicode():
                 codepoints.update(table.cmap.keys())
         return codepoints
+
+
+def _original_codepoints(webfonts: Path) -> dict[str, set[int]]:
+    """每个字体族原始 TTF 里的码位（用来反查一个图标属于哪个族）。"""
+    out: dict[str, set[int]] = {}
+    for family, name in _FAMILY_FILES.items():
+        path = webfonts / (name + ".ttf")
+        if path.is_file():
+            out[family] = _cmap_codepoints(path)
+    return out
 
 
 def _import_module(name: str):
@@ -283,6 +353,17 @@ def main() -> int:
 
     used = _used_icons(html_texts + template_texts)
 
+    webfonts = css_path.parent.parent / "webfonts"
+    if not webfonts.is_dir():
+        webfonts = public / "libs" / "awesome" / "webfonts"
+
+    # 脚本里动态换上去的图标（class 属性里扫不到的那些）也得留着 ——
+    # 白天/黑夜那个按钮就是 ``fa-moon``，2026-11-24 上线后它是个豆腐块。
+    original_cmaps = _original_codepoints(webfonts) if _fonttools_ready() else {}
+    added = _add_script_icons(
+        html_texts + template_texts, used, codepoints, modifiers, original_cmaps
+    )
+
     per_family: dict[str, set[int]] = {}
     unknown: set[str] = set()
     for family, icons in used.items():
@@ -296,13 +377,14 @@ def main() -> int:
             keep.add(code)
         per_family[family] = keep
 
-    webfonts = css_path.parent.parent / "webfonts"
-    if not webfonts.is_dir():
-        webfonts = public / "libs" / "awesome" / "webfonts"
-
     print(f"Font Awesome 图标清单（来自 {css_path.name}）：")
     for family in ("solid", "regular", "brands"):
         print(f"  {family:8s} 用到 {len(used[family]):3d} 个图标类")
+    if added:
+        print(
+            "  脚本里动态换上去的图标（class 属性里扫不到，也得留着）："
+            + " ".join(added)
+        )
     if unknown:
         print(
             "  ! 以下 class 在 CSS 里没有对应规则，图标本来就是空的（不是本次裁剪造成的）："
