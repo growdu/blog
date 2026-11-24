@@ -285,10 +285,13 @@ def test_the_icons_swapped_in_by_javascript_are_not_cut_out() -> None:
     )
 
     webfonts = THEME / "source" / "libs" / "awesome" / "webfonts"
+    # 用纯 Python 那个（``_ttf_codepoints``）而不是工具里的
+    # ``_cmap_codepoints``——后者要 fontTools，site-guard 的 CI 只装了
+    # pytest，那边跑不了这条。
     original_cmaps = {
-        "solid": subset_icons._cmap_codepoints(webfonts / "fa-solid-900.ttf"),
-        "regular": subset_icons._cmap_codepoints(webfonts / "fa-regular-400.ttf"),
-        "brands": subset_icons._cmap_codepoints(webfonts / "fa-brands-400.ttf"),
+        "solid": _ttf_codepoints(webfonts / "fa-solid-900.ttf"),
+        "regular": _ttf_codepoints(webfonts / "fa-regular-400.ttf"),
+        "brands": _ttf_codepoints(webfonts / "fa-brands-400.ttf"),
     }
     added = subset_icons._add_script_icons(
         texts, used, icons, modifiers, original_cmaps
