@@ -254,6 +254,19 @@ jobs:
     # 设太紧就变成部署自己把部署杀掉。
     timeout-minutes: 30
     steps:
+      # 上传完先缓一下再下载。
+      #
+      # GitHub 的 artifact 索引是「最终一致」的：上传刚完成的时候，
+      # 下载接口偶尔还查不到这个 artifact。2026-11-24 实测过一次 ——
+      # artifact 的创建时间是 08:34:35，下载动作 08:34:41 就发过去了，
+      # 报 "Artifact not found for name: blog-public"；可同一时刻
+      # artifacts 列表接口明明列得出它。重新跑一遍那个 job 就好了。
+      #
+      # 这种偶发一旦发生，站点就停在上一版，而日志里只有一句看不懂的
+      # "Artifact not found"——看起来像构建挂了，其实是索引没跟上。
+      # 等半分钟，代价极小。
+      - name: Wait for the artifact index to settle
+        run: sleep 30
       - name: Download build artifact
         uses: actions/download-artifact@v8
         with:
