@@ -706,3 +706,27 @@ body.DarkMode .learning-path__all-link:focus-visible {
   margin-top: 8px;
 }
 
+/* --- 版权那块最多两行 ------------------------------------------------------
+
+   2026-11-24：版权那块原来用 <br> 硬换行，撑出四行高（版权 / 总字数 /
+   一行空的 / 备案号）—— 那一行是空的，因为 time.enable 关着，
+   <br> 前面没东西。用户的话：「这个最多只能有两行，一行是备案号，
+   另一行是其他」。现在 EJS 里拆成两个块：第一行是「其他的」，
+   第二行单独是备案号。
+
+   行高不在这儿写死 —— 首页那条 body.home-page .page-footer .copy-right
+   把行距压到 1.4（给下面的卡片省高度），在这儿写死会把它盖掉。 */
+.page-footer .copy-right__icp {
+  margin-top: 2px;
+}
+/* 第一行别被撑出第二行：里面的项之间用「|」隔开，一行放不下时整体
+   折行（窄屏），但不撑出空行。 */
+.page-footer .copy-right__main {
+  display: block;
+}
+/* 每一项（含前面的「|」）不拆开 —— 文章页那行还要带总访问量、总访问人数，
+   放不下时整项挪到下一行，不会在「|」和文字中间断开。 */
+.page-footer .copy-right__main .copy-right__item {
+  white-space: nowrap;
+}
+

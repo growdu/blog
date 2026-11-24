@@ -7,6 +7,16 @@
     <div class="container row center-align"
          style="margin-bottom: <% if (theme.time.enable) { %>15<% } else { %>0<% } %>px !important;">
         <div class="col s12 m8 l8 copy-right">
+            <%# 2026-11-24：这一块原来用 <br> 硬换行 —— 版权一行、总字数一行、
+                再一个 <br> 空出一行、备案号一行，四行高（其中一行是空的，
+                因为 time.enable 是关的，那个 <br> 前面没东西）。
+                首页的页脚因此虚高，用户的话：「这个所在的容器占的空间太多
+                了，这个最多只能有两行，一行是备案号，另一行是其他」。
+
+                现在改成两个块：第一行放「其他的」（版权、Powered by、
+                Theme、总字数、访问量、访问人数、运行天数），
+                第二行单独放备案号 —— 最多两行，省下的两行还给卡片。 %>
+            <div class="copy-right__main">
             Copyright&nbsp;&copy;
             <% if (theme.time.year !== new Date().getFullYear()) { %>
                 <span id="year"><%- theme.time.year %>-<%- new Date().getFullYear() %></span>
@@ -19,10 +29,9 @@
             <% if (theme.translate.enable) { %>
                 <span id="translate">|&nbsp;繁/简：</span><a id="translateLink" href="javascript:translatePage();">繁</a>
             <% } %>
-            <br>
             <% if (theme.postInfo.totalCount) { %>
-                &nbsp;<i class="fas fa-chart-area"></i>&nbsp;<%- __('siteTotalWords') %>:&nbsp;<span
-                        class="white-color"><%= totalcount(site) %></span>
+                <span class="copy-right__item">&nbsp;|&nbsp;<i class="fas fa-chart-area"></i>&nbsp;<%- __('siteTotalWords') %>:&nbsp;<span
+                        class="white-color"><%= totalcount(site) %></span></span>
             <% } %>
             <% let socialClass = '' %>
             <% if (theme.busuanziStatistics && theme.busuanziStatistics.enable) { %>
@@ -36,22 +45,21 @@
                 渲染这两个数；别的页面照旧。 %>
             <% const showSiteCounters = !(is_home() && page.current === 1); %>
             <% if (showSiteCounters && theme.busuanziStatistics && theme.busuanziStatistics.totalTraffic) { %>
-                <span id="busuanzi_container_site_pv">
+                <span id="busuanzi_container_site_pv" class="copy-right__item">
                 &nbsp;|&nbsp;<i class="far fa-eye"></i>&nbsp;<%- __('siteTotalVisits') %>:&nbsp;
                     <span id="busuanzi_value_site_pv" class="white-color"></span>
             </span>
             <% } %>
             <% if (showSiteCounters && theme.busuanziStatistics && theme.busuanziStatistics.totalNumberOfvisitors) { %>
-                <span id="busuanzi_container_site_uv">
+                <span id="busuanzi_container_site_uv" class="copy-right__item">
                 &nbsp;|&nbsp;<i class="fas fa-users"></i>&nbsp;<%- __('siteTotalVisitors') %>:&nbsp;
                     <span id="busuanzi_value_site_uv" class="white-color"></span>
             </span>
             <% } %>
-            <br>
 
             <!-- 运行天数提醒. -->
             <% if (theme.time.enable) { %>
-                <span id="sitetime"> Loading ...</span>
+                <span class="copy-right__item">&nbsp;|&nbsp;<span id="sitetime"> Loading ...</span></span>
                 <script>
                     var calcSiteTime = function () {
                         var seconds = 1000;
@@ -105,12 +113,14 @@
                     calcSiteTime();
                 </script>
             <% } %>
-            <br>
+            </div>
             <% if (theme.icp.enable) { %>
+            <div class="copy-right__icp">
                 <span id="icp"><img src="<%- theme.jsDelivr.url %><%- url_for('/medias/icp.png') %>"
                                     style="vertical-align: text-bottom;"/>
                 <a href="<%- url_for(theme.icp.url) %>" target="_blank"><%= theme.icp.text %></a>
             </span>
+            </div>
             <% } %>
         </div>
         <div class="col s12 m4 l4 social-link <%- socialClass %>"><%- partial('_partial/social-link') %></div>

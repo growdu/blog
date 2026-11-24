@@ -28,11 +28,25 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 TECH_CSS = REPO / "themes" / "matery" / "source" / "css" / "tech.css"
+FOOTER_EJS = REPO / "themes" / "matery" / "layout" / "_partial" / "footer.ejs"
 
 
 def _read(path: Path) -> str:
     assert path.is_file(), "找不到 {}".format(path)
     return path.read_text(encoding="utf-8")
+
+
+def _strip_ejs_comments(ejs: str) -> str:
+    """把 ``<%# ... %>`` 注释去掉 —— 注释里写着「原来用 <br>」，别当成真标签。"""
+    return re.sub(r"<%#.*?%>", "", ejs, flags=re.S)
+
+
+def _copy_right(ejs: str) -> str:
+    """取 copy-right 那个容器的内容。"""
+    m = re.search(r'<div class="col s12 m8 l8 copy-right">(.*?)</div>\s*\n\s*<div class="col s12 m4 l4 social-link',
+                  ejs, re.S)
+    assert m, "footer.ejs 里找不到 copy-right 容器"
+    return m.group(1)
 
 
 def _strip_css_comments(css: str) -> str:
@@ -129,5 +143,42 @@ def test_the_homepage_footer_gives_its_height_back_to_the_cards():
         "首页页脚的上留白还是 {}px —— 页脚一高，首页就装不下一屏了".format(top)
     )
     assert "line-height" in _rule(css, "body.home-page .page-footer .copy-right"), (
-        "首页页脚的行距没压 —— 版权那四行省不出图标那行的位置"
+        "首页页脚的行距没压 —— 版权那几行省不出图标那行的位置"
     )
+
+
+def test_the_copyright_block_is_at_most_two_lines():
+    """版权那块最多两行：一行备案号，一行「其他的」。
+
+    原来那块用 ``<br>`` 硬换行，撑出四行高：版权、总字数、**一行空的**
+    （``time.enable`` 关着，那个 ``<br>`` 前面没东西）、备案号。
+    用户的话：「这个最多只能有两行，一行是备案号，另一行是其他」。
+    """
+    ejs = _strip_ejs_comments(_read(FOOTER_EJS))
+    block = _copy_right(ejs)
+
+    assert "<br>" not in block, (
+        "版权那块还有 <br> 硬换行 —— 行数不受控，而且空开关着的选项会留一行空的"
+    )
+    assert block.count("<div") == 2, (
+        "版权那块应该只有两个块（main + icp），现在是 {} 个".format(block.count("<div"))
+    )
+
+
+def test_the_icp_number_gets_its_own_line():
+    """备案号单独一行，其他内容在另一行。"""
+    ejs = _strip_ejs_comments(_read(FOOTER_EJS))
+    block = _copy_right(ejs)
+
+    main = re.search(r'<div class="copy-right__main">(.*?)\n\s*</div>', block, re.S)
+    icp = re.search(r'<div class="copy-right__icp">(.*?)\n\s*</div>', block, re.S)
+    assert main, "版权那块没有 .copy-right__main（放「其他的」那一行）"
+    assert icp, "版权那块没有 .copy-right__icp（放备案号那一行）"
+
+    assert "theme.icp.text" in icp.group(1), "备案号不在 .copy-right__icp 里"
+    assert "theme.icp.text" not in main.group(1), "备案号还在第一行里"
+
+    # 「其他的」都归到第一行
+    for needle in ("Powered by", "siteTotalWords"):
+        assert needle in main.group(1), "{} 不在第一行里".format(needle)
+
