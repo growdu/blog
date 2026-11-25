@@ -183,6 +183,42 @@
       ]
     },
     {
+      "id": "ceph",
+      "title": "Ceph 源码",
+      "icon": "fas fa-layer-group",
+      "summary": "分布式存储的代表作：从一次读写的完整链路，读到 MON、PG、CRUSH 与 BlueStore",
+      "audience": "做存储系统、或者想把「一个分布式存储怎么落地」看明白的人。默认你会 C++，没读过 Ceph 源码。",
+      "goal": "走完这条线，你能说清一次写请求从 librados 走到盘上、再回到客户端的每一步，能独立读懂 Ceph 的集群元数据、数据放置与恢复逻辑。",
+      "track_match": [
+        {
+          "path_prefix": "source-tracks/ceph/"
+        }
+      ],
+      "fallback_stage": "L2",
+      "stages": [
+        {
+          "id": "L1",
+          "title": "起步与全景",
+          "goal": "先知道 Ceph 是什么、代码怎么摆、这条路线该怎么走 —— 这一阶段不碰具体实现。",
+          "match": [
+            {
+              "path_prefix": "source-tracks/ceph/getting-started/"
+            }
+          ]
+        },
+        {
+          "id": "L2",
+          "title": "架构与数据路径",
+          "goal": "一次读写请求在 Ceph 里怎么流转：客户端、Messenger、OSD、PG、BlueStore。",
+          "match": [
+            {
+              "path_prefix": "source-tracks/ceph/architecture/"
+            }
+          ]
+        }
+      ]
+    },
+    {
       "id": "linux-network",
       "title": "Linux 与网络",
       "icon": "fas fa-server",

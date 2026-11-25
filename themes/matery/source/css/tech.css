@@ -162,13 +162,19 @@ body.DarkMode .learning-page__crumb a:focus-visible {
   color: var(--lp-accent);
 }
 
-/* 首页学习路径面板（8 条赛道）------------------------------------------------
+/* 首页学习路径面板（9 条赛道）------------------------------------------------
    赛道卡片复用了 patch-theme.py 注入的 .lane-grid / .lane-card 类名，
    颜色改用 CSS 变量 --lane-color / --lane-tint：加一条赛道只需要在下面
-   加两行变量，不用再写一遍图标、边框、链接三处颜色。 */
+   加两行变量，不用再写一遍图标、边框、链接三处颜色。
+
+   2026-11-25：加了 Ceph 源码这条赛道，赛道从 8 条变成 9 条。四列排
+   9 张卡是「4 + 4 + 1」，第三行那张会被面板裁掉（面板自己是 overflow:auto，
+   所以内容不丢，但读者得在面板里滚一下才看得到最后一条）。
+   改成五列：9 张卡是「5 + 4」，两行放下，第一屏看全。
+   窄一点（1200px 以下）退回四列，再窄照旧退回两列 / 一列。 */
 
 .lane-grid--tracks {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
 }
 
 .lane-grid--tracks .lane-card {
@@ -254,12 +260,19 @@ body.DarkMode .learning-page__crumb a:focus-visible {
 /* 赛道配色：每条赛道一个色（--lane-color 描边/图标/链接，--lane-tint 淡底） */
 .lane-card--db-internals   { --lane-color: #00796b; --lane-tint: rgba(0, 121, 107, .12); }
 .lane-card--distributed    { --lane-color: #6a1b9a; --lane-tint: rgba(106, 27, 154, .12); }
+.lane-card--ceph           { --lane-color: #00838f; --lane-tint: rgba(0, 131, 143, .12); }
 .lane-card--linux-network  { --lane-color: #1565c0; --lane-tint: rgba(21, 101, 192, .12); }
 .lane-card--dataplane      { --lane-color: #ef6c00; --lane-tint: rgba(239, 108, 0, .12); }
 .lane-card--ai-tools       { --lane-color: #c2185b; --lane-tint: rgba(194, 24, 91, .12); }
 .lane-card--engineering    { --lane-color: #2e7d32; --lane-tint: rgba(46, 125, 50, .12); }
 .lane-card--life           { --lane-color: #6d4c41; --lane-tint: rgba(109, 76, 65, .12); }
 .lane-card--blogging       { --lane-color: #3949ab; --lane-tint: rgba(57, 73, 171, .12); }
+
+@media (max-width: 1199px) {
+  .lane-grid--tracks {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
 
 @media (max-width: 992px) {
   .lane-grid--tracks {
