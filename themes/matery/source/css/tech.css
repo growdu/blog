@@ -261,6 +261,7 @@ body.DarkMode .learning-page__crumb a:focus-visible {
 .lane-card--db-internals   { --lane-color: #00796b; --lane-tint: rgba(0, 121, 107, .12); }
 .lane-card--distributed    { --lane-color: #6a1b9a; --lane-tint: rgba(106, 27, 154, .12); }
 .lane-card--ceph           { --lane-color: #00838f; --lane-tint: rgba(0, 131, 143, .12); }
+.lane-card--linux-kernel   { --lane-color: #37474f; --lane-tint: rgba(55, 71, 79, .12); }
 .lane-card--linux-network  { --lane-color: #1565c0; --lane-tint: rgba(21, 101, 192, .12); }
 .lane-card--dataplane      { --lane-color: #ef6c00; --lane-tint: rgba(239, 108, 0, .12); }
 .lane-card--ai-tools       { --lane-color: #c2185b; --lane-tint: rgba(194, 24, 91, .12); }

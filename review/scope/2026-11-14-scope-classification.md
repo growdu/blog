@@ -1,7 +1,7 @@
 # 全树范围分类：哪些不是面向读者的技术文章
 
 - 日期：2026-11-14
-- 依据：`tools/review-check.py` 对 `docs/` 全树（644 篇）跑出的信号，加逐篇读原文的判断
+- 依据：`tools/review-check.py` 对 `docs/` 全树（649 篇）跑出的信号，加逐篇读原文的判断
 - 目的：把审校范围从「四支柱 282 篇」扩到全树之前，先把**不面向读者的技术文章**筛掉，
   免得把站点目录页、内部工作文档、命令速查表也按技术深度五要素去审。
 
@@ -9,13 +9,13 @@
 
 | 桶 | 含义 | 篇数 | 技术深度五要素 |
 | --- | --- | --- | --- |
-| 1 非内容 | 根本不面向读者：站点目录页、代码仓库说明、内部工作文档、外链指北、只有标题的未成稿 | 116 | 不审 |
+| 1 非内容 | 根本不面向读者：站点目录页、代码仓库说明、内部工作文档、外链指北、只有标题的未成稿 | 119 | 不审 |
 | 2 速查/清单/操作类 | 面向读者，但形态是命令表、步骤、清单，没有成篇解释 | 49 | 不适用 |
 | 3 非技术内容 | 面向读者，但写的是生活、备考、内部规范 | 38 | 不适用 |
 | 4 转载内容 | 标了来源、署名他人的转载稿 | 17 | 不按原创稿审改 |
-| 5 技术文章 | 面向读者的技术解释 | 424 | **审** |
+| 5 技术文章 | 面向读者的技术解释 | 426 | **审** |
 
-**审校工作面 = 424 篇**（桶 5）。桶 2、3 面向读者但不是技术文章，
+**审校工作面 = 426 篇**（桶 5）。桶 2、3 面向读者但不是技术文章，
 可选做表达与结构审，不套五要素；桶 1 不审；桶 4 是转载稿，
 怎么处理（保留标注 / 删除 / 重写）是站长的决定。
 
@@ -46,7 +46,7 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 
 | 支柱 | 总数 | 非内容 | 速查操作 | 非技术 | 转载 | 技术文章 | warn | DEP-00 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| source-tracks | 274 | 30 | 15 | 0 | 0 | 229 | 222 | 58 |
+| source-tracks | 279 | 33 | 15 | 0 | 0 | 231 | 225 | 60 |
 | distributed | 71 | 14 | 1 | 0 | 0 | 56 | 61 | 33 |
 | life | 42 | 11 | 0 | 31 | 0 | 0 | 29 | 6 |
 | ai | 30 | 1 | 0 | 4 | 17 | 8 | 36 | 4 |
@@ -80,16 +80,16 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 | pcap | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 |
 | src | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 |
 | wiki | 1 | 1 | 0 | 0 | 0 | 0 | 1 | 1 |
-| **合计** | **644** | **116** | **49** | **38** | **17** | **424** | **518** | **221** |
+| **合计** | **649** | **119** | **49** | **38** | **17** | **426** | **520** | **223** |
 
 ## 排除清单
 
 下面三桶逐篇列出。**桶 4 = `docs/` 全集减去这份清单**，不单独列。
 契约测试守着两件事：清单里的路径不许悬空；审校记录的原文不许落在清单里。
 
-### 桶 1 非内容（116 篇）
+### 桶 1 非内容（119 篇）
 
-#### 站点目录页（71 篇）
+#### 站点目录页（74 篇）
 - `docs/ai/_index.md`
 - `docs/alg/_index.md`
 - `docs/base/_index.md`
@@ -137,6 +137,9 @@ python3 tools/review-check.py docs --json --out /tmp/all_docs.json
 - `docs/source-tracks/ceph/_index.md`
 - `docs/source-tracks/ceph/architecture/_index.md`
 - `docs/source-tracks/ceph/getting-started/_index.md`
+- `docs/source-tracks/linux-kernel/_index.md`
+- `docs/source-tracks/linux-kernel/architecture/_index.md`
+- `docs/source-tracks/linux-kernel/getting-started/_index.md`
 - `docs/source-tracks/linux/_index.md`
 - `docs/source-tracks/linux/daily-ops/_index.md`
 - `docs/source-tracks/linux/filesystem/_index.md`

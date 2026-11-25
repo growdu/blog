@@ -261,6 +261,8 @@
   "protocol/抓包进阶.md": "2022-10-25 14:09:59",
   "source-tracks/ceph/architecture/learning-path/01-整体架构与一次写请求的完整链路.md": "2026-11-25 00:00:00",
   "source-tracks/ceph/getting-started/ceph源码学习之路.md": "2026-11-25 00:00:00",
+  "source-tracks/linux-kernel/architecture/learning-path/01-整体架构与一次系统调用的完整链路.md": "2026-11-25 00:00:00",
+  "source-tracks/linux-kernel/getting-started/linux源码学习之路.md": "2026-11-25 00:00:00",
   "source-tracks/linux/daily-ops/centos搭建离线仓库.md": "2024-01-25 09:43:36",
   "source-tracks/linux/daily-ops/git指北.md": "2022-11-20 21:23:41",
   "source-tracks/linux/daily-ops/git高级指北.md": "2023-06-08 20:28:10",

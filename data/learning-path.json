@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-17",
+  "updated": "2026-11-25",
   "note": "学习路径的分类规则表。**这里是人工策展的部分**，tools/build-learning-path.py 按它把每篇文章落到「赛道 + 阶段」。改这个文件就能改路径，不用改代码。\n\n规则从上往下第一条命中即生效；track_match 决定文章属于哪条赛道，stages[].match 决定落在哪个阶段。\n\n**每篇文章都该有一条自己的规则**：fallback_stage 只是防崩溃的兜底（没有专属规则的文章会落进去），守卫测试 tests/test_learning_path.py 钉住它是空的 —— 加了新文章，就得给它写规则。\n\n`platform-meta/`（平台元数据赛道：讲这个站本身怎么造）目前**临时挂在「博客与自媒体」这条赛道下** —— 按语义它属于「把内容变成作品：建站、排版、传播、视频生产线」，等赛道树整体重排时再决定要不要单独立一条赛道。\n\n可用的匹配键：path_prefix（前缀）、path_regex（正则）、path_exact（全等）、category（分类）、tag（标签）、title_contains（标题含）、any / all（组合）、catch_all（无条件，只能写在最后一个阶段）。",
   "tracks": [
     {
@@ -213,6 +213,42 @@
           "match": [
             {
               "path_prefix": "source-tracks/ceph/architecture/"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "linux-kernel",
+      "title": "Linux 源码",
+      "icon": "fas fa-microchip",
+      "summary": "从一次系统调用的完整链路，读到进程调度、内存管理、VFS 与块层",
+      "audience": "想读懂内核、或者想把「系统卡了」「IO 慢」追到内核里的人。默认你会 C，没读过内核源码。",
+      "goal": "走完这条线，你能说清一次 write 从用户态走到盘上、再回到用户态的每一步，能用 GDB 和 perf 把一个系统级问题定位到具体的内核函数。",
+      "track_match": [
+        {
+          "path_prefix": "source-tracks/linux-kernel/"
+        }
+      ],
+      "fallback_stage": "L2",
+      "stages": [
+        {
+          "id": "L1",
+          "title": "起步与全景",
+          "goal": "先知道内核长什么样、代码怎么摆、这条路线该怎么走 —— 这一阶段不碰具体实现。",
+          "match": [
+            {
+              "path_prefix": "source-tracks/linux-kernel/getting-started/"
+            }
+          ]
+        },
+        {
+          "id": "L2",
+          "title": "架构与数据路径",
+          "goal": "一次系统调用在 Linux 里怎么流转：入口、VFS、块层；外加进程、调度、内存三条主线。",
+          "match": [
+            {
+              "path_prefix": "source-tracks/linux-kernel/architecture/"
             }
           ]
         }
