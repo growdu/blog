@@ -137,6 +137,7 @@ mindmap
 ## 4. PostgreSQL — 逻辑复制专题(27+ 篇)
 
 ### 4.1 全链路与基础
+- [pg_recvlogical 源码解析](logical-replication/pg-recvlogical-deep-dive/index.html) — 逻辑解码的「只读消费者」与完整逻辑复制的分水岭
 - [PostgreSQL 逻辑复制全链路](logical-replication/postgresql-logical-replication-end-to-end-flow/index.html) — 真实事务的 9 段全链路追踪
 - [PostgreSQL 逻辑复制表的生命周期](logical-replication/postgresql-logical-replication-tables-lifecycle/index.html) — `pg_replication_slots` → `pg_subscription_rel`
 - [PostgreSQL 逻辑复制 Worker 模型](logical-replication/postgresql-logical-replication-worker-model/index.html) — launcher / apply / tablesync 进程拓扑

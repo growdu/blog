@@ -14,6 +14,7 @@ tags:
 
 ## 本系列文章
 
+- [pg_recvlogical 源码解析：逻辑解码的「只读消费者」](./pg-recvlogical-deep-dive/index.md)
 - [PostgreSQL 逻辑复制支持 DDL 之后：DDL 与 DML 的时序难题（重点：分区表）](./postgresql-logical-replication-ddl-dml-ordering/index.md)
 - [PostgreSQL 逻辑复制：DDL 同步后如何启动 apply worker 同步 DML（分区表专题）](./postgresql-logical-replication-ddl-trigger-apply-worker/index.md)
 - [PostgreSQL 逻辑复制集群搭建指北：基于 Docker 的 publisher + subscriber 一键拉起](./postgresql-logical-replication-docker-setup/index.md)

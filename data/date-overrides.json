@@ -404,6 +404,7 @@
   "source-tracks/postgresql/logical-replication/pa_decode/概要设计说明书-v2.md": "2026-11-09 17:42:38",
   "source-tracks/postgresql/logical-replication/pa_decode/概要设计说明书.md": "2026-11-09 17:42:38",
   "source-tracks/postgresql/logical-replication/pa_decode/逻辑复制发布端现状.md": "2026-10-21 12:14:47",
+  "source-tracks/postgresql/logical-replication/pg-recvlogical-deep-dive/index.md": "2026-11-26 09:40:00",
   "source-tracks/postgresql/logical-replication/pg15逻辑复制支持DDL.md": "2026-03-11 17:11:56",
   "source-tracks/postgresql/logical-replication/pglogical.so.md": "2026-03-11 17:11:56",
   "source-tracks/postgresql/logical-replication/pglogical支持DDL搭建教程.md": "2026-03-11 17:11:56",
