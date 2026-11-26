@@ -78,7 +78,7 @@ EV_SOURCE_PATH_MIN = 6
 EV_FUNCTION_REF_MIN = 1
 EV_DIAGRAM_MIN = 1
 EV_SPEECH_RATE = 7.19
-EV_DRAFT_P90 = 22_098
+EV_DRAFT_P90 = 24_035
 
 # --- 长视频三档的阈值（契约八 §3.1）--------------------------------------
 #
