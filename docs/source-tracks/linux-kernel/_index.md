@@ -27,6 +27,7 @@ Linux 内核是所有「系统级」知识的交汇点：进程怎么被调度�
 
 - [起步与全景](./getting-started/_index.md)
 - [架构与数据路径](./architecture/_index.md)
+- [进程与内存](./process-memory/_index.md)
 
 ## 路线图
 

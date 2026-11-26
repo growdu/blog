@@ -15,3 +15,4 @@ tags:
 ## 本系列文章
 
 - [01 整体架构与一次系统调用的完整链路](./learning-path/01-整体架构与一次系统调用的完整链路.md)
+- [02 编译与启动：从 `start_kernel` 到第一个用户态进程](./learning-path/02-编译与启动-从start_kernel到第一个用户态进程.md)

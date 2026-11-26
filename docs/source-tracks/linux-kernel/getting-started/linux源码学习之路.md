@@ -153,7 +153,7 @@ Linux 内核里**没有「线程」这个独立概念**：
 | 11 | 观测与调试：perf、ftrace、bpftrace、crash、eBPF | 内核工程实践 |
 | 12 | 现代内核的变化：Rust、io_uring、RISC-V 与多架构 | 内核工程实践 |
 
-> 01 是现在这一篇；后面的章节会陆续补上。
+> 01、02、03、04 已写完；后面的章节会陆续补上。
 
 ## 3. 在 65000 个 C 文件里怎么找到你要的函数
 
@@ -404,4 +404,7 @@ perf report
 
 ## 下一章
 
-[01 整体架构与一次系统调用的完整链路](../architecture/learning-path/01-整体架构与一次系统调用的完整链路.md)
+- [01 整体架构与一次系统调用的完整链路](../architecture/learning-path/01-整体架构与一次系统调用的完整链路.md)
+- [02 编译与启动：从 `start_kernel` 到第一个用户态进程](../architecture/learning-path/02-编译与启动-从start_kernel到第一个用户态进程.md)
+- [03 进程与线程：fork、clone、exec 到底做了什么](../process-memory/learning-path/03-进程与线程-fork-clone-exec到底做了什么.md)
+- [04 内存管理：地址空间、缺页、页分配器](../process-memory/learning-path/04-内存管理-地址空间缺页页分配器.md)
