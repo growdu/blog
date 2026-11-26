@@ -11,6 +11,13 @@ description: "Ceph 是分布式存储里少见的一个全样本：三种存储�
 > 本文是「Ceph 源码主线」的总入口。同系列后续：
 >
 > - [01 整体架构与一次写请求的完整链路](../architecture/learning-path/01-整体架构与一次写请求的完整链路.md)
+> - [02 环境、编译与代码地图](./learning-path/02-环境编译与代码地图.md)
+> - [03 MON：集群状态是怎么产生和分发的](../architecture/learning-path/03-MON集群状态的产生与分发.md)
+> - [04 PG 状态机：从 peering 到 active](../architecture/learning-path/04-PG状态机与恢复.md)
+> - [05 CRUSH：数据怎么落到这些盘上](../architecture/learning-path/05-CRUSH数据放置.md)
+> - [06 BlueStore：对象怎么变成 extent](../architecture/learning-path/06-BlueStore对象与extent.md)
+> - [07 事务与 journal：一次写什么时候算「落盘」](../architecture/learning-path/07-事务与journal写什么时候算落盘.md)
+> - [08 RADOS 对象语义：omap、快照、xattr、watch/notify](../architecture/learning-path/08-RADOS对象语义.md)
 
 ## 为什么先读 Ceph
 
@@ -21,7 +28,7 @@ description: "Ceph 是分布式存储里少见的一个全样本：三种存储�
 - **自己实现的数据放置算法**：CRUSH 把「对象 → PG → OSD」的映射算出来，不靠中心目录。
 - **自己实现的网络栈**：从 asio 迁移到 seastar 的 Messenger，两套实现同时在树里。
 - **三种存储形态共用一套底座**：对象存储（RADOS）、块存储（RBD）、文件存储（CephFS）都建在 RADOS 上。
-- **存储引擎自己写**：BlueStore 直接管裸设备和文件，自己实现 allocator、事务和 journal。
+- **存储引擎自己写**：BlueStore 直接管裸设备和文件，自己实现 allocator、事务和落盘链路。
 
 所以读 Ceph 的收益不是「学会用 Ceph」，而是：**把分布式存储的每个概念，
 对到一份能跑、能 GDB、能改的真实实现上**。
@@ -86,7 +93,7 @@ src/
 ├── mon/             # MON：Monitor / OSDMonitor / MonMap / Paxos / MgrMonitor
 ├── osd/             # OSD：OSD / PG / PrimaryLogPG / PeeringState / 恢复
 ├── os/              # 服务端存储抽象：ObjectStore / Transaction / BlueStore
-│   └── bluestore/   # BlueStore 存储引擎（allocator + 事务 + journal）
+│   └── bluestore/   # BlueStore 存储引擎（allocator + 事务 + RocksDB/BlueFS）
 ├── blk/             # 裸块设备抽象层（BlueStore 底下那一层）
 ├── crush/           # CRUSH 放置算法
 ├── mds/             # CephFS 元数据服务
@@ -151,6 +158,15 @@ src/
 > 「起步与全景」「架构与数据路径」这两站已经建好；后面几站等写到那一章时，
 > 再去 `data/learning-path.json` 里开。**每写完一章，都要给它所在的站加一条规则** ——
 > 站不能是空的，那是 CI 会拦的事（见仓库里的 `tests/test_learning_path.py`）。
+>
+> **进度**：01、02、03、04、05、06、07、08 已写完（[01](../architecture/learning-path/01-整体架构与一次写请求的完整链路.md)、
+> [02](./learning-path/02-环境编译与代码地图.md)、
+> [03](../architecture/learning-path/03-MON集群状态的产生与分发.md)、
+> [04](../architecture/learning-path/04-PG状态机与恢复.md)、
+> [05](../architecture/learning-path/05-CRUSH数据放置.md)、
+> [06](../architecture/learning-path/06-BlueStore对象与extent.md)、
+> [07](../architecture/learning-path/07-事务与journal写什么时候算落盘.md)、
+> [08](../architecture/learning-path/08-RADOS对象语义.md)），09 起陆续补上。
 
 ## 3. 怎么在 Ceph 这棵树上读代码
 
@@ -303,15 +319,38 @@ gdb -p $(pgrep -f ceph-osd | head -1)
 | `src/osdc/ObjectStore.h` | `src/os/ObjectStore.h`（`src/osdc/` 现在是客户端侧的 `Objecter`/`Filer`/`Striper`） |
 | `OSD::handle_op` | `OSD::ms_fast_dispatch` → `enqueue_op` → `dequeue_op`（`src/osd/OSD.cc`） |
 | `PG::handle_op` / `PG::queue_op` | `PrimaryLogPG::do_request` / `do_op` / `do_op_impl`（`src/osd/PrimaryLogPG.cc`） |
-| `PGStateMachine.h` | **不存在**。PG 状态机是 `src/osd/PeeringState.h` 里的 boost::statechart |
-| `src/mon/PGMonitor.{h,cc}` | 2017 年已删除；PG 统计改由 OSD 报给 mgr |
+| `PGStateMachine.h` | **不存在**。PG 状态机是 `src/osd/PeeringState.h` 里的 boost::statechart（实现另有 `src/osd/PeeringState.cc`，9,615 行） |
+| `PrimaryLogPG::do_peer` / `PG::queue_all_peers` 等 peering 函数 | **整体搬到 `src/osd/PeeringState.{h,cc}`**；`PrimaryLogPG.cc` 只剩数据面 |
+| `src/osd/MissingSet.h` | **不存在**。改成 `src/osd/MissingLoc.h` + `osd_types.h` 里的 `pg_missing_set` |
+| OSD 用 `Journaler` 存 PG log、重启回放 | **不再如此**。PG log 是 collection 里的 omap 对象，和 op 同事务落盘 |
+| `MOSDMapIncremental` 消息类 | **不存在**。全量与增量同在 `MOSDMap` 的 `maps` / `incremental_maps` 两个字段 |
+| CRUSH 在 `src/osd/` 下，`src/osd/CRUSHWrapper.{h,cc}` | **不存在**。独立目录 `src/crush/`，类名是 `CrushWrapper`（`src/crush/CrushWrapper.{h,cc}`） |
+| CRUSH 算法在 `src/crush/crush.c` | **半错**。`crush.c` 只有 137 行析构；算法在 `src/crush/mapper.c`（2,053 行） |
+| `OSDMap` 里有 `pg_up` / `pg_acting`（`pg_osd_item_t`） | **不存在**。v22 按需计算（`OSDMap::_pg_to_up_acting_osds`，`src/osd/OSDMap.cc:3500`），常驻的只有 `pg_temp` / `pg_upmap` |
+| `src/mon/PGMonitor.{h,cc}` | 2017 年已删除；PG 统计改由 OSD 直接报给 mgr |
 | `class MDS` | `class MDSRank`（`src/mds/MDSRank.h`） |
 | `src/msg/message.h` 里的 `Framed` 基类 | `src/msg/Message.h` 的 `Message`，靠 `encode_payload()`/`decode_payload()` 虚函数 |
 | `MSG_OSD_WRITE` 之类枚举 | 每种消息一个类，放在 `src/messages/`（`MOSDOp.h` 等，179 个）；老常量在 `src/include/ceph_fs.h` 里叫 `CEPH_MSG_*` |
 | `src/msg/seastar/` | **不存在**。seastar 版 Messenger 只在 `src/crimson/net/`，`src/msg/` 只有 asio 版 |
-| BlueStore 有 journal | **没有**。持久性靠 BlueFS 的 WAL |
+| BlueStore 有 journal | **没有**。`needs_journal()` / `wants_journal()` / `allows_journal()` 全返回 false（`src/os/bluestore/BlueStore.h:1652-1654`）。元数据靠 RocksDB 的 WAL（落在 BlueFS 的 metadata log 里），用户数据直接写 bdev |
+| BlueStore 的数据存在 RocksDB 里 | **只存元数据**。用户数据由 `bdev->aio_write()` 直接写设备（`src/os/bluestore/BlueStore.cc:14035`） |
+| OSD 有 op journal（`osd_journal` / journal 盘），op 先落 journal 再落盘 | **整个没了**。FileStore 已删（`src/os/ObjectStore.cc:51-53`），`osd_journal` 配置项不存在 |
+| `ceph daemon osd.N flush_journal` 能强制刷 journal | **命令还在，但是空转**。`ObjectStore::flush_journal()` 默认 `-EOPNOTSUPP`（`src/os/ObjectStore.h:787`），BlueStore 未覆盖，OSD 还不看返回值 |
+| 写顺序是「先写 journal，再写 data」 | **反了**。BlueStore 是**数据 aio 先完成，元数据后提交**（`src/os/bluestore/BlueStore.cc:11136-11161`），提交前还要 `bdev->flush()`（`:11881`） |
+| `on_commit` 回调 = 改动可读 | **`on_commit` = 已持久化**。可读是 `on_applied` / `on_applied_sync`（契约见 `src/os/Transaction.h:26-59`） |
+| 每个事务一次 fsync | **一批事务共用一次 fsync**。`_kv_sync_thread` 用一个额外的 `synct` 事务逼出 fsync（`src/os/bluestore/BlueStore.cc:11895` / `:11959`） |
+| `BlueStore::Object` / `ObjectHandle` / `onode_t` | **都不存在**。v22 是 `bluestore::Onode`（`BlueStore_objects.h:887`）、`bluestore_onode_t`（`bluestore_types.h:1293`）；`ObjectHandle` 几乎从树上消失了 |
+| extent map 用 `interval_set` | **是 `boost::intrusive::set<Extent>`**（`src/os/bluestore/BlueStore_objects.h:119`） |
+| allocator 接口是 `alloc()` / `free()` | **是 `allocate()` / `release()`**（`src/os/bluestore/Allocator.h:54` / `:65`）；v22 有可插拔家族，默认 `hybrid` |
+| `bluestore_allocator = fastbitmap` | **没有这个 type**。位图分配器的类名是 `BitmapAllocator`，配置项写 `bitmap` |
 | FileStore | **已移除**，`ObjectStore::create()` 只认 `bluestore` 和 `memstore` |
 | `src/common/ceph_strings.cc` 定义配置项 | 配置项在 `src/common/options/*.yaml.in`，生成到 `src/common/options.cc` |
 | `md_config_t` 在 `ceph_context.h` | 在 `src/common/config.h`；`CephContext` 持有的是门面 `ConfigProxy` |
+| 存储层支持快照（`ObjectStore::snapshot()`） | **死接口**，永远 `-EOPNOTSUPP`，没有任何实现覆盖它（`src/os/ObjectStore.h:791`） |
+| RADOS 快照 = 拷一份数据 | **不拷**。创建快照只改映射，第一次写才懒克隆（`src/osd/PrimaryLogPG.cc:9231`） |
+| omap 存在对象的元数据里 | **独立的 KV key**，一条 entry 一个（`src/os/bluestore/BlueStore.cc:15043`） |
+| omap 只有一个前缀 | **四个**：`M` / `m` / `p` / `P`，对应三种布局（`src/os/bluestore/BlueStore.cc:139-142`） |
+| 集合也有 xattr | **v22 没有这个接口**，BlueStore 回 `-EOPNOTSUPP`（`src/os/bluestore/BlueStore.cc:12702`） |
+| watch 是纯内存状态 | **一半落盘**：名单在 `object_info_t::watchers` 里，随 `OI_ATTR` xattr 落盘 |
 
 > 完整的对照表在 [01 整体架构与一次写请求的完整链路](../architecture/learning-path/01-整体架构与一次写请求的完整链路.md) 的最后一节。

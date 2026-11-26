@@ -24,6 +24,19 @@ RADOS 之上；无中心的元数据管理、一套 CRUSH 放置算法、一套�
 - [起步与全景](./getting-started/_index.md)
 - [架构与数据路径](./architecture/_index.md)
 
+## 已写章节
+
+| # | 章节 | 回答什么问题 |
+| --- | --- | --- |
+| 01 | [整体架构与一次写请求的完整链路](./architecture/learning-path/01-整体架构与一次写请求的完整链路.md) | 一次写从 librados 到盘上再回到客户端，经过了哪些函数？ |
+| 02 | [环境、编译与代码地图](./getting-started/learning-path/02-环境编译与代码地图.md) | 怎么把 Ceph 编译起来、跑起来、在 30 万行里定位一个函数？ |
+| 03 | [MON：集群状态是怎么产生和分发的](./architecture/learning-path/03-MON集群状态的产生与分发.md) | OSDMap 从哪儿来，怎么在 MON 之间表决、怎么发给客户端？ |
+| 04 | [PG 状态机：从 peering 到 active](./architecture/learning-path/04-PG状态机与恢复.md) | PG 的每个状态意味着什么，恢复是怎么一步步推进的？ |
+| 05 | [CRUSH：数据怎么落到这些盘上](./architecture/learning-path/05-CRUSH数据放置.md) | 一个 PG 怎么变成一组 OSD，权重和故障域怎么参与计算？ |
+| 06 | [BlueStore：对象怎么变成 extent](./architecture/learning-path/06-BlueStore对象与extent.md) | 对象在盘上长什么样，allocator 怎么分配空间，一次写什么时候算落盘？ |
+| 07 | [事务与 journal：一次写什么时候算「落盘」](./architecture/learning-path/07-事务与journal写什么时候算落盘.md) | journal 这个词在 v22 还剩什么含义？写成功回包的那一刻，数据到底在哪儿？ |
+| 08 | [RADOS 对象语义：omap、快照、xattr、watch/notify](./architecture/learning-path/08-RADOS对象语义.md) | omap、快照、xattr、watch/notify 分别由谁实现、落在哪一层？ |
+
 ## 路线图
 
 - [Ceph 源码学习之路：一张全景图 + 12 章路线](./getting-started/ceph源码学习之路.md)
