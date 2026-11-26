@@ -1,6 +1,6 @@
 ---
 title: pgoutput_change 到 HeapTupleSatisfiesVisibility 的函数调用栈分析
-date: 2026-10-20 16:00
+date: 2026-10-20 16:00:00
 categories:
   - 数据库
   - PostgreSQL
