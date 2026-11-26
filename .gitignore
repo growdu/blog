@@ -58,3 +58,6 @@ package-lock.json
 
 # Draft design for a future AI content pipeline (not part of the current architecture)
 dbmedia/
+
+# Local shell profile with an API token — never commit it
+prsrc
