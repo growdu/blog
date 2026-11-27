@@ -43,19 +43,19 @@
 
 ### 2.2 赛道 × 年份
 
-| 赛道 | 2018 | 2022 | 2023 | 2024 | 2025 | 2026 | 合计 |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| engineering 工程与语言 | **35** | 12 | **36** | 13 | 6 | 6 | 109 |
-| linux Linux 与网络 | | 30 | 13 | 11 | 7 | 4 | 65 |
-| distributed 分布式 | | 25 | 28 | 5 | 1 | 5 | 64 |
-| dataplane 数据面 | | **40** | | | | 4 | 44 |
-| ai-tools AI 与工具 | | | 2 | | 1 | 28 | 31 |
-| life 人生与成长 | | | | | 3 | 24 | 27 |
-| blogging 博客与自媒体 | | | 1 | | | 19 | 20 |
-| postgresql 内核 | | 29 | 16 | 10 | 1 | **153** | 209 |
-| ceph 源码 | | | | | | 9 | 9 |
-| platform-meta 平台元数据 | | | | | | 7 | 7 |
-| linux-kernel Linux 源码 | | | | | | 6 | 6 |
+| 赛道 | 2018 | 2019 | 2022 | 2023 | 2024 | 2025 | 2026 | 合计 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| engineering 工程与语言 | **35** | 1 | 12 | **36** | 13 | 6 | 6 | 109 |
+| linux Linux 与网络 | | | 30 | 13 | 11 | 7 | 4 | 65 |
+| distributed 分布式 | | | 25 | 28 | 5 | 1 | 5 | 64 |
+| dataplane 数据面 | | | **40** | | | | 4 | 44 |
+| ai-tools AI 与工具 | | | | 2 | | 1 | 28 | 31 |
+| life 人生与成长 | | | | | | 3 | 24 | 27 |
+| blogging 博客与自媒体 | | | | 1 | | | 19 | 20 |
+| postgresql 内核 | | | 29 | 16 | 10 | 1 | **153** | 209 |
+| ceph 源码 | | | | | | | 9 | 9 |
+| platform-meta 平台元数据 | | | | | | | 7 | 7 |
+| linux-kernel Linux 源码 | | | | | | | 6 | 6 |
 
 这条曲线本身就是答案的一半：2018 年只有工程语言 → 2022 年一年跨到数据面、
 Linux、分布式、内核（136 篇）→ 2023–2025 收窄、往内核深处沉
@@ -134,7 +134,7 @@ Linux、分布式、内核（136 篇）→ 2023–2025 收窄、往内核深处�
       "stages": ["engineering/L1", "engineering/L2", "engineering/L3",
                  "engineering/L4", "life/L1"],
       "first_read": [
-        {"path": "docs/source-tracks/engineering/L1-basics/…", "why": "为什么先读它"}
+        {"path": "source-tracks/engineering/L1-basics/file.md", "why": "为什么先读它"}
       ]
     }
   ],
@@ -156,6 +156,12 @@ Linux、分布式、内核（136 篇）→ 2023–2025 收窄、往内核深处�
 | `goal` / `can_do` | 这一期的目标与出口 | 人写 |
 | 年份、篇数、矩阵 | **不在这张表里** | 生成器现算 |
 
+**`first_read[].path` 的格式**：`source-tracks/<赛道>/<阶段>/<文件>` ——
+**跟 `data/date-overrides.json` 的键同格式**（docs 相对路径、带扩展名、
+不带 `docs/` 前缀）。用现成的格式，不另立一套。
+生成器把它映射成语料里的 `rel`；守卫要求它**必须属于本期的某个阶段**，
+不许指向别的期。
+
 **为什么 `stages` 用引用而不是复制阶段内容**：阶段标题、`goal`、文章列表
 全部来自 `data/learning-path.json`。复制一份就多一处会漂移的地方。
 
@@ -170,33 +176,67 @@ python3 tools/build-journey.py            # 生成
 python3 tools/build-journey.py --check    # 只校验，不写文件（CI 用）
 ```
 
-产出：
+### 5.1 语料从哪来：`source/_posts/`，不是 `docs/`
+
+**读构建产物 `source/_posts/`**，理由：期页要链到具体文章，需要**真实标题**和
+**真实 permalink**。`docs/` 那边只有文件名，没有标题也没有地址
+（`docs_corpus()` 给的 `title` 是文件名干stem、`url` 是空串）。
+
+因此：
+
+- 生成器**必须在 `tools/sync-hexo.py` 之后跑**（跟 `build-learning-path.py` 同一条），
+  CI 里的位置也就定了。
+- **归类复用 `build-learning-path.py` 的 `classify()`**，不重新实现 ——
+  归类的唯一真相是 `data/learning-path.json` 的规则表。
+  引用方式用现成的 `load_module()`（`tools/build-tree-migration.py:110` 有样板）。
+- **年份不另找一份来源**：`read_posts()` 读出来的 front matter `date` 本身
+  就是 `data/date-overrides.json` 灌进去的（`sync-hexo.py` 干的），
+  生成器直接用它，不用再 join 一次。
+
+### 5.2 产出
 
 | 路径 | 内容 |
 | --- | --- |
 | `source/journey/index.md` | 总览页（5 期卡片 + 矩阵 + 选修） |
-| `source/journey/<期 id>/index.md` | 每期一页 |
-| `source/_data/journey.json` | 结构化数据 |
+| `source/journey/<期 id>/index.md` | 每期一页（`p1`…`p5`） |
+| `source/journey/optional/index.md` | 选修线一页 |
 
-### 5.1 数据流
+**不产出 `source/_data/journey.json`** —— 首页不加新卡片（§八），
+这个文件就没有消费者。没有消费者的数据文件是纯负担。
+
+### 5.3 数据流
 
 ```
 data/learning-path.json  ─┐
                           ├─→ build-journey.py ─→ source/journey/**
-data/journey.json        ─┘                └─→ source/_data/journey.json
-data/date-overrides.json ─→ （只用来算年份矩阵）
+data/journey.json        ─┘
+source/_posts/**         ─→ （文章标题、地址、日期、分类）
 ```
 
-### 5.2 `--check` 的语义
+### 5.4 `--check` 的语义
 
 跟 `build-learning-path.py --check` 一致：**规则表对不上语料就红**。
 具体是三件事（§九）。
 
-### 5.3 复用什么、不重写什么
+### 5.5 接进流水线（两处，缺一不可）
 
-- 文章的标题、地址、分类 → 直接复用 `build-learning-path.py` 的
-  `read_posts()` / `classify()`，**不重新实现一遍归类**（归类的唯一真相是
-  `data/learning-path.json` 的规则表）。
+- `package.json` 的 `scripts.sync`：加一步
+  `python3 tools/build-journey.py`（排在 `build-learning-path.py` 之后）。
+- `.github/workflows/hexo.yml`：同样加一步。
+
+**`source/` 是 gitignored 的**（只有 `source/all/` 和 `source/recommended/` 例外），
+所以 `source/journey/**` 是构建产物，每次 CI 都得重新生成。
+
+### 5.6 `--check` 目前没有任何 workflow 在跑
+
+现在**没有一条 workflow 跑过任何 `--check` 模式**。所以这次要么顺手把
+`build-journey.py --check` 加进 `hexo.yml`（它本来就 sync），
+要么这个守卫就只是纸面的。**加进 `hexo.yml`**，不新建 workflow。
+
+### 5.7 复用什么、不重写什么
+
+- 文章的标题、地址、分类 → 复用 `build-learning-path.py` 的
+  `read_posts()` / `classify()`。
 - 页面的框 → 复用 `themes/matery/layout/learning.ejs`（§六.1 要改一处）。
 
 ---
@@ -212,7 +252,19 @@ data/date-overrides.json ─→ （只用来算年份矩阵）
 ```
 
 新增的成长路线页要显示「成长路线」。改法：**面包屑的父级从 front matter 读**，
-缺省仍是 `/learning/`。这样 `learning.ejs` 同时服务两套页面，不新增 layout。
+新增两个键，缺省仍是现在这套：
+
+```yaml
+crumb_label: "成长路线"     # 缺省 "学习路径"
+crumb_path: "/journey/"     # 缺省 "/learning/"
+```
+
+**只改父级这一层**，当期页名不进面包屑 —— 现在赛道页也是这样
+（面包屑是「首页 / 学习路径」，赛道名在 H1 里）。期页保持一致：
+面包屑「首页 / 成长路线」，H1 是「第 1 期 · 打底」。
+
+这样 `learning.ejs` 同时服务两套页面，不新增 layout。
+`tests/test_learning_path.py` 里断言 `learning.ejs` 的那条要跟着改。
 
 （`url_for` 的挂载点前缀问题照旧用 `tools/site_root.py` 解决，
 主站 `/`、镜像站 `/blog`。）
@@ -229,7 +281,7 @@ data/date-overrides.json ─→ （只用来算年份矩阵）
    - 作者在这一期的年份跨度 + 篇数
    - 包含哪些赛道阶段（链到 `/learning/<赛道>/`）
    - 「开始这一期」→ 期页
-4. **选修线**：单独一小节。
+4. **选修线**：单独一小节，链到 `/journey/optional/`。
 5. **「这条路作者走了 8 年」** 的注脚 + 链到 `/learning/`（按学科查）。
 
 ### 6.3 每期页 `/journey/<期 id>/`
@@ -239,18 +291,25 @@ data/date-overrides.json ─→ （只用来算年份矩阵）
 3. **这一期包含的阶段**：每阶段一个小节（阶段标题 + 阶段 `goal` + 文章列表），
    阶段标题链到 `/learning/<赛道>/`。
 4. **作者在这一期**：年份跨度、篇数、矩阵里对应的那几行。
-5. **下一步**：「走完这一期，去 [第 N+1 期](…)」；最后一期给「去选修线」
-   或「回总览」。
+5. **下一步**：「走完这一期，去 [第 N+1 期](…)」；第 5 期给
+   「去[选修线](…/optional/)」。
 
-### 6.4 与 `/learning/` 的关系
+### 6.4 选修线也有独立页 `/journey/optional/`
+
+它有 79 篇文章，得有地方放；而且第 5 期的「下一步」要链到它。
+结构跟期页一样，只是没有 `first_read`、也没有「下一期」。
+
+于是生成的页面一共 **7 个**：总览 1 + 期页 5 + 选修 1。
+
+### 6.5 与 `/learning/` 的关系
 
 **兄弟关系，不合并、不替代。**
 
 | | `/learning/` | `/journey/` |
 | --- | --- | --- |
-| 组织方式 | 按学科（11 赛道） | 按顺序（5 期） |
+| 组织方式 | 按学科（11 赛道） | 按顺序（5 期 + 选修） |
 | 回答的问题 | 「这个主题有哪些文章」 | 「我现在该学什么」 |
-| 入口 | 首页的面板 | `/learning/` 总览页首屏 + 菜单 |
+| 入口 | 首页的面板 + 菜单 | `/learning/` 总览页首屏 + 菜单 |
 
 两页互相链接：总览页顶部链到成长路线，成长路线页每期链回对应的赛道页。
 
@@ -265,8 +324,18 @@ data/date-overrides.json ─→ （只用来算年份矩阵）
 `data/date-overrides.json`（591 条，每篇文章的首次提交日期，已固化）。
 生成器按「期包含的阶段」把这些文章的年份统计出来。
 
-口径写清楚：**只算 `docs/` 的 591 篇**。6 期视频内容单元住在 `aiv/`，
-不在 `docs/`，没有日期条目，不参与统计。
+口径写清楚：**只算 `docs/` 的 591 篇**。
+
+6 期视频内容单元住在 `aiv/`，**不在 `docs/` 里**，没有日期条目 ——
+但它们**在规则表里有归属**（`data/learning-path.json` 用 `path_exact` 把
+它们分别放进 postgresql 的 L4 / L5 / L7）。所以：
+
+- 生成器**显式排除** `video/` 开头的 `rel`；
+- 期页列的文章**不含**视频内容单元，矩阵的合计因此是 591；
+- 视频内容单元在 `/learning/postgresql/` 那个赛道页上照旧有（那是另一套口径，
+  赛道页跟期页不是一回事）。
+
+这个口径必须在页面上写出来，否则读者会数出 597 和 591 对不上。
 
 ### 7.2 矩阵（2026-11-27 实测）
 
@@ -308,7 +377,14 @@ data/date-overrides.json ─→ （只用来算年份矩阵）
 
 1. **菜单加一项「学习路径」→ `/learning/`**（菜单：首页 / 归档 / 学习路径 / 关于）。
 2. **`/learning/` 总览页首屏加一行**：想按一条线走通 → [成长路线]。
-3. **首页学习路径面板加一行**：「面板是按学科分的；要按顺序走，看成长路线」。
+3. **首页学习路径面板**：把标题行右侧那一个链接「看完整的学习地图」
+   变成**两个**：「按学科看」→ `/learning/`、「按顺序走一条路」→ `/journey/`。
+
+第 3 条**不新增行、不改高度** —— 首页要的是正好一屏
+（`tests/test_home_one_screen.py` 里二十多条守卫盯着它），
+所以只在已有的标题行里并排放两个链接。
+现在那条守卫断言标题行里同时有 `learning-path__all-link` 和 `/learning/`，
+加第二个链接不会让它红。
 
 首页**不加新的卡片** —— 那个面板已经占满一屏了，再加一块就把首页撑破。
 
@@ -316,21 +392,29 @@ data/date-overrides.json ─→ （只用来算年份矩阵）
 
 ## 九、守卫
 
-新增 `tests/test_journey_path.py`（不依赖构建产物，进 `site-guard.yml`）：
+### 9.1 结构守卫：`tests/test_journey_path.py`（不依赖构建产物）
 
 1. **阶段全覆盖**：48 个阶段，每个**恰好**属于一期（主线 5 期之一，或选修）。
    少一个、多一个、重复一个，都红。
 2. **引用必须存在**：`data/journey.json` 里每个 `"<赛道>/<阶段>"` 都得在
    `data/learning-path.json` 里找得到。
 3. **期数与顺序固定**：主线恰好 5 期，id 依次 `p1`…`p5`，顺序即阅读顺序。
-4. **起步文章必须存在**：`first_read` 的每个 `path` 得在 `docs/` 里真实存在。
-5. **年份口径**：`data/date-overrides.json` 的条目数 = `docs/` 的文章数，
-   且每期的篇数加起来 = 591（视频单元不计入）。
-6. **链接**：`/journey/` 页面里的站内链接不许指向不存在的页面（复用
-   `tools/check-internal-links.py` 的产物侧检查）。
+4. **起步文章必须存在，且属于本期**：`first_read` 的每个 `path`
+   得在 `docs/` 里真实存在，**且**落在本期的某个阶段里。
 
-另有一条**运行期**守卫：`build-journey.py --check` 在 CI 里跑，
-规则表改了但 `data/journey.json` 没跟上（新增了阶段没归期）就红。
+### 9.2 运行期守卫：`build-journey.py --check`（要构建产物）
+
+5. **篇数自洽**：各期篇数加起来 = 语料里 `docs/` 的文章数
+   （**现算，不写死 591** —— 文章是会加的，写死 591 下一篇就红）。
+   同一批数字还要跟 `data/date-overrides.json` 的条目数对得上。
+   视频内容单元（`video/` 开头）不计入。
+6. **页面里的站内链接不许指向不存在的页面**：在 `--check` 里对**生成出来的
+   Markdown**（不写文件）做链接检查 —— `/journey/` 页在 CI 里根本不存在
+   `public/`，所以不能靠 `tools/check-internal-links.py` 的产物侧检查。
+   产物侧那道照旧会覆盖到 `/journey/`（它跑在 `hexo generate` 之后），
+   两道互补：前者管生成物里的相对链接，后者管落盘后的站内 href。
+
+CI 里 `--check` 的位置：`hexo.yml`（它本来就在 sync，能拿到 `source/_posts/`）。
 
 ---
 
@@ -338,13 +422,17 @@ data/date-overrides.json ─→ （只用来算年份矩阵）
 
 | 项 | 通过标准 |
 | --- | --- |
-| `pytest tests/` | 全绿（现有 571 passed / 3 skipped 不退） |
+| `pytest tests/` | 全绿（主检出现在是 **571 passed / 3 skipped**；worktree 里 `source/` 不在，另有 9 条会 skip） |
 | `build-journey.py --check` | 退出码 0 |
 | `build-learning-path.py --check` | 退出码 0，覆盖 597 / 597 |
 | `capture-dates.py --check` | 逐篇比对 591 篇，漂移 0 |
-| `npx hexo generate` | 无错；`/journey/` 与 `/journey/<期>/` 全部生成 |
+| `npx hexo generate` | 无错；`/journey/` 7 个页面全部生成 |
 | `check-internal-links.py` | 产物侧断链 0 |
 | 页面抽查 | `/journey/` 总览 + 5 个期页 + 选修，人工看一遍 |
+
+**验收时新建的文章**：按 2026-11-26 的做法，站内要有一篇讲这次设计的文章
+（`docs/source-tracks/platform-meta/L4-info-architecture/` 下），
+跟目录重排那篇配对。
 
 ---
 
@@ -355,13 +443,50 @@ data/date-overrides.json ─→ （只用来算年份矩阵）
    那是另一个设计。
 2. **2020–2021 的空白期在页面上是「0 篇」。** 它如实反映了作者那两年没写，
    不解释成「他那时候在忙别的」—— 站上没有依据。
-3. **6 期视频内容单元不在分期里。** 它们不在 `docs/`，没有日期，
-   也没有阶段归属（`path_exact` 单列规则）。
+3. **6 期视频内容单元不在分期里。** 它们不在 `docs/`，没有日期条目。
+   但它们**在规则表里是 postgresql L4/L5/L7 的文章** —— 所以期页的篇数
+   （591）与赛道页的篇数会不一样，页面上必须写明这个口径（§七.1）。
 4. **`/journey/` 与 `/learning/` 是两套入口。** 两页必须互相链清楚，
    否则读者会以为是两批重复的文章 —— 这是本设计最容易做砸的地方，
-   §六.4 的互链是硬要求，不是可选项。
+   §六.5 的互链是硬要求，不是可选项。
 5. **分期是手写的。** 新增赛道或阶段时，`data/journey.json` 不会自动更新，
-   靠 §九 的第 1 条守卫把它逼出来（漏了就红）。
+   靠 §九.1 第 1 条守卫把它逼出来（漏了就红）。
+6. **人写的文案（`goal` / `can_do` / `first_read`）是手工的。**
+   新增阶段不会自动长出起步文章，只能靠 §九.1 第 4 条守卫发现「没写」。
+
+---
+
+## 十二、人写的文案
+
+`data/journey.json` 里有三类人写的字段：**每期的 `goal`**（这一期解决什么）、
+**`can_do`**（读完能做什么）、**`first_read`**（先读哪篇 + 为什么）。
+
+**由施工方写，不阻塞。** 依据有三样，都现成：
+
+1. 赛道/阶段已有的 `goal`（`data/learning-path.json` 里每阶段都有）；
+2. 作者的真实成长轨迹（年份矩阵，§七.2）；
+3. 文章本身的内容（起步文章要真读过才能写「为什么先读它」）。
+
+`first_read` **每期 1–2 篇**，不能多 —— 起步文章的意义是「现在读哪篇」，
+给一堆等于没给。选哪篇的判据：这一期里**最早写**的那几篇，
+或者**最能代表这一期目标**的那篇（跑通一个陌生项目 / 定位一个系统级问题 /
+说清网络分区 / 读懂一条 SQL 的轨迹 / 读懂逻辑复制的 worker 模型）。
+
+**语气**：见 §十二.1。
+
+### 十二.1 语气（2026-11-27 待定）
+
+站内现有的 platform-meta 文章（讲目录、流水线、分类树那几篇）用的是
+**中性第三人称**：讲作者时写「作者每加一篇新文章」，讲读者时写「你」。
+这一页要讲的是 growdu 本人的成长过程，语气有三种选法：
+
+| | 写法 | 效果 |
+| --- | --- | --- |
+| A | 全篇第三人称（「作者 2018 年在写 Go 入门」） | 跟站内其他页面一致，但「从菜鸟到专家」这条线被抽掉了 |
+| B | 全篇第一人称（「我 2018 年在写 Go 入门」） | 最像个人博客，最有代入感，但跟站内现有语气不一致 |
+| C | 混合：**成长故事用「我」，给读者的指示用「你」** | 「我 2022 年一口气啃了 70 篇数据面」+「这一期读完，你能…… |
+
+**待站长拍板。** 施工方的默认取 C。
 
 ---
 
