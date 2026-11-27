@@ -26,7 +26,7 @@ date: 2026-11-12
 - 上游源码与设计稿中已公开的机制描述
 
 > ⚠️ **本期的口径红线（硬要求）**：本期讲的是**我自己写的一套订阅端并行 apply 设计方案**
-> （出处：`docs/source-tracks/postgresql/logical-replication/logical_parallel_apply/` 下三份内部设计文档）。
+> （出处：`docs/source-tracks/postgresql/L7-logical-replication/logical_parallel_apply/` 下三份内部设计文档）。
 > 它**尚未合入上游主线**，也没有上线实现。
 > 口播第 10 句必须把这条边界说出来，不能讲成「PostgreSQL 18 已经这样了」。
 >
@@ -105,12 +105,12 @@ date: 2026-11-12
 
 | 陈述 | 出处 | 状态 |
 | --- | --- | --- |
-| 上游的 `streaming=parallel` 是**单事务内**多流并行，事务之间仍是串行 | `docs/source-tracks/postgresql/logical-replication/logical_parallel_apply/逻辑复制并行apply概要设计文档.md` §3.3、§11 | 上游公开机制，可引用 |
+| 上游的 `streaming=parallel` 是**单事务内**多流并行，事务之间仍是串行 | `docs/source-tracks/postgresql/L7-logical-replication/logical_parallel_apply/逻辑复制并行apply概要设计文档.md` §3.3、§11 | 上游公开机制，可引用 |
 | 方案复用上游已有的 `ParallelApplyWorkerInfo` 与 `pa_launch_parallel_worker`，只加窗口调度层 | 同上 §3.3 | 上游公开机制 + 内部设计 |
-| 冲突键由表、索引与键值构成（`relid` / `index_oid` / `key_values`） | `docs/source-tracks/postgresql/logical-replication/logical_parallel_apply/逻辑复制并行apply依赖冲突检测设计文档.md` §4.1 | **内部设计文档** |
+| 冲突键由表、索引与键值构成（`relid` / `index_oid` / `key_values`） | `docs/source-tracks/postgresql/L7-logical-replication/logical_parallel_apply/逻辑复制并行apply依赖冲突检测设计文档.md` §4.1 | **内部设计文档** |
 | 用 `last_writer` 做到 O(1) 判断「谁最后写过这个 key」 | 同上 §5.1、§5.2 | **内部设计文档** |
 | 窗口内构造依赖 DAG，按拓扑序调度 | `逻辑复制并行apply概要设计文档.md` §8.1、§9.1、§9.2 | **内部设计文档** |
-| 窗口默认 1000 笔事务 / 10 秒 / 1GB，三者任一达到即触发调度 | `docs/source-tracks/postgresql/logical-replication/logical_parallel_apply/逻辑复制并行apply接口文档.md` §5.1、§5.5 | **内部设计文档**（文档另列 `transaction_parallel_min_transactions` 默认 5，为最小事务数门槛） |
+| 窗口默认 1000 笔事务 / 10 秒 / 1GB，三者任一达到即触发调度 | `docs/source-tracks/postgresql/L7-logical-replication/logical_parallel_apply/逻辑复制并行apply接口文档.md` §5.1、§5.5 | **内部设计文档**（文档另列 `transaction_parallel_min_transactions` 默认 5，为最小事务数门槛） |
 | 提交顺序由提交协调器按 commit LSN 排序后逐个提交 | `逻辑复制并行apply概要设计文档.md` §10.1、§10.2 | **内部设计文档** |
 
 > **不得表述为**：PostgreSQL 18 已经支持多事务并行 apply；

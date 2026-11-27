@@ -101,7 +101,7 @@ openGauss 的做法是给每次提交发一个号，叫 CSN。
 
 | 陈述 | 出处 | 状态 |
 | --- | --- | --- |
-| 并发时 commit 的先后是乱的 | `docs/source-tracks/postgresql/logical-replication/opengauss-csn-total-ordering/index.md` §6.2（「即使乱序执行，返回值也是严格递增的」） | 上游公开源码，可引用 |
+| 并发时 commit 的先后是乱的 | `docs/source-tracks/postgresql/L7-logical-replication/opengauss-csn-total-ordering/index.md` §6.2（「即使乱序执行，返回值也是严格递增的」） | 上游公开源码，可引用 |
 | 按时间戳排并不可靠 | **通用并发事实**，不是 openGauss 专有结论 | 不标注出处；只作机制背景 |
 | `nextCommitSeqNo` 用 `pg_atomic_fetch_add_u64` 分配 CSN | 同上 §二、§6.2（源码行号已记） | 上游公开源码，可引用 |
 | CSN 单调性来自原子自增，与 commit 实际时刻无关 | 同上 §6.2 | 上游公开源码，可引用 |

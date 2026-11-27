@@ -13,7 +13,7 @@ from pathlib import Path
 from pyv import character
 
 SCRIPT = character.AIV_ROOT / "scripts" / "sync_publish_docs.py"
-PUBLISH_ROOT = character.REPO_ROOT / "docs" / "life" / "aiv"
+PUBLISH_ROOT = character.REPO_ROOT / "docs" / "source-tracks" / "blogging" / "L4-video-pipeline" / "aiv"
 
 # `sync-hexo.py` 重写站内相对链接用的正则（那边一个字都不能改，只能守自己）
 LINK_RE = re.compile(r"(?<!!)\[([^\]]*)\]\(([^)]+)\)")

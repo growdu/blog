@@ -104,7 +104,7 @@ WAL 是操作级记录，一行只写一个动作。
 
 | 陈述 | 出处 | 状态 |
 | --- | --- | --- |
-| WAL 记录是操作级记录，只含操作类型、relation OID、tuple 数据/ctid | `docs/source-tracks/postgresql/logical-replication/逻辑复制解惑.md` §「WAL 中事务变更特点」 | 上游公开机制，可引用 |
+| WAL 记录是操作级记录，只含操作类型、relation OID、tuple 数据/ctid | `docs/source-tracks/postgresql/L7-logical-replication/逻辑复制解惑.md` §「WAL 中事务变更特点」 | 上游公开机制，可引用 |
 | WAL 记录带事务号 xid | 同上 | 上游公开机制，可引用 |
 | 逻辑解码按 LSN 依次解析 WAL | 同上 §「LSN 推进」 | 上游公开机制，可引用 |
 | 交错事务的变更缓存到 ReorderBuffer | 同上 §「LSN 推进」 | 上游公开机制，可引用 |

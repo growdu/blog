@@ -138,7 +138,7 @@
    - 建议：把 s03 的 `txn_ids` 改成与 s02 的 `commit_order` **不同**的顺序
      （例如 `["T1","T3","T2"]` → T1=101、T3=102、T2=103）。这样 commit 序
      （T2,T3,T1）在号上就是倒着走的，「号序由领取顺序决定」才立得住。
-     上游文档 `docs/source-tracks/postgresql/logical-replication/opengauss-csn-total-ordering/index.md` §6.8 给的
+     上游文档 `docs/source-tracks/postgresql/L7-logical-replication/opengauss-csn-total-ordering/index.md` §6.8 给的
      正是这个反例。
    - 原因：契约把两段的顺序写成了同一个列表（`s02.commit_order` 与
      `s03.txn_ids`），渲染只是照着画。
@@ -250,7 +250,7 @@
 1. 事实：计数器「100 → 发出 101」的语义方向
    - 画面：帧 16 上计数器读数是 **100**、尚无人取号；s03 里 T2 取到 **101**，
      即「计数器本来是 100，取了一个号才变成 101」（代码注释原话）。
-   - 上游文档 `docs/source-tracks/postgresql/logical-replication/opengauss-csn-total-ordering/index.md` 写的是
+   - 上游文档 `docs/source-tracks/postgresql/L7-logical-replication/opengauss-csn-total-ordering/index.md` 写的是
      `nextCommitSeqNo` 启动时为 4、`pg_atomic_fetch_add_u64` **返回旧值**，
      「第一个正常 commit 拿到的 CSN 是 4」；§6.8 的例子里 T1 拿到 **100**、
      T2 拿到 101、T3 拿到 102。

@@ -228,7 +228,7 @@
 1. 事实：s05 把 COMMIT 画成「随组一起发到订阅端」的一块芯片
    - 画面：T1 这一组是 INSERT / UPDATE / **COMMIT** 三块，
      白底 COMMIT 那块一路飞进「订阅端」框。
-   - 出处文档：`docs/source-tracks/postgresql/logical-replication/逻辑复制解惑.md:124` 写的是
+   - 出处文档：`docs/source-tracks/postgresql/L7-logical-replication/逻辑复制解惑.md:124` 写的是
      「读取 150 → xid 10 COMMIT → 输出 ReorderBuffer[10] 的**所有变更**」
      ——COMMIT 是**触发标记**，不是「变更」。
    - 契约：`contracts/wal-interleave.json:82` 明确把 T1 的 ops 写成

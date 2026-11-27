@@ -26,7 +26,7 @@ from pathlib import Path
 
 AIV_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = AIV_ROOT.parent
-PUBLISH_DIR = REPO_ROOT / "docs" / "life" / "aiv"
+PUBLISH_DIR = REPO_ROOT / "docs" / "source-tracks" / "blogging" / "L4-video-pipeline" / "aiv"
 
 # 要在 docs/source-tracks/blogging/L4-video-pipeline/aiv/ 留一份的文档（相对 aiv/）
 PUBLISH_DOCS = (

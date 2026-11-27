@@ -24,10 +24,12 @@ def test_aiv_sits_next_to_weixin_at_repo_root():
     assert (repo_root / "aiv").is_dir()
     assert (repo_root / "weixin").is_dir()
     assert character.AIV_ROOT == repo_root / "aiv"
-    # 旧位置只剩发布用的文档副本，工程内容（pipeline/ 等）必须已经搬走
-    legacy = repo_root / "docs" / "life" / "aiv"
-    assert legacy.is_dir()
-    assert not (legacy / "pipeline").exists(), "工程目录还留在旧位置"
+    # 发布用的文档副本在 `docs/` 里的位置（2026-11-26 目录重排后
+    # 从 `docs/life/aiv/` 搬到了 `docs/source-tracks/blogging/L4-video-pipeline/aiv/`），
+    # 那里只有文档副本，工程内容（pipeline/ 等）必须不在那儿。
+    publish_copy = repo_root / "docs" / "source-tracks" / "blogging" / "L4-video-pipeline" / "aiv"
+    assert publish_copy.is_dir()
+    assert not (publish_copy / "pipeline").exists(), "工程目录混进了发布副本"
 
 
 def test_avatar_asset_lives_in_repo():

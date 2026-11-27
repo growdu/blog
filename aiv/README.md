@@ -247,7 +247,7 @@ make review-frames EP=<期号>   # 抽帧 + 清单（帧不入库，清单入库
 ## 发布到博客的那一份
 
 `aiv/` 在仓库根，不在 `docs/` 下面，而 `sync-hexo.py` 只扫 `docs/`——
-所以上面那些**文档**在 `docs/life/aiv/` 另存一份，博客上发的就是那一份。
+所以上面那些**文档**在 `docs/source-tracks/blogging/L4-video-pipeline/aiv/` 另存一份，博客上发的就是那一份。
 
 改完 `aiv/` 里的文档后跑：
 
@@ -278,7 +278,7 @@ python3 aiv/scripts/sync_publish_docs.py
 ### AIV 专题页
 
 专题页「AIV 视频生产线：九个环节、唯一契约与入库边界」
-（正本 `index.md`，发布副本 `docs/life/aiv/index.md`）讲的是这条线本身：
+（正本 `index.md`，发布副本 `docs/source-tracks/blogging/L4-video-pipeline/aiv/index.md`）讲的是这条线本身：
 九个环节、唯一契约、入库边界，以及「片尾接回片头」的配乐闭环。
 
 它在目录迁移提交 `0b9cb9a` 里被删过，仓库里有 **8 处链接**指向它、当时全 404。
@@ -291,12 +291,12 @@ python3 aiv/scripts/sync_publish_docs.py
 
 | 位置 | 处数 |
 | --- | --- |
-| `docs/life/_index.md` | 2 |
-| `docs/life/blog-to-wechat/index.md` | 3 |
-| `docs/life/shehui/media-account/index.md` | 2 |
+| `docs/source-tracks/life/_index.md` | 2 |
+| `docs/source-tracks/blogging/L3-distribution/blog-to-wechat/index.md` | 3 |
+| `docs/source-tracks/life/L3-economy/media-account/index.md` | 2 |
 | `docs/source-tracks/postgresql/_index.md` | 1（路径另错了一层，一并改成 `../../life/aiv/index.html`） |
 
-落地方式：正本 `index.md` + 发布副本 `docs/life/aiv/index.md`，
+落地方式：正本 `index.md` + 发布副本 `docs/source-tracks/blogging/L4-video-pipeline/aiv/index.md`，
 并把 `index.md` 加进 `aiv/scripts/sync_publish_docs.py` 的 `PUBLISH_DOCS`，
 这样副本漂移继续被 `test_publish_copy.py` 抓住。
 
