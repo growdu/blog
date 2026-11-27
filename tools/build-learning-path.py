@@ -524,6 +524,8 @@ def render_overview(tracks: list[dict], total: int) -> str:
         "| --- | --- |",
         "| 只想找一篇能马上用的文章 | [归档页](%s)，按时间翻 |" % _rooted_path("/archives/"),
         "| 想系统学一门技术 | 下面挑一条赛道，从它的 **L1** 开始 |",
+        "| 想按**一条线**从头走到尾 | [成长路线](%s) —— 我自己走过的顺序，5 期主线 + 一段选修 |"
+        % _rooted_path("/journey/"),
         "| 已经在写数据库内核 | %s |" % _deep_dive_cell(tracks),
         "| 只想看看这个站长什么样 | [首页](%s) |" % _rooted_path("/"),
         "",

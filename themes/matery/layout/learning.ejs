@@ -21,7 +21,12 @@
     <div class="learning-page__crumb">
       <a href="<%- url_for('/') %>"><i class="fas fa-home"></i>&nbsp;首页</a>
       <span class="learning-page__crumb-sep">/</span>
-      <a href="<%- url_for('/learning/') %>">学习路径</a>
+      <%# 父级从 front matter 读，缺省仍是「学习路径 → /learning/」。
+          成长路线（/journey/）用的是同一个版式，它在 front matter 里
+          写 crumb_label / crumb_path 把这一层换成它自己。
+          **只换父级这一层** —— 当期页名不进面包屑，期名在 H1 里，
+          跟现在的赛道页一个样。 %>
+      <a href="<%- url_for(page.crumb_path || '/learning/') %>"><%= page.crumb_label || '学习路径' %></a>
     </div>
 
     <div class="card">

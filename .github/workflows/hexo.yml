@@ -95,6 +95,21 @@ jobs:
         # 规则在仓库根的 data/learning-path.json，文章一条都没归上的话
         # 这一步非零退出——「漏归类」不许悄悄发生。
         run: python3 tools/build-learning-path.py
+      - name: Build journey path
+        # 全站文章 → 按**成长顺序**分期的成长路线页（/journey/、5 个期页、
+        # 一页选修）。
+        # 必须在 sync-hexo.py 之后（它读 source/_posts/ 里的编译产物：
+        # 真实标题、真实 permalink、真实日期）、必须在 build-learning-path.py
+        # 之后（归类规则只有一份，期页直接引用规则表里的阶段）、
+        # 必须在 hexo generate 之前（页面要进产物）。
+        #
+        # 先跑一遍 --check：篇数自洽（各期篇数加起来 = 语料篇数 =
+        # data/date-overrides.json 的条目数）与站内链接检查。
+        # 规则对不上语料、或者页面里链了个不存在的地址，这一步非零退出 ——
+        # 成长路线不许悄悄发出一份错的。
+        run: |
+          python3 tools/build-journey.py --check
+          python3 tools/build-journey.py
       - name: Build publish index
         # publish/outbox 的发布状态 → 站点用的发布索引（文章页的「这篇还发到了」）。
         run: python3 tools/build-publish-index.py
@@ -394,6 +409,21 @@ jobs:
         # 这一步跑在 root: /blog/ 改写之后，所以生成的页面里的站内链接
         # 自带 /blog 前缀——镜像站上不会 404。
         run: python3 tools/build-learning-path.py
+      - name: Build journey path
+        # 全站文章 → 按**成长顺序**分期的成长路线页（/journey/、5 个期页、
+        # 一页选修）。
+        # 必须在 sync-hexo.py 之后（它读 source/_posts/ 里的编译产物：
+        # 真实标题、真实 permalink、真实日期）、必须在 build-learning-path.py
+        # 之后（归类规则只有一份，期页直接引用规则表里的阶段）、
+        # 必须在 hexo generate 之前（页面要进产物）。
+        #
+        # 先跑一遍 --check：篇数自洽（各期篇数加起来 = 语料篇数 =
+        # data/date-overrides.json 的条目数）与站内链接检查。
+        # 规则对不上语料、或者页面里链了个不存在的地址，这一步非零退出 ——
+        # 成长路线不许悄悄发出一份错的。
+        run: |
+          python3 tools/build-journey.py --check
+          python3 tools/build-journey.py
       - name: Build publish index
         run: python3 tools/build-publish-index.py
       - name: Build podcast index

@@ -227,7 +227,7 @@ body.DarkMode .learning-page__crumb a:focus-visible {
   color: var(--lane-color, #009688);
 }
 
-/* 「看完整的学习地图」这条链接在标题行里（首页只这么用），
+/* 标题行右边那两条入口（「按学科看」/「按顺序走一条路」）的样式，
    单独占一行的 .learning-path__all 外壳 2026-11-18 已删。 */
 .learning-path__all-link {
   display: inline-flex;
@@ -492,6 +492,12 @@ body.DarkMode .learning-path__all-link:focus-visible {
     flex: 0 0 auto;
     padding: 4px 12px;
     font-size: 15px;
+  }
+  /* 标题行右边现在有**两个**入口（按学科看 / 按顺序走一条路）。
+     auto 外边距只给第一个 —— 两个都给的话，空隙会被平分，
+     两个按钮会被顶到两头，中间空一大块。第二个靠 flex 的 gap 隔开。 */
+  body.home-page .learning-path .learning-path__all-link--journey {
+    margin-left: 0;
   }
 
   /* 卡片网格：行高跟着面板走 —— 面板有多余的空间就分给行，卡片跟着长高，

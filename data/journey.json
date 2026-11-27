@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "title": "成长路线",
+  "subtitle": "从菜鸟到内核专家，这条路我走了 8 年",
+  "periods": [
+    {
+      "id": "p1",
+      "title": "打底",
+      "goal": "把工程基本功练成手感 —— 数据结构、编译调试、容器、Web 与检索，这一层不扎实，后面每一层都会漏。",
+      "can_do": "不查资料写出一个 C 程序、读懂一次 core dump、用 Docker 起一套环境，也能自己判断该用什么工具去检索答案。",
+      "stages": [
+        "engineering/L1",
+        "engineering/L2",
+        "engineering/L3",
+        "engineering/L4",
+        "life/L1"
+      ],
+      "first_read": [
+        {
+          "path": "source-tracks/engineering/L1-basics/data-struct.md",
+          "why": "我最早写的一批东西就是它 —— 数据结构、字符串、文件、进程，全是刚工作那阵子为了把手练热记下来的。先读这篇，你就知道我起步时手里拿的是什么。"
+        },
+        {
+          "path": "source-tracks/life/L1-learning-method/00-intro.md",
+          "why": "这一期读完再回头看它。这篇《编程之路》是我 2025 年回头写的 —— 把我这些年怎么学、怎么写，摊开成一条线。"
+        }
+      ]
+    },
+    {
+      "id": "p2",
+      "title": "看见机器",
+      "goal": "从用户态往下走一层：命令与脚本、进程的地址空间、内核机制、网络协议与抓包，再到 DPDK / VPP 这套用户态数据面。",
+      "can_do": "看懂一个进程为什么占着内存不掉、一次 TCP 连接为什么卡在重传、你抓到的包为什么对不上号。",
+      "stages": [
+        "linux/L1",
+        "linux/L2",
+        "linux/L3",
+        "linux/L4",
+        "linux/L5",
+        "dataplane/L1",
+        "dataplane/L2",
+        "dataplane/L3",
+        "dataplane/L4"
+      ],
+      "first_read": [
+        {
+          "path": "source-tracks/dataplane/L1-environment/day1.md",
+          "why": "2022 年 11 月，我第一次在 ARM 机器上把 DPDK 编译出来、跑起来的那一天。这一期所有文章都是从这种「先跑起来」开始的 —— 环境跑不通，后面全是空谈。"
+        },
+        {
+          "path": "source-tracks/linux/L2-memory-and-linking/不得不知道的linux库的装载、链接.md",
+          "why": "用户态和内核之间那道口子，得从地址讲起。这篇讲的是程序怎么被装进内存、符号的地址从哪来 —— 看完你才知道「进程」在机器上到底是什么。"
+        }
+      ]
+    },
+    {
+      "id": "p3",
+      "title": "系统会怎么坏",
+      "goal": "把分布式要解决什么、要付出什么想清楚：一致性协议怎么选主记账、高可用方案怎么选、机房里的坑长什么样。",
+      "can_do": "解释脑裂是怎么发生的、为什么调 quorum 动的是可用性而不是一致性，以及网络割裂时你该先看哪个日志。",
+      "stages": [
+        "distributed/L1",
+        "distributed/L2",
+        "distributed/L3",
+        "distributed/L4"
+      ],
+      "first_read": [
+        {
+          "path": "source-tracks/distributed/L1-foundations/分布式一致性协议.md",
+          "why": "我把这一期的问题写在最前面：分布式到底要解决什么、要付出什么。这一篇是我 2022 年 6 月一次铺开整条线时写的第一篇 —— 先读它，后面的 Raft、Patroni 才有位置。"
+        },
+        {
+          "path": "source-tracks/distributed/L4-field-notes/corosync qnet挂死场景分析解决.md",
+          "why": "这一期的终点是机房里的真事故。qnet 挂死那几天我在查什么、最后怎么收的场 —— 前面四个阶段读完再读这篇，它才有分量。"
+        }
+      ]
+    },
+    {
+      "id": "p4",
+      "title": "走进内核",
+      "goal": "沿着一条 SQL 的完整轨迹走一遍：存储怎么落页、索引怎么走管线、事务怎么隔离、WAL 怎么写、复制怎么追、扩展怎么写。",
+      "can_do": "独立读懂一条 SQL 在 PostgreSQL 里的完整轨迹，能定位一次 WAL 落盘的完整链路，能说清楚 MVCC 与锁的每一个落点。",
+      "stages": [
+        "postgresql/L1",
+        "postgresql/L2",
+        "postgresql/L3",
+        "postgresql/L4",
+        "postgresql/L5",
+        "postgresql/L6",
+        "postgresql/L8"
+      ],
+      "first_read": [
+        {
+          "path": "source-tracks/postgresql/L1-getting-started/pgsql_main_structure.md",
+          "why": "进内核之前得先有一张全局图。这篇是我 2022 年 4 月写的第一篇 PostgreSQL 文章，讲整体结构 —— 后面每个阶段，都是往这张图上填细节。"
+        },
+        {
+          "path": "source-tracks/postgresql/L5-wal-and-recovery/xlog.md",
+          "why": "WAL 是内核的分水岭：往前是存储和查询，往后是复制和恢复。这一篇把 WAL 的写入链路先打通 —— 读它的时候，顺手把 L5 的其他几篇过一遍。"
+        }
+      ]
+    },
+    {
+      "id": "p5",
+      "title": "深水区",
+      "goal": "进到最厚的那块：逻辑复制怎么把 WAL 变成一条可订阅的变更流，解码、重组、Apply、并行四条线各干什么；再加上 Linux 与 Ceph 的源码专项。",
+      "can_do": "说清一个逻辑复制 worker 的完整生命周期、一次 DDL 怎么在变更流里走完，也能讲出 Linux 里一次系统调用、Ceph 里一次写请求各自经过哪些层。",
+      "stages": [
+        "postgresql/L7",
+        "linux-kernel/L1",
+        "linux-kernel/L2",
+        "linux-kernel/L3",
+        "ceph/L1",
+        "ceph/L2"
+      ],
+      "first_read": [
+        {
+          "path": "source-tracks/postgresql/L7-logical-replication/逻辑解码/index.md",
+          "why": "深水区的入口。我 2026 年 3 月开这一块的第一篇：先把 WAL 怎么变成一条可订阅的变更流弄明白 —— 解码、重组、Apply、并行，后面几十篇都挂在这条链上。"
+        },
+        {
+          "path": "source-tracks/postgresql/L7-logical-replication/逻辑复制源码分析.md",
+          "why": "这一期最该慢读的一篇。前面讲清了机制，这篇顺着源码走一遍发送侧的完整链路 —— 读完，你才真的进到深水区。"
+        }
+      ]
+    }
+  ],
+  "optional": {
+    "id": "optional",
+    "title": "另一条线",
+    "goal": "主线之外的四条线：AI 与工具、博客与自媒体、这个仓库自己的元数据，以及人生与成长里的考试、周期与私人记录。",
+    "can_do": "把 AI 接进日常工作流、把内容分发到五个平台，也能看懂这个站是怎么从一个仓库长出来的。",
+    "stages": [
+      "ai-tools/L1",
+      "ai-tools/L2",
+      "ai-tools/L3",
+      "ai-tools/L4",
+      "blogging/L1",
+      "blogging/L2",
+      "blogging/L3",
+      "blogging/L4",
+      "platform-meta/L1",
+      "platform-meta/L2",
+      "platform-meta/L3",
+      "platform-meta/L4",
+      "platform-meta/L5",
+      "platform-meta/L6",
+      "life/L2",
+      "life/L3",
+      "life/L4"
+    ]
+  }
+}

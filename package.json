@@ -5,7 +5,7 @@
   "scripts": {
     "build": "hexo generate",
     "server": "hexo server",
-    "sync": "python3 tools/sync-hexo.py && python3 tools/build-video-pages.py && python3 tools/build-learning-path.py && python3 tools/build-publish-index.py"
+    "sync": "python3 tools/sync-hexo.py && python3 tools/build-video-pages.py && python3 tools/build-learning-path.py && python3 tools/build-journey.py && python3 tools/build-publish-index.py"
   },
   "hexo": {
     "version": "7.3.0"

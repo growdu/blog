@@ -34,7 +34,14 @@
         全站 <%= _lpData.total %> 篇文章分成 <%= _lpTracks.length %> 条赛道 —— 每条都排好了顺序，挑一条走
       </p>
       <a class="learning-path__all-link" href="<%- url_for('/learning/') %>">
-        看完整的学习地图<i class="fas fa-arrow-right"></i>
+        按学科看<i class="fas fa-arrow-right"></i>
+      </a>
+      <%# 2026-11-27：成长路线（/journey/）上线，标题行右边多一个入口。
+          两条路看的是**同一批文章**，排法不同：
+          这里按学科（11 条赛道），成长路线按顺序（5 期 + 选修）。
+          不新增行 —— 首页要的是正好一屏，这一行的高度不能变。 %>
+      <a class="learning-path__all-link learning-path__all-link--journey" href="<%- url_for('/journey/') %>">
+        按顺序走一条路<i class="fas fa-arrow-right"></i>
       </a>
     </div>
 
