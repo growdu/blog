@@ -255,7 +255,7 @@
         {
           "id": "L3",
           "title": "进程与内存",
-          "goal": "进程与线程在内核里怎么工作：fork 复制了什么、execve 怎么换掉进程镜像、缺页与 COW 怎么把内存管起来。",
+          "goal": "进程与线程在内核里怎么工作：fork 复制了什么、execve 怎么换掉进程镜像、缺页与 COW 怎么把内存管起来、EEVDF 又怎么在核之间调度它们。",
           "match": [
             {
               "path_prefix": "source-tracks/linux-kernel/process-memory/"

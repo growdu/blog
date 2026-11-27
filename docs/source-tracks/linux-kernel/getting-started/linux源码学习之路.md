@@ -144,7 +144,7 @@ Linux 内核里**没有「线程」这个独立概念**：
 | 02 | 编译与启动：从 `start_kernel` 到第一个用户态进程 | 架构与数据路径 |
 | 03 | 进程与线程：`fork`、`clone`、`exec` 到底做了什么 | 进程与内存 |
 | 04 | 内存管理：地址空间、缺页、页分配器 | 进程与内存 |
-| 05 | 调度器：CFS、负载均衡与上下文切换 | 进程与内存 |
+| 05 | 调度器：EEVDF、负载均衡与上下文切换 | 进程与内存 |
 | 06 | VFS：一次 `open` 的完整链路与 inode/dentry | 文件与 I/O |
 | 07 | 页缓存与回写：为什么「写完了」不等于「落盘了」 | 文件与 I/O |
 | 08 | 块层与 I/O 调度：bio、request、blk-mq | 文件与 I/O |
@@ -153,7 +153,7 @@ Linux 内核里**没有「线程」这个独立概念**：
 | 11 | 观测与调试：perf、ftrace、bpftrace、crash、eBPF | 内核工程实践 |
 | 12 | 现代内核的变化：Rust、io_uring、RISC-V 与多架构 | 内核工程实践 |
 
-> 01、02、03、04 已写完；后面的章节会陆续补上。
+> 01、02、03、04、05 已写完；后面的章节会陆续补上。
 
 ## 3. 在 65000 个 C 文件里怎么找到你要的函数
 
@@ -348,6 +348,7 @@ perf report
 | `copy_process` 在 `fs/fork.c` | 搬到 `kernel/fork.c:2029`；入口是 `kernel_clone`（`:2744`），`do_fork` **已删除** |
 | `struct task_struct` 在 `include/linux/sched/task.h` | 实际在 `include/linux/sched.h:836` |
 | `load_balance` / `find_busiest_cgroup` / `migrate_tasks` | **全没了**。`kernel/sched/balance.c` 不存在，改成 `sched_balance_domains`（`kernel/sched/fair.c:14261`） |
+| CFS 按 `vruntime` 最小挑任务、`cfs_rq->min_vruntime` 作基准 | 公平调度器已是 **EEVDF**：按 eligibility + `deadline` 挑（`kernel/sched/fair.c:1130`），`cfs_rq` 里没有 `min_vruntime`；`sched_slice()` 也不存在了 |
 | `kernel/sched/switch.c` 里的 `context_switch` | 合并进 `kernel/sched/core.c:5525` |
 | `tick_sched_handle_tick`（`kernel/sched/time.c`） | 改名 `tick_sched_handle`（`kernel/time/tick-sched.c:275`）；`kernel/sched/time.c` **不存在** |
 | `__alloc_pages` / `___alloc_pages` | 改名 `__alloc_pages_noprof`（`mm/page_alloc.c:5527`）/ `__alloc_frozen_pages_noprof`（`:5437`） |
@@ -408,3 +409,4 @@ perf report
 - [02 编译与启动：从 `start_kernel` 到第一个用户态进程](../architecture/learning-path/02-编译与启动-从start_kernel到第一个用户态进程.md)
 - [03 进程与线程：fork、clone、exec 到底做了什么](../process-memory/learning-path/03-进程与线程-fork-clone-exec到底做了什么.md)
 - [04 内存管理：地址空间、缺页、页分配器](../process-memory/learning-path/04-内存管理-地址空间缺页页分配器.md)
+- [05 调度器：EEVDF、负载均衡与上下文切换](../process-memory/learning-path/05-调度器-EEVDF负载均衡与上下文切换.md)
