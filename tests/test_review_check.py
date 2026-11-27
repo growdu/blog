@@ -133,7 +133,7 @@ def test_load_doc_reads_first_h1_as_title(tmp_path):
 def test_cli_json_output_has_expected_shape():
     """集成：真跑一次 CLI，检查 JSON 结构。"""
     target = (REPO_ROOT / "docs" / "source-tracks" / "postgresql" /
-              "transaction-mvcc" / "postgresql-mvcc" / "index.md")
+              "L4-transaction-mvcc" / "postgresql-mvcc" / "index.md")
     assert target.exists(), "样例文章不在了，集成测试要换一个真实文章"
     result = run_tool(str(target), "--json")
     assert result.returncode == 0, result.stderr
@@ -141,7 +141,7 @@ def test_cli_json_output_has_expected_shape():
     assert "docs" in payload
     doc = payload["docs"][0]
     assert doc["pillar"] == "source-tracks"
-    assert doc["slug"] == "postgresql/transaction-mvcc/postgresql-mvcc"
+    assert doc["slug"] == "postgresql/L4-transaction-mvcc/postgresql-mvcc"
     assert doc["stats"]["paragraphs"] > 0
     assert isinstance(doc["signals"], list)
 
@@ -682,7 +682,8 @@ def test_fig_02_finds_a_reference_in_the_middle_of_a_paragraph(tmp_path):
 
 def test_the_checker_reports_fig_signals_for_a_real_article():
     """集成：真实文章上跑一遍，FIG-01/FIG-02 真的会报出来。"""
-    target = REPO_ROOT / "docs" / "distributed" / "consensus" / "一文读懂openguass dcf网络模块.md"
+    target = (REPO_ROOT / "docs" / "source-tracks" / "distributed" /
+              "L2-consensus" / "一文读懂openguass dcf网络模块.md")
     assert target.exists(), "样例文章不在了，集成测试要换一个真实文章"
     result = run_tool(str(target), "--json")
     assert result.returncode == 0, result.stderr

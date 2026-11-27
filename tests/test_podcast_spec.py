@@ -78,7 +78,12 @@ EV_SOURCE_PATH_MIN = 6
 EV_FUNCTION_REF_MIN = 1
 EV_DIAGRAM_MIN = 1
 EV_SPEECH_RATE = 7.19
-EV_DRAFT_P90 = 24_035
+
+# EV-06 的 p90 是**实测值**：`docs/` 全树字数（去 front matter、去空白）
+# 的 90 分位。语料一变就得跟着刷新——口径一个字不改，改的只是被测的语料。
+# 刷新历史：23,771 → 24,035（2026-11-26 语料 656 → 661 篇）
+#          → 24,509（2026-11-26 目录按学习路径重排，语料 661 → 647 篇）
+EV_DRAFT_P90 = 24_509
 
 # --- 长视频三档的阈值（契约八 §3.1）--------------------------------------
 #
@@ -789,7 +794,7 @@ def test_draft_p90_constant_matches_the_docs_distribution():
 
     rows = _markdown_table(_spec_text(), "指标")
     row = _row_with(rows, 0, "EV-06")
-    assert "22,098" in row[3], f"EV-06 的依据栏必须写出 22,098，实为：{row[3]!r}"
+    assert "24,509" in row[3], f"EV-06 的依据栏必须写出 24,509，实为：{row[3]!r}"
 
 
 # --- 平台矩阵 -------------------------------------------------------------

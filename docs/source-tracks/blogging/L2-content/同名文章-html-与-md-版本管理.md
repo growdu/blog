@@ -17,16 +17,16 @@ description: "仓库偶尔会出现 xxx.md 和 xxx.html 两个同主题、不同
 
 | markdown 版 | HTML 版 |
 |---|---|
-| `docs/source-tracks/postgresql/logical-replication/ddl同步架构.md` | `docs/source-tracks/postgresql/logical-replication/ddl同步架构-html.html` |
-| `docs/life/hometown/家中对联.md` | `docs/life/hometown/家中对联-html.html` |
+| `docs/source-tracks/postgresql/L7-logical-replication/ddl同步架构.md` | `docs/source-tracks/postgresql/L7-logical-replication/ddl同步架构-html.html` |
+| `docs/source-tracks/life/L4-hometown/家中对联.md` | `docs/source-tracks/life/L4-hometown/家中对联-html.html` |
 
-另外有 1 个**独立** .html（无对应 .md），不受本约定约束：`docs/source-tracks/postgresql/logical-replication/sqlserver/sqlserver逻辑复制ddl.html`。
+另外有 1 个**独立** .html（无对应 .md），不受本约定约束：`docs/source-tracks/postgresql/L7-logical-replication/sqlserver/sqlserver逻辑复制ddl-html.html`。
 
 ## 为什么需要这个约定
 
 ### 1. 视觉区分
 
-`docs/source-tracks/postgresql/logical-replication/` 里 `ddl同步架构.md` 和 `ddl同步架构.html` 并排躺着，文件管理器一眼看上去是"两个不同文件"还是"同主题的两种格式"很模糊。改成 `ddl同步架构-html.html` 后，前缀和后缀都标明了"这是 HTML 版"，扫一眼目录就懂。
+`docs/source-tracks/postgresql/L7-logical-replication/` 里 `ddl同步架构.md` 和 `ddl同步架构.html` 并排躺着，文件管理器一眼看上去是"两个不同文件"还是"同主题的两种格式"很模糊。改成 `ddl同步架构-html.html` 后，前缀和后缀都标明了"这是 HTML 版"，扫一眼目录就懂。
 
 ### 2. 避免 permalink 冲突
 
@@ -47,9 +47,9 @@ URL 不再冲突，两个版本都可以正常访问。
 `sync-hexo.py` 在 CI 跑的时候，会扫描 `docs/` 下所有 `.html` 文件，**如果发现有 `.html` 缺 `-html` 后缀且存在同名 `.md`**，立刻打 ERROR 并以 exit code 2 退出，CI 构建失败：
 
 ```
-ERROR docs/source-tracks/postgresql/logical-replication/ddl同步架构.html: shares basename with docs/source-tracks/postgresql/logical-replication/ddl同步架构.md
+ERROR docs/source-tracks/postgresql/L7-logical-replication/ddl同步架构.html: shares basename with docs/source-tracks/postgresql/L7-logical-replication/ddl同步架构.md
 but is not suffixed with -html. Rename the .html file to
-docs/source-tracks/postgresql/logical-replication/ddl同步架构-html.html (see docs/blog/同名文章-html-与-md-版本管理.md).
+docs/source-tracks/postgresql/L7-logical-replication/ddl同步架构-html.html (see docs/source-tracks/blogging/L2-content/同名文章-html-与-md-版本管理.md).
 ```
 
 宁可构建失败、让维护者收到 GitHub Actions 红色 ❌，也不要静默生成两条相同 URL 的文章。
@@ -60,7 +60,7 @@ docs/source-tracks/postgresql/logical-replication/ddl同步架构-html.html (see
 
 ```bash
 # docs/<分类>/<文章名>.md
-docs/source-tracks/postgresql/logical-replication/ddl同步架构.md
+docs/source-tracks/postgresql/L7-logical-replication/ddl同步架构.md
 ```
 
 文章正文用 markdown 写，front matter 可选（`sync-hexo.py` 会自动补 title/date/categories/tags）。
@@ -71,7 +71,7 @@ docs/source-tracks/postgresql/logical-replication/ddl同步架构.md
 
 ```bash
 # docs/<分类>/<文章名>.html
-docs/source-tracks/postgresql/logical-replication/sqlserver/sqlserver逻辑复制ddl.html
+docs/source-tracks/postgresql/L7-logical-replication/sqlserver/sqlserver逻辑复制ddl-html.html
 ```
 
 要求：
@@ -83,7 +83,7 @@ docs/source-tracks/postgresql/logical-replication/sqlserver/sqlserver逻辑复�
 同一个主题，markdown 版简洁、HTML 版带丰富排版/图表。**两文件都存在**的场景：
 
 ```bash
-docs/source-tracks/postgresql/logical-replication/
+docs/source-tracks/postgresql/L7-logical-replication/
 ├── ddl同步架构.md              # markdown 简版
 └── ddl同步架构-html.html       # HTML 富版（必须带 -html 后缀）
 ```
@@ -91,7 +91,7 @@ docs/source-tracks/postgresql/logical-replication/
 **不要**这样：
 
 ```bash
-docs/source-tracks/postgresql/logical-replication/
+docs/source-tracks/postgresql/L7-logical-replication/
 ├── ddl同步架构.md
 └── ddl同步架构.html       # ❌ 缺 -html 后缀，CI 失败
 ```
@@ -135,7 +135,7 @@ git push origin master
 
 ### 3. 独立 HTML（无对应 .md）
 
-像 `docs/source-tracks/postgresql/logical-replication/sqlserver/sqlserver逻辑复制ddl.html` 这种没有同名 .md 的 .html，**不强制**加 `-html` 后缀（加了也无害，但没意义）。本约定只约束"一对双版本"的场景。
+像 `docs/source-tracks/postgresql/L7-logical-replication/sqlserver/sqlserver逻辑复制ddl-html.html` 这种没有同名 .md 的 .html，**不强制**加 `-html` 后缀（加了也无害，但没意义）。本约定只约束"一对双版本"的场景。
 
 ### 4. 内容冲突 / 哪一个优先
 

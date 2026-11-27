@@ -201,11 +201,17 @@ def test_no_template_combines_config_url_with_url_for():
     assert not offenders, "config.url 与 url_for 混用会产生双前缀：\n" + "\n".join(offenders)
 
 
+CANONICAL_TAG = '<link rel="canonical" href="<%- page.canonical || _selfUrl %>">'
+
+
 def test_theme_head_uses_a_root_less_absolute_url_for_canonical():
     source = (REPO_ROOT / "themes" / "matery" / "layout" / "_partial" / "head.ejs").read_text(
         encoding="utf-8"
     )
-    assert '<link rel="canonical" href="<%- _selfUrl %>">' in source
+    # canonical 默认指向本页自己（`_selfUrl` 已经剥掉了 config.root，
+    # 所以挂在子路径下也不会出现双前缀）；别名页（老赛道地址）在
+    # front matter 里写 `canonical:`，正身就指过去了。
+    assert CANONICAL_TAG in source
 
 
 def test_theme_head_assets_are_root_aware():
@@ -218,7 +224,23 @@ def test_the_patch_tool_head_block_is_root_aware():
     source = PATCH_TOOL.read_text(encoding="utf-8")
     assert "url_for('/manifest.json')" in source
     assert "url_for('/favicon.svg')" in source
-    assert '<link rel="canonical" href="<%- _selfUrl %>">' in source
+    assert CANONICAL_TAG in source
+
+
+def test_the_patch_tool_head_block_matches_the_theme_head():
+    """补丁工具里内嵌的 head 块必须和主题里的 head.ejs 一致。
+
+    主题文件不手工改——改法都走 ``tools/patch-theme.py``。如果两处
+    漂移了，重跑一次补丁工具就会把主题覆盖回旧的样子：canonical 会
+    丢掉别名页的指向（``page.canonical`` 被忽略），老赛道的别名页
+    会把自己当成正身。
+    """
+    tool = PATCH_TOOL.read_text(encoding="utf-8")
+    theme = (REPO_ROOT / "themes" / "matery" / "layout" / "_partial" / "head.ejs").read_text(
+        encoding="utf-8"
+    )
+    assert CANONICAL_TAG in tool, "补丁工具里的 canonical 写法已经和主题对不上了"
+    assert CANONICAL_TAG in theme, "主题里的 canonical 写法已经和补丁工具对不上了"
 
 
 # --------------------------------------------------- built-link checker

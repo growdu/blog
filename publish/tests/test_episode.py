@@ -227,7 +227,7 @@ def test_content_id_for_draft_maps_index_md_to_its_own_directory():
 
 
 def test_content_id_for_draft_keeps_a_plain_file_as_is():
-    assert content_id_for_draft("docs/blog/scheduled.md", "docs") == "blog/scheduled"
+    assert content_id_for_draft("docs/source-tracks/blogging/L1-setup/scheduled.md", "docs") == "blog/scheduled"
 
 
 def test_content_id_for_draft_rejects_a_category_page():

@@ -700,7 +700,7 @@ def _rule_titles():
     """`data/learning-path.json` → `{赛道id: 赛道名}`。
 
     **赛道名与阶段名的唯一来源是规则表**（§7.1）。再手写一份中文名，
-    两份必然漂移 —— 那正是 `docs/platform-meta/info-architecture/` 里
+    两份必然漂移 —— 那正是 `docs/source-tracks/platform-meta/L4-info-architecture/` 里
     说的「一个站有两个真相」。
     """
     path = os.path.join(REPO, "data", "learning-path.json")

@@ -20,12 +20,15 @@
 
 from __future__ import annotations
 
+import atexit
 import importlib.util
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -75,7 +78,10 @@ def mechanically_non_article(path: Path) -> bool:
     """
     if path.name == "_index.md":
         return True
-    if path.relative_to(REPO_ROOT).as_posix().startswith("docs/code/"):
+    # 代码仓库说明：文件名是 readme.md，所在的目录是一个代码工程目录。
+    # 目录重排之前它们在 `docs/code/` 下；现在跟着赛道搬到了
+    # `source-tracks/engineering/L2-tooling/*-work/`，判据跟着搬。
+    if path.name.lower() == "readme.md" and path.parent.name.endswith("-work"):
         return True
     text = path.read_text(encoding="utf-8", errors="replace")
     if REPRINT_MARKER_RE.search(text[:1200]):
@@ -90,7 +96,18 @@ def mechanically_non_article(path: Path) -> bool:
 # GitHub runner 的 git 环境：没有开发者的全局 git 配置，core.quotePath
 # 取默认值（true）。开发机常常把它关掉，于是同一个提交在两台机器上
 # 报出来的路径文本不一样——本地绿、CI 红就是这么来的。
+#
+# 模拟必须**真的**让全局配置失效。只设 GIT_CONFIG_GLOBAL 不够：那个变量
+# git 2.32 才认，老版本上它是哑的，模拟等于没做，守卫就成了永远绿的摆设。
+# 把 HOME 指向一个空目录才跨版本管用——全局配置本来就住在 ~/.gitconfig。
+_CI_LIKE_HOME = tempfile.mkdtemp(prefix="review-ci-like-git-home-")
+atexit.register(shutil.rmtree, _CI_LIKE_HOME, True)
+
 CI_LIKE_GIT_ENV = {
+    "HOME": _CI_LIKE_HOME,
+    "XDG_CONFIG_HOME": _CI_LIKE_HOME,
+    "GIT_CONFIG_NOSYSTEM": "1",
+    # 新版 git 上这几项也管用，留着当双保险。
     "GIT_CONFIG_GLOBAL": os.devnull,
     "GIT_CONFIG_COUNT": "1",
     "GIT_CONFIG_KEY_0": "core.quotePath",
@@ -252,24 +269,59 @@ def merged_commit_for(slug: str) -> list[str]:
     return shas
 
 
+#: 两轮搬家的表，按时间从早到晚排 —— 后一轮的「旧路径」正是前一轮的「新路径」。
+MIGRATION_MOVES_FILES = (
+    "data/migration-moves-2026-11-17.json",
+    "data/migration-moves.json",
+)
+
+
+def _migration_ancestors() -> dict[str, list[str]]:
+    """新路径 → 它之前叫过的那些路径。
+
+    两轮搬家接成一条链：2026-11-17 那一轮（`cluster/` → `distributed/`）
+    和 2026-11-26 那一轮（`distributed/foundations/` → `distributed/L1-foundations/`）。
+    一篇文章可能搬了两次 —— 它先叫 A，再叫 B，最后叫 C。查 C 的历史，
+    A 和 B 都得认。
+    """
+    forward: dict[str, str] = {}
+    for name in MIGRATION_MOVES_FILES:
+        path = REPO_ROOT / name
+        if not path.is_file():
+            continue
+        articles = json.loads(path.read_text(encoding="utf-8"))["articles"]
+        for old, new in articles.items():
+            if new:
+                forward[old] = new
+    reverse: dict[str, list[str]] = {}
+    for old, new in forward.items():
+        reverse.setdefault(new, []).append(old)
+    return reverse
+
+
 def historical_source_paths(source: str) -> set[str]:
     """一篇文章在目录迁移**之前**的路径（没有搬过家就是空集）。
 
     「已合入」的证据是**当时的提交**——提交改的是旧路径。目录重排把
     文章搬了家之后，提交里的路径并不会跟着变：只认新路径，就会把
-    「文章搬了家」误判成「合入记录是假的」。所以核对时新旧路径都认。
+    「文章搬了家」误判成「合入记录是假的」。所以核对时新旧路径都认，
+    而且两轮搬家的旧路径都认 —— 一篇文章搬了两次，它有过两个旧名字。
     """
-    moves_file = REPO_ROOT / "data" / "migration-moves.json"
-    if not moves_file.is_file():
-        return set()
-    moves = json.loads(moves_file.read_text(encoding="utf-8"))["articles"]
     if not source.startswith("docs/"):
         return set()
-    # 迁移表是「旧 → 新」，这里要反查：给的是搬家之后的路径。
-    for old, new in moves.items():
-        if new == source[len("docs/"):]:
-            return {"docs/" + old}
-    return set()
+    reverse = _migration_ancestors()
+    out: set[str] = set()
+    seen: set[str] = set()
+    stack = [source[len("docs/"):]]
+    while stack:
+        node = stack.pop()
+        for old in reverse.get(node, []):
+            if old in seen:
+                continue
+            seen.add(old)
+            out.add("docs/" + old)
+            stack.append(old)
+    return out
 
 
 def accepted_source_paths(source: str) -> set[str]:
@@ -285,7 +337,7 @@ def changed_paths(sha: str, *, extra_env: dict[str, str] | None = None) -> list[
     machine's git config: a developer often has it off, a CI runner
     keeps the default (true).  The same commit then reports
     ``docs/source-tracks/distributed/L1-foundations/分布式一致性协议.md`` on one machine and
-    ``"docs/distributed/foundations/\\350\\276\\205..."`` on the other, so comparing the
+    ``"docs/source-tracks/distributed/L1-foundations/\\350\\276\\205..."`` on the other, so comparing the
     record's path against that output matches on one machine and not on
     the other.  ``-z`` pins the output to raw bytes with NUL separators,
     independent of any git configuration.
@@ -420,7 +472,7 @@ def test_changed_paths_are_raw_even_when_git_quotes_non_ascii_paths():
     """单元：取「提交改了哪些文件」不能受 git 的路径转义影响。
 
     ``git show --name-only`` 默认把非 ASCII 路径 C 转义成
-    ``"docs/distributed/foundations/\\350\\276\\205..."``，除非 ``core.quotePath`` 是 false。
+    ``"docs/source-tracks/distributed/L1-foundations/\\350\\276\\205..."``，除非 ``core.quotePath`` 是 false。
     那是**每台机器自己的** git 配置：开发机常关掉，CI runner 保持默认。
     两边对同一个提交给出的文本不同，路径比对必然一边成一边败。
 

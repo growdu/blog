@@ -31,7 +31,7 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parent.parent
-DOC = REPO / "docs" / "blog" / "部署到服务器.md"
+DOC = REPO / "docs" / "source-tracks" / "blogging" / "L1-setup" / "部署到服务器.md"
 PATCHER_PATH = REPO / "tools" / "nginx_soft404.py"
 WRAPPER = REPO / "tools" / "fix-soft-404.sh"
 

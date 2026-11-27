@@ -418,7 +418,7 @@ def content_id_for_draft(path, drafts_root) -> str:
     ==========================================  ==========================================
     ``docs/database/postgresql-row-lock-        ``source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive``
     deep-dive/index.md``
-    ``docs/blog/scheduled.md``                  ``blog/scheduled``
+    ``docs/source-tracks/blogging/L1-setup/scheduled.md``                  ``blog/scheduled``
     ==========================================  ==========================================
 
     直接拿母稿路径去后缀会得到 ``source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive/index``，

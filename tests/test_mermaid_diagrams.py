@@ -120,7 +120,7 @@ def test_the_ep01_lead_diagram_is_intact():
     它是 ``postgresql-logical-replication-end-to-end-flow`` 的第一张图，
     被 ``post-detail.ejs`` 搬进期号区块当门面图。
     """
-    path = (DOCS / "source-tracks" / "postgresql" / "logical-replication"
+    path = (DOCS / "source-tracks" / "postgresql" / "L7-logical-replication"
            / "postgresql-logical-replication-end-to-end-flow" / "index.md")
     assert path.is_file(), "找不到 {}".format(path)
     text = path.read_text(encoding="utf-8")

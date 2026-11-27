@@ -1,4 +1,4 @@
-"""Contract tests for the gaokao docs under ``docs/life/gaokao/``.
+"""Contract tests for the gaokao docs under ``docs/source-tracks/life/L2-exam-prep/``.
 
 Three invariants are enforced here:
 
@@ -33,7 +33,15 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SECTION = REPO_ROOT / "docs" / "life" / "gaokao"
+SECTION = REPO_ROOT / "docs" / "source-tracks" / "life" / "L2-exam-prep"
+
+# 这一节现在还住着「大学」那两篇备考计划（原先在 `docs/life/daxue/`）。
+# 它们不是高考系列，front matter 只有 `description`——高考系列的体例
+# 要求（title / tags / date / categories）不适用于它们，所以这一族之外。
+_NOT_GAOKAO = {
+    "电子科技大学-计算机-自考-复习计划/index.md",
+    "腾冲事业编-公务员备考计划/index.md",
+}
 
 # Sections that are not part of a table of contents.
 _TOC_EXCLUDED_HEADINGS = {"目录", "相关阅读"}
@@ -124,7 +132,8 @@ def _heading_ids(markdown: str) -> list[str]:
 
 
 def _doc_paths() -> list[Path]:
-    return sorted(SECTION.rglob("*.md"))
+    return sorted(p for p in SECTION.rglob("*.md")
+                  if p.relative_to(SECTION).as_posix() not in _NOT_GAOKAO)
 
 
 def _split_front_matter(text: str) -> tuple[str, str]:

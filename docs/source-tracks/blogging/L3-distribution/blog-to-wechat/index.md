@@ -753,7 +753,7 @@ flowchart TD
 - [ ] 拿自己的公众号调一次 `stable_token`，确认能拿 token
 - [ ] 调一次 `media/uploadimg` 传一张图，确认返回 mmbiz URL
 - [ ] 调一次 `draft/add` 建一篇测试草稿，**看 `freepublish/submit` 返回什么 `errcode`** ← **这一步决定后面所有设计**
-- [ ] 把结论写进仓库：`docs/life/blog-to-wechat/_index.md` 里加一节"接口实测结论"
+- [ ] 把结论写进仓库：`docs/source-tracks/blogging/L3-distribution/blog-to-wechat/_index.md` 里加一节"接口实测结论"
 - [ ] 在 `tools/publish/` 下建目录，约定 `md2wechat.py` / `wechat_push.py` 的签名
 
 ### Phase 1：公众号只到草稿箱（3~5 天）

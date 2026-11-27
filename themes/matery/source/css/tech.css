@@ -257,17 +257,21 @@ body.DarkMode .learning-page__crumb a:focus-visible {
   transform: translateX(3px);
 }
 
-/* 赛道配色：每条赛道一个色（--lane-color 描边/图标/链接，--lane-tint 淡底） */
-.lane-card--db-internals   { --lane-color: #00796b; --lane-tint: rgba(0, 121, 107, .12); }
+/* 赛道配色：每条赛道一个色（--lane-color 描边/图标/链接，--lane-tint 淡底）
+   类名跟着 `data/learning-path.json` 的 track.id 走 —— 改了赛道 id，
+   这里就得跟着改，否则那张卡片会退回默认色（看起来像没配过）。
+   2026-11-26 目录重排：db-internals → postgresql，linux-network → linux。 */
+.lane-card--postgresql    { --lane-color: #00796b; --lane-tint: rgba(0, 121, 107, .12); }
 .lane-card--distributed    { --lane-color: #6a1b9a; --lane-tint: rgba(106, 27, 154, .12); }
 .lane-card--ceph           { --lane-color: #00838f; --lane-tint: rgba(0, 131, 143, .12); }
 .lane-card--linux-kernel   { --lane-color: #37474f; --lane-tint: rgba(55, 71, 79, .12); }
-.lane-card--linux-network  { --lane-color: #1565c0; --lane-tint: rgba(21, 101, 192, .12); }
+.lane-card--linux          { --lane-color: #1565c0; --lane-tint: rgba(21, 101, 192, .12); }
 .lane-card--dataplane      { --lane-color: #ef6c00; --lane-tint: rgba(239, 108, 0, .12); }
 .lane-card--ai-tools       { --lane-color: #c2185b; --lane-tint: rgba(194, 24, 91, .12); }
 .lane-card--engineering    { --lane-color: #2e7d32; --lane-tint: rgba(46, 125, 50, .12); }
 .lane-card--life           { --lane-color: #6d4c41; --lane-tint: rgba(109, 76, 65, .12); }
 .lane-card--blogging       { --lane-color: #3949ab; --lane-tint: rgba(57, 73, 171, .12); }
+.lane-card--platform-meta  { --lane-color: #b71c1c; --lane-tint: rgba(183, 28, 28, .12); }
 
 @media (max-width: 1199px) {
   .lane-grid--tracks {

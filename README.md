@@ -4,7 +4,7 @@
 > 共同的底座是 `docs/` —— 那里是所有内容的唯一真相。
 
 本文件是**仓库级总览**：讲清楚整体架构与模块划分。
-想改文章、改样式，看 [`docs/blog/架构.md`](docs/blog/架构.md)（站点构建链路，更细）。
+想改文章、改样式，看 [`docs/source-tracks/blogging/L2-content/架构.md`](docs/source-tracks/blogging/L2-content/架构.md)（站点构建链路，更细）。
 想改视频、看契约，看 [`aiv/README.md`](aiv/README.md)。
 想改发布逻辑，看 [`publish/spec/00-架构设计.md`](publish/spec/00-架构设计.md) 与
 [`publish/spec/06-发布计划与调度.md`](publish/spec/06-发布计划与调度.md)、
@@ -114,7 +114,7 @@
 | 音色 | `aiv/voice/scripts/` | 旁白合成、读音验收（多音字） |
 | 音乐 | `aiv/music/` | 授权台账（入库）+ 曲库文件（不入库） |
 | 规范文档 | `aiv/*.md` | 人格规范、形象与音色规范、背景音乐规范、选题库 |
-| 发布副本同步 | `aiv/scripts/sync_publish_docs.py` | 把面向读者的文档同步到 `docs/life/aiv/`（博客发的是副本） |
+| 发布副本同步 | `aiv/scripts/sync_publish_docs.py` | 把面向读者的文档同步到 `docs/source-tracks/blogging/L4-video-pipeline/aiv/`（博客发的是副本） |
 
 **核心规矩**：文案与数字进契约，版式常量留代码。
 契约少参数 → 渲染前抛 `MissingParam`；契约里的文案不许回流成场景代码里的字面量
@@ -349,7 +349,7 @@ cd publish && python3 -m publishkit.cli schedule weekly --dry-run
 
 | 文档 | 内容 |
 | --- | --- |
-| [`docs/blog/架构.md`](docs/blog/架构.md) | 站点构建链路的操作手册（改文章、改样式、CI 步骤） |
+| [`docs/source-tracks/blogging/L2-content/架构.md`](docs/source-tracks/blogging/L2-content/架构.md) | 站点构建链路的操作手册（改文章、改样式、CI 步骤） |
 | [`publish/spec/00-架构设计.md`](publish/spec/00-架构设计.md) | 多平台发布架构：内容契约 · 能力模型 · 清单 · 幂等 · 展示扩展点 |
 | [`publish/spec/06-发布计划与调度.md`](publish/spec/06-发布计划与调度.md) | 调度层：候选集、选题规则、周键、触发器、失败与重试 |
 | [`publish/spec/07-视频发布契约.md`](publish/spec/07-视频发布契约.md) | 视频发布：视频单元、成片预检、切片规则、状态机 |

@@ -120,7 +120,10 @@ def move_map(base, head):
         elif st.startswith("D"):
             m[rel(parts[1])] = None
         elif st.startswith("A"):
-            m[rel(parts[2])] = None      # 新文件，没有旧路径
+            # 新增的文件没有旧路径。这张表的键是**旧路径**，
+            # 新文件进不来 —— 硬塞一条 `新路径 → None` 反而会被当成
+            # 「那次搬家把它删了」，把一个明明存在的新文件判成死链。
+            continue
         elif st[0] in ("M", "T"):
             m[rel(parts[1])] = rel(parts[1])  # 路径没变
     return m

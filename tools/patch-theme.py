@@ -179,7 +179,7 @@ inject_css = r"""<meta property="og:title" content="<%= page.title || config.tit
 <link rel="dns-prefetch" href="https://api.github.com">
 <meta property="og:site_name" content="<%= config.title %>">
 <meta property="og:type" content="<%= page.layout === 'post' ? 'article' : 'website' %>">
-<meta property="og:url" content="<%- _selfUrl %>">
+<meta property="og:url" content="<%- page.canonical || _selfUrl %>">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:description" content="<%= page.description || config.description || '' %>">
 <meta name="twitter:card" content="summary">
@@ -201,7 +201,9 @@ inject_css = r"""<meta property="og:title" content="<%= page.title || config.tit
 <meta name="twitter:image" content="<%- ogImage %>">
 <link rel="manifest" href="<%- url_for('/manifest.json') %>">
 <link rel="icon" type="image/svg+xml" href="<%- url_for('/favicon.svg') %>">
-<link rel="canonical" href="<%- _selfUrl %>">
+<%# canonical 默认指向本页自己；别名页（老赛道地址）在 front matter 里
+    写 canonical: "<新赛道的绝对地址>"，正身就指过去了。 %>
+<link rel="canonical" href="<%- page.canonical || _selfUrl %>">
 <% if (page.layout === 'post') { %>
 <% var _cat = (page.categories && page.categories.data && page.categories.data.length > 0) ? page.categories.data[0].name : ''; %>
 <% var _tags = (page.tags && page.tags.data) ? page.tags.data.map(function(t) { return t.name; }).join(', ') : ''; %>

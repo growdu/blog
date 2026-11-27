@@ -13,7 +13,7 @@
 
 - 记录文件本身搬家（`git mv`，历史跟着走）；
 - 开头那行 `- 原文：docs/<路径>` 改成新路径；
-- `review/INDEX.md` 表格里的「记录」列跟着改，「支柱」列换成赛道名。
+- `review/INDEX.md` 表格里的「记录」列跟着改，「赛道」列跟着文章换。
 
 **两次搬家是一张链**：2026-11-17 那一轮（`cluster/` → `distributed/`）
 和 2026-11-26 那一轮（`distributed/foundations/` → `distributed/L1-foundations/`）
@@ -175,7 +175,7 @@ def record_rel_for_article(article_new_rel):
 
 
 def rewrite_index():
-    """`review/INDEX.md` 的「记录」列跟着改，「支柱」列换成赛道名。
+    """`review/INDEX.md` 的「记录」列跟着改，「赛道」列换成文章所在的赛道。
 
     这一步是**自足**的：它不靠「刚才搬了哪些」这个上下文，而是回到每份
     记录自己的「原文」行，顺着链找到文章现在在哪儿，再算出记录该在哪儿。
@@ -200,7 +200,7 @@ def rewrite_index():
             return m.group(0)
         new_article = new_article_path(source[len("docs/"):], moves)
         new_rel = record_rel_for_article(new_article)
-        # 「支柱」列在「记录」列后面第一格。
+        # 「赛道」列在「记录」列后面第一格。
         cells = m.group(3).split("|")
         if len(cells) >= 2:
             cells[0] = " %s " % track_of(new_article)
