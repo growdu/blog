@@ -1,6 +1,6 @@
 # 审校：一文读懂openguass dcf网络模块
 
-- 原文：docs/distributed/consensus/一文读懂openguass dcf网络模块.md
+- 原文：docs/source-tracks/distributed/L2-consensus/一文读懂openguass dcf网络模块.md
 - 范围：全文
 - 目标读者：想读懂 openGauss DCF 网络模块（MEC）实现的人——
   已经在看 `contrib/dcf` 源码，但没建立起模块全景的人

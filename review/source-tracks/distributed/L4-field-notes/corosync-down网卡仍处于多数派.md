@@ -1,6 +1,6 @@
 # 审校：corosync down网卡仍处于多数派问题分析
 
-- 原文：docs/distributed/field-notes/corosync-down网卡仍处于多数派/index.md
+- 原文：docs/source-tracks/distributed/L4-field-notes/corosync-down网卡仍处于多数派/index.md
 - 范围：全文
 - 目标读者：做同城双中心数据库集群的运维与开发工程师（知道 corosync、
   SBD、fence 这些词，但未必读过 corosync 源码）

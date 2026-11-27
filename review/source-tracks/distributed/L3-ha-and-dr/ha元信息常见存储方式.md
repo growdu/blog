@@ -1,6 +1,6 @@
 # 审校：ha元信息常见存储方式
 
-- 原文：docs/distributed/ha-and-dr/ha元信息常见存储方式/index.md
+- 原文：docs/source-tracks/distributed/L3-ha-and-dr/ha元信息常见存储方式/index.md
 - 范围：全文
 - 目标读者：做数据库高可用方案选型的工程师
   （知道 corosync、qdevice 这些词，想搞清楚各家把「元信息」放在哪）

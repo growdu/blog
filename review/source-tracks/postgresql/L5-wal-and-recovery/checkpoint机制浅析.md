@@ -1,6 +1,6 @@
 # 审校：checkpoint 机制浅析
 
-- 原文：docs/source-tracks/postgresql/wal-and-recovery/checkpoint机制浅析.md
+- 原文：docs/source-tracks/postgresql/L5-wal-and-recovery/checkpoint机制浅析.md
 - 范围：全文
 - 目标读者：读过《WAL 机制浅析》、想知道 checkpoint 到底做了什么、什么时候触发的开发者
 - 一句话定位：把 checkpoint 从「参数与触发条件」讲到「一次 checkpoint 依次刷了哪些缓存」，并解释它为什么决定了崩溃恢复要重放多少 WAL

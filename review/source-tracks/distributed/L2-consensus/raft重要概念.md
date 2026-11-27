@@ -1,6 +1,6 @@
 # 审校：raft重要概念
 
-- 原文：docs/distributed/consensus/raft重要概念.md
+- 原文：docs/source-tracks/distributed/L2-consensus/raft重要概念.md
 - 范围：全文
 - 目标读者：想做分布式共识 / 数据库高可用选型的工程师
   （知道 Paxos、Raft 这些名字，但没读过论文也没实现过）

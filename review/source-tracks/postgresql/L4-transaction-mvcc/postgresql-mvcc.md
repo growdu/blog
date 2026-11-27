@@ -1,6 +1,6 @@
 # 审校：PostgreSQL MVCC：一条数据是如何拥有"分身术"的
 
-- 原文：docs/source-tracks/postgresql/transaction-mvcc/postgresql-mvcc/index.md
+- 原文：docs/source-tracks/postgresql/L4-transaction-mvcc/postgresql-mvcc/index.md
 - 范围：全文
 - 目标读者：用过 PostgreSQL、但说不清并发下「我读到的到底是哪一版数据」的开发者
 - 一句话定位：沿着 PostgreSQL 17 源码，把 MVCC 从「一行数据怎么变成一串分身」讲到「你读到的那个版本是怎么被判定可见的」

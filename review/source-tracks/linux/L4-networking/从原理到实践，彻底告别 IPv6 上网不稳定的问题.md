@@ -1,6 +1,6 @@
 # 审校：从原理到实践，彻底告别 IPv6 上网不稳定的问题
 
-- 原文：docs/source-tracks/linux/networking/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md
+- 原文：docs/source-tracks/linux/L4-networking/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md
 - 范围：全文
 - 目标读者：家里或公司宽带开了 IPv6 之后遇到网页慢、视频卡、App 不流畅，
   想弄清原因并自己动手排查和配置的人

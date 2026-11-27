@@ -1,6 +1,6 @@
 # 审校：06 堆表与 MVCC（PostgreSQL 学习路径）
 
-- 原文：docs/source-tracks/postgresql/transaction-mvcc/learning-path/06-heap-and-mvcc.md
+- 原文：docs/source-tracks/postgresql/L4-transaction-mvcc/learning-path/06-heap-and-mvcc.md
 - 范围：全文
 - 目标读者：按 learning-path 逐章读 PG 源码、需要一篇把「页布局 + tuple 头 + 可见性 + HOT + vacuum」串起来的开发者
 - 一句话定位：把 PG 堆表的字节结构一路讲到 vacuum 的实际动作，中间夹着 pageinspect、gdb、visibilitymap 这些可以直接上手的手艺

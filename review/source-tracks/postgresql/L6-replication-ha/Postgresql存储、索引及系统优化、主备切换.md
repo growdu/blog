@@ -1,6 +1,6 @@
 # 审校：Postgresql存储、索引及系统优化、主备切换
 
-- 原文：docs/source-tracks/postgresql/replication-ha/Postgresql存储、索引及系统优化、主备切换/index.md
+- 原文：docs/source-tracks/postgresql/L6-replication-ha/Postgresql存储、索引及系统优化、主备切换/index.md
 - 范围：全文
 - 目标读者：需要读懂 PostgreSQL 存储结构、做索引选型、调系统参数、
   搭主备集群的 DBA 与运维

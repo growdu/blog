@@ -101,21 +101,21 @@ mermaid 渲染失败 **109 张，与搬家前持平**（产物侧唯一源码 13
 
 | 记录 | 支柱 | 状态 | 信号 | 待确认 | 不阻塞 | 批次 |
 | --- | --- | --- | --- | --- | --- | --- |
-| [postgresql-mvcc](source-tracks/postgresql/transaction-mvcc/postgresql-mvcc.md) | source-tracks | 已合入 | 0 | 0 | 1 | 试点 |
-| [postgresql-logical-replication-worker-model](source-tracks/postgresql/logical-replication/postgresql-logical-replication-worker-model.md) | source-tracks | 已合入 | 0 | 0 | 1 | 试点 |
-| [06-heap-and-mvcc](source-tracks/postgresql/transaction-mvcc/learning-path/06-heap-and-mvcc.md) | source-tracks | 已合入 | 1 | 0 | 2 | 试点 |
-| [checkpoint机制浅析](source-tracks/postgresql/wal-and-recovery/checkpoint机制浅析.md) | source-tracks | 已合入 | 0 | 0 | 0 | 试点 |
-| [分布式一致性协议](distributed/foundations/分布式一致性协议.md) | distributed | 已合入 | 0 | 0 | 2 | 试点 |
-| [file](base/file.md) | base | 已合入 | 0 | 0 | 3 | 1 |
-| [corosync-down网卡仍处于多数派](distributed/field-notes/corosync-down网卡仍处于多数派.md) | distributed | 已合入 | 0 | 0 | 6 | 1 |
-| [tptc](distributed/ha-and-dr/tptc.md) | distributed | 已合入 | 0 | 0 | 8 | 1 |
-| [从原理到实践，彻底告别 IPv6 上网不稳定的问题](source-tracks/linux/networking/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md) | source-tracks | 已合入 | 0 | 0 | 6 | 1 |
-| [Postgresql存储、索引及系统优化、主备切换](source-tracks/postgresql/replication-ha/Postgresql存储、索引及系统优化、主备切换.md) | source-tracks | 已合入 | 1 | 0 | 2 | 1 |
-| [raft重要概念](distributed/consensus/raft重要概念.md) | distributed | 建议中 | 2 | 4 | 0 | 2 |
-| [sanlock实现共享corosync共享存储仲裁](distributed/field-notes/sanlock实现共享corosync共享存储仲裁.md) | distributed | 建议中 | 2 | 6 | 0 | 2 |
-| [中移动数据库停库问题分析](distributed/ha-and-dr/中移动数据库停库问题分析.md) | distributed | 建议中 | 2 | 8 | 0 | 2 |
-| [ha元信息常见存储方式](distributed/ha-and-dr/ha元信息常见存储方式.md) | distributed | 建议中 | 2 | 5 | 0 | 2 |
-| [corosync-qdevice使用](distributed/field-notes/corosync-qdevice使用.md) | distributed | 建议中 | 2 | 5 | 0 | 2 |
-| [corosync qnet挂死场景分析解决](distributed/field-notes/corosync qnet挂死场景分析解决.md) | distributed | 建议中 | 2 | 7 | 0 | 2 |
-| [从两地三中心到OceanBase的多地多中心 - 墨天轮](distributed/distributed-storage/从两地三中心到OceanBase的多地多中心 - 墨天轮.md) | distributed | 建议中 | 2 | 8 | 0 | 2 |
-| [一文读懂openguass dcf网络模块](distributed/consensus/一文读懂openguass dcf网络模块.md) | distributed | 建议中 | 3 | 7 | 0 | 2 |
+| [postgresql-mvcc](source-tracks/postgresql/L4-transaction-mvcc/postgresql-mvcc.md) | postgresql | 已合入 | 0 | 0 | 1 | 试点 |
+| [postgresql-logical-replication-worker-model](source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-worker-model.md) | postgresql | 已合入 | 0 | 0 | 1 | 试点 |
+| [06-heap-and-mvcc](source-tracks/postgresql/L4-transaction-mvcc/learning-path/06-heap-and-mvcc.md) | postgresql | 已合入 | 1 | 0 | 2 | 试点 |
+| [checkpoint机制浅析](source-tracks/postgresql/L5-wal-and-recovery/checkpoint机制浅析.md) | postgresql | 已合入 | 0 | 0 | 0 | 试点 |
+| [分布式一致性协议](source-tracks/distributed/L1-foundations/分布式一致性协议.md) | distributed | 已合入 | 0 | 0 | 2 | 试点 |
+| [file](source-tracks/engineering/L1-basics/file.md) | engineering | 已合入 | 0 | 0 | 3 | 1 |
+| [corosync-down网卡仍处于多数派](source-tracks/distributed/L4-field-notes/corosync-down网卡仍处于多数派.md) | distributed | 已合入 | 0 | 0 | 6 | 1 |
+| [tptc](source-tracks/distributed/L3-ha-and-dr/tptc.md) | distributed | 已合入 | 0 | 0 | 8 | 1 |
+| [从原理到实践，彻底告别 IPv6 上网不稳定的问题](source-tracks/linux/L4-networking/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md) | linux | 已合入 | 0 | 0 | 6 | 1 |
+| [Postgresql存储、索引及系统优化、主备切换](source-tracks/postgresql/L6-replication-ha/Postgresql存储、索引及系统优化、主备切换.md) | postgresql | 已合入 | 1 | 0 | 2 | 1 |
+| [raft重要概念](source-tracks/distributed/L2-consensus/raft重要概念.md) | distributed | 建议中 | 2 | 4 | 0 | 2 |
+| [sanlock实现共享corosync共享存储仲裁](source-tracks/distributed/L4-field-notes/sanlock实现共享corosync共享存储仲裁.md) | distributed | 建议中 | 2 | 6 | 0 | 2 |
+| [中移动数据库停库问题分析](source-tracks/distributed/L3-ha-and-dr/中移动数据库停库问题分析.md) | distributed | 建议中 | 2 | 8 | 0 | 2 |
+| [ha元信息常见存储方式](source-tracks/distributed/L3-ha-and-dr/ha元信息常见存储方式.md) | distributed | 建议中 | 2 | 5 | 0 | 2 |
+| [corosync-qdevice使用](source-tracks/distributed/L4-field-notes/corosync-qdevice使用.md) | distributed | 建议中 | 2 | 5 | 0 | 2 |
+| [corosync qnet挂死场景分析解决](source-tracks/distributed/L4-field-notes/corosync qnet挂死场景分析解决.md) | distributed | 建议中 | 2 | 7 | 0 | 2 |
+| [从两地三中心到OceanBase的多地多中心 - 墨天轮](source-tracks/distributed/L3-ha-and-dr/从两地三中心到OceanBase的多地多中心 - 墨天轮.md) | distributed | 建议中 | 2 | 8 | 0 | 2 |
+| [一文读懂openguass dcf网络模块](source-tracks/distributed/L2-consensus/一文读懂openguass dcf网络模块.md) | distributed | 建议中 | 3 | 7 | 0 | 2 |

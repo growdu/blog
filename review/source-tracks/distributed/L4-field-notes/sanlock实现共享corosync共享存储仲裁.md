@@ -1,6 +1,6 @@
 # 审校：sanlock实现共享corosync共享存储仲裁
 
-- 原文：docs/distributed/field-notes/sanlock实现共享corosync共享存储仲裁.md
+- 原文：docs/source-tracks/distributed/L4-field-notes/sanlock实现共享corosync共享存储仲裁.md
 - 范围：全文
 - 目标读者：做数据库高可用集群选型的工程师（知道 corosync、qdevice、
   fence 这些词，但没读过 sanlock 源码）

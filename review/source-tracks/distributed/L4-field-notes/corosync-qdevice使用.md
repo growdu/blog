@@ -1,6 +1,6 @@
 # 审校：corosync-qdevice使用
 
-- 原文：docs/distributed/field-notes/corosync-qdevice使用.md
+- 原文：docs/source-tracks/distributed/L4-field-notes/corosync-qdevice使用.md
 - 范围：全文
 - 目标读者：给数据库集群配第三方仲裁的工程师
   （知道 corosync 是什么，但没用过 qdevice/qnetd）

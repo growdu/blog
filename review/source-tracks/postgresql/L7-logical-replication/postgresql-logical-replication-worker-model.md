@@ -1,6 +1,6 @@
 # 审校：PostgreSQL 逻辑复制的 Worker 模型
 
-- 原文：docs/source-tracks/postgresql/logical-replication/postgresql-logical-replication-worker-model/index.md
+- 原文：docs/source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-worker-model/index.md
 - 范围：全文
 - 目标读者：正在给分区表做逻辑复制、需要搞清楚要起多少 worker 的 DBA 与开发者
 - 一句话答案（文章自己的）：**一个 subscription 永远只有一个 apply worker**，分区表加多少叶子都不增加；能并行的是初始同步阶段的 tablesync worker

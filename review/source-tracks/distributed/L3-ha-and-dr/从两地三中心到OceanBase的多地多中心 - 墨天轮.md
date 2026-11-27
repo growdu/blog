@@ -1,6 +1,6 @@
 # 审校：从两地三中心到OceanBase的多地多中心 - 墨天轮
 
-- 原文：docs/distributed/distributed-storage/从两地三中心到OceanBase的多地多中心 - 墨天轮.md
+- 原文：docs/source-tracks/distributed/L3-ha-and-dr/从两地三中心到OceanBase的多地多中心 - 墨天轮.md
 - 范围：全文
 - 目标读者：金融行业的 DBA / 架构师，想搞清楚「两地三中心」到底是个什么
   口径的架构，以及 OceanBase 怎么落地

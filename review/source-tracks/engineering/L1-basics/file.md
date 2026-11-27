@@ -1,6 +1,6 @@
 # 审校：文件基本操作
 
-- 原文：docs/base/file.md
+- 原文：docs/source-tracks/engineering/L1-basics/file.md
 - 范围：全文
 - 目标读者：要用 C / Java / C# / Python / shell / bat 做文件操作的开发者
 - 一句话定位：把四种语言的文件操作 API 并排摆开，当速查手册用

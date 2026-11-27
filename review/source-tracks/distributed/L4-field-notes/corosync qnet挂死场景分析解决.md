@@ -1,6 +1,6 @@
 # 审校：corosync qnet挂死场景分析解决
 
-- 原文：docs/distributed/field-notes/corosync qnet挂死场景分析解决.md
+- 原文：docs/source-tracks/distributed/L4-field-notes/corosync qnet挂死场景分析解决.md
 - 范围：全文
 - 目标读者：做双节点 / 同城双中心仲裁方案的工程师
   （知道 qdevice、qnetd 的角色，想搞清楚仲裁进程挂掉后的行为边界）
