@@ -38,7 +38,7 @@ jobs:
           # 那个分支上的提交会被 rebase 到 master 再推上去。
           ref: master
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.12'
 
