@@ -9,9 +9,9 @@ description: "2024 年开始，\"AI 数据库\"成为新热点：Qdrant、Milvus
 
 > 本文是「PostgreSQL 扩展系列」AI / 向量篇。同系列前文：
 >
-> - [PostgreSQL 核心特性全景：12 大功能的设计动因、实现原理与版本演化](../../getting-started/postgresql-core-features/index.html)
+> - [PostgreSQL 核心特性全景：12 大功能的设计动因、实现原理与版本演化](../../L1-getting-started/postgresql-core-features/index.html)
 > - [PostGIS 深度解析：从 OGC Simple Features 到 PG 18 时代的 GIS 引擎](../postgis-deep-dive/index.html)
-> - [PostgreSQL 前世今生：39 年演化史](../../getting-started/postgresql-history/index.html)
+> - [PostgreSQL 前世今生：39 年演化史](../../L1-getting-started/postgresql-history/index.html)
 
 2024 年开始，**"AI 数据库"成为新热点**：Qdrant、Milvus、Weaviate、Pinecone 这些专用向量数据库 vs PG + pgvector 的"一库多用"模型，争论不下。
 
@@ -699,6 +699,6 @@ gantt
 
 ## 同系列前文
 
-- [PostgreSQL 核心特性全景：12 大功能](../../getting-started/postgresql-core-features/index.html)
+- [PostgreSQL 核心特性全景：12 大功能](../../L1-getting-started/postgresql-core-features/index.html)
 - [PostGIS 深度解析](../postgis-deep-dive/index.html)
-- [PostgreSQL 前世今生：39 年演化史](../../getting-started/postgresql-history/index.html)
+- [PostgreSQL 前世今生：39 年演化史](../../L1-getting-started/postgresql-history/index.html)

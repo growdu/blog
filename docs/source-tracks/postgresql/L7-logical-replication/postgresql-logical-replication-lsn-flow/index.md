@@ -1014,9 +1014,9 @@ FROM pg_stat_replication;
 
 - [PostgreSQL 逻辑复制端到端](../postgresql-logical-replication-end-to-end/index.html)
 - [PostgreSQL snapbuild.c 深度解析](../postgresql-snapbuild-deep-dive/index.html)
-- [CREATE_REPLICATION_SLOT 端到端](../../replication-ha/postgresql-create-replication-slot-deep-dive/index.html)
+- [CREATE_REPLICATION_SLOT 端到端](../../L6-replication-ha/postgresql-create-replication-slot-deep-dive/index.html)
 - [SnapBuildFindSnapshot 深度拆解](../postgresql-snapbuild-find-snapshot-deep-dive/index.html)
-- [PostgreSQL 行锁机制深度解析](../../transaction-mvcc/postgresql-row-lock/index.html)
+- [PostgreSQL 行锁机制深度解析](../../L4-transaction-mvcc/postgresql-row-lock/index.html)
 
 ### 12.3 官方文档
 

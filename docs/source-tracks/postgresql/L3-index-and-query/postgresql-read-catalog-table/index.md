@@ -9,12 +9,12 @@ description: "PostgreSQL 内核开发中最常见的任务之一是：\"在某�
 
 > 本文是「PostgreSQL 源码系列」内核开发篇。配套源码版本：PostgreSQL 18 dev（`~/cwork/postgresql`，REL_18_3 之后 77 commit）。同系列前文：
 >
-> - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../getting-started/postgresql-module-architecture/index.html)
-> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-> - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-> - [PostgreSQL 18 并行 Worker 机制全解](../../transaction-mvcc/postgresql-parallel-worker/index.html)
-> - [PostgreSQL Background Worker 全解](../../getting-started/postgresql-background-worker/index.html)
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../L1-getting-started/postgresql-module-architecture/index.html)
+> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+> - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+> - [PostgreSQL 18 并行 Worker 机制全解](../../L4-transaction-mvcc/postgresql-parallel-worker/index.html)
+> - [PostgreSQL Background Worker 全解](../../L1-getting-started/postgresql-background-worker/index.html)
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
 
 PostgreSQL 内核开发中最常见的任务之一是：**"在某段 C 代码里读一张表（多半是 catalog 表）的几行 tuple"**。这听起来简单，实际上涉及事务控制、MVCC 快照、relation cache、catalog cache、AM 抽象、heap scan、buffer pin、catalog invalidation 8 个机制。任何一个环节写错，都可能引发：
 
@@ -1393,11 +1393,11 @@ CommandCounterIncrement();   /* 一次 */
 
 ## 同系列前文
 
-- [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../getting-started/postgresql-module-architecture/index.html)
-- [PostgreSQL 18 并行 Worker 机制全解：从 `ParallelContext` 到 `ParallelQueryMain` 的全链路](../../transaction-mvcc/postgresql-parallel-worker/index.html)
-- [PostgreSQL Background Worker 全解](../../getting-started/postgresql-background-worker/index.html)
-- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-- [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
-- [pgbench 源码全解：一个 C 文件如何撑起 PostgreSQL 官方压测工具](../../extensions-perf/pgbench-internals/index.html)
+- [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../L1-getting-started/postgresql-module-architecture/index.html)
+- [PostgreSQL 18 并行 Worker 机制全解：从 `ParallelContext` 到 `ParallelQueryMain` 的全链路](../../L4-transaction-mvcc/postgresql-parallel-worker/index.html)
+- [PostgreSQL Background Worker 全解](../../L1-getting-started/postgresql-background-worker/index.html)
+- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+- [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+- [pgbench 源码全解：一个 C 文件如何撑起 PostgreSQL 官方压测工具](../../L8-extensions-perf/pgbench-internals/index.html)

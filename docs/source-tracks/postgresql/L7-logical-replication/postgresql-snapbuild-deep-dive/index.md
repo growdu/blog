@@ -1411,8 +1411,8 @@ sequenceDiagram
 
 - [PostgreSQL 逻辑复制 Stream Publisher](../postgresql-logical-replication-stream-publisher/index.html)
 - [PostgreSQL Reorder Buffer 源码分析](../postgresql-reorder-buffer-code-analysis/index.html)
-- [PostgreSQL 行锁机制深度解析](../../transaction-mvcc/postgresql-row-lock/index.html)
-- [PostgreSQL 共享内存机制](../../storage-engine/postgresql-shared-memory/index.html)
+- [PostgreSQL 行锁机制深度解析](../../L4-transaction-mvcc/postgresql-row-lock/index.html)
+- [PostgreSQL 共享内存机制](../../L2-storage-engine/postgresql-shared-memory/index.html)
 
 ### 14.3 官方文档
 

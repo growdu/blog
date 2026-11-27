@@ -24,12 +24,12 @@ description: "先定义 \"资深\"——不要被 \"老员工 / 工龄 10 年\" 
 
 > 本文是「PostgreSQL 内核机制源码系列」的**元文章**——它本身不深入某个子系统，而是**给出研究所有子系统的学习路径**。同系列文章：
 >
-> - [PostgreSQL WAL 记录类型完全指南](../../wal-and-recovery/postgresql-wal-record-types/index.html) — 21 个 RMGR × 80+ 种记录
-> - [PostgreSQL 18 内核数据结构全景](../../index-and-query/postgresql-rangevar-and-data-structures/index.html) — RangeVar + 20 个核心数据结构
-> - [PostgreSQL 逻辑复制全链路](../../logical-replication/postgresql-logical-replication-end-to-end-flow/index.html)
-> - [PostgreSQL 逻辑复制里 RUNNING_XACTS 与快照](../../transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
-> - [PostgreSQL MVCC](../../transaction-mvcc/postgresql-mvcc/index.html)
-> - [PostgreSQL 事务生命周期](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+> - [PostgreSQL WAL 记录类型完全指南](../../L5-wal-and-recovery/postgresql-wal-record-types/index.html) — 21 个 RMGR × 80+ 种记录
+> - [PostgreSQL 18 内核数据结构全景](../../L3-index-and-query/postgresql-rangevar-and-data-structures/index.html) — RangeVar + 20 个核心数据结构
+> - [PostgreSQL 逻辑复制全链路](../../L7-logical-replication/postgresql-logical-replication-end-to-end-flow/index.html)
+> - [PostgreSQL 逻辑复制里 RUNNING_XACTS 与快照](../../L4-transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
+> - [PostgreSQL MVCC](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 事务生命周期](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
 > - 其余 30+ 篇见 主题地图 §3
 
 ## 阅读指南

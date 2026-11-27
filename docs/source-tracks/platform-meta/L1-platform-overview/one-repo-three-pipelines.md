@@ -216,9 +216,9 @@ flowchart TD
 
 ## 七、相关阅读
 
-- [内容单元与内容契约](../content-model/content-unit-and-contract.md) —
+- [内容单元与内容契约](../L2-content-model/content-unit-and-contract.md) —
   三条产线之间传递的到底是什么数据，一份母稿的前置元数据能写什么
-- [从母稿到页面](../build-pipeline/docs-to-public-pipeline.md) —
+- [从母稿到页面](../L3-build-pipeline/docs-to-public-pipeline.md) —
   站点这条线的完整链路：一次 push 之后发生了什么
 
 ---

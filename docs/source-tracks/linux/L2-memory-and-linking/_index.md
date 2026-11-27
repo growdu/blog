@@ -1,6 +1,6 @@
 ---
 title: "内存与动态链接"
-description: "内存与动态链接：进程地址空间、分配器、库的装载与链接 —— 程序为什么会 OOM。"
+description: "进程地址空间、分配器、库的装载与链接 —— 程序为什么会 OOM。"
 cascade:
   categories:
     - 内存与动态链接
@@ -10,10 +10,11 @@ tags:
 
 # 内存与动态链接
 
-内存与动态链接：进程地址空间、分配器、库的装载与链接 —— 程序为什么会 OOM。
+进程地址空间、分配器、库的装载与链接 —— 程序为什么会 OOM。
 
 ## 本系列文章
 
+- [linux生成coredump](./linux生成coredump.md)
 - [ebpf基础](./ebpf/ebpf基础.md)
 - [otlp](./ebpf/oltp.md)
 - [pg-ferret](./ebpf/pg-ferret.md)

@@ -220,7 +220,7 @@ JR/T 0044-2008 6.3.1 的分类依据值得单独说：它按**时间敏感性**�
   lms 要求把这个键删掉；
 - 如果你们的仲裁集群用的就是 corosync-qdevice，配置前务必先确认用的是哪个算法，
   配错不会立刻报错，要到分区时才发现少一票或多一票。细节见
-  [corosync-qdevice使用](../field-notes/corosync-qdevice使用.md)。
+  [corosync-qdevice使用](../L4-field-notes/corosync-qdevice使用.md)。
 
 网络仲裁还能有效处理网络分区，对预防脑裂很有用：分区后仲裁可以把票投给之前的主节点，
 既不用发生切换，还能继续提供服务。
@@ -308,7 +308,7 @@ JR/T 0044-2008 6.3.1 的分类依据值得单独说：它按**时间敏感性**�
 ## 延伸阅读
 
 - [两地三中心技术指标分析](两地三中心技术指标分析.md)——距离、延迟、丢包率的量化口径
-- [多地多中心方案调研](../field-notes/多地多中心方案调研/index.md)——横向方案对比
+- [多地多中心方案调研](../L4-field-notes/多地多中心方案调研/index.md)——横向方案对比
 - [kingbase两地三中心日常巡检](kingbase两地三中心日常巡检.md)——日常怎么巡检
-- [corosync-qdevice使用](../field-notes/corosync-qdevice使用.md)——仲裁算法的配置硬前提
+- [corosync-qdevice使用](../L4-field-notes/corosync-qdevice使用.md)——仲裁算法的配置硬前提
 - [corosync qnet挂死场景分析解决](../field-notes/corosync qnet挂死场景分析解决.md)——仲裁链路的故障场景

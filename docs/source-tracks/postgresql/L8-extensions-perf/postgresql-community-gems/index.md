@@ -856,10 +856,10 @@ flowchart TD
 ## 附:本文与本站其它文章的关系
 
 - **PostgreSQL 源码修炼之路**: [PostgreSQL 源码修炼之路](/learning/postgresql/)
-- **PostgreSQL 行锁机制深度解析**: [PostgreSQL 行锁机制深度解析](../../transaction-mvcc/postgresql-row-lock/index.html)
-- **PostgreSQL 共享内存机制**: [PostgreSQL 共享内存机制](../../storage-engine/postgresql-shared-memory/index.html)
-- **PostgreSQL 逻辑复制 Stream Publisher**: [PostgreSQL 逻辑复制 Stream Publisher](../../logical-replication/postgresql-logical-replication-stream-publisher/index.html)
-- **PostgreSQL Reorder Buffer 源码分析**: [PostgreSQL Reorder Buffer 源码分析](../../logical-replication/postgresql-reorder-buffer-code-analysis/index.html)
+- **PostgreSQL 行锁机制深度解析**: [PostgreSQL 行锁机制深度解析](../../L4-transaction-mvcc/postgresql-row-lock/index.html)
+- **PostgreSQL 共享内存机制**: [PostgreSQL 共享内存机制](../../L2-storage-engine/postgresql-shared-memory/index.html)
+- **PostgreSQL 逻辑复制 Stream Publisher**: [PostgreSQL 逻辑复制 Stream Publisher](../../L7-logical-replication/postgresql-logical-replication-stream-publisher/index.html)
+- **PostgreSQL Reorder Buffer 源码分析**: [PostgreSQL Reorder Buffer 源码分析](../../L7-logical-replication/postgresql-reorder-buffer-code-analysis/index.html)
 
 ---
 

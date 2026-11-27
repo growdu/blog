@@ -10,11 +10,11 @@ description: "很多人对 PostgreSQL 的印象是\"那个比 MySQL 更严肃的
 > 本文是「PostgreSQL 源码系列」项目篇。同系列前文：
 >
 > - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../postgresql-module-architecture/index.html)
-> - [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](../../storage-engine/postgresql-catalog-storage/index.html)
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-> - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-> - [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../index-and-query/postgresql-read-catalog-table/index.html)
+> - [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](../../L2-storage-engine/postgresql-catalog-storage/index.html)
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+> - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+> - [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../L3-index-and-query/postgresql-read-catalog-table/index.html)
 
 很多人对 PostgreSQL 的印象是"那个比 MySQL 更严肃的 SQL 数据库"。但如果你只看版本号，会以为它就是从 1996 年某个 1.0 起步的普通开源项目。事实上，**PostgreSQL 是从 1970s 数据库研究浪潮中走出来的一条"主线程"**，跟 System R、Ingres、Oracle、DB2 同代，是为数不多还在持续演化的"老兵"。
 
@@ -1057,13 +1057,13 @@ flowchart TB
 
 ## 同系列前文
 
-- [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](../../storage-engine/postgresql-catalog-storage/index.html)
+- [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](../../L2-storage-engine/postgresql-catalog-storage/index.html)
 - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../postgresql-module-architecture/index.html)
-- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-- [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-- [PostgreSQL 18 并行 Worker 机制全解](../../transaction-mvcc/postgresql-parallel-worker/index.html)
+- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+- [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+- [PostgreSQL 18 并行 Worker 机制全解](../../L4-transaction-mvcc/postgresql-parallel-worker/index.html)
 - [PostgreSQL Background Worker 全解](../postgresql-background-worker/index.html)
-- [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../index-and-query/postgresql-read-catalog-table/index.html)
-- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
-- [pgbench 源码全解：一个 C 文件如何撑起 PostgreSQL 官方压测工具](../../extensions-perf/pgbench-internals/index.html)
+- [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../L3-index-and-query/postgresql-read-catalog-table/index.html)
+- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+- [pgbench 源码全解：一个 C 文件如何撑起 PostgreSQL 官方压测工具](../../L8-extensions-perf/pgbench-internals/index.html)

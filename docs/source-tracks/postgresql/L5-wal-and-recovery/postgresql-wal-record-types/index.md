@@ -9,10 +9,10 @@ description: "很多人学 PostgreSQL 都会\"听说过 WAL\"，但真正翻开�
 
 > 本文是「PostgreSQL 内核机制源码系列」——同系列前文：
 >
-> - [PostgreSQL 逻辑复制全链路：以一个真实事务为例，从 `INSERT` 到 `apply` 的源码级旅程](../../logical-replication/postgresql-logical-replication-end-to-end-flow/index.html)
-> - [PostgreSQL 逻辑复制里 `RUNNING_XACTS` 写入机制与快照 `xmin / xmax / xip` 的演化](../../transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-> - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+> - [PostgreSQL 逻辑复制全链路：以一个真实事务为例，从 `INSERT` 到 `apply` 的源码级旅程](../../L7-logical-replication/postgresql-logical-replication-end-to-end-flow/index.html)
+> - [PostgreSQL 逻辑复制里 `RUNNING_XACTS` 写入机制与快照 `xmin / xmax / xip` 的演化](../../L4-transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
 
 ## 阅读指南
 

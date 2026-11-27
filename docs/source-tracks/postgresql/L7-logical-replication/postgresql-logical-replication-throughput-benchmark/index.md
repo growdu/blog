@@ -17,7 +17,7 @@ description: "想测 PostgreSQL 逻辑复制的吞吐率，第一直觉是\"找�
 > - [PostgreSQL 逻辑复制选项详解：`run_as_owner` / `disable_on_error`](../postgresql-logical-replication-options/index.html)
 > - [PostgreSQL 逻辑复制 Worker 模型：从 launcher 到 apply 的 8 种角色](../postgresql-logical-replication-worker-model/index.html)
 > - [PostgreSQL 逻辑复制分区表专题](../postgresql-logical-replication-with-partitioned-tables/index.html)
-> - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../getting-started/postgresql-module-architecture/index.html)
+> - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../L1-getting-started/postgresql-module-architecture/index.html)
 
 想测 PostgreSQL 逻辑复制的吞吐率，第一直觉是"找一个叫 logical-replication-benchmark 的工具"——**没有**。PostgreSQL 官方仓库里没有这种独立 benchmark；`pg_logicalbench` / `logical-replication-bench` 是社区零星写过的研究脚本，但没有 PG 官方推荐的标准件。
 
@@ -1145,6 +1145,6 @@ if __name__ == '__main__':
 - [PostgreSQL 逻辑复制选项详解：`run_as_owner` / `disable_on_error`](../postgresql-logical-replication-options/index.html)
 - [PostgreSQL 逻辑复制 Worker 模型：从 launcher 到 apply 的 8 种角色](../postgresql-logical-replication-worker-model/index.html)
 - [PostgreSQL 逻辑复制分区表专题](../postgresql-logical-replication-with-partitioned-tables/index.html)
-- [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../getting-started/postgresql-module-architecture/index.html)
-- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
+- [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../L1-getting-started/postgresql-module-architecture/index.html)
+- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)

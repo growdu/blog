@@ -22,11 +22,11 @@ description: "先看一段看起来平平无奇、但每个 PG 内核开发者�
 
 > 本文是「PostgreSQL 内核机制源码系列」。同系列前文：
 >
-> - [PostgreSQL 读一行数据源码级深度拆解：MVCC 在每个环节的落点](../../index-and-query/postgresql-read-a-row-deep-dive/index.html) — 10 个阶段的 MVCC 落点全景
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-> - [PostgreSQL 读取系统表源码级深度拆解](../../index-and-query/postgresql-read-catalog-table/index.html) — 9 步读取 catalog 表的完整流程
-> - [PostgreSQL RUNNING_XACTS 与快照构建](../../transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
-> - [PostgreSQL 行锁机制源码级深度拆解](../../transaction-mvcc/postgresql-row-lock-deep-dive/index.html)
+> - [PostgreSQL 读一行数据源码级深度拆解：MVCC 在每个环节的落点](../../L3-index-and-query/postgresql-read-a-row-deep-dive/index.html) — 10 个阶段的 MVCC 落点全景
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 读取系统表源码级深度拆解](../../L3-index-and-query/postgresql-read-catalog-table/index.html) — 9 步读取 catalog 表的完整流程
+> - [PostgreSQL RUNNING_XACTS 与快照构建](../../L4-transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
+> - [PostgreSQL 行锁机制源码级深度拆解](../../L4-transaction-mvcc/postgresql-row-lock-deep-dive/index.html)
 
 ## 阅读指南
 
@@ -2787,8 +2787,8 @@ pg_trigger
 
 ## 同系列前文
 
-- [PostgreSQL 读一行数据源码级深度拆解：MVCC 在每个环节的落点](../../index-and-query/postgresql-read-a-row-deep-dive/index.html) — 10 个阶段的 MVCC 落点全景
-- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-- [PostgreSQL 读取系统表源码级深度拆解](../../index-and-query/postgresql-read-catalog-table/index.html) — 9 步读取 catalog 表的完整流程
-- [PostgreSQL RUNNING_XACTS 与快照构建](../../transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
-- [PostgreSQL 行锁机制源码级深度拆解](../../transaction-mvcc/postgresql-row-lock-deep-dive/index.html)
+- [PostgreSQL 读一行数据源码级深度拆解：MVCC 在每个环节的落点](../../L3-index-and-query/postgresql-read-a-row-deep-dive/index.html) — 10 个阶段的 MVCC 落点全景
+- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+- [PostgreSQL 读取系统表源码级深度拆解](../../L3-index-and-query/postgresql-read-catalog-table/index.html) — 9 步读取 catalog 表的完整流程
+- [PostgreSQL RUNNING_XACTS 与快照构建](../../L4-transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
+- [PostgreSQL 行锁机制源码级深度拆解](../../L4-transaction-mvcc/postgresql-row-lock-deep-dive/index.html)

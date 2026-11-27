@@ -1,15 +1,16 @@
 ---
 title: "内容模型"
-description: "母稿、内容单元、平台产物三层；front matter 契约的字段表、格式规则与白名单透传。"
+description: "一个内容单元由哪些字段组成：哪些是白名单、哪些是推导出来的、哪些不许出现。"
 cascade:
   categories:
     - 内容模型
 tags:
   - 内容模型
-  - 内容契约
 ---
 
 # 内容模型
+
+一个内容单元由哪些字段组成：哪些是白名单、哪些是推导出来的、哪些不许出现。
 
 这一系列回答一个问题：**同一份内容，怎么变成五个平台上的东西？**
 
@@ -22,11 +23,10 @@ tags:
 
 ## 本系列文章
 
-- [内容单元与内容契约](./content-unit-and-contract.md) — 三层模型、推导字段与透传字段、
-  为什么是白名单而不是全文转储，以及格式规则为什么故意做得很土
+- [内容单元与内容契约](./content-unit-and-contract.md)
 
 ## 相关
 
-- [一个仓库，三条产线](../platform-overview/one-repo-three-pipelines.md) — 内容契约在整体架构里的位置
-- [一份声明顶掉五套 if-else](../multiplatform/capability-model-and-publishing-pipeline.md) —
+- [一个仓库，三条产线](../L1-platform-overview/one-repo-three-pipelines.md) — 内容契约在整体架构里的位置
+- [一份声明顶掉五套 if-else](../L5-multiplatform/capability-model-and-publishing-pipeline.md) —
   拿到内容单元之后，接下来发生什么

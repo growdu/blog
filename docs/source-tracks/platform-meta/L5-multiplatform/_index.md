@@ -1,15 +1,16 @@
 ---
 title: "多平台分发"
-description: "平台能力模型、发布清单、幂等状态与调度：把「发到五个平台」变成一份份可重放的数据。"
+description: "同一份内容怎么发到公众号、知乎、视频号，各平台各有什么规矩。"
 cascade:
   categories:
     - 多平台分发
 tags:
   - 多平台分发
-  - 发布
 ---
 
 # 多平台分发
+
+同一份内容怎么发到公众号、知乎、视频号，各平台各有什么规矩。
 
 同一个内容单元，发到公众号、头条号、抖音、视频号、B 站，
 每个平台的形态、限额、自动化程度都不一样。
@@ -20,14 +21,9 @@ tags:
 
 ## 本系列文章
 
-- [一份声明顶掉五套 if-else](./capability-model-and-publishing-pipeline.md) —
-  平台能力模型、发布清单、幂等键与调度档位；
-  为什么平台限额必须是数据，以及闸比平台松为什么是错闸
-
-下一篇会讲幂等的另一半：出包与发布状态怎么分开记，
-为什么「已出包」也算「处理过了」，以及写盘为什么必须原子。
+- [一份声明顶掉五套 if-else](./capability-model-and-publishing-pipeline.md)
 
 ## 相关
 
-- [内容单元与内容契约](../content-model/content-unit-and-contract.md) — 分发链路的输入长什么样
-- [一个仓库，三条产线](../platform-overview/one-repo-three-pipelines.md) — 三条产线里最年轻的一条
+- [内容单元与内容契约](../L2-content-model/content-unit-and-contract.md) — 分发链路的输入长什么样
+- [一个仓库，三条产线](../L1-platform-overview/one-repo-three-pipelines.md) — 三条产线里最年轻的一条

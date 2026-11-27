@@ -1,21 +1,21 @@
 ---
-title: "Linux"
-description: "Linux 源码主线：5 个系列，由浅入深。"
+title: "Linux 与网络"
+description: "Linux 与网络 赛道：5 个阶段，由浅入深。"
 cascade:
   categories:
-    - Linux
+    - Linux 与网络
 tags:
-  - Linux
+  - Linux 与网络
 ---
 
-# Linux
+# Linux 与网络
 
-Linux 源码主线：5 个系列，由浅入深。
+Linux 与网络 赛道：5 个阶段，由浅入深。
 
-## 系列
+## 阶段
 
-- [日常操作与工具](./daily-ops/_index.md)
-- [存储与文件系统](./filesystem/_index.md)
-- [内核机制与驱动](./kernel-internals/_index.md)
-- [内存与动态链接](./memory-and-linking/_index.md)
-- [网络协议与抓包](./networking/_index.md)
+- [Linux 入门与日常操作](./L1-daily-ops/_index.md)
+- [内存与动态链接](./L2-memory-and-linking/_index.md)
+- [内核机制与驱动](./L3-kernel-internals/_index.md)
+- [网络协议与抓包](./L4-networking/_index.md)
+- [存储与文件系统](./L5-filesystem/_index.md)

@@ -7,7 +7,7 @@ description: "pg_stat_statements 是 PG 8.0 (2005) 进入 contrib 的官方统�
 | --- | --- | --- |
 | growdu | 初稿，把 pg_stat_statements 从 8.0 contrib 模块，到 query hash / queryid 算法、pg_stat_statements / pg_stat_activity / pg_stat_user_tables 三大观测源，到 Performance Insights / pganalyze / pgwatch2 集成。 | 2026-09-29 |
 
-> 本文是「PostgreSQL 扩展系列」观测篇。同系列前文：[PostgreSQL 核心特性全景](../../getting-started/postgresql-core-features/index.html)
+> 本文是「PostgreSQL 扩展系列」观测篇。同系列前文：[PostgreSQL 核心特性全景](../../L1-getting-started/postgresql-core-features/index.html)
 
 `pg_stat_statements` 是 PG 8.0 (2005) 进入 contrib 的官方统计扩展，**到现在仍是 99% PG 监控工具的"数据源"**。它是 PG 自己的"slow query log + 性能数据采集"。
 
@@ -445,5 +445,5 @@ flowchart TB
 
 ## 同系列前文
 
-- [PostgreSQL 核心特性全景](../../getting-started/postgresql-core-features/index.html)
-- [PostgreSQL 前世今生：39 年演化史](../../getting-started/postgresql-history/index.html)
+- [PostgreSQL 核心特性全景](../../L1-getting-started/postgresql-core-features/index.html)
+- [PostgreSQL 前世今生：39 年演化史](../../L1-getting-started/postgresql-history/index.html)

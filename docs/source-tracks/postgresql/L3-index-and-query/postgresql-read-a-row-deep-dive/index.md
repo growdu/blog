@@ -22,10 +22,10 @@ description: "想象你在一家极简的图书馆。规则很怪："
 
 > 本文是「PostgreSQL 内核机制源码系列」。同系列前文：
 >
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-> - [PostgreSQL 行锁机制源码级深度拆解](../../transaction-mvcc/postgresql-row-lock-deep-dive/index.html)
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 行锁机制源码级深度拆解](../../L4-transaction-mvcc/postgresql-row-lock-deep-dive/index.html)
 > - [PostgreSQL 读取系统表源码级深度拆解](../postgresql-read-catalog-table/index.html)
-> - [PostgreSQL RUNNING_XACTS 与快照构建](../../transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
+> - [PostgreSQL RUNNING_XACTS 与快照构建](../../L4-transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
 > - [PostgreSQL 18 内核数据结构全景](../postgresql-rangevar-and-data-structures/index.html)
 
 ## 阅读指南
@@ -2369,9 +2369,9 @@ flowchart LR
 
 ## 同系列前文
 
-- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html) — MVCC 基础原理与元组生命周期
-- [PostgreSQL 行锁机制源码级深度拆解](../../transaction-mvcc/postgresql-row-lock-deep-dive/index.html) — xmax 的另一面：锁与 MultiXact
+- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html) — MVCC 基础原理与元组生命周期
+- [PostgreSQL 行锁机制源码级深度拆解](../../L4-transaction-mvcc/postgresql-row-lock-deep-dive/index.html) — xmax 的另一面：锁与 MultiXact
 - [PostgreSQL 读取系统表源码级深度拆解](../postgresql-read-catalog-table/index.html) — 9 步读取 catalog 表的完整流程
-- [PostgreSQL RUNNING_XACTS 与快照构建](../../transaction-mvcc/postgresql-running-xacts-snapshot/index.html) — xip 数组的来龙去脉
+- [PostgreSQL RUNNING_XACTS 与快照构建](../../L4-transaction-mvcc/postgresql-running-xacts-snapshot/index.html) — xip 数组的来龙去脉
 - [PostgreSQL 18 内核数据结构全景](../postgresql-rangevar-and-data-structures/index.html) — HeapTuple / SnapshotData / RangeVar
-- [PostgreSQL TOAST 机制源码级深度拆解](../../storage-engine/postgresql-toast-deep-dive/index.html) — 大字段的存储与读取
+- [PostgreSQL TOAST 机制源码级深度拆解](../../L2-storage-engine/postgresql-toast-deep-dive/index.html) — 大字段的存储与读取

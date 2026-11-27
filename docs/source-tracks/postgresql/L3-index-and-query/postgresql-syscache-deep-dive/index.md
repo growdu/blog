@@ -1814,11 +1814,11 @@ PG 18 增加了 DbRoleSetting 等 8 个表的 snapshot-only invalidation,避免 
 
 ### 15.1 站内相关文章
 
-- [PostgreSQL 共享内存机制](../../storage-engine/postgresql-shared-memory/index.html)
-- [PostgreSQL 行锁深度拆解](../../transaction-mvcc/postgresql-row-lock/index.html)
-- [PostgreSQL 逻辑复制端到端深度拆解](../../logical-replication/postgresql-logical-replication-end-to-end/index.html)
-- [PostgreSQL snapbuild.c 深度解析](../../logical-replication/postgresql-snapbuild-deep-dive/index.html)
-- [PostgreSQL reorder buffer 源码分析](../../logical-replication/postgresql-reorder-buffer-code-analysis/index.html)
+- [PostgreSQL 共享内存机制](../../L2-storage-engine/postgresql-shared-memory/index.html)
+- [PostgreSQL 行锁深度拆解](../../L4-transaction-mvcc/postgresql-row-lock/index.html)
+- [PostgreSQL 逻辑复制端到端深度拆解](../../L7-logical-replication/postgresql-logical-replication-end-to-end/index.html)
+- [PostgreSQL snapbuild.c 深度解析](../../L7-logical-replication/postgresql-snapbuild-deep-dive/index.html)
+- [PostgreSQL reorder buffer 源码分析](../../L7-logical-replication/postgresql-reorder-buffer-code-analysis/index.html)
 
 ### 15.2 PostgreSQL 18 源码
 

@@ -269,9 +269,9 @@ flowchart LR
 
 ## 相关阅读
 
-- [一个仓库，三条产线](../platform-overview/one-repo-three-pipelines.md) —
+- [一个仓库，三条产线](../L1-platform-overview/one-repo-three-pipelines.md) —
   视频线在整体架构里的位置
-- [多平台分发](../multiplatform/capability-model-and-publishing-pipeline.md) —
+- [多平台分发](../L5-multiplatform/capability-model-and-publishing-pipeline.md) —
   视频成品怎么变成各平台的投稿包
-- [信息架构](../info-architecture/category-restructure-and-learning-path.md) —
+- [信息架构](../L4-info-architecture/category-restructure-and-learning-path.md) —
   母稿和成片怎么在站点上绑成一期

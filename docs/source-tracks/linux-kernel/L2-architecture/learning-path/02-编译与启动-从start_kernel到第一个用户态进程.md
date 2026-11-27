@@ -893,7 +893,7 @@ gdb /work/cwork/linux/vmlinux
 
 ## 2.16 下一章
 
-[03 进程与线程：fork、clone、exec 到底做了什么](../../process-memory/learning-path/03-进程与线程-fork-clone-exec到底做了什么.md)
+[03 进程与线程：fork、clone、exec 到底做了什么](../../L3-process-memory/learning-path/03-进程与线程-fork-clone-exec到底做了什么.md)
 
 上一章讲「一次系统调用怎么走」，这一章讲「内核怎么跑起来」；
 下一章顺着 `rest_init` 里那个 `kernel_clone` 往下挖：**一个 `fork` 到底复制了什么**。

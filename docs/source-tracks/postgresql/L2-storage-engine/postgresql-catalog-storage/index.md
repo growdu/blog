@@ -9,13 +9,13 @@ description: "PG 里\"一张表的元数据\"听起来像一个很小的概念�
 
 > 本文是「PostgreSQL 源码系列」元数据与缓存篇。同系列前文：
 >
-> - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../getting-started/postgresql-module-architecture/index.html)
+> - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../L1-getting-started/postgresql-module-architecture/index.html)
 > - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../postgresql-memory-management/index.html)
-> - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-> - [PostgreSQL 18 并行 Worker 机制全解](../../transaction-mvcc/postgresql-parallel-worker/index.html)
-> - [PostgreSQL Background Worker 全解](../../getting-started/postgresql-background-worker/index.html)
-> - [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../index-and-query/postgresql-read-catalog-table/index.html)
+> - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 18 并行 Worker 机制全解](../../L4-transaction-mvcc/postgresql-parallel-worker/index.html)
+> - [PostgreSQL Background Worker 全解](../../L1-getting-started/postgresql-background-worker/index.html)
+> - [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../L3-index-and-query/postgresql-read-catalog-table/index.html)
 
 PG 里"一张表的元数据"听起来像一个很小的概念——无非是列名、类型、所有者。但只要你打开 `src/include/catalog/` 看一下 60 多个 `pg_*.dat / pg_*.h` 文件，就会发现这是**整个 PostgreSQL 内核里最大的一坨代码**：从磁盘到内存，从冷启动到热运行，从一行 SQL 到一个 `Relation` 结构，背后是一整套**自举（bootstrap）→ BKI 编译 → genbki.pl 烧表 → initdb 灌数据 → 运行时 SysCache / CatCache / RelationCache 三层缓存**的工程化方案。
 
@@ -41,7 +41,7 @@ PostgreSQL 选择了最朴素也最"自指（self-describing）"的方案：**�
 | 后果 | 收益 | 代价 |
 | --- | --- | --- |
 | SQL 直接查 catalog | `SELECT * FROM pg_class WHERE relname='users'` 查表 / `SELECT * FROM pg_type WHERE typname='users'` 查同名复合类型 | `pg_class` / `pg_attribute` 上的 DDL 自身也受 catalog 约束 |
-| MVCC 适用于 catalog | catalog 也走 4 个 HeapTuple 的多版本（详见 [MVCC](../../transaction-mvcc/postgresql-mvcc/index.html)） | catalog 改一行要触发 `invalidation` 风暴 |
+| MVCC 适用于 catalog | catalog 也走 4 个 HeapTuple 的多版本（详见 [MVCC](../../L4-transaction-mvcc/postgresql-mvcc/index.html)） | catalog 改一行要触发 `invalidation` 风暴 |
 | 物理上与用户表一致 | buffer pool / WAL / FSM / VM 一视同仁 | 必须有"nailed"机制防止 `VACUUM FULL pg_class` |
 | 代码生成 catalog | `genbki.pl` 读 `.dat / .h` 烧出 BKI 脚本，编译时自动同步 | `.h` 改一个字段要重新 `initdb`，版本升级贵 |
 
@@ -1748,7 +1748,7 @@ flowchart TB
 4. **invalidation 机制**：DDL 安全修改而不破坏已有 session；
 5. **`pg_internal.init`**：把"启动期"成本固化到磁盘。
 
-下一篇文章会沿着这个链路继续深入：[PostgreSQL Background Worker 全解](../../getting-started/postgresql-background-worker/index.html) / [PostgreSQL 18 并行 Worker 机制全解](../../transaction-mvcc/postgresql-parallel-worker/index.html) / [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)。
+下一篇文章会沿着这个链路继续深入：[PostgreSQL Background Worker 全解](../../L1-getting-started/postgresql-background-worker/index.html) / [PostgreSQL 18 并行 Worker 机制全解](../../L4-transaction-mvcc/postgresql-parallel-worker/index.html) / [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)。
 
 ---
 
@@ -1831,12 +1831,12 @@ flowchart TB
 
 ## 同系列前文
 
-- [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../getting-started/postgresql-module-architecture/index.html)
+- [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../L1-getting-started/postgresql-module-architecture/index.html)
 - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../postgresql-memory-management/index.html)
-- [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-- [PostgreSQL 18 并行 Worker 机制全解](../../transaction-mvcc/postgresql-parallel-worker/index.html)
-- [PostgreSQL Background Worker 全解](../../getting-started/postgresql-background-worker/index.html)
-- [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../index-and-query/postgresql-read-catalog-table/index.html)
-- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
-- [pgbench 源码全解：一个 C 文件如何撑起 PostgreSQL 官方压测工具](../../extensions-perf/pgbench-internals/index.html)
+- [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+- [PostgreSQL 18 并行 Worker 机制全解](../../L4-transaction-mvcc/postgresql-parallel-worker/index.html)
+- [PostgreSQL Background Worker 全解](../../L1-getting-started/postgresql-background-worker/index.html)
+- [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../L3-index-and-query/postgresql-read-catalog-table/index.html)
+- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+- [pgbench 源码全解：一个 C 文件如何撑起 PostgreSQL 官方压测工具](../../L8-extensions-perf/pgbench-internals/index.html)

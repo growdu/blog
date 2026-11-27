@@ -594,7 +594,7 @@ gdb /work/cwork/linux/vmlinux
 ## 5.13 下一章
 
 下一章是 **06 VFS：一次 `open` 的完整链路与 inode/dentry**（尚未写完）。
-先回 [学习路线](../../getting-started/linux源码学习之路.md) 看全貌。
+先回 [学习路线](../../L1-getting-started/linux源码学习之路.md) 看全貌。
 
 下一章离开调度，进入文件系统：`open` 怎么把路径字符串变成 `struct file`、
 dentry 缓存为什么能让第二次 `open` 快得多、mount 与 superblock 又是在哪一步接上的。

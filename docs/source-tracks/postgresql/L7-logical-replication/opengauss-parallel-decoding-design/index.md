@@ -1899,7 +1899,7 @@ SELECT * FROM gs_get_parallel_decode_status('my_slot');
 - [PostgreSQL snapbuild.c 深度解析](../postgresql-snapbuild-deep-dive/index.html)
 - [PostgreSQL SnapBuildFindSnapshot 深度拆解](../postgresql-snapbuild-find-snapshot-deep-dive/index.html)
 - [PostgreSQL reorder buffer 源码分析](../postgresql-reorder-buffer-code-analysis/index.html)
-- [PostgreSQL CREATE_REPLICATION_SLOT 端到端源码分析](../../replication-ha/postgresql-create-replication-slot-deep-dive/index.html)
+- [PostgreSQL CREATE_REPLICATION_SLOT 端到端源码分析](../../L6-replication-ha/postgresql-create-replication-slot-deep-dive/index.html)
 - [PostgreSQL 逻辑复制 LSN 推进全景](../postgresql-logical-replication-lsn-flow/index.html)
 
 ### 15.3 openGauss 官方资料

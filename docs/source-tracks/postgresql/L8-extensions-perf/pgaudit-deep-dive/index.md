@@ -7,7 +7,7 @@ description: "合规要求下，PG 必须能回答 3 个问题：谁在什么时
 | --- | --- | --- |
 | growdu | 初稿，把 pgAudit 从 1.0 起，到 session / object / csvlog 三种模式、log_line_prefix / log_statement 集成、SOX / HIPAA / PCI-DSS 三大合规标准的对接路径完整拆开。 | 2026-09-29 |
 
-> 本文是「PostgreSQL 扩展系列」审计合规篇。同系列前文：[PostgreSQL 核心特性全景](../../getting-started/postgresql-core-features/index.html)
+> 本文是「PostgreSQL 扩展系列」审计合规篇。同系列前文：[PostgreSQL 核心特性全景](../../L1-getting-started/postgresql-core-features/index.html)
 
 合规要求下，PG 必须能回答 3 个问题：**谁在什么时间做了什么**、**数据被谁修改**、**谁访问了敏感字段**。`pgAudit` 把 PG 自带的 `log_statement = all` 升级为细粒度审计扩展。
 
@@ -302,5 +302,5 @@ flowchart TB
 
 ## 同系列前文
 
-- [PostgreSQL 核心特性全景](../../getting-started/postgresql-core-features/index.html)
+- [PostgreSQL 核心特性全景](../../L1-getting-started/postgresql-core-features/index.html)
 - [pg_stat_statements 深度解析](../pg-stat-statements-deep-dive/index.html)

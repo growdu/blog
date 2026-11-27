@@ -769,4 +769,4 @@ SELECT srrelid::regclass AS tbl, srsubstate, srsublsn
 | row filter 复杂 | Y（filter 写在父表，自动对所有 leaf 生效） |
 | 性能极致要求 | X（少一次 attr map 翻译） |
 
-> 详见 [PostgreSQL vs SQL Server 分区表实战](../../index-and-query/postgresql-vs-sqlserver-partitioning/index.html) 的对比表。
+> 详见 [PostgreSQL vs SQL Server 分区表实战](../../L3-index-and-query/postgresql-vs-sqlserver-partitioning/index.html) 的对比表。

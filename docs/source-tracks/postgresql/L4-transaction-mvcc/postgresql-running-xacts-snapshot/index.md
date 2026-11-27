@@ -11,11 +11,11 @@ description: "逻辑复制里最容易出 bug 的事不是 decode（pgoutput 已
 >
 > - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../postgresql-mvcc/index.html)
 > - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../postgresql-transaction-lifecycle/index.html)
-> - [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
-> - [PostgreSQL 逻辑复制 spill 深度拆解：ReorderBuffer 如何把 100GB 事务拆成小块](../../logical-replication/postgresql-logical-replication-spill-deep-dive/index.html)
-> - [PostgreSQL 逻辑复制的 ReorderBuffer 与事务机制](../../logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html)
-> - [PostgreSQL 逻辑复制全链路：以一个真实事务为例，从 `INSERT` 到 `apply` 的源码级旅程](../../logical-replication/postgresql-logical-replication-end-to-end-flow/index.html)
-> - [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](../../storage-engine/postgresql-catalog-storage/index.html)
+> - [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+> - [PostgreSQL 逻辑复制 spill 深度拆解：ReorderBuffer 如何把 100GB 事务拆成小块](../../L7-logical-replication/postgresql-logical-replication-spill-deep-dive/index.html)
+> - [PostgreSQL 逻辑复制的 ReorderBuffer 与事务机制](../../L7-logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html)
+> - [PostgreSQL 逻辑复制全链路：以一个真实事务为例，从 `INSERT` 到 `apply` 的源码级旅程](../../L7-logical-replication/postgresql-logical-replication-end-to-end-flow/index.html)
+> - [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](../../L2-storage-engine/postgresql-catalog-storage/index.html)
 
 逻辑复制里最容易出 bug 的事不是 decode（`pgoutput` 已经写得相当稳定），也不是 apply（无脑 INSERT/UPDATE/DELETE），而是 **snapshot 怎么从 WAL 里"长"出来**——也就是 `RUNNING_XACTS` + `SnapBuild` 状态机 + `xmin / xmax / xip` 三个字段的更新规则。
 
@@ -1661,8 +1661,8 @@ sequenceDiagram
 
 - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../postgresql-mvcc/index.html)
 - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../postgresql-transaction-lifecycle/index.html)
-- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
-- [PostgreSQL 逻辑复制 spill 深度拆解：ReorderBuffer 如何把 100GB 事务拆成小块](../../logical-replication/postgresql-logical-replication-spill-deep-dive/index.html)
-- [PostgreSQL 逻辑复制的 ReorderBuffer 与事务机制](../../logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html)
-> - [PostgreSQL 逻辑复制全链路：以一个真实事务为例，从 `INSERT` 到 `apply` 的源码级旅程](../../logical-replication/postgresql-logical-replication-end-to-end-flow/index.html)
-- [PostgreSQL 元数据存储机制](../../storage-engine/postgresql-catalog-storage/index.html)
+- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+- [PostgreSQL 逻辑复制 spill 深度拆解：ReorderBuffer 如何把 100GB 事务拆成小块](../../L7-logical-replication/postgresql-logical-replication-spill-deep-dive/index.html)
+- [PostgreSQL 逻辑复制的 ReorderBuffer 与事务机制](../../L7-logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html)
+> - [PostgreSQL 逻辑复制全链路：以一个真实事务为例，从 `INSERT` 到 `apply` 的源码级旅程](../../L7-logical-replication/postgresql-logical-replication-end-to-end-flow/index.html)
+- [PostgreSQL 元数据存储机制](../../L2-storage-engine/postgresql-catalog-storage/index.html)

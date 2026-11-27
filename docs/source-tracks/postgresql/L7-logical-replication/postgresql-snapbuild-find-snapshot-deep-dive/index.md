@@ -1182,8 +1182,8 @@ DETAIL: Logical decoding will begin using saved snapshot.
 
 - [snapbuild.c 深度解析(32 个函数逐个源码分析)](../postgresql-snapbuild-deep-dive/index.html)
 - [逻辑复制端到端](../postgresql-logical-replication-end-to-end/index.html)
-- [CREATE_REPLICATION_SLOT 端到端](../../replication-ha/postgresql-create-replication-slot-deep-dive/index.html)
-- [PostgreSQL 行锁机制深度解析](../../transaction-mvcc/postgresql-row-lock/index.html)
+- [CREATE_REPLICATION_SLOT 端到端](../../L6-replication-ha/postgresql-create-replication-slot-deep-dive/index.html)
+- [PostgreSQL 行锁机制深度解析](../../L4-transaction-mvcc/postgresql-row-lock/index.html)
 
 ### 16.3 官方文档
 

@@ -1,15 +1,16 @@
 ---
 title: "平台总览"
-description: "这是什么、三条产线各干什么、仓库怎么分层，以及为什么不用现成方案。"
+description: "先看全局：这个仓库有哪几条产线，一篇内容从哪进、从哪出。"
 cascade:
   categories:
     - 平台总览
 tags:
   - 平台总览
-  - 架构
 ---
 
 # 平台总览
+
+先看全局：这个仓库有哪几条产线，一篇内容从哪进、从哪出。
 
 先说清楚一件事：growdu.cn 表面上是个博客，实际上是一个**内容工厂**。
 
@@ -24,10 +25,9 @@ tags:
 
 ## 本系列文章
 
-- [一个仓库，三条产线](./one-repo-three-pipelines.md) — 整体架构、分层与依赖方向、
-  三条不变量，以及六种「为什么不用现成方案」的逐条拆解
+- [一个仓库，三条产线](./one-repo-three-pipelines.md)
 
 ## 相关
 
-- [内容单元与内容契约](../content-model/content-unit-and-contract.md) — 三条产线之间传递的到底是什么数据
-- [从母稿到页面](../build-pipeline/docs-to-public-pipeline.md) — 站点这条线的完整链路
+- [内容单元与内容契约](../L2-content-model/content-unit-and-contract.md) — 三条产线之间传递的到底是什么数据
+- [从母稿到页面](../L3-build-pipeline/docs-to-public-pipeline.md) — 站点这条线的完整链路

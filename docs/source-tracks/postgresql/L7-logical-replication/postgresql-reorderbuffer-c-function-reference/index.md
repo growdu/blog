@@ -2490,7 +2490,7 @@ flowchart TB
 - [PostgreSQL 逻辑复制 LSN 推进全景](../postgresql-logical-replication-lsn-flow/index.md) — LSN 在 RB 内如何轮转
 - [PostgreSQL 逻辑复制 end-to-end 全流程](../postgresql-logical-replication-end-to-end/index.md) — RB 在端到端的位置
 - [snapbuild.c 全函数拆解](../postgresql-snapbuild-deep-dive/index.md) — RB ↔ snapbuild 完整接口
-- [PostgreSQL 18 CREATE_REPLICATION_SLOT 全链路分析](../../replication-ha/postgresql-create-replication-slot-deep-dive/index.md) — 启动时 RB 的初始状态
+- [PostgreSQL 18 CREATE_REPLICATION_SLOT 全链路分析](../../L6-replication-ha/postgresql-create-replication-slot-deep-dive/index.md) — 启动时 RB 的初始状态
 
 ---
 

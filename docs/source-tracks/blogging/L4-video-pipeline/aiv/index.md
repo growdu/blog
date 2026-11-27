@@ -351,8 +351,8 @@ EP03 共 40.262 秒，EP04 共 41.090 秒，EP05 共 39.833 秒，EP06 共 40.87
 - 《[人格规范](人格规范.md)》——小象是谁、怎么想、怎么讲；9 条可机检规则
 - 《[形象与音色规范](形象与音色规范.md)》——角色设定、铭牌文字的确定性、旁白音色定稿
 - 《[背景音乐规范](背景音乐规范.md)》——选曲白名单、风格标准、技术规格、混音与 ducking 规则
-- 《[数据库技术自媒体运营手册](../shehui/media-account/index.html)》——独立号的完整运营方法论：资产盘点、平台分工、选题金矿、合规红线
-- 《[从 Hexo 博客到公众号与视频号](../blog-to-wechat/index.html)》——出片之后的分发链路
-- [PostgreSQL 逻辑复制端到端链路拆解](../../source-tracks/postgresql/logical-replication/postgresql-logical-replication-end-to-end-flow/index.html)——EP01 的源码底稿
-- [openGauss CSN 全序机制](../../source-tracks/postgresql/logical-replication/opengauss-csn-total-ordering/index.html)——EP02 的源码底稿
-- [如何成为资深的 PostgreSQL 内核开发者](../../source-tracks/postgresql/getting-started/postgresql-senior-kernel-developer/index.html)——现成的选题库
+- 《[数据库技术自媒体运营手册](../../../life/L3-economy/media-account/index.html)》——独立号的完整运营方法论：资产盘点、平台分工、选题金矿、合规红线
+- 《[从 Hexo 博客到公众号与视频号](../../L3-distribution/blog-to-wechat/index.html)》——出片之后的分发链路
+- [PostgreSQL 逻辑复制端到端链路拆解](../../../postgresql/L7-logical-replication/postgresql-logical-replication-end-to-end-flow/index.html)——EP01 的源码底稿
+- [openGauss CSN 全序机制](../../../postgresql/L7-logical-replication/opengauss-csn-total-ordering/index.html)——EP02 的源码底稿
+- [如何成为资深的 PostgreSQL 内核开发者](../../../postgresql/L1-getting-started/postgresql-senior-kernel-developer/index.html)——现成的选题库

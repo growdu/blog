@@ -9,11 +9,11 @@ description: "打开 psql，输入 \\?，屏幕会列出几十个反斜杠命令
 
 > 本文是「PostgreSQL 系列」的视角篇。配套源码版本：PostgreSQL 18 dev（`~/cwork/postgresql`）。同系列前文：
 >
-> - [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-> - [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../index-and-query/postgresql-partition-handling/index.html)
-> - [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+> - [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+> - [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../L3-index-and-query/postgresql-partition-handling/index.html)
+> - [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
 
 打开 psql，输入 `\?`，屏幕会列出几十个反斜杠命令；输入 `\d` 能看表，输入 `SELECT version();` 能拿到版本号。这些动作背后是一台正在等你下命令的"机器"——但它到底是什么？
 
@@ -169,7 +169,7 @@ PG 在事务上的能力：
 | 并发控制 | MVCC（默认）+ `SELECT FOR UPDATE/SHARE` + advisory lock |
 | `SKIP LOCKED` | 跳过被锁的行，作业队列杀手锏 |
 
-详见 [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)。
+详见 [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)。
 
 ### 2.5 DCL —— 数据控制
 
@@ -640,7 +640,7 @@ UPDATE jobs SET status = 'running' WHERE id = $1;
 COMMIT;
 ```
 
-**入口**：TCL + DQL。详见 [PostgreSQL 事务](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html) §四。
+**入口**：TCL + DQL。详见 [PostgreSQL 事务](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html) §四。
 
 ### 5.2 窗口函数 + CTE
 
@@ -751,7 +751,7 @@ CREATE TABLE logs_2026_08 PARTITION OF logs
 DROP TABLE logs_2026_06;  -- 一秒删一个月数据
 ```
 
-**入口**：DDL。详见 [PostgreSQL 分区表](../../index-and-query/postgresql-partition-handling/index.html)。
+**入口**：DDL。详见 [PostgreSQL 分区表](../../L3-index-and-query/postgresql-partition-handling/index.html)。
 
 ### 5.7 逻辑复制
 
@@ -769,7 +769,7 @@ CONNECTION 'host=pub_host dbname=app user=rep'
 PUBLICATION my_pub;
 ```
 
-**入口**：DDL 风格的 CREATE PUBLICATION / SUBSCRIPTION。详见 [逻辑复制系列文章](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)。
+**入口**：DDL 风格的 CREATE PUBLICATION / SUBSCRIPTION。详见 [逻辑复制系列文章](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)。
 
 ### 5.8 扩展机制
 
@@ -987,7 +987,7 @@ PG 内置 `pg_basebackup` 是并行物理备份，大库用 `-j 8` 多 worker。
 
 ### 10.6 "为什么我的 replication lag 越来越大？"
 
-详见 [逻辑复制的监控](../../logical-replication/postgresql-logical-replication-monitoring/index.html)。最常见 3 个原因：
+详见 [逻辑复制的监控](../../L7-logical-replication/postgresql-logical-replication-monitoring/index.html)。最常见 3 个原因：
 
 - 慢事务（hold LSN 太长）
 - 大量 DDL（slot 必须等 catalog snapshot）
@@ -1112,10 +1112,10 @@ CREATE INDEX big_table_created_idx ON big_table USING BRIN (created_at);
 
 ### 同系列前文
 
-- [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-- [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../index-and-query/postgresql-partition-handling/index.html)
-- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
-- [PostgreSQL 逻辑复制的监控：六张视图 + 一组可执行 SQL](../../logical-replication/postgresql-logical-replication-monitoring/index.html)
-- [PostgreSQL 逻辑复制 ReorderBuffer 与事务机制：从一行 WAL 到一致性变更流](../../logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html)
+- [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+- [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../L3-index-and-query/postgresql-partition-handling/index.html)
+- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+- [PostgreSQL 逻辑复制的监控：六张视图 + 一组可执行 SQL](../../L7-logical-replication/postgresql-logical-replication-monitoring/index.html)
+- [PostgreSQL 逻辑复制 ReorderBuffer 与事务机制：从一行 WAL 到一致性变更流](../../L7-logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html)

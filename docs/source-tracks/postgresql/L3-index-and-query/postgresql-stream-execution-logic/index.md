@@ -21,9 +21,9 @@ description: "普通（非流式）逻辑复制的复制单位是事务："
 
 > 本文是「PostgreSQL 逻辑复制源码系列」。**定位说明**：
 >
-> - [PostgreSQL 18 流式逻辑复制发布端深度解析](../../logical-replication/postgresql-logical-replication-stream-publisher/index.html) — 讲**发布端**的配置、生命周期与 pgoutput 回调，本文**不重复**
-> - [PostgreSQL 逻辑复制 streaming 与 spill](../../logical-replication/postgresql-logical-replication-streaming-spill/index.html) — 讲**内存墙与 spill 兜底**，本文**不重复**
-> - [Apply Parallel Worker 的 lock_stream 与 unlock_stream](../../logical-replication/postgresql-apply-parallel-lock-stream/index.html) — 讲并行 apply 的**锁协议**
+> - [PostgreSQL 18 流式逻辑复制发布端深度解析](../../L7-logical-replication/postgresql-logical-replication-stream-publisher/index.html) — 讲**发布端**的配置、生命周期与 pgoutput 回调，本文**不重复**
+> - [PostgreSQL 逻辑复制 streaming 与 spill](../../L7-logical-replication/postgresql-logical-replication-streaming-spill/index.html) — 讲**内存墙与 spill 兜底**，本文**不重复**
+> - [Apply Parallel Worker 的 lock_stream 与 unlock_stream](../../L7-logical-replication/postgresql-apply-parallel-lock-stream/index.html) — 讲并行 apply 的**锁协议**
 >
 > 本文补的是：**把 stream 当作一段程序来读**——谁调用谁、状态怎么流转、快照和 command id 怎么被保存又怎么被恢复、并发中止时怎么半途刹车、订阅端拿到一块流之后又是怎么落盘再回放的。
 
@@ -1222,7 +1222,7 @@ ReorderBufferSaveTXNSnapshot(ReorderBuffer *rb, ReorderBufferTXN *txn,
 
 `SetupHistoricSnapshot` 设置的快照类型是 `SNAPSHOT_HISTORIC_MVCC`，它的 `xip` 语义是**反的**（存"当作已提交"的事务）。
 
-> 详见 [PostgreSQL 目录快照源码级深度拆解](../../storage-engine/postgresql-catalog-snapshot-deep-dive/index.html) 第十二节。
+> 详见 [PostgreSQL 目录快照源码级深度拆解](../../L2-storage-engine/postgresql-catalog-snapshot-deep-dive/index.html) 第十二节。
 
 在 stream 场景下，historic snapshot 的作用是：**让解码器看到"事务执行到这一步时"的目录状态**，从而正确解码该事务自己改过的系统表。
 
@@ -2607,7 +2607,7 @@ SEND_TO_PARALLEL
 
 **STREAM_STOP 必须在持有锁的情况下转发** —— 保证 leader 先拿到锁，并行 worker 才继续。
 
-> `lock_stream` / `unlock_stream` 的细节见 [Apply Parallel Worker 的 lock_stream 与 unlock_stream](../../logical-replication/postgresql-apply-parallel-lock-stream/index.html)。
+> `lock_stream` / `unlock_stream` 的细节见 [Apply Parallel Worker 的 lock_stream 与 unlock_stream](../../L7-logical-replication/postgresql-apply-parallel-lock-stream/index.html)。
 
 ### 13.6 四种路径的完整对照
 
@@ -2772,7 +2772,7 @@ stateDiagram-v2
 | 订阅端落盘 | 订阅端 `pg_replication_slot/<slot>/` 下的 `.changes` 文件大小 | 大 = 大事务在流 |
 | 内存 | `logical_decoding_work_mem` 与 `pg_stat_replication` 的内存占用 | 超过 work_mem 就会触发流 |
 
-> 具体的调优与监控手段见 [PostgreSQL 18 流式逻辑复制发布端深度解析](../../logical-replication/postgresql-logical-replication-stream-publisher/index.html) 第八、九节，本文不重复。
+> 具体的调优与监控手段见 [PostgreSQL 18 流式逻辑复制发布端深度解析](../../L7-logical-replication/postgresql-logical-replication-stream-publisher/index.html) 第八、九节，本文不重复。
 
 ---
 
@@ -2957,8 +2957,8 @@ TOAST 块未拼完、推测插入未确认时，`rbtxn_has_partial_change` 为�
 
 ## 同系列前文
 
-- [PostgreSQL 18 流式逻辑复制发布端深度解析](../../logical-replication/postgresql-logical-replication-stream-publisher/index.html) — 发布端的配置、生命周期与 pgoutput 回调
-- [PostgreSQL 逻辑复制 streaming 与 spill](../../logical-replication/postgresql-logical-replication-streaming-spill/index.html) — 内存墙与 spill 兜底
-- [Apply Parallel Worker 的 lock_stream 与 unlock_stream](../../logical-replication/postgresql-apply-parallel-lock-stream/index.html) — 并行 apply 的锁协议
-- [PostgreSQL 目录快照源码级深度拆解](../../storage-engine/postgresql-catalog-snapshot-deep-dive/index.html) — `HistoricSnapshot` 与 `SetupHistoricSnapshot`
+- [PostgreSQL 18 流式逻辑复制发布端深度解析](../../L7-logical-replication/postgresql-logical-replication-stream-publisher/index.html) — 发布端的配置、生命周期与 pgoutput 回调
+- [PostgreSQL 逻辑复制 streaming 与 spill](../../L7-logical-replication/postgresql-logical-replication-streaming-spill/index.html) — 内存墙与 spill 兜底
+- [Apply Parallel Worker 的 lock_stream 与 unlock_stream](../../L7-logical-replication/postgresql-apply-parallel-lock-stream/index.html) — 并行 apply 的锁协议
+- [PostgreSQL 目录快照源码级深度拆解](../../L2-storage-engine/postgresql-catalog-snapshot-deep-dive/index.html) — `HistoricSnapshot` 与 `SetupHistoricSnapshot`
 - [PostgreSQL 读一行数据源码级深度拆解](../postgresql-read-a-row-deep-dive/index.html) — MVCC 在每个环节的落点

@@ -16,7 +16,7 @@
 
 用法::
 
-    python3 tools/review-check.py docs/source-tracks/postgresql/transaction-mvcc/postgresql-mvcc/index.md
+    python3 tools/review-check.py docs/source-tracks/postgresql/L4-transaction-mvcc/postgresql-mvcc/index.md
     python3 tools/review-check.py docs/database docs/db --json --out /tmp/s.json
 
 只读：不修改任何被检文件，也不往仓库里写文件。
@@ -31,6 +31,7 @@ import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import unquote
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DOCS_ROOT = REPO_ROOT / "docs"
@@ -419,9 +420,16 @@ def _link_target_exists(target: str, post_dir: Path) -> bool:
     publisher does the same, so ``./b/index.html`` inside
     ``docs/database/a/index.md`` means ``docs/database/b/``.
 
+    The target is unquoted first: the repo writes link targets in two
+    styles -- ``%E5%91%BD%E5%90%8D`` for a fully percent-encoded path and
+    ``%20`` for a space in a file name -- and both name the file on disk
+    only after decoding.  ``tools/check-internal-links.py`` decodes for the
+    same reason; the two checkers have to agree on what a broken link is.
+
     Only existence is checked here; producing the permalink would need
     git lookups, and the review only needs to know the target is there.
     """
+    target = unquote(target)
     candidate = (post_dir / target).resolve()
     if candidate.is_dir():
         return any((candidate / name).is_file()
@@ -792,8 +800,8 @@ RULES.extend([rule_str_01, rule_str_02, rule_str_03, rule_str_04,
 def derive_identity(path: Path, docs_root: Path = DOCS_ROOT) -> tuple[str, str]:
     """Derive ``(pillar, slug)`` from a docs/-relative path.
 
-    ``docs/source-tracks/postgresql/transaction-mvcc/postgresql-mvcc/index.md`` -> ``("database", "postgresql-mvcc")``
-    ``docs/source-tracks/postgresql/extensions-perf/pg-dont-do-this.md``      -> ``("database", "pg-dont-do-this")``
+    ``docs/source-tracks/postgresql/L4-transaction-mvcc/postgresql-mvcc/index.md`` -> ``("database", "postgresql-mvcc")``
+    ``docs/source-tracks/postgresql/L8-extensions-perf/pg-dont-do-this.md``      -> ``("database", "pg-dont-do-this")``
     ``docs/db/postgresql/xxx.md``             -> ``("db", "postgresql/xxx")``
 
     ``docs_root`` exists so the rule can be exercised on a temporary tree

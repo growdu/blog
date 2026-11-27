@@ -17,7 +17,7 @@ description: "看到\"PG 逻辑复制并行\"这几个字，很多人会想到�
 > - [PostgreSQL 逻辑复制选项详解：`run_as_owner` / `disable_on_error`](../postgresql-logical-replication-options/index.html)
 > - [PostgreSQL 逻辑复制分区表专题](../postgresql-logical-replication-with-partitioned-tables/index.html)
 > - [PostgreSQL 逻辑复制性能与速率测试：3 视图 + 11 个可执行脚本](../postgresql-logical-replication-throughput-benchmark/index.html)
-> - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../getting-started/postgresql-module-architecture/index.html)
+> - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../L1-getting-started/postgresql-module-architecture/index.html)
 
 看到"PG 逻辑复制并行"这几个字，很多人会想到两种东西：
 
@@ -871,4 +871,4 @@ PG 18 的默认是 2，通常足够；但以下场景建议上 4-8：
 - [PostgreSQL 逻辑复制选项详解：`run_as_owner` / `disable_on_error`](../postgresql-logical-replication-options/index.html)
 - [PostgreSQL 逻辑复制分区表专题](../postgresql-logical-replication-with-partitioned-tables/index.html)
 - [PostgreSQL 逻辑复制性能与速率测试：3 视图 + 11 个可执行脚本](../postgresql-logical-replication-throughput-benchmark/index.html)
-- [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../getting-started/postgresql-module-architecture/index.html)
+- [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../L1-getting-started/postgresql-module-architecture/index.html)

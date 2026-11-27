@@ -237,9 +237,9 @@ difficulty: 3
 
 ## 相关阅读
 
-- [内容单元与内容契约](../content-model/content-unit-and-contract.md) —
+- [内容单元与内容契约](../L2-content-model/content-unit-and-contract.md) —
   分发链路的输入长什么样，一份母稿的前置元数据能写什么
-- [一个仓库，三条产线](../platform-overview/one-repo-three-pipelines.md) —
+- [一个仓库，三条产线](../L1-platform-overview/one-repo-three-pipelines.md) —
   三条产线里最年轻的一条，它现在到哪一步了
-- [从母稿到页面](../build-pipeline/docs-to-public-pipeline.md) —
+- [从母稿到页面](../L3-build-pipeline/docs-to-public-pipeline.md) —
   站点这条线的完整链路

@@ -53,11 +53,11 @@ description: "PostgreSQL 用 MVCC（Multi-Version Concurrency Control）解决�
 
 > 本文是「PostgreSQL 内核机制源码系列」。同系列前文：
 >
-> - [PostgreSQL 18 内核数据结构全景](../../index-and-query/postgresql-rangevar-and-data-structures/index.html) — HeapTuple / SnapshotData / dsa
-> - [PostgreSQL TOAST 机制源码级深度拆解](../../storage-engine/postgresql-toast-deep-dive/index.html)
-> - [PostgreSQL WAL 记录类型完全指南](../../wal-and-recovery/postgresql-wal-record-types/index.html)
+> - [PostgreSQL 18 内核数据结构全景](../../L3-index-and-query/postgresql-rangevar-and-data-structures/index.html) — HeapTuple / SnapshotData / dsa
+> - [PostgreSQL TOAST 机制源码级深度拆解](../../L2-storage-engine/postgresql-toast-deep-dive/index.html)
+> - [PostgreSQL WAL 记录类型完全指南](../../L5-wal-and-recovery/postgresql-wal-record-types/index.html)
 > - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../postgresql-mvcc/index.html)
-> - [PostgreSQL 内存管理](../../storage-engine/postgresql-memory-management/index.html)
+> - [PostgreSQL 内存管理](../../L2-storage-engine/postgresql-memory-management/index.html)
 
 ## 阅读指南
 
@@ -3043,9 +3043,9 @@ PG 内核开发者应该按以下顺序深入行锁：
 ### 17.8 相关阅读
 
 本系列文章：
-- [PostgreSQL 18 内核数据结构全景](../../index-and-query/postgresql-rangevar-and-data-structures/index.html)
-- [PostgreSQL TOAST 机制源码级深度拆解](../../storage-engine/postgresql-toast-deep-dive/index.html)
-- [PostgreSQL WAL 记录类型完全指南](../../wal-and-recovery/postgresql-wal-record-types/index.html)
+- [PostgreSQL 18 内核数据结构全景](../../L3-index-and-query/postgresql-rangevar-and-data-structures/index.html)
+- [PostgreSQL TOAST 机制源码级深度拆解](../../L2-storage-engine/postgresql-toast-deep-dive/index.html)
+- [PostgreSQL WAL 记录类型完全指南](../../L5-wal-and-recovery/postgresql-wal-record-types/index.html)
 
 ---
 

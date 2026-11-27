@@ -2158,5 +2158,5 @@ PostgreSQL用`wal_keep_size`来兜底：不管怎样，主库上都额外保留�
 - [详解完整恢复及基于时间点的恢复](../详解完整恢复及基于时间点的恢复.md)——PITR的恢复流程
 - [repmgr实现原理](../repmgr实现原理.md)——自动故障切换工具的原理
 - [repmgr集群配置](../repmgr_cluster.md)——repmgr的集群搭建
-- [WAL机制浅析](../../wal-and-recovery/wal机制浅析.md)——WAL记录与检查点的源码级说明
+- [WAL机制浅析](../../L5-wal-and-recovery/wal机制浅析.md)——WAL记录与检查点的源码级说明
 

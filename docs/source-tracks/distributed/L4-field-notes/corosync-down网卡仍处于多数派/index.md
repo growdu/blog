@@ -184,6 +184,6 @@ knet 的设计背景见 Christine Caulfield 在 Clusterlabs Summit 2017 的演�
 
 ## 延伸阅读
 
-- [totem协议详解](../../consensus/totem协议详解.md)
+- [totem协议详解](../../L2-consensus/totem协议详解.md)
 - [corosync qnet挂死场景分析解决](../corosync qnet挂死场景分析解决.md)
 - [corosync-qdevice使用](../corosync-qdevice使用.md)

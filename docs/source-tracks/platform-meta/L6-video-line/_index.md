@@ -1,16 +1,16 @@
 ---
 title: "视频生产线"
-description: "把技术文章变成可复现的视频：视觉分镜契约、渲染引擎、期号与母稿的绑定。"
+description: "视频从脚本到成片走哪几道工序，期号与内容契约怎么约束它。"
 cascade:
   categories:
     - 视频生产线
 tags:
   - 视频生产线
-  - 分镜
-  - 渲染
 ---
 
 # 视频生产线
+
+视频从脚本到成片走哪几道工序，期号与内容契约怎么约束它。
 
 文章写完之后，同一份内容还想变成一条视频。这条线要解决的是：
 **怎么让「做出一条片子」变成「半年后换台机器还能再做出一条一样的片子」。**
@@ -20,15 +20,10 @@ tags:
 
 ## 本系列文章
 
-- [画面上写什么，谁说了算](./visual-storyboard-contract.md) —
-  视觉分镜契约、时间轴、片段与成片；
-  为什么「参数缺失当场报错」不能商量，为什么文案不许回流到代码
-
-下一篇会讲长视频三档怎么落地：母稿怎么被解析成骨架、
-角色标记怎么决定哪几段进哪一档，以及「不做自动裁剪」这条取舍。
+- [画面上写什么，谁说了算](./visual-storyboard-contract.md)
 
 ## 相关
 
-- [一个仓库，三条产线](../platform-overview/one-repo-three-pipelines.md) — 视频线在整体架构里的位置
-- [一份声明顶掉五套 if-else](../multiplatform/capability-model-and-publishing-pipeline.md) —
+- [一个仓库，三条产线](../L1-platform-overview/one-repo-three-pipelines.md) — 视频线在整体架构里的位置
+- [一份声明顶掉五套 if-else](../L5-multiplatform/capability-model-and-publishing-pipeline.md) —
   视频成品怎么变成各平台的投稿包

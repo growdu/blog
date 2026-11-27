@@ -9,14 +9,14 @@ description: "提到 PostgreSQL 并行，第一反应往往是\"加 max_parallel
 
 > 本文是「PostgreSQL 源码系列」执行器篇。配套源码版本：PostgreSQL 18 dev（`~/cwork/postgresql`）。同系列前文：
 >
-> - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../getting-started/postgresql-module-architecture/index.html)
+> - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../L1-getting-started/postgresql-module-architecture/index.html)
 > - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../postgresql-mvcc/index.html)
-> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
+> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
 > - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../postgresql-transaction-lifecycle/index.html)
-> - [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
-> - [PostgreSQL 逻辑复制 Worker 模型：从 launcher 到 apply 的 8 种角色](../../logical-replication/postgresql-logical-replication-worker-model/index.html)
-> - [PostgreSQL 逻辑复制并行 Worker](../../logical-replication/postgresql-logical-replication-parallel-worker/index.html)
-> - [pgbench 源码全解：一个 C 文件如何撑起 PostgreSQL 官方压测工具](../../extensions-perf/pgbench-internals/index.html)
+> - [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+> - [PostgreSQL 逻辑复制 Worker 模型：从 launcher 到 apply 的 8 种角色](../../L7-logical-replication/postgresql-logical-replication-worker-model/index.html)
+> - [PostgreSQL 逻辑复制并行 Worker](../../L7-logical-replication/postgresql-logical-replication-parallel-worker/index.html)
+> - [pgbench 源码全解：一个 C 文件如何撑起 PostgreSQL 官方压测工具](../../L8-extensions-perf/pgbench-internals/index.html)
 
 提到 PostgreSQL 并行，第一反应往往是"加 `max_parallel_workers_per_gather` 就完事了"。但实际生产里我们会遇到一堆反直觉的问题：
 
@@ -1067,14 +1067,14 @@ stateDiagram-v2
 
 ## 同系列前文
 
-- [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../getting-started/postgresql-module-architecture/index.html)
+- [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../../L1-getting-started/postgresql-module-architecture/index.html)
 - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../postgresql-mvcc/index.html)
-- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
+- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
 - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../postgresql-transaction-lifecycle/index.html)
-- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
-- [PostgreSQL 逻辑复制 Worker 模型：从 launcher 到 apply 的 8 种角色](../../logical-replication/postgresql-logical-replication-worker-model/index.html)
-- [PostgreSQL 逻辑复制并行 Worker](../../logical-replication/postgresql-logical-replication-parallel-worker/index.html)
-- [PostgreSQL 逻辑复制 ReorderBuffer 与事务机制：从一行 WAL 到一致性变更流](../../logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html)
-- [PostgreSQL 逻辑复制 Spill 深度专题：`pg_stat_replication_slots` 到磁盘](../../logical-replication/postgresql-logical-replication-spill-deep-dive/index.html)
-- [PostgreSQL 逻辑复制性能与速率测试：PG 社区"没有"独立 benchmark 的真相](../../logical-replication/postgresql-logical-replication-throughput-benchmark/index.html)
-- [pgbench 源码全解：一个 C 文件如何撑起 PostgreSQL 官方压测工具](../../extensions-perf/pgbench-internals/index.html)
+- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+- [PostgreSQL 逻辑复制 Worker 模型：从 launcher 到 apply 的 8 种角色](../../L7-logical-replication/postgresql-logical-replication-worker-model/index.html)
+- [PostgreSQL 逻辑复制并行 Worker](../../L7-logical-replication/postgresql-logical-replication-parallel-worker/index.html)
+- [PostgreSQL 逻辑复制 ReorderBuffer 与事务机制：从一行 WAL 到一致性变更流](../../L7-logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html)
+- [PostgreSQL 逻辑复制 Spill 深度专题：`pg_stat_replication_slots` 到磁盘](../../L7-logical-replication/postgresql-logical-replication-spill-deep-dive/index.html)
+- [PostgreSQL 逻辑复制性能与速率测试：PG 社区"没有"独立 benchmark 的真相](../../L7-logical-replication/postgresql-logical-replication-throughput-benchmark/index.html)
+- [pgbench 源码全解：一个 C 文件如何撑起 PostgreSQL 官方压测工具](../../L8-extensions-perf/pgbench-internals/index.html)

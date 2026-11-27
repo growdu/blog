@@ -322,6 +322,6 @@ flowchart TB
 
 ## 同系列前文
 
-- [PostgreSQL 核心特性全景](../../getting-started/postgresql-core-features/index.html)
+- [PostgreSQL 核心特性全景](../../L1-getting-started/postgresql-core-features/index.html)
 - [TimescaleDB 深度解析](../timescaledb-deep-dive/index.html)
 - [cstore_fdw 深度解析](../cstore-fdw-deep-dive/index.html)

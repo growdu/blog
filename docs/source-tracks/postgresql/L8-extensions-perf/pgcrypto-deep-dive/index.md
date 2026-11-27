@@ -7,7 +7,7 @@ description: "PG 8.0 (2005) 之前没有内置加密函数。pgcrypto 是 2000 �
 | --- | --- | --- |
 | growdu | 初稿，把 pgcrypto 从 2000 年 Marko Kreen 的 contrib 模块，到 md5/sha 系列摘要、AES 对称加密、RSA 非对称加密、PGP 加密、随机数、HMAC 完整链路。 | 2026-09-29 |
 
-> 本文是「PostgreSQL 扩展系列」加密篇。同系列前文：[PostgreSQL 核心特性全景](../../getting-started/postgresql-core-features/index.html)
+> 本文是「PostgreSQL 扩展系列」加密篇。同系列前文：[PostgreSQL 核心特性全景](../../L1-getting-started/postgresql-core-features/index.html)
 
 PG 8.0 (2005) 之前没有内置加密函数。**pgcrypto 是 2000 年进入 contrib 的"安全工具箱"**，25 年演化到 v1.3，对接 OpenSSL 3.x，是 99% PG 部署的加密核心。
 
@@ -365,5 +365,5 @@ flowchart TB
 
 ## 同系列前文
 
-- [PostgreSQL 核心特性全景](../../getting-started/postgresql-core-features/index.html)
+- [PostgreSQL 核心特性全景](../../L1-getting-started/postgresql-core-features/index.html)
 - [pgAudit 深度解析](../pgaudit-deep-dive/index.html)

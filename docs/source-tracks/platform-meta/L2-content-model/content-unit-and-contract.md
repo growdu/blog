@@ -192,7 +192,7 @@ difficulty: 3
 
 ## 七、相关阅读
 
-- [一个仓库，三条产线](../platform-overview/one-repo-three-pipelines.md) —
+- [一个仓库，三条产线](../L1-platform-overview/one-repo-three-pipelines.md) —
   这份契约在整体架构里的位置
-- [从母稿到页面](../build-pipeline/docs-to-public-pipeline.md) —
+- [从母稿到页面](../L3-build-pipeline/docs-to-public-pipeline.md) —
   编译这一步具体做了什么

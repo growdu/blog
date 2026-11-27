@@ -1,16 +1,16 @@
 ---
 title: "信息架构"
-description: "分类重构、学习路径与站点 IP 骨架：读者在一个有几百篇文章的站里，到底怎么找到东西。"
+description: "分类树怎么长出来、分类与学习路径为什么是两条轴、物理目录怎么排。"
 cascade:
   categories:
     - 信息架构
 tags:
   - 信息架构
-  - 分类
-  - 学习路径
 ---
 
 # 信息架构
+
+分类树怎么长出来、分类与学习路径为什么是两条轴、物理目录怎么排。
 
 一个站有两百篇文章的时候，「分类」就不再是导航了，它只是一个检索框。
 
@@ -20,16 +20,9 @@ tags:
 
 ## 本系列文章
 
-- [分类不是导航，学习路径才是](./category-restructure-and-learning-path.md) —
-  开工时那三十九个平铺分类，和它们怎么变成几条赛道；
-  物理目录怎么排、中文分类名怎么长出来、
-  以及「分类是检索用的，学习路径才是导航用的」这条分界
-
-下一篇会讲剩下的子树怎么逐块搬：分类一对一怎么收敛、
-「手记」副线怎么从存量目录里分出来，
-以及哪些内容该彻底移出 `docs/` 而不是留在站上。
+- [分类不是导航，学习路径才是](./category-restructure-and-learning-path.md)
 
 ## 相关
 
-- [一个仓库，三条产线](../platform-overview/one-repo-three-pipelines.md) — 整体架构与三条不变量
-- [从母稿到页面](../build-pipeline/docs-to-public-pipeline.md) — 分类名是在构建期算出来的
+- [一个仓库，三条产线](../L1-platform-overview/one-repo-three-pipelines.md) — 整体架构与三条不变量
+- [从母稿到页面](../L3-build-pipeline/docs-to-public-pipeline.md) — 分类名是在构建期算出来的

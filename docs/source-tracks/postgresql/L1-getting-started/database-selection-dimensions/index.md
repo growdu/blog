@@ -10,10 +10,10 @@ description: "上一篇我们列了 PG 给你的 5 + 7 + 8 张清单——能存
 > 本文是「PostgreSQL 系列」的视角篇 · 二。配套源码版本：PostgreSQL 18 dev（`~/cwork/postgresql`）。同系列前文：
 >
 > - [当我们在说"数据库"的时候，我们到底在说什么 —— 从用户的视角拆解 PostgreSQL 的能力与接口](../postgresql-user-capabilities/index.html)
-> - [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-> - [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../index-and-query/postgresql-partition-handling/index.html)
+> - [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+> - [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../L3-index-and-query/postgresql-partition-handling/index.html)
 
 上一篇我们列了 PG 给你的 5 + 7 + 8 张清单——能存能取、能查能改、能事务能复制能扩展。但这其实是**所有数据库都能给到你的"地板能力"**。MySQL 能、Oracle 能、SQL Server 能、MongoDB 能（某种程度）、甚至 SQLite 都能。
 
@@ -1125,11 +1125,11 @@ flowchart TB
 ### 同系列前文
 
 - [当我们在说"数据库"的时候，我们到底在说什么 —— 从用户的视角拆解 PostgreSQL 的能力与接口](../postgresql-user-capabilities/index.html)
-- [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-- [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../index-and-query/postgresql-partition-handling/index.html)
-- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+- [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+- [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../L3-index-and-query/postgresql-partition-handling/index.html)
+- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
 
 ### 推荐阅读
 

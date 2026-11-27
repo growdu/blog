@@ -7,7 +7,7 @@ description: "PG 自带 pg_basebackup + pg_dump 能解决 70% 的备份需求。
 | --- | --- | --- |
 | growdu | 初稿，把 pgBackRest 从 2014 年 David Steele 的开源项目，到 Go 重写、并行备份、WAL 推送、增量备份、加密、Prometheus 集成的完整链路。 | 2026-09-29 |
 
-> 本文是「PostgreSQL 扩展系列」备份恢复篇。同系列前文：[PostgreSQL 核心特性全景](../../getting-started/postgresql-core-features/index.html)
+> 本文是「PostgreSQL 扩展系列」备份恢复篇。同系列前文：[PostgreSQL 核心特性全景](../../L1-getting-started/postgresql-core-features/index.html)
 
 PG 自带 `pg_basebackup` + `pg_dump` 能解决 70% 的备份需求。**剩下 30%（增量备份 + 并行恢复 + 加密 + S3 + 监控）要靠 pgBackRest**——它是 PG 备份领域事实标准，Crunchy Data / EDB / AWS RDS 都用它。
 
@@ -394,5 +394,5 @@ flowchart TB
 
 ## 同系列前文
 
-- [PostgreSQL 核心特性全景](../../getting-started/postgresql-core-features/index.html)
+- [PostgreSQL 核心特性全景](../../L1-getting-started/postgresql-core-features/index.html)
 - [pgcrypto 深度解析](../pgcrypto-deep-dive/index.html)

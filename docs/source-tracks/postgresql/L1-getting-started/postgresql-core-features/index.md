@@ -10,14 +10,14 @@ description: "很多人会问：PostgreSQL 现在到底有什么功能？"
 > 本文是「PostgreSQL 源码系列」设计篇。同系列前文：
 >
 > - [PostgreSQL 前世今生：从 1986 Berkeley 实验室到 2025 全球基础设施，一条开源数据库的 39 年演化史](../postgresql-history/index.html)
-> - [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](../../storage-engine/postgresql-catalog-storage/index.html)
+> - [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](../../L2-storage-engine/postgresql-catalog-storage/index.html)
 > - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../postgresql-module-architecture/index.html)
-> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-> - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-> - [PostgreSQL 18 并行 Worker 机制全解](../../transaction-mvcc/postgresql-parallel-worker/index.html)
+> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+> - [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 18 并行 Worker 机制全解](../../L4-transaction-mvcc/postgresql-parallel-worker/index.html)
 > - [PostgreSQL Background Worker 全解](../postgresql-background-worker/index.html)
-> - [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../index-and-query/postgresql-read-catalog-table/index.html)
+> - [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../L3-index-and-query/postgresql-read-catalog-table/index.html)
 
 很多人会问：**PostgreSQL 现在到底有什么功能？** 
 
@@ -489,7 +489,7 @@ flowchart TB
     style L4 fill:#dbeafe,stroke:#1d4ed8
 ```
 
-> **worker 不是独立 server / bgworker** —— 是 **postmaster fork 出来执行同一个 PL 的进程**。详见 [PostgreSQL 18 并行 Worker 机制全解](../../transaction-mvcc/postgresql-parallel-worker/index.html)
+> **worker 不是独立 server / bgworker** —— 是 **postmaster fork 出来执行同一个 PL 的进程**。详见 [PostgreSQL 18 并行 Worker 机制全解](../../L4-transaction-mvcc/postgresql-parallel-worker/index.html)
 
 #### 5.3 GUC
 
@@ -1037,11 +1037,11 @@ flowchart TB
 ## 同系列前文
 
 - [PostgreSQL 前世今生：从 1986 Berkeley 实验室到 2025 全球基础设施，一条开源数据库的 39 年演化史](../postgresql-history/index.html)
-- [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](../../storage-engine/postgresql-catalog-storage/index.html)
+- [PostgreSQL 元数据存储机制：从磁盘文件到内存缓存，`pg_class` 撑起的整个系统表体系](../../L2-storage-engine/postgresql-catalog-storage/index.html)
 - [PostgreSQL 从 `postgres` 二进制到生产级守护：最外层模块与启动全流程](../postgresql-module-architecture/index.html)
-- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-- [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-- [PostgreSQL 18 并行 Worker 机制全解](../../transaction-mvcc/postgresql-parallel-worker/index.html)
+- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+- [PostgreSQL 事务生命周期：从 BEGIN/COMMIT 到 CLOG 一条链路](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+- [PostgreSQL 18 并行 Worker 机制全解](../../L4-transaction-mvcc/postgresql-parallel-worker/index.html)
 - [PostgreSQL Background Worker 全解](../postgresql-background-worker/index.html)
-- [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../index-and-query/postgresql-read-catalog-table/index.html)
+- [PostgreSQL 内核开发：读取一张表的 9 步标准流程与缓存全景](../../L3-index-and-query/postgresql-read-catalog-table/index.html)

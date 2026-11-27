@@ -1842,11 +1842,11 @@ FreeDecodingContext (logical.c:679)
 
 ### 15.2 站内文章
 
-- [PostgreSQL snapbuild.c 深度解析(32 个函数)](../../logical-replication/postgresql-snapbuild-deep-dive/index.html)
-- [PostgreSQL 逻辑复制端到端](../../logical-replication/postgresql-logical-replication-end-to-end/index.html)
-- [PostgreSQL 逻辑复制 Stream Publisher](../../logical-replication/postgresql-logical-replication-stream-publisher/index.html)
-- [PostgreSQL Reorder Buffer 源码分析](../../logical-replication/postgresql-reorder-buffer-code-analysis/index.html)
-- [PostgreSQL 行锁机制深度解析](../../transaction-mvcc/postgresql-row-lock/index.html)
+- [PostgreSQL snapbuild.c 深度解析(32 个函数)](../../L7-logical-replication/postgresql-snapbuild-deep-dive/index.html)
+- [PostgreSQL 逻辑复制端到端](../../L7-logical-replication/postgresql-logical-replication-end-to-end/index.html)
+- [PostgreSQL 逻辑复制 Stream Publisher](../../L7-logical-replication/postgresql-logical-replication-stream-publisher/index.html)
+- [PostgreSQL Reorder Buffer 源码分析](../../L7-logical-replication/postgresql-reorder-buffer-code-analysis/index.html)
+- [PostgreSQL 行锁机制深度解析](../../L4-transaction-mvcc/postgresql-row-lock/index.html)
 
 ### 15.3 官方文档
 

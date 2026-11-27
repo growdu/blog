@@ -9,11 +9,11 @@ description: "把 PG 变成\"分布式 OLTP\"是 14 年来业界最大野心之�
 
 > 本文是「PostgreSQL 扩展系列」分布式篇。同系列前文：
 >
-> - [PostgreSQL 核心特性全景：12 大功能](../../getting-started/postgresql-core-features/index.html)
+> - [PostgreSQL 核心特性全景：12 大功能](../../L1-getting-started/postgresql-core-features/index.html)
 > - [PostGIS 深度解析](../postgis-deep-dive/index.html)
 > - [pgvector 深度解析](../pgvector-deep-dive/index.md)
 > - [TimescaleDB 深度解析](../timescaledb-deep-dive/index.html)
-> - [PostgreSQL 前世今生：39 年演化史](../../getting-started/postgresql-history/index.html)
+> - [PostgreSQL 前世今生：39 年演化史](../../L1-getting-started/postgresql-history/index.html)
 
 把 PG 变成"分布式 OLTP"是 14 年来业界最大野心之一。**Citus 用 PG 扩展的方式实现了分布式**——不 fork 内核、不重写 parser、不破坏 SQL 兼容性，只是把 SQL 通过 plan / execute 路由到 worker 节点。
 
@@ -534,8 +534,8 @@ flowchart TB
 
 ## 同系列前文
 
-- [PostgreSQL 核心特性全景：12 大功能](../../getting-started/postgresql-core-features/index.html)
+- [PostgreSQL 核心特性全景：12 大功能](../../L1-getting-started/postgresql-core-features/index.html)
 - [PostGIS 深度解析](../postgis-deep-dive/index.html)
 - [pgvector 深度解析](../pgvector-deep-dive/index.html)
 - [TimescaleDB 深度解析](../timescaledb-deep-dive/index.html)
-- [PostgreSQL 前世今生：39 年演化史](../../getting-started/postgresql-history/index.html)
+- [PostgreSQL 前世今生：39 年演化史](../../L1-getting-started/postgresql-history/index.html)

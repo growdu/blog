@@ -9,11 +9,11 @@ description: "打开终端敲一行 pg_ctl start，几秒后看到 database syst
 
 > 本文是「PostgreSQL 源码系列」的总览篇。配套源码版本：PostgreSQL 18 dev（`~/cwork/postgresql`）。同系列前文：
 >
-> - [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-> - [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../index-and-query/postgresql-partition-handling/index.html)
-> - [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+> - [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+> - [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../L3-index-and-query/postgresql-partition-handling/index.html)
+> - [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
 
 打开终端敲一行 `pg_ctl start`，几秒后看到 `database system is ready to accept connections`。这几秒钟里，一台进程工厂刚刚开业：
 
@@ -1068,13 +1068,13 @@ void LooperMain(const void *startup_data, size_t startup_data_len) {
 
 ## 十七、同系列前文
 
-- [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../transaction-mvcc/postgresql-transaction-lifecycle/index.html)
-- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
-- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../storage-engine/postgresql-memory-management/index.html)
-- [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../index-and-query/postgresql-partition-handling/index.html)
-- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
-- [PostgreSQL 逻辑复制的监控：六张视图 + 一组可执行 SQL](../../logical-replication/postgresql-logical-replication-monitoring/index.html)
-- [PostgreSQL 逻辑复制 ReorderBuffer 与事务机制：从一行 WAL 到一致性变更流](../../logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html)
+- [PostgreSQL 事务：一次 BEGIN 与 COMMIT 背后的双层世界](../../L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html)
+- [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
+- [PostgreSQL 内存管理：从 shared_buffers 到内存上下文](../../L2-storage-engine/postgresql-memory-management/index.html)
+- [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径](../../L3-index-and-query/postgresql-partition-handling/index.html)
+- [PostgreSQL 逻辑复制表的生命周期：从 `pg_replication_slots` 到 `pg_subscription_rel`](../../L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html)
+- [PostgreSQL 逻辑复制的监控：六张视图 + 一组可执行 SQL](../../L7-logical-replication/postgresql-logical-replication-monitoring/index.html)
+- [PostgreSQL 逻辑复制 ReorderBuffer 与事务机制：从一行 WAL 到一致性变更流](../../L7-logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html)
 - [PostgreSQL 当我们在说"数据库"的时候，我们到底在说什么](../postgresql-user-capabilities/index.html)
 - [PostgreSQL 数据库种类细分全景：RDBMS、TSDB、Graph……](../database-specialization-taxonomy/index.html)
 - [PostgreSQL 选数据库时，我们究竟在选什么](../database-selection-dimensions/index.html)

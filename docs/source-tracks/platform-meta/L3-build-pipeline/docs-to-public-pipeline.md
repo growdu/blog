@@ -245,7 +245,7 @@ CI 容器里 `TZ=UTC`，而 Hexo 生成日期路径时会把偏移再应用一�
 
 ## 九、相关阅读
 
-- [内容单元与内容契约](../content-model/content-unit-and-contract.md) —
+- [内容单元与内容契约](../L2-content-model/content-unit-and-contract.md) —
   编译这一步到底在搬什么、字段由谁说了算
-- [一个仓库，三条产线](../platform-overview/one-repo-three-pipelines.md) —
+- [一个仓库，三条产线](../L1-platform-overview/one-repo-three-pipelines.md) —
   站点这条线在整体架构里的位置

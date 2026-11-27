@@ -47,7 +47,7 @@ description: "本文很长，推荐读法："
 
 > 本文是「PostgreSQL 逻辑复制源码系列」**第 6 篇**——前 5 篇把 `RUNNING_XACTS` 写盘、`SnapBuild` 状态机、`ReorderBuffer` 重组、pgoutput 协议、apply worker 入口都拆解过。本文第一次**把它们串成一条线**。同系列前文：
 >
-> - [PostgreSQL 逻辑复制里 `RUNNING_XACTS` 写入机制与快照 `xmin / xmax / xip` 的演化](../../transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
+> - [PostgreSQL 逻辑复制里 `RUNNING_XACTS` 写入机制与快照 `xmin / xmax / xip` 的演化](../../L4-transaction-mvcc/postgresql-running-xacts-snapshot/index.html)
 > - [PostgreSQL 逻辑复制的 ReorderBuffer 与事务机制](../postgresql-logical-replication-reorderbuffer-transaction/index.html)
 > - [PostgreSQL 逻辑复制 spill 深度拆解：ReorderBuffer 如何把 100GB 事务拆成小块](../postgresql-logical-replication-spill-deep-dive/index.html)
 > - [PostgreSQL 逻辑复制 streaming 与 spill 的一致性](../postgresql-logical-replication-streaming-spill/index.html)
@@ -980,7 +980,7 @@ case XLOG_RUNNING_XACTS:
     break;
 ```
 
-`SnapBuildProcessRunningXacts` 在 snapbuild.c:1136，本文[另一篇文档](../../transaction-mvcc/postgresql-running-xacts-snapshot/index.html)已经详细分析过。这里只看 **本场景里它做了什么**：
+`SnapBuildProcessRunningXacts` 在 snapbuild.c:1136，本文[另一篇文档](../../L4-transaction-mvcc/postgresql-running-xacts-snapshot/index.html)已经详细分析过。这里只看 **本场景里它做了什么**：
 
 ```mermaid
 sequenceDiagram

@@ -9,9 +9,9 @@ description: "PostGIS 不是简单的\"PG 加几何函数\"，而是 PG 历史�
 
 > 本文是「PostgreSQL 扩展系列」GIS 篇。同系列前文：
 >
-> - [PostgreSQL 前世今生：从 1986 Berkeley 实验室到 2025 全球基础设施](../../getting-started/postgresql-history/index.html)
-> - [PostgreSQL 核心特性全景：12 大功能的设计动因、实现原理与版本演化](../../getting-started/postgresql-core-features/index.html)
-> - [PostgreSQL 元数据存储机制](../../storage-engine/postgresql-catalog-storage/index.html)
+> - [PostgreSQL 前世今生：从 1986 Berkeley 实验室到 2025 全球基础设施](../../L1-getting-started/postgresql-history/index.html)
+> - [PostgreSQL 核心特性全景：12 大功能的设计动因、实现原理与版本演化](../../L1-getting-started/postgresql-core-features/index.html)
+> - [PostgreSQL 元数据存储机制](../../L2-storage-engine/postgresql-catalog-storage/index.html)
 
 PostGIS 不是简单的"PG 加几何函数"，而是 **PG 历史上第一个非贡献者、内核之外的"超级扩展"**——它有自己的数据类型、自己的索引、自己的函数库、自己的类型转换、自己的栅格子系统、自己的拓扑子系统、自己的点云子系统。
 
@@ -929,6 +929,6 @@ flowchart TB
 
 ## 同系列前文
 
-- [PostgreSQL 前世今生：39 年演化史](../../getting-started/postgresql-history/index.html)
-- [PostgreSQL 核心特性全景：12 大功能](../../getting-started/postgresql-core-features/index.html)
-- [PostgreSQL 元数据存储机制](../../storage-engine/postgresql-catalog-storage/index.html)
+- [PostgreSQL 前世今生：39 年演化史](../../L1-getting-started/postgresql-history/index.html)
+- [PostgreSQL 核心特性全景：12 大功能](../../L1-getting-started/postgresql-core-features/index.html)
+- [PostgreSQL 元数据存储机制](../../L2-storage-engine/postgresql-catalog-storage/index.html)

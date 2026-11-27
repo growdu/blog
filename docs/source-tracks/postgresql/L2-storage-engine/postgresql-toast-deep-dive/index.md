@@ -24,9 +24,9 @@ description: "PostgreSQL 的 Heap Page 默认 8KB（BLCKSZ）。一个 tuple 必
 
 > 本文是「PostgreSQL 内核机制源码系列」。同系列前文：
 >
-> - [PostgreSQL 18 内核数据结构全景](../../index-and-query/postgresql-rangevar-and-data-structures/index.html) — RangeVar / HeapTuple / SnapshotData 等
-> - [PostgreSQL WAL 记录类型完全指南](../../wal-and-recovery/postgresql-wal-record-types/index.html) — 21 个 RMGR × 80+ 种记录
-> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../transaction-mvcc/postgresql-mvcc/index.html)
+> - [PostgreSQL 18 内核数据结构全景](../../L3-index-and-query/postgresql-rangevar-and-data-structures/index.html) — RangeVar / HeapTuple / SnapshotData 等
+> - [PostgreSQL WAL 记录类型完全指南](../../L5-wal-and-recovery/postgresql-wal-record-types/index.html) — 21 个 RMGR × 80+ 种记录
+> - [PostgreSQL MVCC：从一行 UPDATE 到 5 个 HeapTuple 的演化](../../L4-transaction-mvcc/postgresql-mvcc/index.html)
 > - [PostgreSQL 内存管理](../postgresql-memory-management/index.html) — MemoryContext / dsa
 
 ## 阅读指南

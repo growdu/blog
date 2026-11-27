@@ -7,7 +7,7 @@ description: "主要源码路径： - ~/cwork/postgresql/src/backend/replication
 | --- | --- | --- |
 | growdu | 初稿，结合 PostgreSQL 17 源码 + Babelfish T-SQL 扩展 | 2026-08-24 |
 
-> 本文是 [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径的全链路拆解](../../index-and-query/postgresql-partition-handling/index.html) 的姊妹篇。
+> 本文是 [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径的全链路拆解](../../L3-index-and-query/postgresql-partition-handling/index.html) 的姊妹篇。
 >
 > 上一篇讲的是单点内核机制——`PartitionBoundInfo` 怎么排、`get_partition_for_tuple` 怎么二分、`PartitionTupleRouting` 怎么搭骨架。
 >
@@ -978,5 +978,5 @@ PG 16/17 实验性支持 `REPLICA IDENTITY` + `CREATE TABLE ... ATTACH PARTITION
 
 PG 原生模式靠"手工 DDL + REFRESH"凑齐；Babelfish T-SQL 模式多一层"partition function / scheme metadata"手工同步。这两层手工让分区表的逻辑复制部署**比普通表繁琐得多**——但只要 publisher 设好 `publish_via_partition_root`，subscriber 端一次性把 DDL 同步好，后续增量复制就是纯 PG 原生的 `ExecFindPartition` 路径，跟 INSERT 到一个普通分区表没区别。
 
-> 想看 `ExecFindPartition` 的内部算法，参考 [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径的全链路拆解](../../index-and-query/postgresql-partition-handling/index.html)。
-> 想看 PG vs SQL Server 分区表的全景对比，参考 [PostgreSQL vs SQL Server 分区表实战：步骤、场景与差异对比](../../index-and-query/postgresql-vs-sqlserver-partitioning/index.html)。
+> 想看 `ExecFindPartition` 的内部算法，参考 [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径的全链路拆解](../../L3-index-and-query/postgresql-partition-handling/index.html)。
+> 想看 PG vs SQL Server 分区表的全景对比，参考 [PostgreSQL vs SQL Server 分区表实战：步骤、场景与差异对比](../../L3-index-and-query/postgresql-vs-sqlserver-partitioning/index.html)。

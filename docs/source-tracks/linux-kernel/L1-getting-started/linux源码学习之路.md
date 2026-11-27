@@ -10,7 +10,7 @@ description: "Linux 内核是所有系统级知识的交汇点：进程怎么被
 
 > 本文是「Linux 源码主线」的总入口。同系列后续：
 >
-> - [01 整体架构与一次系统调用的完整链路](../architecture/learning-path/01-整体架构与一次系统调用的完整链路.md)
+> - [01 整体架构与一次系统调用的完整链路](../L2-architecture/learning-path/01-整体架构与一次系统调用的完整链路.md)
 
 ## 为什么先读 Linux 内核
 
@@ -379,12 +379,12 @@ perf report
 
 | 文章 | 讲什么 | 对应本线第几章 |
 | --- | --- | --- |
-| [kconfig 和 kbuild 指北](../../linux/kernel-internals/kconfig和kbuild指北.md) | 内核的配置与编译体系 | 02 |
-| [Linux 内核模块指北](../../linux/kernel-internals/linux内核模块指北.md) | 模块怎么加载、怎么用 | 02 / 12 |
-| [Linux 字符设备指北](../../linux/kernel-internals/linux字符设备指北.md) | 驱动模型的一个最小例子 | 12 |
-| [Linux 锁指北](../../linux/kernel-internals/linux锁指北.md) | 锁的基本用法与选择 | 10 |
-| [Linux 内存管理指北](../../linux/memory-and-linking/linux内存管理指北.md) | 内存管理工具与概念 | 04 |
-| [Linux 系统接口](../../linux/kernel-internals/linux系统接口.md) | 常用的系统调用面 | 01 |
+| [kconfig 和 kbuild 指北](../../linux/L3-kernel-internals/kconfig和kbuild指北.md) | 内核的配置与编译体系 | 02 |
+| [Linux 内核模块指北](../../linux/L3-kernel-internals/linux内核模块指北.md) | 模块怎么加载、怎么用 | 02 / 12 |
+| [Linux 字符设备指北](../../linux/L3-kernel-internals/linux字符设备指北.md) | 驱动模型的一个最小例子 | 12 |
+| [Linux 锁指北](../../linux/L3-kernel-internals/linux锁指北.md) | 锁的基本用法与选择 | 10 |
+| [Linux 内存管理指北](../../linux/L2-memory-and-linking/linux内存管理指北.md) | 内存管理工具与概念 | 04 |
+| [Linux 系统接口](../../linux/L3-kernel-internals/linux系统接口.md) | 常用的系统调用面 | 01 |
 
 ## 8. 版本与参考
 
@@ -405,8 +405,8 @@ perf report
 
 ## 下一章
 
-- [01 整体架构与一次系统调用的完整链路](../architecture/learning-path/01-整体架构与一次系统调用的完整链路.md)
-- [02 编译与启动：从 `start_kernel` 到第一个用户态进程](../architecture/learning-path/02-编译与启动-从start_kernel到第一个用户态进程.md)
-- [03 进程与线程：fork、clone、exec 到底做了什么](../process-memory/learning-path/03-进程与线程-fork-clone-exec到底做了什么.md)
-- [04 内存管理：地址空间、缺页、页分配器](../process-memory/learning-path/04-内存管理-地址空间缺页页分配器.md)
-- [05 调度器：EEVDF、负载均衡与上下文切换](../process-memory/learning-path/05-调度器-EEVDF负载均衡与上下文切换.md)
+- [01 整体架构与一次系统调用的完整链路](../L2-architecture/learning-path/01-整体架构与一次系统调用的完整链路.md)
+- [02 编译与启动：从 `start_kernel` 到第一个用户态进程](../L2-architecture/learning-path/02-编译与启动-从start_kernel到第一个用户态进程.md)
+- [03 进程与线程：fork、clone、exec 到底做了什么](../L3-process-memory/learning-path/03-进程与线程-fork-clone-exec到底做了什么.md)
+- [04 内存管理：地址空间、缺页、页分配器](../L3-process-memory/learning-path/04-内存管理-地址空间缺页页分配器.md)
+- [05 调度器：EEVDF、负载均衡与上下文切换](../L3-process-memory/learning-path/05-调度器-EEVDF负载均衡与上下文切换.md)

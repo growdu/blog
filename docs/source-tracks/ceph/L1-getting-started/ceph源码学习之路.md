@@ -10,14 +10,14 @@ description: "Ceph 是分布式存储里少见的一个全样本：三种存储�
 
 > 本文是「Ceph 源码主线」的总入口。同系列后续：
 >
-> - [01 整体架构与一次写请求的完整链路](../architecture/learning-path/01-整体架构与一次写请求的完整链路.md)
+> - [01 整体架构与一次写请求的完整链路](../L2-architecture/learning-path/01-整体架构与一次写请求的完整链路.md)
 > - [02 环境、编译与代码地图](./learning-path/02-环境编译与代码地图.md)
-> - [03 MON：集群状态是怎么产生和分发的](../architecture/learning-path/03-MON集群状态的产生与分发.md)
-> - [04 PG 状态机：从 peering 到 active](../architecture/learning-path/04-PG状态机与恢复.md)
-> - [05 CRUSH：数据怎么落到这些盘上](../architecture/learning-path/05-CRUSH数据放置.md)
-> - [06 BlueStore：对象怎么变成 extent](../architecture/learning-path/06-BlueStore对象与extent.md)
-> - [07 事务与 journal：一次写什么时候算「落盘」](../architecture/learning-path/07-事务与journal写什么时候算落盘.md)
-> - [08 RADOS 对象语义：omap、快照、xattr、watch/notify](../architecture/learning-path/08-RADOS对象语义.md)
+> - [03 MON：集群状态是怎么产生和分发的](../L2-architecture/learning-path/03-MON集群状态的产生与分发.md)
+> - [04 PG 状态机：从 peering 到 active](../L2-architecture/learning-path/04-PG状态机与恢复.md)
+> - [05 CRUSH：数据怎么落到这些盘上](../L2-architecture/learning-path/05-CRUSH数据放置.md)
+> - [06 BlueStore：对象怎么变成 extent](../L2-architecture/learning-path/06-BlueStore对象与extent.md)
+> - [07 事务与 journal：一次写什么时候算「落盘」](../L2-architecture/learning-path/07-事务与journal写什么时候算落盘.md)
+> - [08 RADOS 对象语义：omap、快照、xattr、watch/notify](../L2-architecture/learning-path/08-RADOS对象语义.md)
 
 ## 为什么先读 Ceph
 
@@ -159,14 +159,14 @@ src/
 > 再去 `data/learning-path.json` 里开。**每写完一章，都要给它所在的站加一条规则** ——
 > 站不能是空的，那是 CI 会拦的事（见仓库里的 `tests/test_learning_path.py`）。
 >
-> **进度**：01、02、03、04、05、06、07、08 已写完（[01](../architecture/learning-path/01-整体架构与一次写请求的完整链路.md)、
+> **进度**：01、02、03、04、05、06、07、08 已写完（[01](../L2-architecture/learning-path/01-整体架构与一次写请求的完整链路.md)、
 > [02](./learning-path/02-环境编译与代码地图.md)、
-> [03](../architecture/learning-path/03-MON集群状态的产生与分发.md)、
-> [04](../architecture/learning-path/04-PG状态机与恢复.md)、
-> [05](../architecture/learning-path/05-CRUSH数据放置.md)、
-> [06](../architecture/learning-path/06-BlueStore对象与extent.md)、
-> [07](../architecture/learning-path/07-事务与journal写什么时候算落盘.md)、
-> [08](../architecture/learning-path/08-RADOS对象语义.md)），09 起陆续补上。
+> [03](../L2-architecture/learning-path/03-MON集群状态的产生与分发.md)、
+> [04](../L2-architecture/learning-path/04-PG状态机与恢复.md)、
+> [05](../L2-architecture/learning-path/05-CRUSH数据放置.md)、
+> [06](../L2-architecture/learning-path/06-BlueStore对象与extent.md)、
+> [07](../L2-architecture/learning-path/07-事务与journal写什么时候算落盘.md)、
+> [08](../L2-architecture/learning-path/08-RADOS对象语义.md)），09 起陆续补上。
 
 ## 3. 怎么在 Ceph 这棵树上读代码
 
@@ -353,4 +353,4 @@ gdb -p $(pgrep -f ceph-osd | head -1)
 | 集合也有 xattr | **v22 没有这个接口**，BlueStore 回 `-EOPNOTSUPP`（`src/os/bluestore/BlueStore.cc:12702`） |
 | watch 是纯内存状态 | **一半落盘**：名单在 `object_info_t::watchers` 里，随 `OI_ATTR` xattr 落盘 |
 
-> 完整的对照表在 [01 整体架构与一次写请求的完整链路](../architecture/learning-path/01-整体架构与一次写请求的完整链路.md) 的最后一节。
+> 完整的对照表在 [01 整体架构与一次写请求的完整链路](../L2-architecture/learning-path/01-整体架构与一次写请求的完整链路.md) 的最后一节。

@@ -429,7 +429,7 @@ switch (key->strategy) {
 /* 3. 叶子? 返回 rri; 中间层? 继续下钻 */
 ```
 
-> 详细算法拆解见 [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径的全链路拆解](../../index-and-query/postgresql-partition-handling/index.html)。
+> 详细算法拆解见 [PostgreSQL 分区表：从一行 `PARTITION BY` 到路由热路径的全链路拆解](../../L3-index-and-query/postgresql-partition-handling/index.html)。
 
 ### 4.3 `CheckSubscriptionRelkind`：leaf 二次校验
 

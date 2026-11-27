@@ -9,10 +9,10 @@ description: "时序数据是 PG 最不擅长的一类：写入密集、范围�
 
 > 本文是「PostgreSQL 扩展系列」时序篇。同系列前文：
 >
-> - [PostgreSQL 核心特性全景：12 大功能](../../getting-started/postgresql-core-features/index.html)
+> - [PostgreSQL 核心特性全景：12 大功能](../../L1-getting-started/postgresql-core-features/index.html)
 > - [PostGIS 深度解析](../postgis-deep-dive/index.html)
 > - [pgvector 深度解析](../pgvector-deep-dive/index.html)
-> - [PostgreSQL 前世今生：39 年演化史](../../getting-started/postgresql-history/index.html)
+> - [PostgreSQL 前世今生：39 年演化史](../../L1-getting-started/postgresql-history/index.html)
 
 时序数据是 PG 最不擅长的一类：**写入密集、范围查询、按时间衰减、聚合占比高**。10 年前要写时序就得选 InfluxDB / OpenTSDB。
 
@@ -629,7 +629,7 @@ ORDER BY bucket DESC;
 
 ## 同系列前文
 
-- [PostgreSQL 核心特性全景：12 大功能](../../getting-started/postgresql-core-features/index.html)
+- [PostgreSQL 核心特性全景：12 大功能](../../L1-getting-started/postgresql-core-features/index.html)
 - [PostGIS 深度解析](../postgis-deep-dive/index.html)
 - [pgvector 深度解析](../pgvector-deep-dive/index.html)
-- [PostgreSQL 前世今生：39 年演化史](../../getting-started/postgresql-history/index.html)
+- [PostgreSQL 前世今生：39 年演化史](../../L1-getting-started/postgresql-history/index.html)

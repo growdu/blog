@@ -1,25 +1,16 @@
-title: "PostgreSQL"
-description: "PostgreSQL 源码主线：8 个系列，由浅入深。"
+---
+title: "PostgreSQL 源码内核"
+description: "PostgreSQL 源码内核 赛道：8 个阶段，由浅入深。"
 cascade:
   categories:
-    - PostgreSQL
+    - PostgreSQL 源码内核
 tags:
-  - PostgreSQL
+  - PostgreSQL 源码内核
+---
 
-# PostgreSQL
+# PostgreSQL 源码内核
 
-PostgreSQL 源码主线：8 个系列，由浅入深。
-
-## 系列
-
-- [扩展、性能与生态](./extensions-perf/_index.md)
-- [起步与全景](./getting-started/_index.md)
-- [索引与查询](./index-and-query/_index.md)
-- [逻辑复制与流式](./logical-replication/_index.md)
-- [复制与高可用](./replication-ha/_index.md)
-- [存储引擎](./storage-engine/_index.md)
-- [事务与并发](./transaction-mvcc/_index.md)
-- [WAL 与恢复](./wal-and-recovery/_index.md)
+PostgreSQL 源码内核 赛道：8 个阶段，由浅入深。
 
 ## 数据库总览
 
@@ -88,92 +79,92 @@ mindmap
 
 | 文章 | 一句话 |
 |---|---|
-| [PostgreSQL 前世今生](getting-started/postgresql-history/index.html) | 1986 Berkeley → 2026 全球基础设施的 39 年演化史 |
-| [PostgreSQL 核心特性全景](getting-started/postgresql-core-features/index.html) | 12 大功能的设计动因 / 实现原理 / 版本演化 |
-| [PostgreSQL 万能论](getting-started/postgresql-for-everything/index.html) | 为什么一家公司可以用它替代 Kafka / Redis / Elastic / ClickHouse |
-| [PostgreSQL MVCC:一条数据是如何拥有"分身术"的](transaction-mvcc/postgresql-mvcc/index.html) | 多版本并发控制的入门 |
-| [PostgreSQL 事务:一次 BEGIN 与 COMMIT 背后的双层世界](transaction-mvcc/postgresql-transaction-lifecycle/index.html) | 事务状态机 |
-| [PostgreSQL 内存管理:一片共享内存,三座分配器,一座缓冲池](storage-engine/postgresql-memory-management/index.html) | AllocSet / Slab / Generation 三套 ctx |
-| [当我们在说"数据库"的时候,我们到底在说什么](getting-started/postgresql-user-capabilities/index.html) | 从用户视角看 PG 的能力与接口 |
+| [PostgreSQL 前世今生](L1-getting-started/postgresql-history/index.html) | 1986 Berkeley → 2026 全球基础设施的 39 年演化史 |
+| [PostgreSQL 核心特性全景](L1-getting-started/postgresql-core-features/index.html) | 12 大功能的设计动因 / 实现原理 / 版本演化 |
+| [PostgreSQL 万能论](L1-getting-started/postgresql-for-everything/index.html) | 为什么一家公司可以用它替代 Kafka / Redis / Elastic / ClickHouse |
+| [PostgreSQL MVCC:一条数据是如何拥有"分身术"的](L4-transaction-mvcc/postgresql-mvcc/index.html) | 多版本并发控制的入门 |
+| [PostgreSQL 事务:一次 BEGIN 与 COMMIT 背后的双层世界](L4-transaction-mvcc/postgresql-transaction-lifecycle/index.html) | 事务状态机 |
+| [PostgreSQL 内存管理:一片共享内存,三座分配器,一座缓冲池](L2-storage-engine/postgresql-memory-management/index.html) | AllocSet / Slab / Generation 三套 ctx |
+| [当我们在说"数据库"的时候,我们到底在说什么](L1-getting-started/postgresql-user-capabilities/index.html) | 从用户视角看 PG 的能力与接口 |
 
 ---
 
 ## 3. PostgreSQL — 内核专题(中等深度)
 
 ### 3.1 进程 / 子系统
-- [PostgreSQL Background Worker 全解](getting-started/postgresql-background-worker/index.html) — `RegisterBackgroundWorker` → 逻辑复制 4 类 worker
-- [PostgreSQL 并行 Worker 机制全解](transaction-mvcc/postgresql-parallel-worker/index.html) — `ParallelContext` → `ParallelQueryMain`
-- [PostgreSQL 模块架构](getting-started/postgresql-module-architecture/index.html) — 从 `postgres` 二进制到生产级守护
+- [PostgreSQL Background Worker 全解](L1-getting-started/postgresql-background-worker/index.html) — `RegisterBackgroundWorker` → 逻辑复制 4 类 worker
+- [PostgreSQL 并行 Worker 机制全解](L4-transaction-mvcc/postgresql-parallel-worker/index.html) — `ParallelContext` → `ParallelQueryMain`
+- [PostgreSQL 模块架构](L1-getting-started/postgresql-module-architecture/index.html) — 从 `postgres` 二进制到生产级守护
 
 ### 3.2 锁 / 并发
-- [PostgreSQL 读一行数据源码级深度拆解](index-and-query/postgresql-read-a-row-deep-dive/index.html) — MVCC 在 9 个环节的落点 + 目录快照 vs 事务快照
-- [PostgreSQL 目录快照源码级深度拆解](storage-engine/postgresql-catalog-snapshot-deep-dive/index.html) — 系统表读取的 MVCC 真相与失效机制
-- [PostgreSQL 行锁机制源码级深度拆解](transaction-mvcc/postgresql-row-lock-deep-dive/index.html) — 4 种锁模式 + xmax + MultiXact
-- [PostgreSQL Latch 机制详解](transaction-mvcc/postgresql-latch-mechanism/index.html) — `SetLatch` → epoll
+- [PostgreSQL 读一行数据源码级深度拆解](L3-index-and-query/postgresql-read-a-row-deep-dive/index.html) — MVCC 在 9 个环节的落点 + 目录快照 vs 事务快照
+- [PostgreSQL 目录快照源码级深度拆解](L2-storage-engine/postgresql-catalog-snapshot-deep-dive/index.html) — 系统表读取的 MVCC 真相与失效机制
+- [PostgreSQL 行锁机制源码级深度拆解](L4-transaction-mvcc/postgresql-row-lock-deep-dive/index.html) — 4 种锁模式 + xmax + MultiXact
+- [PostgreSQL Latch 机制详解](L4-transaction-mvcc/postgresql-latch-mechanism/index.html) — `SetLatch` → epoll
 
 ### 3.3 存储 / 缓冲
-- [PostgreSQL TOAST 机制源码级深度拆解](storage-engine/postgresql-toast-deep-dive/index.html) — 8KB 页面限制 → chunked 分散存储
-- [PostgreSQL 元数据存储机制](storage-engine/postgresql-catalog-storage/index.html) — pg_class 撑起的系统表体系
+- [PostgreSQL TOAST 机制源码级深度拆解](L2-storage-engine/postgresql-toast-deep-dive/index.html) — 8KB 页面限制 → chunked 分散存储
+- [PostgreSQL 元数据存储机制](L2-storage-engine/postgresql-catalog-storage/index.html) — pg_class 撑起的系统表体系
 
 ### 3.4 WAL / 日志
-- [PostgreSQL WAL 记录类型完全指南](wal-and-recovery/postgresql-wal-record-types/index.html) — 21 个 RMGR × 80+ 种记录的源码级拆解
+- [PostgreSQL WAL 记录类型完全指南](L5-wal-and-recovery/postgresql-wal-record-types/index.html) — 21 个 RMGR × 80+ 种记录的源码级拆解
 
 ### 3.5 协议 / 客户端
-- [PostgreSQL libpq 机制与缓冲区详解](getting-started/postgresql-libpq-mechanism/index.html)
+- [PostgreSQL libpq 机制与缓冲区详解](L1-getting-started/postgresql-libpq-mechanism/index.html)
 
 ### 3.6 分区表
-- [PostgreSQL 分区表:从 `PARTITION BY` 到路由热路径](index-and-query/postgresql-partition-handling/index.html) — `PartitionBoundInfo` → `get_partition_for_tuple`
-- [PostgreSQL vs SQL Server 分区表实战](index-and-query/postgresql-vs-sqlserver-partitioning/index.html) — 对比与迁移
+- [PostgreSQL 分区表:从 `PARTITION BY` 到路由热路径](L3-index-and-query/postgresql-partition-handling/index.html) — `PartitionBoundInfo` → `get_partition_for_tuple`
+- [PostgreSQL vs SQL Server 分区表实战](L3-index-and-query/postgresql-vs-sqlserver-partitioning/index.html) — 对比与迁移
 
 ### 3.7 数据结构
-- [PostgreSQL 18 内核数据结构全景:RangeVar 与 20+ 个核心数据结构](index-and-query/postgresql-rangevar-and-data-structures/index.html)
-- [PostgreSQL 内核开发:读取一张表的 9 步标准流程](index-and-query/postgresql-read-catalog-table/index.html) — 缓存全景
+- [PostgreSQL 18 内核数据结构全景:RangeVar 与 20+ 个核心数据结构](L3-index-and-query/postgresql-rangevar-and-data-structures/index.html)
+- [PostgreSQL 内核开发:读取一张表的 9 步标准流程](L3-index-and-query/postgresql-read-catalog-table/index.html) — 缓存全景
 
 ### 3.8 横向
-- [PostgreSQL 行锁机制深度解析](transaction-mvcc/postgresql-row-lock/index.html) — 老版同主题文章(参见 4.5 节源码深度)
+- [PostgreSQL 行锁机制深度解析](L4-transaction-mvcc/postgresql-row-lock/index.html) — 老版同主题文章(参见 4.5 节源码深度)
 
 ---
 
 ## 4. PostgreSQL — 逻辑复制专题(27+ 篇)
 
 ### 4.1 全链路与基础
-- [pg_recvlogical 源码解析](logical-replication/pg-recvlogical-deep-dive/index.html) — 逻辑解码的「只读消费者」与完整逻辑复制的分水岭
-- [PostgreSQL 逻辑复制全链路](logical-replication/postgresql-logical-replication-end-to-end-flow/index.html) — 真实事务的 9 段全链路追踪
-- [PostgreSQL 逻辑复制表的生命周期](logical-replication/postgresql-logical-replication-tables-lifecycle/index.html) — `pg_replication_slots` → `pg_subscription_rel`
-- [PostgreSQL 逻辑复制 Worker 模型](logical-replication/postgresql-logical-replication-worker-model/index.html) — launcher / apply / tablesync 进程拓扑
-- [PostgreSQL 逻辑复制 `RUNNING_XACTS` 写入机制与快照演化](transaction-mvcc/postgresql-running-xacts-snapshot/index.html) — `xmin / xmax / xip`
-- [PostgreSQL 逻辑复制订阅参数全解](logical-replication/postgresql-logical-replication-options/index.html) — run_as_owner → disable_on_error
-- [PostgreSQL 逻辑复制集群搭建指北(Docker)](logical-replication/postgresql-logical-replication-docker-setup/index.html) — `docker compose` 一键拉起
+- [pg_recvlogical 源码解析](L7-logical-replication/pg-recvlogical-deep-dive/index.html) — 逻辑解码的「只读消费者」与完整逻辑复制的分水岭
+- [PostgreSQL 逻辑复制全链路](L7-logical-replication/postgresql-logical-replication-end-to-end-flow/index.html) — 真实事务的 9 段全链路追踪
+- [PostgreSQL 逻辑复制表的生命周期](L7-logical-replication/postgresql-logical-replication-tables-lifecycle/index.html) — `pg_replication_slots` → `pg_subscription_rel`
+- [PostgreSQL 逻辑复制 Worker 模型](L7-logical-replication/postgresql-logical-replication-worker-model/index.html) — launcher / apply / tablesync 进程拓扑
+- [PostgreSQL 逻辑复制 `RUNNING_XACTS` 写入机制与快照演化](L4-transaction-mvcc/postgresql-running-xacts-snapshot/index.html) — `xmin / xmax / xip`
+- [PostgreSQL 逻辑复制订阅参数全解](L7-logical-replication/postgresql-logical-replication-options/index.html) — run_as_owner → disable_on_error
+- [PostgreSQL 逻辑复制集群搭建指北(Docker)](L7-logical-replication/postgresql-logical-replication-docker-setup/index.html) — `docker compose` 一键拉起
 
 ### 4.2 性能 / 监控
-- [PostgreSQL 逻辑复制的监控](logical-replication/postgresql-logical-replication-monitoring/index.html) — 六张视图 + 一组 SQL
-- [PostgreSQL 逻辑复制性能与速率测试](logical-replication/postgresql-logical-replication-throughput-benchmark/index.html) — 测量模型 + 11 个脚本
+- [PostgreSQL 逻辑复制的监控](L7-logical-replication/postgresql-logical-replication-monitoring/index.html) — 六张视图 + 一组 SQL
+- [PostgreSQL 逻辑复制性能与速率测试](L7-logical-replication/postgresql-logical-replication-throughput-benchmark/index.html) — 测量模型 + 11 个脚本
 
 ### 4.3 Spill 与 Streaming
-- [PostgreSQL 逻辑复制 spill 文件深度剖析](logical-replication/postgresql-logical-replication-spill-deep-dive/index.html) — TPC-C 100WH 实战
-- [PostgreSQL 逻辑复制 streaming 与 spill](logical-replication/postgresql-logical-replication-streaming-spill/index.html) — `<subid>-<xid>.changes` 全程真相
-- [PostgreSQL 逻辑复制的 ReorderBuffer 与事务机制](logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html) — 一行 WAL 到一致性变更流
+- [PostgreSQL 逻辑复制 spill 文件深度剖析](L7-logical-replication/postgresql-logical-replication-spill-deep-dive/index.html) — TPC-C 100WH 实战
+- [PostgreSQL 逻辑复制 streaming 与 spill](L7-logical-replication/postgresql-logical-replication-streaming-spill/index.html) — `<subid>-<xid>.changes` 全程真相
+- [PostgreSQL 逻辑复制的 ReorderBuffer 与事务机制](L7-logical-replication/postgresql-logical-replication-reorderbuffer-transaction/index.html) — 一行 WAL 到一致性变更流
 
 ### 4.4 并行 Apply
-- [PostgreSQL 18 逻辑复制的并行解码与并行 Apply](logical-replication/postgresql-logical-replication-parallel-worker/index.html) — 源码全景
+- [PostgreSQL 18 逻辑复制的并行解码与并行 Apply](L7-logical-replication/postgresql-logical-replication-parallel-worker/index.html) — 源码全景
 
 ### 4.5 DDL 与分区表
-- [PostgreSQL 逻辑复制支持 DDL 之后](logical-replication/postgresql-logical-replication-ddl-dml-ordering/index.html) — DDL 与 DML 的时序难题
-- [PostgreSQL 逻辑复制:DDL 同步后启动 apply worker 同步 DML](logical-replication/postgresql-logical-replication-ddl-trigger-apply-worker/index.html) — 分区表专题
-- [PostgreSQL 逻辑复制与分区表:从 publisher 到 partition leaf 的全链路](logical-replication/postgresql-logical-replication-with-partitioned-tables/index.html)
-- [PostgreSQL 逻辑复制下分区表的 INSERT](logical-replication/postgresql-logical-replication-partitioned-insert-flow/index.html)
-- [`publish_via_partition_root` 的完整行为分析](logical-replication/postgresql-logical-replication-publish-via-partition-root/index.html)
+- [PostgreSQL 逻辑复制支持 DDL 之后](L7-logical-replication/postgresql-logical-replication-ddl-dml-ordering/index.html) — DDL 与 DML 的时序难题
+- [PostgreSQL 逻辑复制:DDL 同步后启动 apply worker 同步 DML](L7-logical-replication/postgresql-logical-replication-ddl-trigger-apply-worker/index.html) — 分区表专题
+- [PostgreSQL 逻辑复制与分区表:从 publisher 到 partition leaf 的全链路](L7-logical-replication/postgresql-logical-replication-with-partitioned-tables/index.html)
+- [PostgreSQL 逻辑复制下分区表的 INSERT](L7-logical-replication/postgresql-logical-replication-partitioned-insert-flow/index.html)
+- [`publish_via_partition_root` 的完整行为分析](L7-logical-replication/postgresql-logical-replication-publish-via-partition-root/index.html)
 
 ### 4.6 实战 + 工具
-- [PostgreSQL 逻辑复制常用诊断 SQL 与脚本](index-and-query/pg%E5%B8%B8%E7%94%A8%E5%87%BD%E6%95%B0.md) — `pg_stat_*` 系列视图(`pgstat_*`)
-- [PostgreSQL 逻辑复制性能测试总结](logical-replication/%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95.md) — 公开数据对比
-- [PostgreSQL 逻辑复制性能分析:火焰图实战](extensions-perf/postgresql-flame-graph/index.html) — perf + 火焰图定位
+- [PostgreSQL 逻辑复制常用诊断 SQL 与脚本](L3-index-and-query/pg%E5%B8%B8%E7%94%A8%E5%87%BD%E6%95%B0.md) — `pg_stat_*` 系列视图(`pgstat_*`)
+- [PostgreSQL 逻辑复制性能测试总结](L7-logical-replication/%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95.md) — 公开数据对比
+- [PostgreSQL 逻辑复制性能分析:火焰图实战](L8-extensions-perf/postgresql-flame-graph/index.html) — perf + 火焰图定位
 
 ### 4.7 内核视角的"为什么不能"与"怎么改"
-- [PostgreSQL 18 新增一个 GUC 参数](logical-replication/postgresql-logical-replication-add-guc/index.html) — 内核开发者视角
-- [PostgreSQL 18 Injection Point 完整指南](extensions-perf/postgresql-injection-points/index.html) — 原理 / API / 实战
-- [Injection Point 与 PG 测试框架集成实战](extensions-perf/postgresql-injection-points-test-framework/index.html)
-- [用 Injection Point 测试无法到达的代码路径](extensions-perf/postgresql-injection-points-test-unreachable/index.html) — 3 种改造模式
+- [PostgreSQL 18 新增一个 GUC 参数](L7-logical-replication/postgresql-logical-replication-add-guc/index.html) — 内核开发者视角
+- [PostgreSQL 18 Injection Point 完整指南](L8-extensions-perf/postgresql-injection-points/index.html) — 原理 / API / 实战
+- [Injection Point 与 PG 测试框架集成实战](L8-extensions-perf/postgresql-injection-points-test-framework/index.html)
+- [用 Injection Point 测试无法到达的代码路径](L8-extensions-perf/postgresql-injection-points-test-unreachable/index.html) — 3 种改造模式
 
 ---
 
@@ -184,31 +175,31 @@ mindmap
 > 详细目录见 [PostgreSQL 源码修炼之路:内核深度拆解专题](/learning/postgresql/)。
 
 ### 5.1 逻辑复制 — 入口与全链路
-- [PostgreSQL 18 CREATE_REPLICATION_SLOT 全链路分析](replication-ha/postgresql-create-replication-slot-deep-dive/index.html)
-- [PostgreSQL 逻辑复制端到端深度拆解](logical-replication/postgresql-logical-replication-end-to-end/index.html)
-- [PostgreSQL 逻辑复制 LSN 推进全景](logical-replication/postgresql-logical-replication-lsn-flow/index.html)
-- [PostgreSQL 逻辑复制:catalog 改动、可见性判定与 xmin/xmax 推进全景](logical-replication/postgresql-logical-replication-catalog-visibility/index.html) — **NEW_CID 全链路**
-- [PostgreSQL 18 流式逻辑复制发布端深度解析](logical-replication/postgresql-logical-replication-stream-publisher/index.html)
-- [PostgreSQL 逻辑复制 Stream 执行逻辑源码级拆解](index-and-query/postgresql-stream-execution-logic/index.html) — reorderbuffer 触发 → 订阅端落盘回放
-- [PostgreSQL 逻辑复制性能分析:火焰图实战](extensions-perf/postgresql-flame-graph/index.html)
+- [PostgreSQL 18 CREATE_REPLICATION_SLOT 全链路分析](L6-replication-ha/postgresql-create-replication-slot-deep-dive/index.html)
+- [PostgreSQL 逻辑复制端到端深度拆解](L7-logical-replication/postgresql-logical-replication-end-to-end/index.html)
+- [PostgreSQL 逻辑复制 LSN 推进全景](L7-logical-replication/postgresql-logical-replication-lsn-flow/index.html)
+- [PostgreSQL 逻辑复制:catalog 改动、可见性判定与 xmin/xmax 推进全景](L7-logical-replication/postgresql-logical-replication-catalog-visibility/index.html) — **NEW_CID 全链路**
+- [PostgreSQL 18 流式逻辑复制发布端深度解析](L7-logical-replication/postgresql-logical-replication-stream-publisher/index.html)
+- [PostgreSQL 逻辑复制 Stream 执行逻辑源码级拆解](L3-index-and-query/postgresql-stream-execution-logic/index.html) — reorderbuffer 触发 → 订阅端落盘回放
+- [PostgreSQL 逻辑复制性能分析:火焰图实战](L8-extensions-perf/postgresql-flame-graph/index.html)
 
 ### 5.2 逻辑复制 — SnapBuild / ReorderBuffer 子系统
-- [PostgreSQL snapbuild.c 深度解析](logical-replication/postgresql-snapbuild-deep-dive/index.html)
-- [PostgreSQL SnapBuildFindSnapshot 深度拆解](logical-replication/postgresql-snapbuild-find-snapshot-deep-dive/index.html)
-- [reorderbuffer.c 源码深度解析](logical-replication/postgresql-reorder-buffer-code-analysis/index.html)
-- [PostgreSQL reorderbuffer.c 函数级源码全集](logical-replication/postgresql-reorderbuffer-c-function-reference/index.html) — **95 函数 / 5615 行逐函数解析**
+- [PostgreSQL snapbuild.c 深度解析](L7-logical-replication/postgresql-snapbuild-deep-dive/index.html)
+- [PostgreSQL SnapBuildFindSnapshot 深度拆解](L7-logical-replication/postgresql-snapbuild-find-snapshot-deep-dive/index.html)
+- [reorderbuffer.c 源码深度解析](L7-logical-replication/postgresql-reorder-buffer-code-analysis/index.html)
+- [PostgreSQL reorderbuffer.c 函数级源码全集](L7-logical-replication/postgresql-reorderbuffer-c-function-reference/index.html) — **95 函数 / 5615 行逐函数解析**
 
 ### 5.3 逻辑复制 — Apply / 并行 Apply
-- [PostgreSQL 逻辑复制 Apply Parallel Worker 运行机制](logical-replication/postgresql-apply-parallel-worker/index.html)
-- [applyparallelworker.c 源码深度解析(1646 行)](logical-replication/postgresql-apply-parallel-worker-code-analysis/index.html)
-- [applyparallelworker.c 之 LA 端源码深度解析](logical-replication/postgresql-apply-leader-worker-code-analysis/index.html)
-- [Apply Parallel Worker 的 lock_stream 与 unlock_stream](logical-replication/postgresql-apply-parallel-lock-stream/index.html)
-- [PostgreSQL 逻辑复制 Apply Parallel Worker 参数调优实战](logical-replication/postgresql-logical-replication-apply-parallel-tuning/index.html)
+- [PostgreSQL 逻辑复制 Apply Parallel Worker 运行机制](L7-logical-replication/postgresql-apply-parallel-worker/index.html)
+- [applyparallelworker.c 源码深度解析(1646 行)](L7-logical-replication/postgresql-apply-parallel-worker-code-analysis/index.html)
+- [applyparallelworker.c 之 LA 端源码深度解析](L7-logical-replication/postgresql-apply-leader-worker-code-analysis/index.html)
+- [Apply Parallel Worker 的 lock_stream 与 unlock_stream](L7-logical-replication/postgresql-apply-parallel-lock-stream/index.html)
+- [PostgreSQL 逻辑复制 Apply Parallel Worker 参数调优实战](L7-logical-replication/postgresql-logical-replication-apply-parallel-tuning/index.html)
 
 ### 5.4 缓存 / 锁 / 共享内存子系统
-- [PostgreSQL syscache 模块源码深度拆解](index-and-query/postgresql-syscache-deep-dive/index.html) — CatCache / LRU / cache invalidation 全链路
-- [PostgreSQL 行锁机制深度解析](transaction-mvcc/postgresql-row-lock/index.html) — MVCC → 多级锁 → MultiXact
-- [PostgreSQL 共享内存机制](storage-engine/postgresql-shared-memory/index.html) — DSM / DSA / 固定 MemoryContext
+- [PostgreSQL syscache 模块源码深度拆解](L3-index-and-query/postgresql-syscache-deep-dive/index.html) — CatCache / LRU / cache invalidation 全链路
+- [PostgreSQL 行锁机制深度解析](L4-transaction-mvcc/postgresql-row-lock/index.html) — MVCC → 多级锁 → MultiXact
+- [PostgreSQL 共享内存机制](L2-storage-engine/postgresql-shared-memory/index.html) — DSM / DSA / 固定 MemoryContext
 
 ### 5.5 学习路径与早期专题
 - [PostgreSQL 源码修炼之路 — 存储引擎内核开发者进阶地图](/learning/postgresql/) — 主线 14 章框架
@@ -220,8 +211,8 @@ mindmap
 
 | 文章 | 一句话 |
 |---|---|
-| [openGaussCSN 全序保证机制](logical-replication/opengauss-csn-total-ordering/index.html) | 从源码看为什么并行解码能保证全局一致性 |
-| [openGauss 并行解码设计原理](logical-replication/opengauss-parallel-decoding-design/index.html) | 整体架构与并行策略 |
+| [openGaussCSN 全序保证机制](L7-logical-replication/opengauss-csn-total-ordering/index.html) | 从源码看为什么并行解码能保证全局一致性 |
+| [openGauss 并行解码设计原理](L7-logical-replication/opengauss-parallel-decoding-design/index.html) | 整体架构与并行策略 |
 
 **openGauss 全家桶** —— [完整目录(/learning/distributed/):
 - openGauss DCF 搭建详解
@@ -235,19 +226,19 @@ mindmap
 
 | 扩展 | 文章 |
 |---|---|
-| Citus(分布式) | [Citus 深度拆解](extensions-perf/citus-deep-dive/index.html) / [Citus 列存深度拆解](extensions-perf/citus-columnar-deep-dive/index.html) |
-| TimescaleDB(时序) | [TimescaleDB 深度拆解](extensions-perf/timescaledb-deep-dive/index.html) / [TimescaleDB 列存深度拆解](extensions-perf/timescaledb-columnstore-deep-dive/index.html) |
-| PostGIS(地理) | [PostGIS 深度拆解](extensions-perf/postgis-deep-dive/index.html) |
-| pgvector(向量) | [pgvector 深度拆解](extensions-perf/pgvector-deep-dive/index.html) |
-| DuckDB(嵌入式 OLAP) | [DuckDB 深度拆解](extensions-perf/pg-duckdb-deep-dive/index.html) |
-| cstore_fdw(列存 FDW) | [cstore_fdw 深度拆解](extensions-perf/cstore-fdw-deep-dive/index.html) |
-| pgAudit(审计) | [pgAudit 深度拆解](extensions-perf/pgaudit-deep-dive/index.html) |
-| pgBackRest(备份) | [pgBackRest 深度拆解](extensions-perf/pgbackrest-deep-dive/index.html) |
-| pg_stat_statements(性能监控) | [pg_stat_statements 深度拆解](extensions-perf/pg-stat-statements-deep-dive/index.html) |
-| pgBench(基准) | [pgbench internals](extensions-perf/pgbench-internals/index.html) |
-| pgcrypto(加密) | [pgcrypto 深度拆解](extensions-perf/pgcrypto-deep-dive/index.html) |
-| **PolarDB(阿里云)** | [PolarDB 竞争力分析](extensions-perf/polardb竞争力分析.md) |
-| **Babelfish**(SQL Server 兼容) | [Babelfish DDL 已知限制](logical-replication/sqlserver/babelfish%20ddl%E5%B7%B2%E7%9F%A5%E9%99%90%E5%88%B6.md) / [BBF 创建分区表](logical-replication/sqlserver/bbf%E5%88%9B%E5%BB%BA%E5%88%86%E5%8C%BA%E8%A1%A8.md) / [SQL Server 模式逻辑复制支持 DDL](logical-replication/sqlserver/sqlserver%E6%A8%A1%E5%BC%8F%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6%E6%94%AF%E6%8C%81ddl.md) / [SQL Server 逻辑复制 DDL 文档](logical-replication/sqlserver/sqlserver%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6ddl.html) |
+| Citus(分布式) | [Citus 深度拆解](L8-extensions-perf/citus-deep-dive/index.html) / [Citus 列存深度拆解](L8-extensions-perf/citus-columnar-deep-dive/index.html) |
+| TimescaleDB(时序) | [TimescaleDB 深度拆解](L8-extensions-perf/timescaledb-deep-dive/index.html) / [TimescaleDB 列存深度拆解](L8-extensions-perf/timescaledb-columnstore-deep-dive/index.html) |
+| PostGIS(地理) | [PostGIS 深度拆解](L8-extensions-perf/postgis-deep-dive/index.html) |
+| pgvector(向量) | [pgvector 深度拆解](L8-extensions-perf/pgvector-deep-dive/index.html) |
+| DuckDB(嵌入式 OLAP) | [DuckDB 深度拆解](L8-extensions-perf/pg-duckdb-deep-dive/index.html) |
+| cstore_fdw(列存 FDW) | [cstore_fdw 深度拆解](L8-extensions-perf/cstore-fdw-deep-dive/index.html) |
+| pgAudit(审计) | [pgAudit 深度拆解](L8-extensions-perf/pgaudit-deep-dive/index.html) |
+| pgBackRest(备份) | [pgBackRest 深度拆解](L8-extensions-perf/pgbackrest-deep-dive/index.html) |
+| pg_stat_statements(性能监控) | [pg_stat_statements 深度拆解](L8-extensions-perf/pg-stat-statements-deep-dive/index.html) |
+| pgBench(基准) | [pgbench internals](L8-extensions-perf/pgbench-internals/index.html) |
+| pgcrypto(加密) | [pgcrypto 深度拆解](L8-extensions-perf/pgcrypto-deep-dive/index.html) |
+| **PolarDB(阿里云)** | [PolarDB 竞争力分析](L8-extensions-perf/polardb竞争力分析.md) |
+| **Babelfish**(SQL Server 兼容) | [Babelfish DDL 已知限制](L7-logical-replication/sqlserver/babelfish%20ddl%E5%B7%B2%E7%9F%A5%E9%99%90%E5%88%B6.md) / [BBF 创建分区表](L7-logical-replication/sqlserver/bbf%E5%88%9B%E5%BB%BA%E5%88%86%E5%8C%BA%E8%A1%A8.md) / [SQL Server 模式逻辑复制支持 DDL](L7-logical-replication/sqlserver/sqlserver%E6%A8%A1%E5%BC%8F%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6%E6%94%AF%E6%8C%81ddl.md) / [SQL Server 逻辑复制 DDL 文档](L7-logical-replication/sqlserver/sqlserver%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6ddl-html.html) |
 
 ---
 
@@ -255,49 +246,49 @@ mindmap
 
 | 数据库 | 路径 | 一句话 |
 |---|---|---|
-| MySQL | [docs/db/mysql(/learning/postgresql/) | [macOS 安装 MySQL](extensions-perf/macos%E5%AE%89%E8%A3%85mysql.md) |
+| MySQL | [docs/db/mysql(/learning/postgresql/) | [macOS 安装 MySQL](L8-extensions-perf/macos%E5%AE%89%E8%A3%85mysql.md) |
 | SQL Server / Babelfish | [docs/db/sqlserver(/learning/postgresql/) | DDL / 分区表 / 兼容性对比 |
-| TDengine | [docs/db/taos(/learning/postgresql/) | [TDengine 基本使用](extensions-perf/taos%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.md) |
-| 跨库对比 | — | [数据库命名空间机制对比](getting-started/%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4.md) / [多数据库模式命名空间问题](getting-started/%E5%A4%9A%E6%95%B0%E6%8D%AE%E5%BA%93%E6%A8%A1%E5%BC%8F%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E9%97%AE%E9%A2%98.md) / [数据库选型维度](getting-started/database-selection-dimensions/index.html) |
-| 数据库专精路径 | — | [数据库专精路径分类](getting-started/database-specialization-taxonomy/index.html) |
+| TDengine | [docs/db/taos(/learning/postgresql/) | [TDengine 基本使用](L8-extensions-perf/taos%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.md) |
+| 跨库对比 | — | [数据库命名空间机制对比](L1-getting-started/%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4.md) / [多数据库模式命名空间问题](L1-getting-started/%E5%A4%9A%E6%95%B0%E6%8D%AE%E5%BA%93%E6%A8%A1%E5%BC%8F%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E9%97%AE%E9%A2%98.md) / [数据库选型维度](L1-getting-started/database-selection-dimensions/index.html) |
+| 数据库专精路径 | — | [数据库专精路径分类](L1-getting-started/database-specialization-taxonomy/index.html) |
 
 ---
 
 ## 9. 性能与基准
 
-- [PostgreSQL 逻辑复制性能与速率测试](logical-replication/postgresql-logical-replication-throughput-benchmark/index.html)
-- [PostgreSQL 逻辑复制性能测试总结](logical-replication/%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95.md)
-- [PostgreSQL 逻辑复制性能分析:火焰图实战](extensions-perf/postgresql-flame-graph/index.html)
-- [PostgreSQL 逻辑复制 spill 文件深度剖析:TPC-C 100WH](logical-replication/postgresql-logical-replication-spill-deep-dive/index.html)
+- [PostgreSQL 逻辑复制性能与速率测试](L7-logical-replication/postgresql-logical-replication-throughput-benchmark/index.html)
+- [PostgreSQL 逻辑复制性能测试总结](L7-logical-replication/%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95.md)
+- [PostgreSQL 逻辑复制性能分析:火焰图实战](L8-extensions-perf/postgresql-flame-graph/index.html)
+- [PostgreSQL 逻辑复制 spill 文件深度剖析:TPC-C 100WH](L7-logical-replication/postgresql-logical-replication-spill-deep-dive/index.html)
 - [BenchmarkSQL 基准测试](/learning/postgresql/)
-- [flame-graph-analysis](extensions-perf/flame-graph-analysis/index.html) — 通用 perf / 火焰图分析
+- [flame-graph-analysis](L8-extensions-perf/flame-graph-analysis/index.html) — 通用 perf / 火焰图分析
 
 ---
 
 ## 10. 架构与营销物料
 
-- [DDL 同步架构](logical-replication/ddl%E5%90%8C%E6%AD%A5%E6%9E%B6%E6%9E%84.md) — 内核原生支持 DDL 同步的设计文档
-- [DDL 同步架构(美化版)](logical-replication/ddl%E5%90%8C%E6%AD%A5%E6%9E%B6%E6%9E%84-html.html) — HTML 渲染版
-- [AIV 视频生产线](../../life/aiv/index.html) — 从口播稿到成片的九个环节、唯一契约与入库边界
+- [DDL 同步架构](L7-logical-replication/ddl%E5%90%8C%E6%AD%A5%E6%9E%B6%E6%9E%84.md) — 内核原生支持 DDL 同步的设计文档
+- [DDL 同步架构(美化版)](L7-logical-replication/ddl%E5%90%8C%E6%AD%A5%E6%9E%B6%E6%9E%84-html.html) — HTML 渲染版
+- [AIV 视频生产线](../blogging/L4-video-pipeline/aiv/index.html) — 从口播稿到成片的九个环节、唯一契约与入库边界
 
 ---
 
 ## 11. 职业与成长
 
-- [如何成为资深的 PostgreSQL 内核开发者](getting-started/postgresql-senior-kernel-developer/index.html) — 0 → Committer 的 18 个月路线 + 36 个内核主题地图 + 12 大子系统架构
+- [如何成为资深的 PostgreSQL 内核开发者](L1-getting-started/postgresql-senior-kernel-developer/index.html) — 0 → Committer 的 18 个月路线 + 36 个内核主题地图 + 12 大子系统架构
 - [PostgreSQL 源码修炼之路 — 存储引擎内核开发者进阶地图](/learning/postgresql/) — 主线 14 章框架
-- [PostgreSQL 不要这样用](extensions-perf/pg-dont-do-this/index.html) — 反面教材
-- [PostgreSQL Challahscript 实用技巧](extensions-perf/pg-challahscript-tips/index.html) — SQL / psql 实战技巧
+- [PostgreSQL 不要这样用](L8-extensions-perf/pg-dont-do-this/index.html) — 反面教材
+- [PostgreSQL Challahscript 实用技巧](L8-extensions-perf/pg-challahscript-tips/index.html) — SQL / psql 实战技巧
 
 ---
 
 ## 12. 旁支与早期归档
-- [PostgreSQL 部分专题(Part 1)](getting-started/part1.md) — 早期草稿合集
-- [PostgreSQL 常用函数速查](index-and-query/pg%E5%B8%B8%E7%94%A8%E5%87%BD%E6%95%B0.md) — 系统表 / 函数 / 视图
-- [使用 meson 编译 PostgreSQL](getting-started/%E4%BD%BF%E7%94%A8meson%E7%BC%96%E8%AF%91pg.md) — meson build 实战
+- [PostgreSQL 部分专题(Part 1)](L1-getting-started/part1.md) — 早期草稿合集
+- [PostgreSQL 常用函数速查](L3-index-and-query/pg%E5%B8%B8%E7%94%A8%E5%87%BD%E6%95%B0.md) — 系统表 / 函数 / 视图
+- [使用 meson 编译 PostgreSQL](L1-getting-started/%E4%BD%BF%E7%94%A8meson%E7%BC%96%E8%AF%91pg.md) — meson build 实战
 - [PostgreSQL 源码修炼之路:内核深度拆解专题](/learning/postgresql/) — 完整专题目录
 - [PostgreSQL 逻辑解码完整目录](/learning/postgresql/) — 早期专题合集
-- [PostgreSQL 共享内存机制(深入版)](storage-engine/linux-shared-memory/index.html)
+- [PostgreSQL 共享内存机制(深入版)](L2-storage-engine/linux-shared-memory/index.html)
 - [PostgreSQL 源码修炼之路专题](/learning/postgresql/) — 同上
 
 ---
@@ -317,3 +308,14 @@ mindmap
 - PostgreSQL 官方文档 [postgresql.org/docs/18](https://www.postgresql.org/docs/18/)
 - 源码:`~/cwork/postgresql` (PG 18.x) / `~/cwork/openGauss-server`(openGauss 5.x)
 - 内核贡献指南:PostgreSQL CommitFest `commitfest.postgresql.org`
+
+## 阶段
+
+- [起步与全景](./L1-getting-started/_index.md)
+- [存储引擎：页、文件与内存](./L2-storage-engine/_index.md)
+- [索引与查询管线](./L3-index-and-query/_index.md)
+- [事务、MVCC 与并发](./L4-transaction-mvcc/_index.md)
+- [WAL、checkpoint 与恢复](./L5-wal-and-recovery/_index.md)
+- [复制与高可用](./L6-replication-ha/_index.md)
+- [逻辑复制与流式](./L7-logical-replication/_index.md)
+- [扩展、性能与生态](./L8-extensions-perf/_index.md)

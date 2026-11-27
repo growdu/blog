@@ -16,10 +16,10 @@ heap page 的 tuple 链里，所以 VACUUM 承担了 InnoDB purge 的职责。�
 > **版本说明**：本文源码与命令基于 **PostgreSQL 17**；文中标注了 PG 13/14 起有变化的地方。
 >
 > **系列位置**：这是「PostgreSQL 源码修炼之路」学习路径的第 6 篇。
-> 上一篇 [05 缓冲管理器](../../storage-engine/learning-path/05-buffer-manager.md) ·
-> 下一篇 [07 B-Tree 索引](../../index-and-query/learning-path/07-btree-index.md) ·
+> 上一篇 [05 缓冲管理器](../../L2-storage-engine/learning-path/05-buffer-manager.md) ·
+> 下一篇 [07 B-Tree 索引](../../L3-index-and-query/learning-path/07-btree-index.md) ·
 > 相关：[08 锁与并发](./08-locks-and-concurrency.md) ·
-> [13 逻辑复制](../../logical-replication/learning-path/13-logical-replication.md)
+> [13 逻辑复制](../../L7-logical-replication/learning-path/13-logical-replication.md)
 
 ## 6.1 页面布局
 
@@ -371,7 +371,7 @@ postgres=# VACUUM (FREEZE, VERBOSE) t;
 - prune 复用页面空间；vacuumlazy 才彻底清理死 tuple。
 - 与 InnoDB 最大的不同：没有 undo log，历史版本全在 heap page 内。
 
-下一章 [07 B-Tree 索引](../../index-and-query/learning-path/07-btree-index.md) 进入 PG 的默认索引，也是最常被问到
+下一章 [07 B-Tree 索引](../../L3-index-and-query/learning-path/07-btree-index.md) 进入 PG 的默认索引，也是最常被问到
 “它到底怎么实现的”话题。
 
 > 下面 6.13 ~ 6.21 是**进阶篇**，把主篇没展开的模块补齐；读完主篇可以直接跳到
@@ -1021,9 +1021,9 @@ flowchart TB
 
 ## 系列导航
 
-- 上一篇：[05 缓冲管理器](../../storage-engine/learning-path/05-buffer-manager.md)——脏页是怎么被写出去的
+- 上一篇：[05 缓冲管理器](../../L2-storage-engine/learning-path/05-buffer-manager.md)——脏页是怎么被写出去的
 - 本篇：06 堆表与 MVCC
-- 下一篇：[07 B-Tree 索引](../../index-and-query/learning-path/07-btree-index.md)——PG 的默认索引
+- 下一篇：[07 B-Tree 索引](../../L3-index-and-query/learning-path/07-btree-index.md)——PG 的默认索引
 - 相关：[08 锁与并发](./08-locks-and-concurrency.md)（xmax 之外的锁模型）、
-  [13 逻辑复制](../../logical-replication/learning-path/13-logical-replication.md)（tuple 变更怎么流到别的库）、
-  [09 WAL 与恢复](../../wal-and-recovery/learning-path/09-wal-and-recovery.md)（这些页变更怎么进 WAL）
+  [13 逻辑复制](../../L7-logical-replication/learning-path/13-logical-replication.md)（tuple 变更怎么流到别的库）、
+  [09 WAL 与恢复](../../L5-wal-and-recovery/learning-path/09-wal-and-recovery.md)（这些页变更怎么进 WAL）

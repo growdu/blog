@@ -242,9 +242,9 @@ flowchart LR
 
 ## 相关阅读
 
-- [一个仓库，三条产线](../platform-overview/one-repo-three-pipelines.md) —
+- [一个仓库，三条产线](../L1-platform-overview/one-repo-three-pipelines.md) —
   整体架构与三条不变量
-- [从母稿到页面](../build-pipeline/docs-to-public-pipeline.md) —
+- [从母稿到页面](../L3-build-pipeline/docs-to-public-pipeline.md) —
   分类名是在构建期算出来的
-- [内容单元与内容契约](../content-model/content-unit-and-contract.md) —
+- [内容单元与内容契约](../L2-content-model/content-unit-and-contract.md) —
   字段白名单与推导字段

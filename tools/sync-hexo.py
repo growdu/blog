@@ -74,24 +74,24 @@ def prune_excluded_dirs(dirs):
 # Posts to feature in the homepage recommend section (relative to docs/)
 # Higher top value = shown first in the recommend carousel
 FEATURED_POSTS = {
-    "life/road/00-intro.md": 100,
-    "life/road/01-how_to_learn_program.md": 90,
-    "distributed/foundations/分布式存储需要解决的问题.md": 85,
-    "es/oh-my-search.md": 80,
-    "source-tracks/postgresql/logical-replication/逻辑解码DDL-Replay框架设计/index.md": 75,
-    "distributed/consensus/一文读懂openguass dcf网络模块.md": 70,
-    "distributed/foundations/分布式一致性协议.md": 65,
-    "distributed/foundations/分布式系统设计必知必会.md": 60,
-    "source-tracks/postgresql/getting-started/postgresql基操.md": 55,
-    "source-tracks/linux/kernel-internals/linux内核指北.md": 50,
-    "dpdk/dpdk常用接口指北.md": 45,
-    "docker/docker基础指北.md": 40,
-    "ai/07_ChatGPT为什么能对话一篇引用17万次的论文.md": 35,
-    "source-tracks/postgresql/logical-replication/逻辑解码/index.md": 30,
-    "language/rust/rust设计原则.md": 25,
-    "tools/那些你不得不会的提高工作效率的软件神器.md": 20,
-    "source-tracks/linux/networking/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md": 15,
-    "ai/01_开场白目录.md": 10,
+    "source-tracks/life/L1-learning-method/00-intro.md": 100,
+    "source-tracks/life/L1-learning-method/01-how_to_learn_program.md": 90,
+    "source-tracks/distributed/L1-foundations/分布式存储需要解决的问题.md": 85,
+    "source-tracks/engineering/L4-web/oh-my-search.md": 80,
+    "source-tracks/postgresql/L7-logical-replication/逻辑解码DDL-Replay框架设计/index.md": 75,
+    "source-tracks/distributed/L2-consensus/一文读懂openguass dcf网络模块.md": 70,
+    "source-tracks/distributed/L1-foundations/分布式一致性协议.md": 65,
+    "source-tracks/distributed/L1-foundations/分布式系统设计必知必会.md": 60,
+    "source-tracks/postgresql/L1-getting-started/postgresql基操.md": 55,
+    "source-tracks/linux/L3-kernel-internals/linux内核指北.md": 50,
+    "source-tracks/dataplane/L1-environment/dpdk常用接口指北.md": 45,
+    "source-tracks/engineering/L3-container/docker基础指北.md": 40,
+    "source-tracks/ai-tools/L1-concepts/07_ChatGPT为什么能对话一篇引用17万次的论文.md": 35,
+    "source-tracks/postgresql/L7-logical-replication/逻辑解码/index.md": 30,
+    "source-tracks/engineering/L1-basics/rust设计原则.md": 25,
+    "source-tracks/engineering/L3-container/那些你不得不会的提高工作效率的软件神器.md": 20,
+    "source-tracks/linux/L4-networking/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md": 15,
+    "source-tracks/ai-tools/L1-concepts/01_开场白目录.md": 10,
 }
 
 
@@ -101,30 +101,30 @@ FEATURED_POSTS = {
 # table every moved article would be dated with its move commit and jump
 # to the top of "recent posts".  Keyed by docs/-relative path.
 DATE_OVERRIDES = {
-    "life/road/00-intro.md": "2025-04-16 09:20:54",
-    "life/road/01-how_to_learn_program.md": "2025-04-16 09:20:54",
-    "life/road/02-elevate_thinking.md": "2026-09-28 14:48:28",
-    "life/road/左耳朵耗子的话——关于技术的一些思考.md": "2025-04-16 09:20:54",
-    "life/hometown/家中对联.md": "2026-08-06 15:28:11",
-    "life/hometown/家中对联-html.html": "2026-08-11 15:41:57",
-    "life/gaokao/math-methods/index.md": "2026-11-06 21:20:33",
-    "life/gaokao/math-paper2/index.md": "2026-11-08 11:59:40",
-    "life/gaokao/english-roots/index.md": "2026-11-11 12:04:05",
-    "life/gaokao/yunnan-policy/index.md": "2026-11-11 21:00:00",
-    "life/gaokao/yunnan-apply/index.md": "2026-11-11 22:30:00",
-    "life/gaokao/physics-methods/index.md": "2026-11-11 22:50:00",
-    "life/gaokao/chemistry-methods/index.md": "2026-11-11 23:20:00",
-    "life/gaokao/biology-methods/index.md": "2026-11-11 23:50:00",
-    "life/gaokao/politics-methods/index.md": "2026-11-12 02:30:00",
-    "life/gaokao/geography-methods/index.md": "2026-11-12 03:10:00",
-    "life/daxue/电子科技大学-计算机-自考-复习计划/index.md": "2026-10-13 11:28:09",
-    "life/daxue/腾冲事业编-公务员备考计划/index.md": "2026-10-13 11:07:22",
-    "life/shehui/economic-downturn-strategy/index.md": "2026-10-28 14:09:55",
-    "life/shehui/economic-downturn-deep-dive/index.md": "2026-10-28 16:30:00",
-    "life/shehui/media-account/index.md": "2026-11-09 16:01:13",
-    "life/shehui/self-host/index.md": "2026-10-23 14:28:54",
-    "life/shehui/area.md": "2026-10-21 16:38:27",
-    "life/shehui/zhuangxiu.md": "2026-10-21 16:38:27",
+    "source-tracks/life/L1-learning-method/00-intro.md": "2025-04-16 09:20:54",
+    "source-tracks/life/L1-learning-method/01-how_to_learn_program.md": "2025-04-16 09:20:54",
+    "source-tracks/life/L1-learning-method/02-elevate_thinking.md": "2026-09-28 14:48:28",
+    "source-tracks/life/L1-learning-method/左耳朵耗子的话——关于技术的一些思考.md": "2025-04-16 09:20:54",
+    "source-tracks/life/L4-hometown/家中对联.md": "2026-08-06 15:28:11",
+    "source-tracks/life/L4-hometown/家中对联-html.html": "2026-08-11 15:41:57",
+    "source-tracks/life/L2-exam-prep/math-methods/index.md": "2026-11-06 21:20:33",
+    "source-tracks/life/L2-exam-prep/math-paper2/index.md": "2026-11-08 11:59:40",
+    "source-tracks/life/L2-exam-prep/english-roots/index.md": "2026-11-11 12:04:05",
+    "source-tracks/life/L2-exam-prep/yunnan-policy/index.md": "2026-11-11 21:00:00",
+    "source-tracks/life/L2-exam-prep/yunnan-apply/index.md": "2026-11-11 22:30:00",
+    "source-tracks/life/L2-exam-prep/physics-methods/index.md": "2026-11-11 22:50:00",
+    "source-tracks/life/L2-exam-prep/chemistry-methods/index.md": "2026-11-11 23:20:00",
+    "source-tracks/life/L2-exam-prep/biology-methods/index.md": "2026-11-11 23:50:00",
+    "source-tracks/life/L2-exam-prep/politics-methods/index.md": "2026-11-12 02:30:00",
+    "source-tracks/life/L2-exam-prep/geography-methods/index.md": "2026-11-12 03:10:00",
+    "source-tracks/life/L2-exam-prep/电子科技大学-计算机-自考-复习计划/index.md": "2026-10-13 11:28:09",
+    "source-tracks/life/L2-exam-prep/腾冲事业编-公务员备考计划/index.md": "2026-10-13 11:07:22",
+    "source-tracks/life/L3-economy/economic-downturn-strategy/index.md": "2026-10-28 14:09:55",
+    "source-tracks/life/L3-economy/economic-downturn-deep-dive/index.md": "2026-10-28 16:30:00",
+    "source-tracks/life/L3-economy/media-account/index.md": "2026-11-09 16:01:13",
+    "source-tracks/life/L3-economy/self-host/index.md": "2026-10-23 14:28:54",
+    "source-tracks/life/L3-economy/area.md": "2026-10-21 16:38:27",
+    "source-tracks/life/L3-economy/zhuangxiu.md": "2026-10-21 16:38:27",
 }
 
 # Permalinks that changed when docs/life/ was restructured into
@@ -132,23 +132,23 @@ DATE_OVERRIDES = {
 # without the .md extension for single-file posts), value = the new
 # post path.  write_redirects() emits a redirect page at the old URL.
 REDIRECTS = {
-    "00-intro": "life/road/00-intro",
-    "01-how_to_learn_program": "life/road/01-how_to_learn_program",
-    "02-elevate_thinking": "life/road/02-elevate_thinking",
-    "road/左耳朵耗子的话——关于技术的一些思考": "life/road/左耳朵耗子的话——关于技术的一些思考",
-    "hometown/家中对联": "life/hometown/家中对联",
-    "hometown/家中对联-html": "life/hometown/家中对联-html.html",
-    "life/gaokao-math-methods": "life/gaokao/math-methods",
-    "life/gaokao-math-paper2": "life/gaokao/math-paper2",
-    "life/gaokao-english-roots": "life/gaokao/english-roots",
-    "life/电子科技大学-计算机-自考-复习计划": "life/daxue/电子科技大学-计算机-自考-复习计划",
-    "life/腾冲事业编-公务员备考计划": "life/daxue/腾冲事业编-公务员备考计划",
-    "life/economic-downturn-strategy": "life/shehui/economic-downturn-strategy",
-    "life/economic-downturn-deep-dive": "life/shehui/economic-downturn-deep-dive",
-    "life/media-account": "life/shehui/media-account",
-    "life/self-host": "life/shehui/self-host",
-    "life/area": "life/shehui/area",
-    "life/zhuangxiu": "life/shehui/zhuangxiu",
+    "00-intro": "source-tracks/life/L1-learning-method/00-intro",
+    "01-how_to_learn_program": "source-tracks/life/L1-learning-method/01-how_to_learn_program",
+    "02-elevate_thinking": "source-tracks/life/L1-learning-method/02-elevate_thinking",
+    "road/左耳朵耗子的话——关于技术的一些思考": "source-tracks/life/L1-learning-method/左耳朵耗子的话——关于技术的一些思考",
+    "hometown/家中对联": "source-tracks/life/L4-hometown/家中对联",
+    "hometown/家中对联-html": "source-tracks/life/L4-hometown/家中对联-html.html",
+    "life/gaokao-math-methods": "source-tracks/life/L2-exam-prep/math-methods",
+    "life/gaokao-math-paper2": "source-tracks/life/L2-exam-prep/math-paper2",
+    "life/gaokao-english-roots": "source-tracks/life/L2-exam-prep/english-roots",
+    "life/电子科技大学-计算机-自考-复习计划": "source-tracks/life/L2-exam-prep/电子科技大学-计算机-自考-复习计划",
+    "life/腾冲事业编-公务员备考计划": "source-tracks/life/L2-exam-prep/腾冲事业编-公务员备考计划",
+    "life/economic-downturn-strategy": "source-tracks/life/L3-economy/economic-downturn-strategy",
+    "life/economic-downturn-deep-dive": "source-tracks/life/L3-economy/economic-downturn-deep-dive",
+    "life/media-account": "source-tracks/life/L3-economy/media-account",
+    "life/self-host": "source-tracks/life/L3-economy/self-host",
+    "life/area": "source-tracks/life/L3-economy/area",
+    "life/zhuangxiu": "source-tracks/life/L3-economy/zhuangxiu",
 }
 
 
@@ -294,22 +294,22 @@ TOPIC_DEFS = [
 #: material, so a directory name can no longer pick them out.
 #:
 #: The entries are exact article paths rather than directory prefixes:
-#: ``distributed/consensus/openguass dcf源码阅读.md`` (from
-#: ``cluster/DCF/``) and ``distributed/consensus/openguass dcf启动详解.md``
+#: ``source-tracks/distributed/L2-consensus/openguass dcf源码阅读.md`` (from
+#: ``cluster/DCF/``) and ``source-tracks/distributed/L2-consensus/openguass dcf启动详解.md``
 #: (from ``openguass/``) differ by three characters, and only the
 #: former was ever whitelisted.
 DISTRIBUTED_DB_KERNEL = (
-    "distributed/consensus/c-raft分布式存储方案.md",
-    "distributed/consensus/c-rart.md",
-    "distributed/consensus/raft协议动态调整quorum.md",
-    "distributed/consensus/raft重要概念.md",
-    "distributed/consensus/dcf投票系统详解.md",
+    "source-tracks/distributed/L2-consensus/c-raft分布式存储方案.md",
+    "source-tracks/distributed/L2-consensus/c-rart.md",
+    "source-tracks/distributed/L2-consensus/raft协议动态调整quorum.md",
+    "source-tracks/distributed/L2-consensus/raft重要概念.md",
+    "source-tracks/distributed/L2-consensus/dcf投票系统详解.md",
     "distributed/consensus/dcf网络模块详解",
-    "distributed/consensus/dcf写入机制.md",
-    "distributed/consensus/dcf运行机制.md",
-    "distributed/consensus/openguass dcf源码阅读.md",
-    "distributed/consensus/一文读懂openguass dcf网络模块",
-    "distributed/consensus/常用压缩算法编程.md",
+    "source-tracks/distributed/L2-consensus/dcf写入机制.md",
+    "source-tracks/distributed/L2-consensus/dcf运行机制.md",
+    "source-tracks/distributed/L2-consensus/openguass dcf源码阅读.md",
+    "source-tracks/distributed/L2-consensus/一文读懂openguass dcf网络模块",
+    "source-tracks/distributed/L2-consensus/常用压缩算法编程.md",
 )
 
 TOPIC_RULES = {
@@ -369,8 +369,8 @@ TOPIC_RULES = {
         "path_contains": [
             # 伪双写那一组，原先是 cluster/postgresql/ 下的四篇
             "distributed/distributed-storage/haproxy",
-            "distributed/distributed-storage/postgresql伪双写",
-            "distributed/distributed-storage/事务管理",
+            "source-tracks/distributed/L3-ha-and-dr/postgresql伪双写",
+            "source-tracks/distributed/L3-ha-and-dr/事务管理",
             "source-tracks/postgresql/replication-ha",
         ],
         "title_contains": [
@@ -387,14 +387,14 @@ TOPIC_RULES = {
         "path_contains": [
             *DISTRIBUTED_DB_KERNEL,
             # 「分布式一致性协议」那篇原先在 cluster 根目录，现在在「分布式基础」
-            "distributed/foundations/分布式一致性协议",
+            "source-tracks/distributed/L1-foundations/分布式一致性协议",
         ],
         "title_contains": ["Raft", "DCF", "openGauss DCF", "分布式一致性"],
     },
     "性能调优": {
         "path_contains": [
-            "source-tracks/postgresql/extensions-perf/postgresql-flame-graph",
-            "source-tracks/postgresql/logical-replication/postgresql-logical-replication-apply-parallel-tuning",
+            "source-tracks/postgresql/L8-extensions-perf/postgresql-flame-graph",
+            "source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-apply-parallel-tuning",
         ],
         "title_contains": [
             "调优",
@@ -447,8 +447,8 @@ TOPIC_RULES = {
             "pg-challahscript-tips",
             "pg-dont-do-this",
             "postgresql-for-everything",
-            "source-tracks/postgresql/extensions-perf/postgresql-injection-points",
-            "source-tracks/postgresql/extensions-perf/postgresql-community-gems",
+            "source-tracks/postgresql/L8-extensions-perf/postgresql-injection-points",
+            "source-tracks/postgresql/L8-extensions-perf/postgresql-community-gems",
         ],
         "title_contains": [
             "Don't Do This",
@@ -490,7 +490,7 @@ def slugize(name, separator="-"):
 def infer_topics(rel, title):
     """Return the list of topic names a post belongs to.
 
-    rel: docs/-relative path, e.g. 'source-tracks/postgresql/transaction-mvcc/postgresql-mvcc/index.md'.
+    rel: docs/-relative path, e.g. 'source-tracks/postgresql/L4-transaction-mvcc/postgresql-mvcc/index.md'.
     title: post title (already extracted).
     """
     matched = []
@@ -1310,7 +1310,8 @@ def rewrite_images(content, file_dir):
         alt, path = m.group(1), m.group(2)
         if path.startswith(("http://", "https://", "data:", "#")):
             return m.group(0)
-        path = path.lstrip("./")
+        # 解码：图片文件名里也有空格（`%20`），落到磁盘上的是解码后的名字。
+        path = unquote(path).lstrip("./")
         resolved = os.path.normpath(os.path.join(file_dir, path))
         return f"![{alt}](images/{resolved})"
 
@@ -1383,7 +1384,7 @@ def rewrite_links(content, rel):
     """Rewrite relative markdown links to absolute Hexo permalinks.
 
     `rel` is the docs/-relative path of the post being processed, e.g.
-    'source-tracks/postgresql/transaction-mvcc/postgresql-mvcc/index.md'.  Relative links of the form
+    'source-tracks/postgresql/L4-transaction-mvcc/postgresql-mvcc/index.md'.  Relative links of the form
     [text](./other/index.html) are resolved against the post's own
     docs/ directory and replaced with the target's full permalink so
     that the browser navigation from the rendered page lands on a real
@@ -1424,8 +1425,16 @@ def rewrite_links(content, rel):
         # Resolve the link against the post's own directory, keeping the
         # leading ../ segments. Dropping them before normpath() (the old
         # behaviour) mis-resolves any link that points at a sibling
-        # top-level section — e.g. life/aiv/ -> db/postgresql/... — and
+        # top-level section — e.g. source-tracks/blogging/L4-video-pipeline/aiv/ -> db/postgresql/... — and
         # leaves it as a relative URL that 404s on the published site.
+        #
+        # The target is decoded first: the repo writes link targets in two
+        # styles — `%E5%91%BD%E5%90%8D` for a fully percent-encoded path,
+        # `%20` for the space in a file name — and only the decoded form
+        # names the file on disk.  The permalink that comes back is
+        # percent-encoded again by `site_root.permalink()`, so the URL that
+        # ends up in the HTML is unchanged.
+        raw = unquote(raw)
         candidate = os.path.normpath(os.path.join(post_dir, raw))
         # normpath can produce a leading '../' if the link escaped the
         # docs tree entirely — bail out in that case to avoid rewriting
@@ -1700,7 +1709,7 @@ def process(filepath, section_titles, cascades):
     tags_block = categories_yaml(all_tags)
     # 发布契约要读的两个字段，原样搬过去（没有就什么都不加）。
     passthrough = passthrough_block(fm)
-    # 履历表里那一列是现成的摘要素材（见 docs/blog/重构方案.md §八 B5）：
+    # 履历表里那一列是现成的摘要素材（见 docs/source-tracks/blogging/L1-setup/重构方案.md §八 B5）：
     # 源 front matter 里已经写了 description 的以源为准，不覆盖。
     if history_desc and not _fm_scalar(fm, "description"):
         if not _fm_indented_scalar(fm, "description"):
@@ -1862,7 +1871,7 @@ def _redirect_target_file(new_path):
 
     `new_path` 有三种写法，重定向表里三种都有：
 
-    - 带扩展名的 docs 路径（`life/hometown/家中对联-html.html`）
+    - 带扩展名的 docs 路径（`source-tracks/life/L4-hometown/家中对联-html.html`）
     - 不带扩展名的单文件（`db/foo` → `db/foo.md`）
     - bundle 目录（`db/foo` → `db/foo/index.md`）
 
@@ -2192,7 +2201,7 @@ def main():
     for root, dirs, files in os.walk(DOCS):
         # Skip hidden directories (.pytest_cache, .venv, .hilo, .git ...).
         # They are build/tool artefacts that happen to contain .md files;
-        # without this, e.g. docs/life/aiv/pipeline/.pytest_cache/README.md
+        # without this, e.g. docs/source-tracks/blogging/L4-video-pipeline/aiv/pipeline/.pytest_cache/README.md
         # became a published post ("pytest cache directory #") and got its
         # own Gitalk issue on the next deploy.
         dirs[:] = [d for d in dirs if not d.startswith(".")]
@@ -2225,7 +2234,7 @@ def main():
                                 f"ERROR {fp}: shares basename with {twin_md} "
                                 f"but is not suffixed with -html. Rename the .html "
                                 f"file to {os.path.join(root, base_no_ext + '-html.html')} "
-                                f"(see docs/blog/同名文章-html-与-md-版本管理.md).",
+                                f"(see docs/source-tracks/blogging/L2-content/同名文章-html-与-md-版本管理.md).",
                                 file=sys.stderr,
                             )
                             sys.exit(2)
