@@ -200,7 +200,7 @@
       汇总表（把三节点的四种组合和 n 节点的一般情形并成一张），
       再链到同目录 `corosync-qdevice使用.md`、
       `sanlock实现共享corosync共享存储仲裁.md`、
-      `docs/distributed/ha-and-dr/中移动数据库停库问题分析/index.md`
+      `docs/source-tracks/distributed/L3-ha-and-dr/中移动数据库停库问题分析/index.md`
       （一个真实的「失去多数派 → 停库」案例）。
     - 原因：README 的「一句话定位」「一份可带走的产物」「一条自然的内容路径」。
 

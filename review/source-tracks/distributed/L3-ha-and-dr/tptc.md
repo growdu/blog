@@ -15,7 +15,7 @@
 > 本篇已与 `review/distributed/ha-and-dr/tptc_improve.md` 合并。`tptc_improve.md`
 > 是同一场分享的**完整结构化版**（202 行），本篇是它的残缺版（54 行）。
 > 合并口径：以 `tptc_improve` 的结构为骨架，把本篇独有的内容并进去，
-> 正文留在本篇的路径 `docs/distributed/ha-and-dr/tptc.md`；
+> 正文留在本篇的路径 `docs/source-tracks/distributed/L3-ha-and-dr/tptc.md`；
 > `tptc_improve.md` 的正文、审校记录与索引行一并删除。
 > 下面「优先修改」是两份记录的合并版——两份记录指出的同一个问题并成一条，
 > 条目里标了来源；`tptc_improve` 独有的核证工作已搬进「事实待核」。
@@ -45,7 +45,7 @@
      已经把这部分写清楚了，可以直接借。
    - 原因：这是全文最实质的技术内容，恰好被截断。
 
-3. 位置：与 `docs/distributed/ha-and-dr/tptc_improve.md` 的关系（两篇都有）
+3. 位置：与 `docs/source-tracks/distributed/L3-ha-and-dr/tptc_improve.md` 的关系（两篇都有）
    - 问题：两篇 H1 标题**都叫「两地三中心」**，站点上会同时出现两篇同名文章，
      而且其中一篇是另一篇的残缺版。`tptc_improve` 补上了 CAP 铺垫、
      单机→主备→同城双中心→两地三中心的演进链条、observer 与伪主节点、
@@ -179,9 +179,9 @@
     - 建议：开头补定位——「这篇文章回答两个问题：监管对灾备的底线是什么，
       金仓的两地三中心怎么达到它」。结尾补「监管标准 → 等级 → 指标」
       的对照表（一页纸就能查）与一份「故障注入 → 期望结果」的清单，
-      再链到同仓库的 `docs/distributed/ha-and-dr/两地三中心技术指标分析.md`（距离、延迟、
-      丢包率的量化口径）、`docs/distributed/field-notes/多地多中心方案调研/index.md`
-      与 `docs/distributed/ha-and-dr/kingbase两地三中心日常巡检.md`。
+      再链到同仓库的 `docs/source-tracks/distributed/L3-ha-and-dr/两地三中心技术指标分析.md`（距离、延迟、
+      丢包率的量化口径）、`docs/source-tracks/distributed/L4-field-notes/多地多中心方案调研/index.md`
+      与 `docs/source-tracks/distributed/L3-ha-and-dr/kingbase两地三中心日常巡检.md`。
     - 原因：README 的「一句话定位」「一份可带走的产物」「一条自然的内容路径」。
 
 14. 位置：`tptc_improve` 文件结尾（停在空标题上）
@@ -202,8 +202,8 @@
       共享存储仲裁对比、三种架构的详细对比图、两地三中心架构图。
       **三套架构（基础多数派 / 网络仲裁 / 共享存储仲裁）的差别恰恰全在图上**——
       图丢了，2.3 / 2.4 / 2.5 三节就只剩结论没有对照。
-    - 建议：把 PPT 里的架构图补进 `docs/distributed/ha-and-dr/` 下（仓库已有这套
-      本地图片放法，可参考 `docs/distributed/ha-and-dr/中移动数据库停库问题分析/img/`），
+    - 建议：把 PPT 里的架构图补进 `docs/source-tracks/distributed/L3-ha-and-dr/` 下（仓库已有这套
+      本地图片放法，可参考 `docs/source-tracks/distributed/L3-ha-and-dr/中移动数据库停库问题分析/img/`），
       逐图配一句图注；补不进来的段落，改写成不依赖图的文字描述。
     - 原因：这是全文最大的信息缺口。README 的「可复现证据」「一条自然的内容路径」。
 
@@ -224,8 +224,8 @@
       基于 corosync-qdevice，这一节必须写清用的是哪个算法、corosync.conf
       怎么配——否则读者照着配必然配错，而配错要到分区时才发现少一票或多一票。
     - 建议：补一句算法名与配置键。同仓库
-      `docs/distributed/field-notes/corosync-qdevice使用.md` 与
-      `docs/distributed/field-notes/corosync qnet挂死场景分析解决.md` 已经把两个算法的
+      `docs/source-tracks/distributed/L4-field-notes/corosync-qdevice使用.md` 与
+      `docs/source-tracks/distributed/L4-field-notes/corosync qnet挂死场景分析解决.md` 已经把两个算法的
       硬前提写清楚了，可以直接引用。
     - 原因：涉及配置，必须可回溯。
 
@@ -351,11 +351,11 @@
   其后无任何内容；2.7 也只有两行过渡句。
 - [x] 2.7 之前各节的标题层级完整（`## 0 开场词` / `## 1 方案概述` /
   `## 2 方案实现` / `### 2.1`~`### 2.6`）——结构本身没问题，缺的是内容与图。
-- [x] 交叉引用目标都存在 —— `docs/distributed/ha-and-dr/两地三中心技术指标分析.md`、
-  `docs/distributed/field-notes/多地多中心方案调研/index.md`、
-  `docs/distributed/ha-and-dr/kingbase两地三中心日常巡检.md`、
-  `docs/distributed/field-notes/corosync-qdevice使用.md`、
-  `docs/distributed/field-notes/corosync qnet挂死场景分析解决.md` 均在仓库里，
+- [x] 交叉引用目标都存在 —— `docs/source-tracks/distributed/L3-ha-and-dr/两地三中心技术指标分析.md`、
+  `docs/source-tracks/distributed/L4-field-notes/多地多中心方案调研/index.md`、
+  `docs/source-tracks/distributed/L3-ha-and-dr/kingbase两地三中心日常巡检.md`、
+  `docs/source-tracks/distributed/L4-field-notes/corosync-qdevice使用.md`、
+  `docs/source-tracks/distributed/L4-field-notes/corosync qnet挂死场景分析解决.md` 均在仓库里，
   可以直接链（已实测 `sync-hexo.py` 的 `_resolve_link_target` 能解出真 permalink）。
 - [不适用] 「A、B、C 类系统」这套字母写法的出处 —— 本轮正文**没有沿用字母
   写法**：改成 JR/T 0044-2008 的原词「第一/二/三类」并写明依据是**时间敏感性**。
@@ -396,7 +396,7 @@
   生产中心/同城灾备中心/observer/伪主节点）、2.2 的三张多数派示意、
   2.3 网络仲裁投票图、2.4 共享存储仲裁图、2.5 三架构对比图、
   2.7 两地三中心三可用区图。仓库已有本地图片机制（参考
-  `docs/distributed/ha-and-dr/中移动数据库停库问题分析/img/`），逐图配一句图注。
+  `docs/source-tracks/distributed/L3-ha-and-dr/中移动数据库停库问题分析/img/`），逐图配一句图注。
 - 实验或观测：给一组可复现的观察点——切换前后的集群视图
   （谁在投票、谁是主、谁是伪主）、同步关系如何重建、
   网络隔离后少数派如何自 fence；再给一份「故障注入 → 期望结果」
@@ -406,8 +406,8 @@
   在「最后一个节点存活」「少于半数仍可用」「防脑裂」「多集群共用仲裁」
   「额外成本（额外机器 vs 独立存储设备）」五个维度上逐项对照。
 - 结尾清单或下一篇链接：结尾给「监管文件 → 灾难恢复等级 → RTO/RPO 区间 →
-  对应架构」的一页纸对照表；再链到 `docs/distributed/ha-and-dr/两地三中心技术指标分析.md`
-  （距离／延迟／丢包率的量化口径）、`docs/distributed/field-notes/多地多中心方案调研/index.md`
+  对应架构」的一页纸对照表；再链到 `docs/source-tracks/distributed/L3-ha-and-dr/两地三中心技术指标分析.md`
+  （距离／延迟／丢包率的量化口径）、`docs/source-tracks/distributed/L4-field-notes/多地多中心方案调研/index.md`
   （横向方案调研），以及同目录 `kingbase两地三中心日常巡检.md`（日常怎么巡检）。
 
 ## 已确认的改动
@@ -415,7 +415,7 @@
 两篇记录的 22 条建议逐条落地，正文改动如下：
 
 1. 合并两篇：正文以 `tptc_improve` 的结构为骨架留在
-   `docs/distributed/ha-and-dr/tptc.md`，`tptc_improve.md` 的正文、审校记录与索引行
+   `docs/source-tracks/distributed/L3-ha-and-dr/tptc.md`，`tptc_improve.md` 的正文、审校记录与索引行
    删除（第 3 条）。
 2. 开头补「编写人 / 编写内容 / 编写时间」表与定位导语：先给两个真实故障场景
    （中心整个不可达 / 中心之间链路抖动导致双主），再点明本文要回答的两个问题

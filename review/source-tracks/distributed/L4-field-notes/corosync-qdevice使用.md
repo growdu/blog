@@ -270,7 +270,7 @@
       与「qdevice 怎么装、怎么配、怎么验证」）；结尾补一份
       「配置项速查表 + 验证命令 + 故障排查清单」，再链到同目录
       `corosync qnet挂死场景分析解决.md`、`sanlock实现共享corosync共享存储仲裁.md`，
-      以及 `docs/distributed/ha-and-dr/中移动数据库停库问题分析/index.md`
+      以及 `docs/source-tracks/distributed/L3-ha-and-dr/中移动数据库停库问题分析/index.md`
       （一个真实的「失去多数派 → 停库」案例）。
     - 原因：README 的「一句话定位」「一份可带走的产物」「一条自然的内容路径」。
 

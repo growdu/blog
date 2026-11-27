@@ -181,7 +181,7 @@
       缓冲区、`createNewFile` 的父目录、`mkdir` vs `mkdirs`、Python 不用
       `with` 会漏句柄），再链到相关的数据库/存储文章。
     - 原因：README 的「一份可带走的产物」与「一条自然的内容路径」两条要求。
-      这篇是 `docs/base/` 下唯一一篇既是技术文章又完全没有结尾产物的。
+      这篇是 `docs/source-tracks/engineering/L1-basics/` 下唯一一篇既是技术文章又完全没有结尾产物的。
 
 ## 事实待核
 
@@ -220,8 +220,8 @@
 - [不适用] C# 段落里 `File.Create` 返回的 `FileStream` 默认缓冲大小与
   `FileOptions` —— 本轮正文没有写这两项：建议 15 只要求把路径拼写改对、
   补一个真正往文件里写东西的例子，都没有涉及缓冲。要补得先查 .NET 文档。
-- [不适用] `docs/language/` 下是否已有讲文件/IO 的文章 —— 搜过了：
-  `docs/language/` 下只有内存、autoconf、cmake、变长数组、词法分析这些，
+- [不适用] `docs/source-tracks/engineering/L1-basics/` 下是否已有讲文件/IO 的文章 —— 搜过了：
+  `docs/source-tracks/engineering/L1-basics/` 下只有内存、autoconf、cmake、变长数组、词法分析这些，
   **没有**讲文件/IO 的文章，所以本篇不存在重复。本轮**没有扩语言覆盖范围**
   （扩到更多语言属于扩写，不在本次改动范围里），改为在「延伸阅读」一节
   链到本仓库确实相关的三篇：`source-tracks/postgresql/extensions-perf/pg_io_调优`、

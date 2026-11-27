@@ -196,7 +196,7 @@
       单点在哪 / 挂了会怎样 / 该形态适合什么场景），这张表本身就能复用；
       再链到同目录 `中移动数据库停库问题分析/index.md`、
       `调整corosync网络波动时间操作文档/index.md`，
-      以及 `docs/distributed/ha-and-dr/tptc.md`（伪主节点与 observer
+      以及 `docs/source-tracks/distributed/L3-ha-and-dr/tptc.md`（伪主节点与 observer
       那一套）。
     - 原因：README 的「一句话定位」「一份可带走的产物」「一条自然的内容路径」。
 
@@ -225,7 +225,7 @@
     - 建议：换成官方文档站并标明版本；
       L77 补一句 CMS 是什么（以及 DCF 与 CMS 的分工——CMS 管集群状态，
       DCF 管数据复制），并链到本仓库的
-      `docs/distributed/consensus/一文读懂openguass dcf网络模块.md`。
+      `docs/source-tracks/distributed/L2-consensus/一文读懂openguass dcf网络模块.md`。
     - 原因：涉及版本与引用；README 的「问题边界」与「一条自然的内容路径」。
 
 ## 事实待核
@@ -291,7 +291,7 @@
   `docs-opengauss.osinfra.cn/zh/docs/5.0.0/...` 200；
   **只有 `http://www.oceanbase.wiki/concept/...` 连接失败（curl 返回 000）**。
 - [x] 缺图 —— L56 说「oracle site Guard的详细架构如下图所示：」，但
-  L58 紧接「### 结论」；`docs/distributed/ha-and-dr/ha元信息常见存储方式/img/` 下
+  L58 紧接「### 结论」；`docs/source-tracks/distributed/L3-ha-and-dr/ha元信息常见存储方式/img/` 下
   只有 4 张图（mha_arch、openguass_same_city、openguass_three_center、
   oceanbase_arch），**没有 Site Guard 的图**。其余 3 处引用与图一一对应。
 - [x] AIF-05 命中的 L81~L112 是平行结论 —— openGauss 与 OceanBase 两条
@@ -317,7 +317,7 @@
   `github.com/yoshinorim/mha4mysql-manager` 与 `mha4mysql-node`
   （Perl），「mha node 主动上报、manager 无状态」这个结论可以直接从
   `MHA::Manager` 与 `masterha_check_status` 的代码路径看出来；
-  openGauss 侧对应 DCF（`docs/distributed/consensus/一文读懂openguass dcf网络模块.md`
+  openGauss 侧对应 DCF（`docs/source-tracks/distributed/L2-consensus/一文读懂openguass dcf网络模块.md`
   已在本仓库）与 CMS 的集群元信息维护；
   OceanBase 侧对应 Paxos 组与租户元信息（官方《容灾部署方案》已给全图）。
 - 实验或观测：给一个**可复现的对照实验**——把同一个「元信息单点」
@@ -335,7 +335,7 @@
   （这套 HA 方案的元信息存在哪 → 它挂了会怎样 → 谁来兜底 →
   兜底本身是不是新的单点）；再链到同目录
   `中移动数据库停库问题分析/index.md`（一个真实的「quorum 判定 + 单点」
-  案例）与 `docs/distributed/ha-and-dr/tptc.md`。
+  案例）与 `docs/source-tracks/distributed/L3-ha-and-dr/tptc.md`。
 
 ## 已确认的改动
 

@@ -163,7 +163,7 @@
         且 5.2 标题说「关系图」，正文里**并没有图**，问号更显得空。
       - L9 是一个裸的 `[TOC]`。`tools/sync-hexo.py` 生成的 front matter 只有
         title/date/author/categories/tags，**没有 `toc:` 字段**（第 1302 行）；
-        全树只有 2 篇文档用了这个写法（本文与 `docs/video_work/video.md`）。
+        全树只有 2 篇文档用了这个写法（本文与 `docs/source-tracks/blogging/L4-video-pipeline/video.md`）。
         是否会渲染成目录，取决于主题对正文里 `[TOC]` 占位符的支持。
     - 建议：标题统一成不带问号（5.2 若真没有图就补图，或改成
       「五大组件的职责划分」）；`[TOC]` 在本地 `hexo server` 里看一眼渲染结果——

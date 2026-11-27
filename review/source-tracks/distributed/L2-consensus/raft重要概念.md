@@ -177,7 +177,7 @@
     - 建议：开头补定位与编写信息；结尾给「状态迁移表 + 两种 RPC 的接收方
       判据 + 持久化三件套」这三张表的索引，再链到同目录的
       `raft协议动态调整quorum.md`、`c-raft分布式存储方案.md`，
-      以及已合入的 `docs/distributed/foundations/分布式一致性协议.md`（那篇讲的是
+      以及已合入的 `docs/source-tracks/distributed/L1-foundations/分布式一致性协议.md`（那篇讲的是
       「哪些问题 Raft 解决不了」，正好是本文的下一步）。
     - 原因：README 的「一句话定位」「一份可带走的产物」「一条自然的内容路径」。
 
@@ -198,10 +198,10 @@
     - 原因：README 的「技术深度检查」；也正好对上博客「数据库内核与
       分布式系统」这条支柱该有的密度。
 
-12. 位置：与 `docs/distributed/consensus/raft协议动态调整quorum.md` 的关系
+12. 位置：与 `docs/source-tracks/distributed/L2-consensus/raft协议动态调整quorum.md` 的关系
     - 问题：仓库里有**两份逐字节相同**的文件——
-      `docs/distributed/consensus/raft协议动态调整quorum.md` 与
-      `docs/distributed/consensus/raft协议动态调整quorum.md`（`diff` 无输出，
+      `docs/source-tracks/distributed/L2-consensus/raft协议动态调整quorum.md` 与
+      `docs/source-tracks/distributed/L2-consensus/raft协议动态调整quorum.md`（`diff` 无输出，
       两份都是 36 行，H1 都是「raft协议动态调整quorum」）。
       站点上会出现两篇完全一样的文章。
     - 建议：留一份、删一份（保留 `raft/` 目录下的那份，与本篇同目录，
@@ -304,8 +304,8 @@
   返回 200；`sofastack.tech/projects/sofa-jraft/raft-introduction/` 返回 200；
   `segmentfault.com/a/1190000020962361` 与
   `segmentfault.com/a/1190000038170806` 均返回 **410 Gone**。
-- [x] raft 目录里的重复文件 —— `docs/distributed/consensus/raft协议动态调整quorum.md` 与
-  `docs/distributed/consensus/raft协议动态调整quorum.md` **逐字节相同**
+- [x] raft 目录里的重复文件 —— `docs/source-tracks/distributed/L2-consensus/raft协议动态调整quorum.md` 与
+  `docs/source-tracks/distributed/L2-consensus/raft协议动态调整quorum.md` **逐字节相同**
   （`diff` 无输出，均 36 行，H1 同为「raft协议动态调整quorum」）。
 - 原文 L77 里的「leader index」到底指 `prevLogIndex` 还是 `nextIndex` ——
   论文里两个概念都存在（`prevLogIndex` 是新条目之前那条的 index，
@@ -340,7 +340,7 @@
 - 结尾清单或下一篇链接：三张表（状态迁移表 / 两种 RPC 的接收方判据 /
   持久化三件套）+ 一份「实现前必须想清楚的十个问题」清单；
   再链到同目录 `raft协议动态调整quorum.md`、`c-raft分布式存储方案.md`，
-  以及已合入的 `docs/distributed/foundations/分布式一致性协议.md`。
+  以及已合入的 `docs/source-tracks/distributed/L1-foundations/分布式一致性协议.md`。
 
 ## 已确认的改动
 

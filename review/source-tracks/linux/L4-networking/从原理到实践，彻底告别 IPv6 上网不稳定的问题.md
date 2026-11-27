@@ -56,11 +56,11 @@
      拿到 JPEG。也就是说，真实浏览器打开本站时能显示，但整篇图文
      全押在知乎的反盗链策略上——策略一收紧，读者看到的就是满屏裂图；
      用 RSS 阅读器、纯文本浏览器或图片代理的读者更是直接看不到图。
-   - 建议：把 14 张唯一的图下载到仓库本地（参考 `docs/dpdk/dpdk_image/`
+   - 建议：把 14 张唯一的图下载到仓库本地（参考 `docs/source-tracks/dataplane/L1-environment/dpdk_image/`
      的做法），正文改成相对路径。这篇文章的图是它唯一的原创资产
      （抓包截图、示意图），放在别人的图床上风险与收益完全不对等。
    - 原因：README 的「用证据建立技术感」；素材可控性。
-   - 落地：14 张唯一图片下载到 `docs/source-tracks/linux/networking/ipv6_img/`（文件名带序号与
+   - 落地：14 张唯一图片下载到 `docs/source-tracks/linux/L4-networking/ipv6_img/`（文件名带序号与
      知乎的 hash 前缀，便于回溯），正文全部改成相对路径
      `ipv6_img/NN-<hash>.jpg`。图片总数 16 处引用、14 个唯一文件
      （`01-db461f4d3a44.jpg` 被用了两次）。`tools/sync-hexo.py` 的
@@ -227,14 +227,14 @@
       网页慢/视频卡 → 抓 SYN 与 SYN-ACK 比 MSS → 拨号路由器开 MSS Clamping；
       仍然不稳 → `ping -f -l` 测 PMTU → 降源端 MTU 或照搬 4G 的 MSS=1300。
       再链到同目录的 `【网络】MTU相关网络丢包问题分析处理.md`、
-      `pmtu概述.md`，以及 `docs/source-tracks/linux/networking/vpn/` 下的隧道相关内容。
+      `pmtu概述.md`，以及 `docs/source-tracks/linux/L4-networking/vpn/` 下的隧道相关内容。
     - 原因：README 的「一份可带走的产物」「一条自然的内容路径」。
     - 落地：新增「## 症状 → 怎么确认 → 怎么处置」三列表，五行覆盖
       慢/卡、钳了还丢、没有 IPv6 地址、改完 MTU 全断、IPv6 优先反而更慢
       五种情形；新增「## 延伸阅读」，链到同目录三篇
       （`【网络】MTU相关网络丢包问题分析处理.md`、`pmtu概述.md`、
       `mtu路径发现pmtu详解.md`），实测三条都能解出真 permalink。
-      `docs/source-tracks/linux/networking/vpn/` 下两篇是客户端使用教程、与隧道 MTU 无关，
+      `docs/source-tracks/linux/L4-networking/vpn/` 下两篇是客户端使用教程、与隧道 MTU 无关，
       没有链过去。
 
 15. 位置：全文（与同目录其它文章的关系）
@@ -374,8 +374,8 @@
   固定 1452 与按 PMTU 自适应各自的失效场景（路径变了以后固定值就不准了）；
   以及 Catalyst 9K 那种「开了反而变慢」的软件交换 / COPP 坑。
 - 结尾清单或下一篇链接：结尾给「症状 → 怎么确认 → 怎么处置」三列表；
-  再链到 `docs/source-tracks/linux/networking/【网络】MTU相关网络丢包问题分析处理.md`、
-  `docs/source-tracks/linux/networking/pmtu概述.md`、`docs/source-tracks/linux/networking/vpn/` 与本仓库的
+  再链到 `docs/source-tracks/linux/L4-networking/【网络】MTU相关网络丢包问题分析处理.md`、
+  `docs/source-tracks/linux/L4-networking/pmtu概述.md`、`docs/source-tracks/linux/L4-networking/vpn/` 与本仓库的
   PostgreSQL 流复制/网络抖动相关文章。
 
 ## 已确认的改动
@@ -389,7 +389,7 @@
 4. 新开「## 怎么确认自己是 PMTU 黑洞」：抓包方法 + 三行判断表
    （1440/1440 没钳、1440/1432 钳住了、1440/1300 钳过头了），
    「下图这样」这类双图引用删掉（第 2 条）。
-5. 14 张唯一图片下载到 `docs/source-tracks/linux/networking/ipv6_img/`，正文全部改成相对路径；
+5. 14 张唯一图片下载到 `docs/source-tracks/linux/L4-networking/ipv6_img/`，正文全部改成相对路径；
    16 处引用、14 个文件，目录里没有一张用不上的图（第 3 条）。
 6. 「## 为什么 IPv4 很少遇到这个问题」重写：IPv4 允许中间节点分片
    （效率代价）、IPv6 不允许（RFC 8200，分片信息在扩展头里），
