@@ -313,6 +313,63 @@ def rewrite_relative_links(moves, targets, report, categories=None):
     return changed_links
 
 
+def learning_alias_map():
+    """老赛道 id → 新赛道 id。
+
+    真相在规则表里：`data/learning-path.json` 的每条赛道可以带一个
+    `aliases` 字段，列着它以前叫什么。老地址还得能进（别名页），
+    文章正文里写死的地址也得跟着改 —— 同一份真相，两处用。
+    """
+    try:
+        with open(os.path.join(REPO, "data/learning-path.json"),
+                  encoding="utf-8") as fh:
+            rules = json.load(fh)
+    except (OSError, ValueError):
+        return {}
+    out = {}
+    for track in rules.get("tracks", []):
+        for alias in track.get("aliases", []):
+            out[alias] = track["id"]
+    return out
+
+
+def rewrite_learning_links(report):
+    """把文章正文里写死的旧赛道地址改成新赛道地址。
+
+    赛道改过名字（db-internals → postgresql、linux-network → linux），
+    正文里写死的 `/learning/<老 id>/` 会指向一个不存在的赛道页。
+
+    老专题页（`/learning/db-internals/<某个中文专题>/`）早就跟着
+    2026-11-19 那次分类页退休一起没了 —— 它们的落点是**赛道页**，
+    不是某个专题页。
+    """
+    aliases = learning_alias_map()
+    if not aliases:
+        return 0
+    changed_files = 0
+    for rel in sorted(_walk_docs()):
+        if not rel.endswith(".md"):
+            continue
+        path = os.path.join(DOCS, rel)
+        with open(path, encoding="utf-8") as fh:
+            text = fh.read()
+        new_text = text
+        for alias, track_id in sorted(aliases.items(),
+                                      key=lambda kv: -len(kv[0])):
+            # 先处理带专题的那一截（顺序不能反：短的那一截是长的一截的前缀）
+            new_text = re.sub(
+                r"/learning/%s/[^/\s)\"']+/" % re.escape(alias),
+                "/learning/%s/" % track_id, new_text)
+            new_text = new_text.replace("/learning/%s/" % alias,
+                                        "/learning/%s/" % track_id)
+        if new_text != text:
+            with open(path, "w", encoding="utf-8") as fh:
+                fh.write(new_text)
+            changed_files += 1
+    report.append("旧赛道地址：改了 %d 个文件" % changed_files)
+    return changed_files
+
+
 def category_targets(table):
     """解散的旧分类页 → 新分类地址。
 
@@ -450,7 +507,10 @@ def do_move(old_rel, new_rel):
     os.makedirs(os.path.dirname(new_abs), exist_ok=True)
     r = git("mv", os.path.join("docs", old_rel), os.path.join("docs", new_rel))
     if r.returncode != 0:
-        raise RuntimeError("git mv 失败：%s -> %s\n%s" % (old_rel, new_rel, r.stderr))
+        # 没入库的文件 `git mv` 不动它（"not under version control"）。
+        # 这种文件本来就还没有历史，退回普通改名 —— 别把内容丢了。
+        shutil.move(old_abs, new_abs)
+        return "moved-untracked"
     return "moved"
 
 
@@ -494,6 +554,21 @@ def save_resolved(articles, assets):
                   ensure_ascii=False, indent=2, sort_keys=True)
 
 
+def prune_empty_dirs(root):
+    """删掉空目录（从深到浅）。返回删掉的目录列表。"""
+    removed = []
+    for dirpath, dirnames, filenames in os.walk(root, topdown=False):
+        if os.path.abspath(dirpath) == os.path.abspath(root):
+            continue
+        if not os.listdir(dirpath):
+            try:
+                os.rmdir(dirpath)
+                removed.append(os.path.relpath(dirpath, root))
+            except OSError:
+                pass
+    return removed
+
+
 def plan_moves(table):
     """把迁移表摊平成一份「要执行的动作清单」。"""
     moves = effective_map(table)
@@ -504,25 +579,68 @@ def plan_moves(table):
         actions.append(("out", old_rel, new_rel))
     for old_rel in sorted(table.get("drop_index", [])):
         actions.append(("drop", old_rel, None))
+    for old_rel in sorted(table.get("drop_files", [])):
+        actions.append(("drop_file", old_rel, None))
     return actions, moves
+
+
+def index_actions(table):
+    """旧目录页（`_index.md`）的动作。
+
+    四种去向：
+
+    - `index_map`：跟着目录搬走（系列目录 → 阶段目录、赛道目录 → 赛道目录）；
+    - `index_archive`：搬不走的，存进 `internal/legacy-index/` ——
+      **不删**：`_index.md` 是不发布的目录页，可里面有人手写的东西
+      （PostgreSQL 那张「数据库总览」的总图、人生那条阅读路线）；
+    - `index_keep`：原地不动 —— 已经落在新结构里的那几份
+      （`source-tracks/_index.md` 与四个赛道目录页），`write_index_files()`
+      会在原地合并；
+    - 名单之外的：一律归档。留在 `docs/` 里就是一份没人维护的旧结构说明，
+      分类链还可能多出一级。
+
+    返回 `[(动作, 旧路径, 新路径)]`，动作是 `move` / `archive` / `keep`。
+    """
+    index_map = table.get("index_map", {})
+    index_archive = table.get("index_archive", {})
+    index_keep = set(table.get("index_keep", []))
+    out = []
+    for rel in table.get("drop_index", []):
+        if rel in index_map:
+            out.append(("move", rel, index_map[rel]))
+        elif rel in index_archive:
+            out.append(("archive", rel, index_archive[rel]))
+        elif rel in index_keep:
+            out.append(("keep", rel, None))
+        else:
+            out.append(("archive", rel, "internal/legacy-index/" + rel))
+    return out
 
 
 def asset_moves(table, moves):
     """随文章一起搬的资源文件（图片等）。
 
-    规则：凡是落在 `dir_map` 目录下的非文章文件，跟着目录一起搬 ——
-    图片的站内 URL 是 `images/<docs 相对路径>`，不跟着搬就会指向旧路径。
+    **优先读迁移表里的 `asset_map`**（逐文件的落点）。理由：顶层目录
+    会被拆到多个阶段，「跟着目录搬」这条规则表达不了；而文章目录里的
+    **子目录**（`code/xxx/assets/`）也不是「文章旁边的同级文件」，
+    两条老规则都认不出来。`asset_map` 是一张一对一的全表，逐文件说了算。
+
+    表里没有的，才退回下面两条老规则：
+
+    1. 凡是落在 `dir_map` 目录下的非文章文件，跟着目录一起搬 ——
+       图片的站内 URL 是 `images/<docs 相对路径>`，不跟着搬就会指向旧路径；
+    2. 逐篇搬的文章旁边的资源文件（同一目录下的图片）。
 
     ``_index.md`` **不算资源**：它是分类链的载体（``cascade.categories``），
     搬走它等于把一个分类悄悄改名。被搬文章旁边的 ``_index.md`` 留在原地。
     """
-    out = {}
+    out = dict(table.get("asset_map", {}))
     for old_dir, new_dir in table.get("dir_map", {}).items():
         prefix = old_dir.rstrip("/") + "/"
         for rel in _walk_docs():
             if not rel.startswith(prefix):
                 continue
-            if _is_article(rel) or _is_index_file(rel):
+            if _is_article(rel) or _is_index_file(rel) or rel in out:
                 continue
             out[rel] = new_dir.rstrip("/") + "/" + rel[len(prefix):]
     # 逐篇搬的文章旁边的资源文件（同一目录下的图片）
@@ -565,21 +683,42 @@ def _projects(table):
 
 
 # 目录名 → 中文显示名。分类链与 URL 里的中文都靠它。
-TOP_DISPLAY_NAMES = {"source-tracks": "源码主线", "distributed": "分布式与架构"}
-PROJECT_DISPLAY_NAMES = {"postgresql": "PostgreSQL", "linux": "Linux"}
+#
+# **顶层目录名只写死这一个**：`source-tracks/` 装的是全部内容，
+# 它的中文名是「内容库」—— 不再是「源码主线」（那名字只覆盖了
+# 搬之前的 270 篇，搬完是 590 篇全覆盖）。
+# 赛道名与阶段名不写死 —— 从 `data/learning-path.json` 读（§7.1）。
+TOP_DISPLAY_NAMES = {"source-tracks": "内容库"}
+TOP_DESCRIPTION = "内容库：全站内容按「赛道 → 阶段」两层组织，每条赛道从入门排到进阶。"
+
+
+def _rule_titles():
+    """`data/learning-path.json` → `{赛道id: 赛道名}`。
+
+    **赛道名与阶段名的唯一来源是规则表**（§7.1）。再手写一份中文名，
+    两份必然漂移 —— 那正是 `docs/platform-meta/info-architecture/` 里
+    说的「一个站有两个真相」。
+    """
+    path = os.path.join(REPO, "data", "learning-path.json")
+    if not os.path.isfile(path):
+        return {}
+    with open(path, encoding="utf-8") as fh:
+        rules = json.load(fh)
+    return {t["id"]: t["title"] for t in rules.get("tracks", [])}
 
 
 def write_index_files(table, moves, report):
     """给新树写 `_index.md`。
 
     每个目录页带 `cascade.categories` —— `sync-hexo.py` 的
-    `read_cascade_categories()` 靠它把分类链拼出来（源码主线 → PostgreSQL
-    → 存储引擎）。
+    `read_cascade_categories()` 靠它把分类链拼出来（内容库 → PostgreSQL
+    源码内核 → 起步与全景）。
 
     2026-11-19：分类页整套退休了，这条链不再生成任何页面 —— 它现在只
     当**检索维度**用（学习路径的归类规则、搜索索引都读它）。链条本身
     还得拼全：少一级，文章就归不进对应的赛道。
     """
+    titles = _rule_titles()
     made = []
     tops_done = set()
     for proj in _projects(table):
@@ -590,38 +729,37 @@ def write_index_files(table, moves, report):
 
         # 顶层：docs/<target_root 的第一段>/_index.md
         #
-        # **落点只有一段时（`distributed/`）顶层页就是项目页** ——
-        # 写两遍会把「## 系列」那一节吃掉：第二遍写进去的正文里没有
-        # 「本系列文章」这一节，`_merge_article_section()` 遇到这种情况
-        # 一个字都不动，于是项目页的系列清单永远补不上。
+        # **落点只有一段时顶层页就是项目页** ——
+        # 写两遍会把「## 阶段」那一节吃掉：第二遍写进去的正文里没有
+        # 「本系列文章」这一节，项目页没有，于是项目页的阶段清单
+        # 永远补不上。
         top = parts[0]
         top_cn = TOP_DISPLAY_NAMES.get(top, top)
         single_segment = len(parts) == 1
         if top not in tops_done and not single_segment:
             tops_done.add(top)
             made.append(_write_index(
-                f"{top}/_index.md", top_cn, top_cn,
-                f"{top_cn}：按「一条主线走到底」的顺序组织的内容。",
+                f"{top}/_index.md", top_cn, top_cn, TOP_DESCRIPTION,
                 [], table))
 
         # 中间层（target_root 有三段以上时才有；两段时这一层是空的）
         for depth in range(2, len(parts)):
             rel_dir = "/".join(parts[:depth])
             name = parts[depth - 1]
-            cn = PROJECT_DISPLAY_NAMES.get(name, name)
+            cn = titles.get(name, name)
             made.append(_write_index(
                 f"{rel_dir}/_index.md", cn, cn, f"{cn} 主线。", [], table))
 
-        # 项目层：项目目录页 + 它下面的系列目录页。
+        # 项目层：项目目录页 + 它下面的阶段目录页。
         #
         # 项目目录页**不能少** —— 少了它，分类链就少一级：文章的
-        # cascade 只有「源码主线」和系列名（源码主线 → 存储引擎），
-        # 而不是完整的链条（源码主线 → PostgreSQL → 存储引擎）。
+        # cascade 只有「内容库」和阶段名，而不是完整的链条
+        # （内容库 → PostgreSQL 源码内核 → 起步与全景）。
         # 分类页退休后这条链只用于归类，缺一级文章就归不进对应赛道。
         proj_dir = target_root
         proj_name = parts[-1]
         proj_cn = (proj.get("display_name")
-                   or PROJECT_DISPLAY_NAMES.get(proj_name, proj_name))
+                   or titles.get(proj_name, proj_name))
         series_lines = []
         for slug, scn in series_cn.items():
             desc = series_meta.get(slug, f"{proj_cn} 的{scn}方向。")
@@ -630,13 +768,12 @@ def write_index_files(table, moves, report):
                 desc, _series_articles(moves, f"{proj_dir}/{slug}/"),
                 table))
             series_lines.append(f"- [{scn}](./{slug}/_index.md)")
-        # 「源码主线」是 `source-tracks/` 专属的说法；别的落点（`distributed/`）
-        # 叫「专题」。
-        kind = "源码主线" if target_root.startswith("source-tracks/") else "专题"
+        # `source-tracks/` 下装的是**赛道**；别的落点叫「专题」。
+        kind = "赛道" if target_root.startswith("source-tracks/") else "专题"
         made.append(_write_index(
             f"{proj_dir}/_index.md", proj_cn, proj_cn,
-            f"{proj_cn} {kind}：{len(series_cn)} 个系列，由浅入深。",
-            [], table, extra=["## 系列", ""] + series_lines + [""]))
+            f"{proj_cn} {kind}：{len(series_cn)} 个阶段，由浅入深。",
+            [], table, extra=["## 阶段", ""] + series_lines + [""]))
     report.append(f"目录页：新建 {len(made)} 个")
     return made
 
@@ -726,9 +863,9 @@ def _write_index(rel, title, parent_cn, description, articles, table, extra=None
         if old == body:
             return rel
         # 目录页可能被人手写过 —— 项目目录页后来并进了一整张几百行的
-        # 「数据库总览」。整篇覆盖会把那些内容抹掉，所以**只刷新
-        # 「本系列文章」那一节**，其余原样保留。
-        merged = _merge_article_section(old, body)
+        # 「数据库总览」。整篇覆盖会把那些内容抹掉，所以**换掉 front
+        # matter 和文章清单，中间的手写正文留着**。
+        merged = _merge_index(old, body)
         if merged != old:
             with open(path, "w", encoding="utf-8") as fh:
                 fh.write(merged)
@@ -738,38 +875,108 @@ def _write_index(rel, title, parent_cn, description, articles, table, extra=None
     return rel
 
 
-ARTICLE_SECTION = "## 本系列文章"
+ARTICLE_SECTION = "本系列文章"
+
+FM_RE = re.compile(r"\A---\n(.*?)\n---\n", re.S)
+SECTION_RE = re.compile(r"(?m)^##[ \t]+(.+?)[ \t]*$")
 
 
-def _section_span(text, heading):
-    """一节（`## 标题`）在文本里的起止位置。
+def _split_fm(text):
+    """front matter 与正文分开。
 
-    一节从标题行开始，到下一个 `## ` 之前为止。找不到返回 None。
+    两种写法都要认：
+
+    - 标准的 `---` 分隔（`_write_index()` 生成的那种）；
+    - **没有分隔线的** —— 手写的目录页就是长这样（`docs/life/_index.md`、
+      `docs/source-tracks/postgresql/_index.md`）：开头一段顶格的
+      `key: value` 就是 front matter，遇到第一个空行结束。
+      `sync-hexo.py` 读 `cascade.categories` 用的是正则，不挑写法；
+      迁移脚本得跟它对齐。
     """
-    start = text.find("\n" + heading + "\n")
-    if start < 0:
-        if text.startswith(heading + "\n"):
-            start = 0
+    m = FM_RE.match(text)
+    if m:
+        return m.group(1), text[m.end():]
+    fm_lines = []
+    for line in text.split("\n"):
+        if not line.strip():
+            break
+        if re.match(r"^[A-Za-z_][\w-]*:", line) or line[:1] in (" ", "\t"):
+            fm_lines.append(line)
         else:
-            return None
-    else:
-        start += 1
-    nxt = re.search(r"(?m)^## ", text[start + len(heading) + 1:])
-    end = start + len(heading) + 1 + nxt.start() if nxt else len(text)
-    return start, end
+            break
+    if not fm_lines:
+        return "", text
+    block = "\n".join(fm_lines)
+    return block, text[len(block):].lstrip("\n")
 
 
-def _merge_article_section(old, body):
-    """只把「本系列文章」那一节换成新的，其余原样保留。"""
-    new_span = _section_span(body, ARTICLE_SECTION)
-    if not new_span:
-        # 新版没有这一节（项目目录页就是）—— 旧文一个字都不动。
-        return old
-    new_sec = body[new_span[0]:new_span[1]]
-    old_span = _section_span(old, ARTICLE_SECTION)
-    if not old_span:
-        return old.rstrip("\n") + "\n\n" + new_sec.rstrip("\n") + "\n"
-    return old[:old_span[0]] + new_sec + old[old_span[1]:]
+def _fm_value(fm, key):
+    m = re.search(r'^%s:\s*["\']?(.+?)["\']?\s*$' % re.escape(key),
+                  fm, re.MULTILINE)
+    return m.group(1).strip() if m else ""
+
+
+def _split_sections(text):
+    """正文按 `## ` 标题切成若干节。
+
+    返回 `(前言, [(标题, 该节正文)])` —— 前言是第一个 `## ` 之前的内容。
+    """
+    matches = list(SECTION_RE.finditer(text))
+    if not matches:
+        return text.strip(), []
+    head = text[:matches[0].start()].strip()
+    out = []
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        out.append((m.group(1).strip(), text[m.start():end].strip()))
+    return head, out
+
+
+def _merge_index(old, body):
+    """新的目录页 + 旧的手写正文 → 一份。
+
+    **三件事**：
+
+    1. **front matter 用新的** —— `title` 与 `cascade.categories` 是
+       分类链的输入（`sync-hexo.py` 的 `resolve_post_categories()` 读它），
+       旧的那份带着旧阶段名，留着就是两份真相；
+    2. **旧正文里手写的段落留着** —— PostgreSQL 那张「数据库总览」的
+       总图、人生那条「路径 A / B / C」的阅读路线，整篇覆盖就没了；
+    3. **「本系列文章」那一节用新的** —— 文章清单变了。
+    """
+    old_fm, old_body = _split_fm(old)
+    new_fm, new_body = _split_fm(body)
+    new_head, new_sections = _split_sections(new_body)
+    old_head, old_sections = _split_sections(old_body)
+
+    # 旧的小节在前（保持作者写的顺序），新的小节替换同名或补在后面。
+    merged = dict(old_sections)
+    for heading, content in new_sections:
+        if heading == "阶段" and "系列" in merged:
+            # 旧的那一节（「## 系列」）被新的（「## 阶段」）取代 ——
+            # 两份都留着，读者会看到两张阶段清单。
+            del merged["系列"]
+        merged[heading] = content
+    parts = [new_head.strip()]
+    prose = _old_prose(old_head, old_fm)
+    if prose:
+        parts.append(prose)
+    for content in merged.values():
+        parts.append(content.strip())
+
+    return "---\n%s\n---\n\n%s\n" % (new_fm.strip(),
+                                     "\n\n".join(p for p in parts if p))
+
+
+def _old_prose(old_head, old_fm):
+    """旧正文里手写的那部分（去掉 H1 与旧的 description）。"""
+    text = old_head.strip()
+    if text.startswith("# "):
+        text = text.split("\n", 1)[1] if "\n" in text else ""
+    desc = _fm_value(old_fm, "description")
+    if desc and text.strip().startswith(desc.strip()):
+        text = text.strip()[len(desc.strip()):]
+    return text.strip()
 
 
 # --------------------------------------------------------------------------
@@ -806,6 +1013,14 @@ def build_redirects(moves, existing=None):
     重复文章时，旧 URL 的日期段跟新文件对不上，键里带上日期才落得准。
     ``moves`` 推不出这种条目，所以从旧表里留着；同一条路径的普通键
     （日期由新文件决定，落错地方的那个）去掉，免得白生成一个多余的页面。
+
+    **老重定向要链式归并**（2026-11-26）：上一轮的 320 条重定向，
+    目标**全部**是这一轮要搬的路径。照搬就会让老 URL 跳到一个
+    这一轮之后就不存在的中间地址上。所以：
+
+        新表[旧键] = 新表.get(旧表[旧键], 旧表[旧键])
+
+    即：旧键的目标如果也在本轮被搬了，就把它的目标改成**最终新路径**。
     """
     out = {}
     for old_rel, new_rel in sorted(moves.items()):
@@ -818,7 +1033,11 @@ def build_redirects(moves, existing=None):
         dated[key] = value
         out.pop(m.group("path"), None)
     out.update(dated)
-    return out
+    # 链式归并：旧键的目标如果也在本轮被搬了，指最终新路径
+    merged = {}
+    for key, value in out.items():
+        merged[key] = out.get(value, value)
+    return merged
 
 
 def build_date_overrides(moves, dates_before, out_map=None):
@@ -882,6 +1101,11 @@ def rewrite_refs(targets, moves, report):
     （`/2023/09/14/source-tracks/postgresql/getting-started/postgresql源码编译/`）。日期在迁移前后不变
     （这正是 `DATE_OVERRIDES` 存在的意义），所以只换路径那一段。
     站上有两种写法 —— 中文未编码的、百分号编码的 —— 两种都要替。
+
+    **替换按「长的先替」**（2026-11-26）：`docs` / `flat` / `postid` / `cid`
+    四种写法互相包含 —— `ai/x` 是 `ai/x.md` 的前缀，`ai/x/index.md` 又是
+    `ai/x` 的延伸。先替短的会把长的吃掉（`ai/x` 替完，`ai/x/index.md`
+    已经不成其为原来那串了），替出来的地址是错的。
     """
     total = 0
     for rel_file, form in targets:
@@ -893,26 +1117,74 @@ def rewrite_refs(targets, moves, report):
             text = fh.read()
         original = text
         hits = 0
-        for old_rel, new_rel in sorted(moves.items()):
-            if form == "permalink":
-                pairs = _permalink_pairs(old_rel, new_rel)
-            else:
+        if form == "permalink":
+            pairs = []
+            for old_rel, new_rel in moves.items():
+                pairs.extend(_permalink_pairs(old_rel, new_rel))
+            text, hits = _replace_loose(text, pairs)
+        else:
+            table = {}
+            for old_rel, new_rel in moves.items():
                 old_form = path_forms(old_rel)[form]
                 new_form = path_forms(new_rel)[form]
                 if old_form == new_form:
                     continue
-                pairs = [(old_form, new_form)]
-            for old_text, new_text in pairs:
-                if old_text not in text:
-                    continue
-                hits += text.count(old_text)
-                text = text.replace(old_text, new_text)
+                table[old_form] = new_form
+            text, hits = _replace_paths(text, table)
         if text != original:
             with open(path, "w", encoding="utf-8") as fh:
                 fh.write(text)
             report.append(f"外部引用：{rel_file} 改了 {hits} 处")
             total += hits
     return total
+
+
+#: 路径左右两侧不能是这些字符 —— 否则就不是「一条路径」，而是
+#: 某个更长的标识符的一部分（`ai/x` 出现在 `ai/xyz` 里就是这种情况）。
+_PATH_EDGE = r"[0-9A-Za-z_.\-]"
+
+
+def _replace_paths(text, table):
+    """把文本里的路径按 `table` 换掉。
+
+    **只在路径的两侧是「边界」时才换**：`ai/x` 不许在 `ai/xyz` 里被替掉，
+    也不许在 `mail/x` 里被替掉。宁可漏改（人来看一眼），不可改错。
+
+    长的先替：同一个表里 `ai/x/index.md` 与 `ai/x` 同时存在时，
+    先替长的。
+    """
+    if not table:
+        return text, 0
+    items = sorted(table.items(), key=lambda kv: (-len(kv[0]), kv[0]))
+    pattern = re.compile(
+        "(?<!" + _PATH_EDGE + ")(?:"
+        + "|".join(re.escape(old) for old, _ in items)
+        + ")(?!" + _PATH_EDGE + ")")
+
+    def repl(m):
+        return table[m.group(0)]
+
+    return pattern.subn(repl, text)
+
+
+def _replace_loose(text, pairs):
+    """把文本里的路径按 `pairs` 换掉（**不查边界**）。
+
+    给站内绝对地址用：那种写法自带前后两个斜杠
+    （`/2023/09/14/old/path/`），前后是日期段和域名 ——
+    「边界」检查会把日期里的数字当成路径的一部分，判成不是路径。
+    """
+    hits = 0
+    table = {}
+    for old, new in pairs:
+        if old and old != new:
+            table[old] = new
+    for old, new in sorted(table.items(), key=lambda kv: (-len(kv[0]), kv[0])):
+        if old not in text:
+            continue
+        hits += text.count(old)
+        text = text.replace(old, new)
+    return text, hits
 
 
 def _permalink_pairs(old_rel, new_rel):
@@ -969,7 +1241,8 @@ def main():
     print(f"迁移表：{args.map}")
     print(f"  文章搬迁 {len(moves)} 篇，资源 {len(assets)} 个，"
           f"移出 {len(table.get('out_map', {}))} 篇，"
-          f"删除目录页 {len(table.get('drop_index', []))} 个")
+          f"删除目录页 {len(table.get('drop_index', []))} 个，"
+          f"删除文件 {len(table.get('drop_files', []))} 个")
     by_series = {}
     for new_rel in moves.values():
         key = "/".join(new_rel.split("/")[:3])
@@ -998,23 +1271,47 @@ def main():
     # 2. 先改链接 —— 解析要对着旧树，搬完就解析不到了
     targets = dict(moves)
     targets.update(assets)
+    # 旧目录页（`_index.md`）也搬了，指向它们的相对链接要跟着改
+    targets.update(table.get("index_map", {}))
     categories = category_targets(table)
     rewrite_relative_links(moves, targets, report, categories)
 
+    # 2.5 旧赛道地址（`/learning/db-internals/` 之类）改成新的
+    rewrite_learning_links(report)
+
     # 3. 搬
     stats = {}
+    index_acts = {rel: (act, new) for act, rel, new in index_actions(table)}
     for kind, old_rel, new_rel in actions:
         if kind == "in":
             r = do_move(old_rel, new_rel)
         elif kind == "out":
             r = do_move_out(old_rel, new_rel)
-        else:
+        elif kind == "drop_file":
             abs_old = os.path.join(DOCS, old_rel)
             if os.path.exists(abs_old):
                 res = git("rm", "-f", os.path.join("docs", old_rel))
-                r = "removed" if res.returncode == 0 else "failed"
+                if res.returncode != 0:
+                    os.remove(abs_old)
+                r = "removed"
             else:
                 r = "skip-missing"
+        else:
+            # 旧目录页：跟着搬 / 归档 / 原地不动
+            act, target = index_acts.get(old_rel, ("drop", None))
+            if act == "move":
+                r = do_move(old_rel, target)
+            elif act == "archive":
+                r = do_move_out(old_rel, target)
+            elif act == "keep":
+                r = "kept"
+            else:
+                abs_old = os.path.join(DOCS, old_rel)
+                if os.path.exists(abs_old):
+                    res = git("rm", "-f", os.path.join("docs", old_rel))
+                    r = "removed" if res.returncode == 0 else "failed"
+                else:
+                    r = "skip-missing"
         stats[r] = stats.get(r, 0) + 1
     for old_rel, new_rel in sorted(assets.items()):
         if os.path.basename(old_rel) == ".DS_Store":
@@ -1025,6 +1322,14 @@ def main():
         stats[r] = stats.get(r, 0) + 1
     report.append("搬运：" + "，".join(f"{k} {v}" for k, v in sorted(stats.items())))
     save_resolved(moves, assets)
+
+    # 3.5 扫掉搬空了的目录
+    #
+    # git 不跟踪空目录，但它们留在工作区里会让「`docs/` 下还剩几个顶层目录」
+    # 这个问题答错 —— 搬完之后 `docs/` 应当只剩 `source-tracks/`。
+    emptied = prune_empty_dirs(DOCS)
+    if emptied:
+        report.append(f"空目录：清掉 {len(empted)} 个")
 
     # 4. 新目录页
     write_index_files(table, moves, report)

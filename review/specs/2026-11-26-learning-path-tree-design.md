@@ -187,8 +187,15 @@ docs/
 | --- | --- |
 | `code/assemble-work/`、`code/c-sharp-work/`、`code/c-work/`、`code/gui-work/`、`code/html-work/`、`code/JavaScript-work/`、`code/java-work/`、`code/shell-work/` | 每个里面都只有一个 `readme.md`，扁平后 8 个 `readme.md` 撞在同一个路径上 |
 
-**深度分布**：515 篇文章落在「赛道/阶段/文件」三层，71 篇落在四层，
-4 篇落在五层。没有一篇多一层是白带的。
+**深度分布**（`tools/build-tree-migration.py` 算出来的，不是估的）：
+373 篇落在「赛道/阶段/文件」三层，209 篇落在四层，7 篇落在五层，1 篇落在六层。
+多出来的那几层**不是白带的**：
+
+- 四层 = bundle 目录。目录里有 `index.md` 的，它的名字就是它的地址 ——
+  扁平掉就成了两个 `index.md` 摞在一起（§4.1 条件 ②）；
+- 五层、六层 = bundle 目录下面本来就有子目录
+  （`code/c-work/simple-editor/`、`life/aiv/brand/scripts/`），
+  「顶层目录下面的结构原样保留」这条规则要求它们留着。
 
 **落点逐赛道核对**（搬完之后用这个表验收）：
 
@@ -218,24 +225,44 @@ docs/
 | `docs/source-tracks/linux/` 下 5 个系列目录 | 同上 | 同上 |
 | `docs/pcap/`（5 个抓包文件） | 归到 `linux/L4-networking/pcap/` | 都是网络协议阶段的素材，跟着那批文章走 |
 | `docs/src/`（C 测试代码，无任何文章引用） | 移出 `docs/` 到 `internal/` | docusaurus 时代的遗留，谁也不引用 |
-| **跨阶段共用的图片（3 个）** | **复制**到两个阶段目录，不是移动 | 见下 |
+| **顶层目录里的散落资源** | 逐个定去留（删 / 跟目录走 / 归到指定阶段） | 见下 |
 
-**跨阶段资源怎么落位。** 图片的引用是按「文章所在目录相对」的，
-所以资源必须跟着**每一篇引用它的文章**走。实测 1085 个资源文件、
-105 个被引用，其中 **3 个被两个阶段的文章同时引用**：
+**资源（图片等）怎么落位。** 图片的引用是按「文章所在目录相对」解析的，
+所以资源必须跟着**引用它的那篇文章**走。实测 `docs/` 下有 **1084 个非文章文件**
+（图片、源码附件、抓包文件、字节码、编辑器配置），其中 **139 个**被文章引用
+（`![...](...)` 与 `<img src=...>` 两种写法都算）。
 
-| 资源 | 引用它的阶段 |
+| 事实 | 数字 |
 | --- | --- |
-| `dpdk/vpp_image/15min_6g_no_drop.png` | `dataplane/L1-environment` + `dataplane/L4-testing` |
-| `dpdk/vpp_image/15min_no_drop.png` | 同上 |
-| `dpdk/vpp_image/1workers_15min_no_drop.png` | 同上 |
+| 被引用的资源 | 139 |
+| **同时被两个阶段的文章引用** | **0** |
+| 有主（所在目录里有文章，能跟着走）的资源 | 1037 |
+| 无主（所在目录里没有文章）的资源 | 47 |
 
-这三个文件**复制**（不是移动）到两个阶段目录下，两篇文章的相对引用都不用改。
-其余 102 个被引用资源跟着文章一起走。
+**0 个跨阶段 —— 早期稿子里的「3 个跨阶段共用图片」是错的。**
+`dpdk/vpp_image/15min*.png` 这三个文件确实存在，但引用它们的文章
+（`dpdk/nxp测试报告/`、`dpdk/fastup测试报告/`）各有**自己的** `vpp_image/` 副本，
+两批文章也落在同一个阶段里。早期结论是路径解析算错了（用的是漏绑 `sl` 的那份落点表）。
+
+**结论：资源不需要复制，只需要搬。** 这让搬运表的复杂度降了一档 ——
+没有「一份资源两个去处」的情况，`asset_map` 是一张一对一的全表。
+
+47 个无主资源分四类，逐个定去留：
+
+| 类 | 数量 | 去向 | 理由 |
+| --- | --- | --- | --- |
+| `docs/alg/alg_img/*.webp` | 19 | **删** | 与 `docs/alg/B-树如何使查询更快/alg_img/` 里的同名文件**逐字节相同**（md5 一致），文章引用的是后者；这个目录是没人收的旧拷贝 |
+| `docs/code/**`（没有 `readme.md` 的工程目录：`flex_bison_test/`、`python-work/`） | 17 | 跟 `code/` 走 → `engineering/L2-tooling/` | 它们是 `code/` 那条线的素材，只是没有配套文章 |
+| `docs/pcap/*.pcap` | 5 | → `linux/L4-networking/pcap/` | 网络协议阶段的素材 |
+| `docs/src/test/**` | 5 | 移出 `docs/` → `internal/` | 见上 |
+| `docs/environment/vfox使用指南` | 1 | **删** | 0 字节的空文件 |
+| `docs/report_restructured.pptx` | 1 | 移出 `docs/` → `internal/` | 一次重排的交付物，不是文章 |
 
 这条要落到 `tools/migrate-tree.py` 上：现有的 `asset_moves()` 只会跟着
-**目录**搬资源，一旦一个顶层目录被拆到多个阶段就会漏。
-本次要给它加一条「按文章引用复制」的分支。
+**目录**搬资源，一旦一个顶层目录被拆到多个阶段就会漏；
+而且它只认「文章旁边的同级文件」，认不出文章目录里的子目录。
+本次给迁移表加一段 `asset_map`（旧路径 → 新路径，逐文件），
+`asset_moves()` 先读它，读不到再退回原来的两条规则。
 
 ### 4.4 34 个顶层目录逐条去向
 
@@ -348,26 +375,57 @@ docs/
 
 | 段 | 现在 | 这次 |
 | --- | --- | --- |
-| `dir_map` | 35 条 | 34 条（34 个顶层目录各自的去向） |
+| `dir_map` | 35 条 | **0 条** —— 顶层目录会拆到多个阶段，目录级规则表达不了，全部逐篇写进 `file_map` |
 | `file_map` | 186 条 | **590 条**（逐篇落点，含 3 篇 `.html`） |
-| `out_map` | 2 条 | 资源归位：`docs/pcap/` → `linux/L4-networking/pcap/`、`docs/environment/` → 对应阶段 |
-| `drop_index` | 13 条 | 13 份 `_index.md`（分类页退休后不再需要） |
+| `asset_map` | （没有这一段） | **961 条**（资源的逐文件落点；新增段） |
+| `out_map` | 2 条 | **102 条**：解包的 pptx 成品（96 个 OOXML 文件）、`docs/src/test/**`（5 个）、`docs/report_restructured.pptx`（1 个）→ 全部进 `internal/` |
+| `drop_files` | （没有这一段） | **22 条**（删掉的东西：`docs/alg/alg_img/` 的 18 个重复 webp、`docs/environment/vfox使用指南`、`docs/source-tracks/postgresql/.claude/settings.json`、2 个 `__pycache__` 里的 .pyc；新增段） |
+| `drop_index` | 13 条 | 现在 `docs/` 下的**全部** `_index.md`（75 条） |
+| `index_map` | （没有这一段） | **42 条** —— 跟着目录搬走的旧目录页（系列目录 → 阶段目录、赛道目录 → 赛道目录） |
+| `index_archive` | （没有这一段） | **28 条** —— 搬不走的旧目录页，存进 `internal/legacy-index/<原路径>` |
+| `index_keep` | （没有这一段） | **5 条** —— 原地不动的：`source-tracks/_index.md` 与四个已经在赛道目录上的赛道页 |
 | `projects` | 3 块 | **11 块**（每条赛道一块） |
-| `ref_rewrites` | 16 条（其中 2 条指向已删除的文件） | 按新 grep 重建（§8.1） |
-| `category_redirects` | 13 条 | 重算（新分类链的名字） |
+| `ref_rewrites` | 16 条（其中 2 条指向已删除的文件） | 按新 grep 重建（§8.1），**2376 条** |
+| `category_redirects` | 13 条 | 重算（新分类链的名字），**67 条** |
 
 `file_map` 的 590 条直接由 §4.2 那个落点脚本生成 ——
 **同一个脚本既算落点、又生成搬运表**，不留「文档里的表」和「脚本算的表」两份。
+
+#### 旧目录页的三种去向
+
+`_index.md` 现在是**不发布**的目录页（分类页 2026-11-19 已退休），
+它只当分类链的载体（`cascade.categories`）。
+可它里面有人手写的东西 —— PostgreSQL 那张「数据库总览」的 mindmap 总图、
+人生那条「路径 A / B / C」的阅读路线。**删了就没了**；
+留在 `docs/` 里又变成一份没人维护的旧结构说明。折中是分三种去向：
+
+| 去向 | 落点规则 | 条数 |
+| --- | --- | --- |
+| `index_map`（跟着搬） | ① 赛道目录 → 新的赛道目录；② 系列目录 → 新的阶段目录；③ 其余目录 → 它底下文章的落点（**只认赛道目录和阶段目录** —— 阶段目录下面再放一份 `_index.md`，分类链就变成四级，文章归不进赛道） | 42 |
+| `index_archive`（归档） | 落点找不到一个共同的祖先，或者落在阶段目录下面 —— 存进 `internal/legacy-index/<原路径>`。**不删**：那些手写的东西还在，只是不再挂在 `docs/` 里 | 28 |
+| `index_keep`（原地不动） | 已经落在新结构里的那几份：`source-tracks/_index.md` 与四个赛道目录页。由 `write_index_files()` 在原地合并 | 5 |
+
+**一个新目录只放得下一份目录页**：文章多的那个赢，
+系列目录优先于内容目录（它就是这一段的主页）—— 其余的归档。
+
+这个脚本落在仓库里：`tools/build-tree-migration.py`。
+它是**一次性的**（跑完就固化在 `data/tree-migration.json` 里），
+但留在仓库里有个好处：以后再搬一次目录，落点是算出来的，不是手抄的。
+它必须可重跑 —— 同样的输入产出同样的表。
 
 ### 5.5 `migrate-tree.py` 要改哪几处
 
 | 函数 | 要改什么 |
 | --- | --- |
-| `asset_moves()` | 加「跨阶段复制」分支（§4.3 的 3 个文件） |
+| `asset_moves()` | 先读迁移表新增的 `asset_map` 段（逐文件落点），读不到再退回原来的两条规则 |
 | `write_index_files()` | `projects` 扩到 11 块；名字从 `data/learning-path.json` 读；顶层改名「内容库」（§7） |
+| `index_actions()` | 新增：旧目录页的去向（`move` / `archive` / `keep`）。原先 `drop_index` 里的每一份都是 `git rm` —— 那会把 PostgreSQL 那张「数据库总览」的总图一起删掉 |
+| `_merge_index()` | 新增：目录页合并。**front matter 用新的**（`cascade.categories` 是分类链的输入，旧的那份带着旧阶段名，留着就是两份真相），**手写正文留着**（总图、人生的阅读路线），**「本系列文章」那一节用新的**。老目录页**没有 `---` 分隔线**（`sync-hexo.py` 用正则读 `cascade`，不挑写法），拆分 front matter 时要认这两种 |
 | `build_redirects()` | 加链式归并（§6.1.1） |
+| `rewrite_learning_links()` | 新增：正文里写死的旧赛道地址（`/learning/db-internals/`）改成新赛道地址 —— 真相在 `data/learning-path.json` 的 `aliases` 里 |
 | `rewrite_refs()` | 不改逻辑，改 `ref_rewrites` 清单（§8.1） |
 | `do_move()` | 不改逻辑，但要处理那篇未入库的 WIP（`git mv` 不动没入库的文件） |
+| `main()` | 加 `drop_files` 段的执行（删文件） |
 
 `data/migration-moves.json`（上一轮的解析清单，67 KB）先归档改名，
 让脚本从头推（§6.4）。
@@ -611,7 +669,7 @@ Ceph，还有 AI、人生、博客、平台元数据。顶层分类还叫「源�
 
 ### 8.2 `tools/build-learning-path.py` 里有一处写死的赛道地址
 
-`tools/build-learning-path.py:507`（生成学习路径首页那段）里写着：
+`tools/build-learning-path.py`（生成学习路径首页那段）里写着：
 
 ```python
 "已经在写数据库内核 | 直接进 [数据库内核](%s) 的 **L7** |" % _rooted_path("/learning/db-internals/"),
@@ -624,6 +682,9 @@ Ceph，还有 AI、人生、博客、平台元数据。顶层分类还叫「源�
 pg = next(t for t in tracks if t["id"] == "postgresql")
 ... _rooted_path("/learning/%s/" % pg["id"])
 ```
+
+已经改掉了，落在 `_deep_dive_cell()` 里：赛道 id、赛道名、阶段 id、
+阶段名全部从 `data/learning-path.json` 读，写死一处就漂一处。
 
 ### 8.3 站内绝对地址 `/learning/<赛道id>/` 要手工改
 
@@ -664,7 +725,7 @@ pg = next(t for t in tracks if t["id"] == "postgresql")
 
 | 东西 | 位置 | 处理 |
 | --- | --- | --- |
-| 解包的 pptx 成品 | `docs/source-tracks/postgresql/logical-replication/sqlserver/unpacked/`（7 个文件，含 `ppt/slides/` 等 OOXML） | 移出 `docs/` 到 `internal/` |
+| 解包的 pptx 成品 | `docs/source-tracks/postgresql/logical-replication/sqlserver/unpacked/`（**96 个文件**，含 `ppt/slides/` 等 OOXML） | 移出 `docs/` 到 `internal/` |
 | Python 字节码 | `docs/code/python-work/pytest/__pycache__/`、`docs/code/python-work/yaml_test/__pycache__/` | 删除（加进 `.gitignore`） |
 | 编辑器配置 | `docs/source-tracks/postgresql/.claude/` | 删除（加进 `.gitignore`） |
 | 空文件 | `docs/environment/vfox使用指南`（0 字节，内容与 `docs/computer_communication/现代信息查询与检索技巧.md` 重复） | 删除 |
@@ -782,7 +843,7 @@ npx hexo generate                                                  # 产物构�
 | 重定向条目 | 320 | ≥ 910（320 + 590，且每条目标都存在） |
 | 代码与配置里硬编码的旧 `docs/` 路径 | 243 处 | **0** |
 | 落点冲突 | — | 0（§4.2 的脚本必须复算通过） |
-| 资源丢失 | 1085 | 1085（3 个跨阶段的复制成两份，共 1088） |
+| 资源丢失 | 1083 | 961（搬到新树）+ 102（移出 `docs/` 进 `internal/`）+ 20（删掉：18 个重复 webp、1 个空文件、1 个编辑器配置；另 2 个 `.pyc` 早已不在树上） |
 
 最后一条 `path_regex` 是这次搬家真正的验收标志：**规则表里一条正则都不剩。**
 

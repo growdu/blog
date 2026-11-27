@@ -181,7 +181,7 @@ mindmap
 
 > 本节进入 PG 18 仓库 `~/cwork/postgresql/src` 的源码级深拆。每篇都带 **文件:行号** 标注、**多张 mermaid 图**、可重现的 GDB 路径与输出示例。
 >
-> 详细目录见 [PostgreSQL 源码修炼之路:内核深度拆解专题](/learning/db-internals/)。
+> 详细目录见 [PostgreSQL 源码修炼之路:内核深度拆解专题](/learning/postgresql/)。
 
 ### 5.1 逻辑复制 — 入口与全链路
 - [PostgreSQL 18 CREATE_REPLICATION_SLOT 全链路分析](replication-ha/postgresql-create-replication-slot-deep-dive/index.html)
@@ -211,8 +211,8 @@ mindmap
 - [PostgreSQL 共享内存机制](storage-engine/postgresql-shared-memory/index.html) — DSM / DSA / 固定 MemoryContext
 
 ### 5.5 学习路径与早期专题
-- [PostgreSQL 源码修炼之路 — 存储引擎内核开发者进阶地图](/learning/db-internals/) — 主线 14 章框架
-- [PostgreSQL 源码修炼之路:内核深度拆解专题](/learning/db-internals/) — 本节完整目录
+- [PostgreSQL 源码修炼之路 — 存储引擎内核开发者进阶地图](/learning/postgresql/) — 主线 14 章框架
+- [PostgreSQL 源码修炼之路:内核深度拆解专题](/learning/postgresql/) — 本节完整目录
 
 ---
 
@@ -255,9 +255,9 @@ mindmap
 
 | 数据库 | 路径 | 一句话 |
 |---|---|---|
-| MySQL | [docs/db/mysql(/learning/db-internals/%E6%89%A9%E5%B1%95%E3%80%81%E6%80%A7%E8%83%BD%E4%B8%8E%E7%94%9F%E6%80%81/) | [macOS 安装 MySQL](extensions-perf/macos%E5%AE%89%E8%A3%85mysql.md) |
-| SQL Server / Babelfish | [docs/db/sqlserver(/learning/db-internals/%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6%E4%B8%8E%E6%B5%81%E5%BC%8F/) | DDL / 分区表 / 兼容性对比 |
-| TDengine | [docs/db/taos(/learning/db-internals/%E6%89%A9%E5%B1%95%E3%80%81%E6%80%A7%E8%83%BD%E4%B8%8E%E7%94%9F%E6%80%81/) | [TDengine 基本使用](extensions-perf/taos%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.md) |
+| MySQL | [docs/db/mysql(/learning/postgresql/) | [macOS 安装 MySQL](extensions-perf/macos%E5%AE%89%E8%A3%85mysql.md) |
+| SQL Server / Babelfish | [docs/db/sqlserver(/learning/postgresql/) | DDL / 分区表 / 兼容性对比 |
+| TDengine | [docs/db/taos(/learning/postgresql/) | [TDengine 基本使用](extensions-perf/taos%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8.md) |
 | 跨库对比 | — | [数据库命名空间机制对比](getting-started/%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4.md) / [多数据库模式命名空间问题](getting-started/%E5%A4%9A%E6%95%B0%E6%8D%AE%E5%BA%93%E6%A8%A1%E5%BC%8F%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E9%97%AE%E9%A2%98.md) / [数据库选型维度](getting-started/database-selection-dimensions/index.html) |
 | 数据库专精路径 | — | [数据库专精路径分类](getting-started/database-specialization-taxonomy/index.html) |
 
@@ -269,7 +269,7 @@ mindmap
 - [PostgreSQL 逻辑复制性能测试总结](logical-replication/%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6%E6%80%A7%E8%83%BD%E6%B5%8B%E8%AF%95.md)
 - [PostgreSQL 逻辑复制性能分析:火焰图实战](extensions-perf/postgresql-flame-graph/index.html)
 - [PostgreSQL 逻辑复制 spill 文件深度剖析:TPC-C 100WH](logical-replication/postgresql-logical-replication-spill-deep-dive/index.html)
-- [BenchmarkSQL 基准测试](/learning/db-internals/%E6%89%A9%E5%B1%95%E3%80%81%E6%80%A7%E8%83%BD%E4%B8%8E%E7%94%9F%E6%80%81/)
+- [BenchmarkSQL 基准测试](/learning/postgresql/)
 - [flame-graph-analysis](extensions-perf/flame-graph-analysis/index.html) — 通用 perf / 火焰图分析
 
 ---
@@ -285,7 +285,7 @@ mindmap
 ## 11. 职业与成长
 
 - [如何成为资深的 PostgreSQL 内核开发者](getting-started/postgresql-senior-kernel-developer/index.html) — 0 → Committer 的 18 个月路线 + 36 个内核主题地图 + 12 大子系统架构
-- [PostgreSQL 源码修炼之路 — 存储引擎内核开发者进阶地图](/learning/db-internals/) — 主线 14 章框架
+- [PostgreSQL 源码修炼之路 — 存储引擎内核开发者进阶地图](/learning/postgresql/) — 主线 14 章框架
 - [PostgreSQL 不要这样用](extensions-perf/pg-dont-do-this/index.html) — 反面教材
 - [PostgreSQL Challahscript 实用技巧](extensions-perf/pg-challahscript-tips/index.html) — SQL / psql 实战技巧
 
@@ -295,10 +295,10 @@ mindmap
 - [PostgreSQL 部分专题(Part 1)](getting-started/part1.md) — 早期草稿合集
 - [PostgreSQL 常用函数速查](index-and-query/pg%E5%B8%B8%E7%94%A8%E5%87%BD%E6%95%B0.md) — 系统表 / 函数 / 视图
 - [使用 meson 编译 PostgreSQL](getting-started/%E4%BD%BF%E7%94%A8meson%E7%BC%96%E8%AF%91pg.md) — meson build 实战
-- [PostgreSQL 源码修炼之路:内核深度拆解专题](/learning/db-internals/) — 完整专题目录
-- [PostgreSQL 逻辑解码完整目录](/learning/db-internals/%E9%80%BB%E8%BE%91%E5%A4%8D%E5%88%B6%E4%B8%8E%E6%B5%81%E5%BC%8F/) — 早期专题合集
+- [PostgreSQL 源码修炼之路:内核深度拆解专题](/learning/postgresql/) — 完整专题目录
+- [PostgreSQL 逻辑解码完整目录](/learning/postgresql/) — 早期专题合集
 - [PostgreSQL 共享内存机制(深入版)](storage-engine/linux-shared-memory/index.html)
-- [PostgreSQL 源码修炼之路专题](/learning/db-internals/) — 同上
+- [PostgreSQL 源码修炼之路专题](/learning/postgresql/) — 同上
 
 ---
 
@@ -307,11 +307,11 @@ mindmap
 | 页面 | 路径 |
 |---|---|
 | 首页 | [docs/(/) |
-| 数据库深入(旧) | [docs/db/](/learning/db-internals/) |
-| PostgreSQL(旧) | [docs/pgsql/(/learning/db-internals/) |
+| 数据库深入(旧) | [docs/db/](/learning/postgresql/) |
+| PostgreSQL(旧) | [docs/pgsql/(/learning/postgresql/) |
 | openGauss(旧) | [docs/openguass/(../openguass/index.html) |
 | 分布式与架构 | [docs/distributed/](/learning/distributed/) |
-| Linux 内核 | [docs/source-tracks/linux/](/learning/linux-network/) |
+| Linux 内核 | [docs/source-tracks/linux/](/learning/linux/) |
 
 ## 参考
 - PostgreSQL 官方文档 [postgresql.org/docs/18](https://www.postgresql.org/docs/18/)

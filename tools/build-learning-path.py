@@ -60,6 +60,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from site_root import permalink as _permalink  # noqa: E402
 from site_root import rooted_path as _rooted_path  # noqa: E402
+from site_root import absolute_url as _absolute_url  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 POSTS_DIR = REPO_ROOT / "source" / "_posts"
@@ -422,6 +423,8 @@ def classify(posts: list[dict], rules: dict) -> tuple[list[dict], list[dict]]:
 
         tracks.append({
             "id": spec["id"],
+            # 老赛道 id。赛道改过名字之后，老地址要还能进（§8.3）。
+            "aliases": spec.get("aliases", []),
             "title": spec["title"],
             "icon": spec.get("icon", ""),
             "summary": spec.get("summary", ""),
@@ -478,6 +481,23 @@ def build_data(tracks: list[dict], total: int) -> dict:
     }
 
 
+# 「已经在写数据库内核」那一格指向哪条赛道的哪个阶段。
+# 这里写的是**查表用的 id**，不是地址：赛道改名、阶段重排之后，
+# 这一格跟着规则表走，不会指向一个已经不存在的页面。
+DEEP_DIVE_TRACK = "postgresql"
+DEEP_DIVE_STAGE = "L7"
+
+
+def _deep_dive_cell(tracks: list[dict]) -> str:
+    track = next((t for t in tracks if t["id"] == DEEP_DIVE_TRACK), None)
+    if track is None:
+        return "从下面挑一条赛道"
+    stage = next((s for s in track["stages"] if s["id"] == DEEP_DIVE_STAGE), None)
+    url = _rooted_path("/learning/%s/" % track["id"])
+    label = stage["title"] if stage else DEEP_DIVE_STAGE
+    return "直接进 [%s](%s) 的 **%s**" % (track["title"], url, label)
+
+
 def render_overview(tracks: list[dict], total: int) -> str:
     # 站内链接必须带挂载点前缀（主站 /，镜像站 /blog）——
     # 写死的 /learning/ 在镜像站上会 404。参见 tools/site_root.py。
@@ -504,7 +524,7 @@ def render_overview(tracks: list[dict], total: int) -> str:
         "| --- | --- |",
         "| 只想找一篇能马上用的文章 | [归档页](%s)，按时间翻 |" % _rooted_path("/archives/"),
         "| 想系统学一门技术 | 下面挑一条赛道，从它的 **L1** 开始 |",
-        "| 已经在写数据库内核 | 直接进 [数据库内核](%s) 的 **L7** |" % _rooted_path("/learning/db-internals/"),
+        "| 已经在写数据库内核 | %s |" % _deep_dive_cell(tracks),
         "| 只想看看这个站长什么样 | [首页](%s) |" % _rooted_path("/"),
         "",
         "## 赛道地图",
@@ -576,6 +596,46 @@ def render_track(track: dict) -> str:
     lines.append("")
     lines.append("[← 回到学习路径总览](%s)" % _rooted_path("/learning/"))
     lines.append("")
+    return "\n".join(lines)
+
+
+def render_alias(alias: str, track: dict) -> str:
+    """老赛道地址的别名页：老链接还得能进。
+
+    赛道改过名字之后，老的 ``/learning/<老 id>/`` 不能变成 404。
+    这一页是一张跳转页：
+
+    * ``meta refresh`` —— 浏览器一跳就过去；
+    * ``canonical`` —— 告诉搜索引擎「正身在那边」，别把老地址当正本；
+    * 正文里再留一个普通链接 —— meta refresh 被策略挡掉时的退路
+      （也方便没跳过去的读者自己点）。
+
+    canonical 写的是**绝对地址**，且不带挂载点前缀 —— 绝对地址由
+    ``config.url`` 拼出来，而 ``config.url`` 里已经有挂载点了
+    （镜像站是 ``https://growdu.github.io/blog``）。参见 tools/site_root.py。
+    """
+    target_path = "/learning/%s/" % track["id"]
+    target_url = _rooted_path(target_path)
+    canonical = _absolute_url(target_path)
+    lines = [
+        "---",
+        'title: "%s（赛道已改名）"' % track["title"],
+        "date: 2026-01-01 00:00:00",
+        "type: learning",
+        "layout: learning",
+        'canonical: "%s"' % canonical,
+        "---",
+        "",
+        '<meta http-equiv="refresh" content="0; url=%s">' % target_url,
+        "",
+        "# %s" % track["title"],
+        "",
+        "这条赛道改过名字了：老地址 `/learning/%s/` 已经并到 **%s**。"
+        % (alias, track["title"]),
+        "",
+        "[继续阅读 →](%s)" % target_url,
+        "",
+    ]
     return "\n".join(lines)
 
 
@@ -661,12 +721,22 @@ def main(argv=None) -> int:
         d = OUT_DIR / t["id"]
         d.mkdir(parents=True, exist_ok=True)
         (d / "index.md").write_text(render_track(t), encoding="utf-8")
+    # 别名页：老赛道地址照旧能进（§8.3）。
+    aliases = []
+    for t in tracks:
+        for alias in t.get("aliases", []):
+            d = OUT_DIR / alias
+            d.mkdir(parents=True, exist_ok=True)
+            (d / "index.md").write_text(render_alias(alias, t), encoding="utf-8")
+            aliases.append(alias)
     DATA_OUT.parent.mkdir(parents=True, exist_ok=True)
     DATA_OUT.write_text(json.dumps(build_data(tracks, total),
                                    ensure_ascii=False, indent=2), encoding="utf-8")
 
     print("生成：%s/index.md + %d 个赛道页 + %s"
           % (OUT_DIR, len(tracks), DATA_OUT))
+    if aliases:
+        print("别名页：%s" % "、".join(aliases))
     return 0
 
 
