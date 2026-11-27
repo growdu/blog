@@ -26,8 +26,8 @@ description: "这棵树里的公平调度器已是 EEVDF（CFS 的继任者）�
 flowchart TD
     A["schedule()<br/>kernel/sched/core.c:7468"] --> B["__schedule_loop(SM_NONE)<br/>kernel/sched/core.c:7459"]
     B --> C["__schedule(sched_mode)<br/>kernel/sched/core.c:7211"]
-    C --> D["pick_next_task<br/>kernel/sched/core.c:6296"]
-    D --> E["__pick_next_task<br/>kernel/sched/core.c:6204"]
+    C --> D["__pick_next_task<br/>kernel/sched/core.c:6204"]
+    D --> E["快速路径：全部在 fair 队列"]
     E --> F["pick_task_fair<br/>kernel/sched/fair.c:10281"]
     F --> G["pick_next_entity<br/>kernel/sched/fair.c:6694"]
     G --> H["pick_eevdf<br/>kernel/sched/fair.c:1130"]
@@ -261,9 +261,10 @@ pick_again:
 
 三件事按顺序发生：**摘掉 prev（如果它睡了）→ 挑 next → 切换**。
 
-挑任务的分派在 `pick_next_task`（`kernel/sched/core.c:6296`）。它有一个快速路径：
-如果当前任务的调度类不高于 fair，且 `nr_running == cfs.h_nr_queued`（也就是所有可跑任务都在 fair 队列里），
-就直接调 `pick_task_fair`，跳过逐类遍历（`__pick_next_task`，`kernel/sched/core.c:6204` 起）。
+挑任务的分派在 `__pick_next_task`（`kernel/sched/core.c:6204`）—— 开了 `CONFIG_SCHED_CORE` 时，
+外面还包一层 `pick_next_task`（`kernel/sched/core.c:6296`）先处理 core scheduling。
+`__pick_next_task` 有一个快速路径：如果当前任务的调度类不高于 fair，且 `nr_running == cfs.h_nr_queued`
+（也就是所有可跑任务都在 fair 队列里），就直接调 `pick_task_fair`，跳过逐类遍历。
 否则才 `for_each_active_class` 一类一类问下去。
 
 `__schedule` 返回后，`__schedule_loop` 会再查一次 `need_resched()`，直到不需要调度为止：
@@ -367,7 +368,8 @@ SYM_FUNC_END(__switch_to_asm)
 
 > **注意**：`switch_to` 的调用形式 `switch_to(prev, next, prev)` 里第三个参数既是入参又当出参，
 > 老文章常写成 `switch_to(prev, next, last)` 并解释为什么不直接用 `prev`。
-> 在这棵树的 x86 实现里，`__switch_to_asm` 返回的就是 `prev`，所以这里传 `prev` 没问题。
+> 在这棵树的 x86 实现里，`__switch_to_asm` 最终调的 `__switch_to` 在 `arch/x86/kernel/process_64.c:713`
+> `return prev_p` —— 返回的就是 `prev`，所以这里传 `prev` 没问题。
 > 但**别把 `switch_to` 当普通函数**：它一次调用会「进去的是 A、出来的是 B」，
 > GDB 单步跟它会跟丢，正确做法是断 `__switch_to_asm`。
 
@@ -398,8 +400,10 @@ try_to_wake_up
   是的话就别再粘在同一个核上，主动散开。
 - **是不是要抢当前任务** 在 `wakeup_preempt_fair`（`kernel/sched/fair.c:10137`）里判断：
   被唤醒的任务如果 deadline 更早、或当前任务已经用完 slice，就把当前任务标成该让。
-- **`place_entity`**（`kernel/sched/fair.c:6335`）决定新任务入队时的初始 vruntime / 滞后：
-  睡太久的任务不该攒出巨额「欠账」一次性爆发，所以要把它的 vruntime 拉回到基准附近。
+- **`place_entity`**（`kernel/sched/fair.c:6335`）决定新任务入队时的 vruntime：以队列的加权平均虚拟时间
+  `avg_vruntime()` 为基准，再按 `vlag` 做补偿（`se->vruntime = vruntime - lag`）。
+  滞后本身在出队时由 `update_entity_lag`（`kernel/sched/fair.c:883`）记录并夹紧，
+  免得睡太久的任务攒出巨额「欠账」一次性爆发。
 
 `fork` 出来的新任务走的是另一条：`wake_up_new_task`（`kernel/sched/core.c:5015`）。
 它先把 `p->__state` 设成 `TASK_RUNNING`，用 `select_task_rq` 选核，再 `activate_task`，
@@ -460,7 +464,7 @@ sched_balance_softirq（fair.c:15024）
 
 几个设计要点：
 
-- **调度域（sched_domain）是分层的**：L1（同核超线程）→ L2（同 LLC）→ NUMA 域。
+- **调度域（sched_domain）是分层的**：SMT（同核超线程）→ MC/LLC（同缓存）→ NUMA 域。
   每一层的「平衡间隔」不同（`get_sd_balance_interval`，`kernel/sched/fair.c:14050`），
   越往外越慢 —— 跨 NUMA 搬任务代价大，不值得频繁搬。
 - **`should_we_balance`** 保证「同一个域同一时刻只有一个 CPU 在做平衡」，避免几个核同时抢同一个任务。
@@ -498,8 +502,8 @@ sched_balance_softirq（fair.c:15024）
 然后靠 tick 的负载均衡一个核一个核地被「搬」出去 —— 如果每个线程跑的时间很短（比如几毫秒就跑完），
 很可能还没搬完就结束了，于是你看到的是一个核忙、三个核闲。
 
-> **注意**：想验证这一点，用 `perf sched` 看迁移事件，或者读 `/proc/<pid>/schedstat`
-> 里的 `nr_migrations`。另外这棵树新加了 **preferred CPU** 概念（`CONFIG_PREFERRED_CPU`，
+> **注意**：想验证这一点，用 `perf sched` 看迁移事件，或者读 `/proc/<pid>/sched`
+> 里的 `se.nr_migrations`。另外这棵树新加了 **preferred CPU** 概念（`CONFIG_PREFERRED_CPU`，
 > `include/linux/cpumask.h:1292` 的 `cpu_preferred`）：负载均衡不会往「非首选 CPU」拉任务
 > （`kernel/sched/fair.c:13775`、`:14901`），而且 tick 发现当前任务跑在非首选核上时，
 > 会用 stopper 把它推走（`sched_push_current_non_preferred_cpu`，`kernel/sched/core.c:11345`）。
@@ -517,7 +521,7 @@ gdb /work/cwork/linux/vmlinux
 | 断点 | 位置 | 看什么 |
 | --- | --- | --- |
 | `__schedule` | `kernel/sched/core.c:7211` | `prev`、`prev_state`、`sched_mode` |
-| `pick_next_task` | `kernel/sched/core.c:6296` | 走的是快速路径还是逐类遍历 |
+| `__pick_next_task` | `kernel/sched/core.c:6204` | 走的是快速路径还是逐类遍历 |
 | `pick_eevdf` | `kernel/sched/fair.c:1130` | `cfs_rq->h_nr_queued`、选中的 `se` |
 | `update_curr` | `kernel/sched/fair.c:2172` | `delta_exec`、累加后的 `vruntime` |
 | `update_deadline` | `kernel/sched/fair.c:1232` | 新 `slice` 与 `deadline` |
