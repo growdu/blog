@@ -154,32 +154,60 @@ class Chrome:
 def render_all(chrome: Chrome, sources: list[str], boot_url: str, timeout_s: int):
     """在页面里逐张 mermaid.render()。返回 (成功数, 失败列表)。"""
     chrome.cmd("Page.navigate", {"url": boot_url})
+    # 「mermaid 到位了」必须验到 render 这个函数本身。
+    #
+    # 曾经的写法是 `if chrome.eval("typeof window.mermaid"):`——但 eval 回的
+    # 是**字符串**，"undefined" 也是非空串，在 Python 里是真值，于是等待逻辑
+    # 第一轮就「通过」了。mermaid 其实压根没加载（产物里缺 mermaid.min.js），
+    # 工具照样往下跑，render 抛异常、循环卡死，最后报「渲染成功 0　渲染失败 0」——
+    # 一份**假的全清**。缺图和坏图，长得一模一样。
+    #
+    # 所以这里要的是布尔，而且必须问到 render：
+    # mermaid 没加载 / 加载了但没有 render / 版本不对，三种都算没到位。
     for _ in range(60):
         time.sleep(1)
-        if chrome.eval("typeof window.mermaid"):
+        if chrome.eval(
+            "(typeof window.mermaid === 'object' && window.mermaid !== null "
+            "&& typeof window.mermaid.render === 'function')"
+        ):
             break
     else:
         raise SystemExit(
             "mermaid 没加载起来——%s 打开后页面里应当有 .mermaid 容器，"
-            "且 /lib/mermaid/mermaid.min.js 能下载到" % boot_url)
+            "且 /lib/mermaid/mermaid.min.js 能下载到"
+            "（产物里没有它？先跑 tools/copy-vendor.py 再 npx hexo generate）"
+            % boot_url)
 
     boot = """(function(){
-  window.__r = {done:false, ok:0, bad:[]};
+  window.__r = {done:false, ok:0, bad:[], settled:0};
   var list = %s;
   var i = 0;
   function one(){
     if (i >= list.length) { window.__r.done = true; return; }
     var src = list[i]; var idx = i; i++;
-    window.mermaid.render('scan-' + idx, src).then(
-      function(){ window.__r.ok++; one(); },
-      function(e){
-        window.__r.bad.push({
-          i: idx,
-          msg: String((e && (e.message || e.str)) || e),
-          head: src.slice(0, 240)
+    /* 渲染本身可能同步抛异常（mermaid 内部对某些源码直接 throw 而不是
+       reject）。不接住的话整个循环就断在这里，后面几千张图一张都不测，
+       最后报「成功 0 失败 0」——又是一份假的全清。
+       所以每张图的异常也算它自己的失败。 */
+    try {
+      window.mermaid.render('scan-' + idx, src).then(
+        function(){ window.__r.ok++; window.__r.settled++; one(); },
+        function(e){
+          window.__r.bad.push({
+            i: idx,
+            msg: String((e && (e.message || e.str)) || e),
+            head: src.slice(0, 240)
+          });
+          window.__r.settled++; one();
         });
-        one();
+    } catch (err) {
+      window.__r.bad.push({
+        i: idx,
+        msg: '同步抛异常：' + String((err && (err.message || err.str)) || err),
+        head: src.slice(0, 240)
       });
+      window.__r.settled++; one();
+    }
   }
   one();
   return 'started';
@@ -191,7 +219,15 @@ def render_all(chrome: Chrome, sources: list[str], boot_url: str, timeout_s: int
         time.sleep(3)
         if chrome.eval("window.__r && window.__r.done"):
             break
-    return json.loads(chrome.eval("JSON.stringify(window.__r)"))
+    result = json.loads(chrome.eval("JSON.stringify(window.__r)"))
+    # 没跑完就是没跑完：ok + bad 少于总数，说明剩下的图卡住了。
+    # 这时候不能把已测的那部分当成结论——「测了一半」和「全测了」必须能分开。
+    if not result.get("done") or result.get("settled", 0) < len(sources):
+        raise SystemExit(
+            "渲染没跑完：%d 张里只跑完 %d 张（超时 %d 秒）。"
+            "这次的数字不作数——先查 mermaid 是不是真的加载上了。"
+            % (len(sources), result.get("settled", 0), timeout_s))
+    return result
 
 
 def main() -> int:

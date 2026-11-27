@@ -52,8 +52,11 @@ EP01 的首图（``postgresql-logical-replication-end-to-end-flow`` 的
 from __future__ import annotations
 
 import importlib.util
+import json
 import re
 from pathlib import Path
+
+import pytest
 
 REPO = Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
@@ -187,3 +190,75 @@ def test_collect_sources_dedups_and_unescapes(tmp_path):
     assert "flowchart LR\n    A --> B" in sources, (
         "实体没还原：{}".format(list(sources)))
     assert len(sources["flowchart LR\n    A --> B"]) == 2, "两个页面都出现过它"
+
+
+# --- 4. 契约：量不出来的时候必须大声失败 ------------------------------------
+
+
+class _FakeChrome:
+    """一个只会说「mermaid 没加载」的假 Chrome。
+
+    它照着真实 JS 的语义回话：**``typeof x`` 回的是字符串**。
+    这正是那个 bug 的要害——``"undefined"`` 在 Python 里是真值。
+    """
+
+    def __init__(self, ready: bool = False):
+        self.ready = ready
+
+    def cmd(self, *_args, **_kwargs):
+        return {}
+
+    def eval(self, expr):
+        if expr == "typeof window.mermaid":
+            return "undefined"          # JS 的真实返回：字符串，不是布尔
+        if "window.mermaid" in expr:
+            return self.ready           # 修好后的那个布尔判断
+        if "__r" in expr and "done" in expr:
+            return False                 # 渲染循环没跑完
+        if "JSON.stringify" in expr:
+            return json.dumps({"done": False, "ok": 0, "bad": [], "settled": 0})
+        return None
+
+
+def test_the_tool_refuses_to_report_a_clean_bill_when_mermaid_never_loads(monkeypatch):
+    """mermaid 没加载时，工具必须**报错退出**，不能报「成功 0　失败 0」。
+
+    2026-11-27 实测踩过：产物里缺 ``mermaid.min.js``（漏跑
+    ``tools/copy-vendor.py``），页面里的 mermaid 加载失败。
+    而工具的等待逻辑写的是 ``if chrome.eval("typeof window.mermaid"):`` ——
+    ``eval`` 回的是**字符串** ``"undefined"`` 也是真值，于是等待第一轮就
+    「通过」，工具拿着一份没有 mermaid 的页面继续跑，渲染全部失败，
+    最后报出「渲染成功 0　渲染失败 0」。
+
+    0 成功 0 失败和「一张都没测」在报告里长得一模一样 —— 那是一份
+    **假的全清**，比坏图本身更危险。
+    """
+    monkeypatch.setattr(check_mermaid.time, "sleep", lambda *_a, **_k: None)
+
+    with pytest.raises(SystemExit) as excinfo:
+        check_mermaid.render_all(
+            _FakeChrome(ready=False),
+            ["flowchart LR\n    A --> B"],
+            "http://127.0.0.1:1/boot.html",
+            timeout_s=0,
+        )
+    # 必须是「mermaid 没加载」这一条，不许退化成别的失败 ——
+    # 等待逻辑里的真值判断一旦写回 `if chrome.eval("typeof window.mermaid"):`，
+    # 失败会挪到后面那条「渲染没跑完」上，读起来像是渲染慢，不像加载失败。
+    assert "没加载起来" in str(excinfo.value), str(excinfo.value)
+
+
+def test_the_tool_refuses_to_report_a_partial_run_as_a_result(monkeypatch):
+    """渲染循环卡住（跑不完）时，工具必须报错，不能拿跑了一半的数字当结论。
+
+    ok + bad 少于总数，就说明剩下的图卡住了。这次的数字不作数。
+    """
+    monkeypatch.setattr(check_mermaid.time, "sleep", lambda *_a, **_k: None)
+
+    with pytest.raises(SystemExit):
+        check_mermaid.render_all(
+            _FakeChrome(ready=True),
+            ["flowchart LR\n    A --> B"],
+            "http://127.0.0.1:1/boot.html",
+            timeout_s=0,
+        )

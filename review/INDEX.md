@@ -102,6 +102,33 @@ mermaid 渲染失败 **109 张，与搬家前持平**（产物侧唯一源码 13
 所以那一页不再生成（`tools/sync-hexo.py` 对文章重定向和分类重定向都加了这道检查），
 `tests/test_sync_hexo_redirects.py` 守着。
 
+**全树重排后的实测（2026-11-27）**：`docs/` 从 34 个顶层目录合成
+`source-tracks/` 一个，11 条赛道 × 48 个阶段，规则表里 **0 条正则**
+（搬家前 10 条赛道 / 42 个阶段 / 90 条 `path_prefix` + 26 条 `path_exact`
++ 29 条正则 → 现在 60 条 `path_prefix` + 6 条 `path_exact`）。
+重定向表 320 → **591 条**，590 条旧地址的目标逐条核对命中 0 处偏差；
+`capture-dates.py --check` 逐篇比 **591 篇，漂移 0 篇**；
+分类链 **591 篇全部 3 级**（内容库 → 赛道 → 阶段）；
+学习路径 597 / 597 覆盖，兜底阶段 0 篇；
+产物侧 **21594 条站内 href，断链 0 条**；
+母稿侧 3 条断链全是搬家前就在的误报（`{image_url}` 模板占位符、
+`DatumGetPointer(...)` / `order_date` 这两处代码块文本）；
+mermaid 渲染失败 **109 张，与 2026-11-17 的基线持平**
+（产物侧 1336 张唯一源码，1227 张渲染成功）。
+另有 13 条新守卫测试（`tests/test_learning_path_tree.py`）守着这次的结构。
+
+> **顺带修掉一个会报「假全清」的工具 bug**：`tools/check-mermaid.py`
+> 的等待逻辑写的是 `if chrome.eval("typeof window.mermaid"):` ——
+> `eval` 回的是**字符串**，`"undefined"` 在 Python 里也是真值，
+> 于是「mermaid 压根没加载」被当成了「加载好了」。
+> 触发条件是产物里缺 `mermaid.min.js`（漏跑 `tools/copy-vendor.py`），
+> 后果是工具拿着一份没有 mermaid 的页面继续跑，最后报
+> **「渲染成功 0　渲染失败 0」** —— 和「一张都没测」长得一模一样。
+> 现在就绪判断改成问布尔、且必须问到 `render` 这个函数本身，
+> 渲染循环也加了「跑不完就不算数」的硬校验（`ok + bad < 总数` 直接报错退出）。
+> 回归测试在 `tests/test_mermaid_diagrams.py`：把等待逻辑改回旧写法，
+> 测试必须红。
+
 | 记录 | 赛道 | 状态 | 信号 | 待确认 | 不阻塞 | 批次 |
 | --- | --- | --- | --- | --- | --- | --- |
 | [postgresql-mvcc](source-tracks/postgresql/L4-transaction-mvcc/postgresql-mvcc.md) | postgresql | 已合入 | 0 | 0 | 1 | 试点 |

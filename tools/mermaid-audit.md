@@ -1,5 +1,15 @@
 # Mermaid 图表语法错误清单
 
+> **这是 2026-11-16 的快照，路径已经过期。** 里面的文件路径还是搬家前的
+> `docs/ai/…`、`docs/db/…` 那些老目录；2026-11-26 目录重排之后，
+> `docs/` 换成了 `docs/source-tracks/<赛道>/<阶段>/…`，
+> 下面每一条路径都得重新定位才能用。
+>
+> 要一份**当前**的清单，用 `python3 tools/check-mermaid.py --list` 现量
+> （它用 `mermaid.render()`，比这里的 `parse()` 查得更全 ——
+> 布局期的错误，比如 gantt 的 `Invalid date`，`parse()` 查不出来）。
+> 这个文件保留下来是因为 `weixin/docs/` 里的几处基线数字引着它。
+
 > 由 `mermaid@10.9.8` 的解析器实测生成：把 `docs/` 下每个 ` ```mermaid ` 块喂给
 > `mermaid.parse()`，记录抛错的那些块。`source/_posts/` 由 `tools/sync-hexo.py` 从
 > `docs/` 生成，因此本清单的**行号以 `docs/` 下的源文件为准**。
