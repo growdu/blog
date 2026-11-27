@@ -281,7 +281,11 @@ def rewrite_relative_links(moves, targets, report, categories=None):
             text = fh.read()
 
         post_dir = os.path.dirname(rel)
-        new_post_dir = os.path.dirname(moves.get(rel, rel))
+        # **目录页也算** —— `targets` 里除了文章，还有跟着搬走的旧目录页
+        # （`index_map`）。只认 `moves` 的话，目录页的「新位置」算出来
+        # 还是旧位置，于是它里面的相对链接会算成 `../source-tracks/...`
+        # 这种从旧目录出发的路径 —— 搬完之后每一条都是死链。
+        new_post_dir = os.path.dirname(targets.get(rel, rel))
 
         def repl_link(m):
             nonlocal changed_links
@@ -993,7 +997,7 @@ def permalink_path(rel):
     `<basename>-html.html`（见 `sync-hexo.py` 的 `process_html_post` ——
     hexo 用文件名推 slug，不加后缀就跟同名 .md 抢 permalink），
     所以它的 permalink 里也有这个后缀。实测站点上的地址是
-    `/2026/07/03/source-tracks/postgresql/logical-replication/sqlserver/sqlserver逻辑复制ddl-html/`，
+    `/2026/07/03/source-tracks/postgresql/L7-logical-replication/sqlserver/sqlserver逻辑复制ddl-html/`，
     少了后缀的重定向页会指到一个从来不存在的地址。
     """
     base = os.path.basename(rel)
@@ -1098,7 +1102,7 @@ def rewrite_refs(targets, moves, report):
     `targets` 是 `(文件, 路径形态)` 的清单；形态决定拿哪种写法去替换。
 
     `permalink` 形态特殊一些：站内绝对地址带一段日期
-    （`/2023/09/14/source-tracks/postgresql/getting-started/postgresql源码编译/`）。日期在迁移前后不变
+    （`/2023/09/14/source-tracks/postgresql/L1-getting-started/postgresql源码编译/`）。日期在迁移前后不变
     （这正是 `DATE_OVERRIDES` 存在的意义），所以只换路径那一段。
     站上有两种写法 —— 中文未编码的、百分号编码的 —— 两种都要替。
 
@@ -1281,6 +1285,7 @@ def main():
 
     # 3. 搬
     stats = {}
+    missing = []
     index_acts = {rel: (act, new) for act, rel, new in index_actions(table)}
     for kind, old_rel, new_rel in actions:
         if kind == "in":
@@ -1313,6 +1318,8 @@ def main():
                 else:
                     r = "skip-missing"
         stats[r] = stats.get(r, 0) + 1
+        if r == "skip-missing":
+            missing.append(old_rel)
     for old_rel, new_rel in sorted(assets.items()):
         if os.path.basename(old_rel) == ".DS_Store":
             git("rm", "-f", os.path.join("docs", old_rel))
@@ -1320,7 +1327,11 @@ def main():
             continue
         r = do_move(old_rel, new_rel)
         stats[r] = stats.get(r, 0) + 1
+        if r == "skip-missing":
+            missing.append(old_rel)
     report.append("搬运：" + "，".join(f"{k} {v}" for k, v in sorted(stats.items())))
+    if missing:
+        report.append("源文件不在（没搬成）：" + "、".join(sorted(missing)))
     save_resolved(moves, assets)
 
     # 3.5 扫掉搬空了的目录
