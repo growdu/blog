@@ -1329,7 +1329,7 @@ def main():
     # 这个问题答错 —— 搬完之后 `docs/` 应当只剩 `source-tracks/`。
     emptied = prune_empty_dirs(DOCS)
     if emptied:
-        report.append(f"空目录：清掉 {len(empted)} 个")
+        report.append(f"空目录：清掉 {len(emptied)} 个")
 
     # 4. 新目录页
     write_index_files(table, moves, report)
