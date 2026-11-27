@@ -1,7 +1,7 @@
 {
   "episode": "wal-interleave",
   "title": "WAL 里的顺序，不等于事务的顺序",
-  "url": "https://growdu.cn/2026/11/12/life/aiv/",
+  "url": "https://growdu.cn/2026/11/12/source-tracks/blogging/L4-video-pipeline/aiv/",
   "cover_at": 20.0,
   "channels": {
     "title": "WAL 交错着写 事务要整组还原",

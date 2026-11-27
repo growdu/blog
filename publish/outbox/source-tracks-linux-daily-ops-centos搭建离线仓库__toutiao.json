@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/linux/daily-ops/centos搭建离线仓库",
+  "content_id": "source-tracks/linux/L1-daily-ops/centos搭建离线仓库",
   "draft_id": "7708376076564660779",
   "package_dir": "toutiao/out/source-tracks-linux-daily-ops-centos搭建离线仓库",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/ha-and-dr/中移动数据库停库问题分析",
+  "content_id": "source-tracks/distributed/L3-ha-and-dr/中移动数据库停库问题分析",
   "draft_id": "7708376266356818474",
   "package_dir": "toutiao/out/distributed-ha-and-dr-中移动数据库停库问题分析",
   "platform": "toutiao",

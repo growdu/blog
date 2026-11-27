@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "es/es_search_ui",
+  "content_id": "source-tracks/engineering/L4-web/es_search_ui",
   "draft_id": "7708375883035247147",
   "package_dir": "toutiao/out/es-es_search_ui",
   "platform": "toutiao",

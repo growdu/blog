@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/day1",
+  "content_id": "source-tracks/dataplane/L1-environment/day1",
   "draft_id": "7708376707769598500",
   "package_dir": "toutiao/out/dpdk-day1",
   "platform": "toutiao",

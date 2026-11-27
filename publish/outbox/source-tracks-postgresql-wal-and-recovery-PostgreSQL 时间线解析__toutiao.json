@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/wal-and-recovery/PostgreSQL 时间线解析",
+  "content_id": "source-tracks/postgresql/L5-wal-and-recovery/PostgreSQL 时间线解析",
   "draft_id": "7708376162686337572",
   "package_dir": "toutiao/out/source-tracks-postgresql-wal-and-recovery-PostgreSQL 时间线解析",
   "platform": "toutiao",

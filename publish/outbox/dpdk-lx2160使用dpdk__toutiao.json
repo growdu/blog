@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/lx2160使用dpdk",
+  "content_id": "source-tracks/dataplane/L1-environment/lx2160使用dpdk",
   "draft_id": "7708376691698762281",
   "package_dir": "toutiao/out/dpdk-lx2160使用dpdk",
   "platform": "toutiao",

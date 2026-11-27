@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "page/gui",
+  "content_id": "source-tracks/engineering/L4-web/gui",
   "draft_id": "7708377079758307881",
   "package_dir": "toutiao/out/page-gui",
   "platform": "toutiao",

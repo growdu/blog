@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "es/oh-my-search",
+  "content_id": "source-tracks/engineering/L4-web/oh-my-search",
   "draft_id": "7708376092729885220",
   "package_dir": "toutiao/out/es-oh-my-search",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/linux大页内存",
+  "content_id": "source-tracks/dataplane/L1-environment/linux大页内存",
   "draft_id": "7708376690292179492",
   "package_dir": "toutiao/out/dpdk-linux大页内存",
   "platform": "toutiao",

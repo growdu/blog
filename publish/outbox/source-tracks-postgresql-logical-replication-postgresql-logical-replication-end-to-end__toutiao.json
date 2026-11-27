@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/postgresql-logical-replication-end-to-end",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-end-to-end",
   "draft_id": "7708374938549256745",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-postgresql-logical-replication-end-to-end",
   "platform": "toutiao",

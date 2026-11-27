@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/polardb竞争力分析",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/polardb竞争力分析",
   "draft_id": "7708375875510633002",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-polardb竞争力分析",
   "platform": "toutiao",

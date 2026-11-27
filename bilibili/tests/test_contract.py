@@ -36,12 +36,12 @@ def test_reprint_keeps_the_source_as_it_is():
         bilibili={
             "title": "t", "description": "d", "tags": ["x"],
             "tid": 231, "copyright": 2, "no_reprint": 0,
-            "source": "https://growdu.cn/2026/11/12/life/aiv/",
+            "source": "https://growdu.cn/2026/11/12/source-tracks/blogging/L4-video-pipeline/aiv/",
         },
     )
     copy = contract.slice_copy(meta_with_reprint)
     assert copy.copyright == 2
-    assert copy.source == "https://growdu.cn/2026/11/12/life/aiv/"
+    assert copy.source == "https://growdu.cn/2026/11/12/source-tracks/blogging/L4-video-pipeline/aiv/"
 
 
 def test_the_contract_layer_rejects_a_reprint_without_a_source():

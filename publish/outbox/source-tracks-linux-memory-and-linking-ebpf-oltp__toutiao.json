@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/linux/memory-and-linking/ebpf/oltp",
+  "content_id": "source-tracks/linux/L2-memory-and-linking/ebpf/oltp",
   "draft_id": "7708375852358287913",
   "package_dir": "toutiao/out/source-tracks-linux-memory-and-linking-ebpf-oltp",
   "platform": "toutiao",

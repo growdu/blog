@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/pgsql扩展",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/pgsql扩展",
   "draft_id": "7708376949135934006",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-pgsql扩展",
   "platform": "toutiao",

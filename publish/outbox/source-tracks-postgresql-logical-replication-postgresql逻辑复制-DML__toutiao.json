@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/postgresql逻辑复制-DML",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/postgresql逻辑复制-DML",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-postgresql逻辑复制-DML",
   "platform": "toutiao",
   "published_url": "https://www.toutiao.com/item/7707534703117369871/",

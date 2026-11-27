@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/逻辑解码ddl replay支持sqlserver模式",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/逻辑解码ddl replay支持sqlserver模式",
   "draft_id": "7708375641606996534",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-逻辑解码ddl replay支持sqlserver模式",
   "platform": "toutiao",

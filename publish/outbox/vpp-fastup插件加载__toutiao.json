@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/fastup插件加载",
+  "content_id": "source-tracks/dataplane/L3-plugin-dev/fastup插件加载",
   "draft_id": "7708376510842847787",
   "package_dir": "toutiao/out/vpp-fastup插件加载",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/postgresql-apply-leader-worker-code-analysis",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/postgresql-apply-leader-worker-code-analysis",
   "draft_id": "7708374999921197604",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-postgresql-apply-leader-worker-code-analysis",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/postgresql-apply-parallel-lock-stream",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/postgresql-apply-parallel-lock-stream",
   "draft_id": "7708375072985088548",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-postgresql-apply-parallel-lock-stream",
   "platform": "toutiao",

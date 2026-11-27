@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "language/rust/使用mdbook编译html和pdf",
+  "content_id": "source-tracks/engineering/L1-basics/使用mdbook编译html和pdf",
   "draft_id": "7708375823920693803",
   "package_dir": "toutiao/out/language-rust-使用mdbook编译html和pdf",
   "platform": "toutiao",

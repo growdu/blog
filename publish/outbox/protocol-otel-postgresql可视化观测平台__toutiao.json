@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "protocol/otel/postgresql可视化观测平台",
+  "content_id": "source-tracks/linux/L4-networking/postgresql可视化观测平台",
   "draft_id": "7708375837808280118",
   "package_dir": "toutiao/out/protocol-otel-postgresql可视化观测平台",
   "platform": "toutiao",

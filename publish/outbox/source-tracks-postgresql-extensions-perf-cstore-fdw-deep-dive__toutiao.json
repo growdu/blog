@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/cstore-fdw-deep-dive",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/cstore-fdw-deep-dive",
   "draft_id": "7708374986884481579",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-cstore-fdw-deep-dive",
   "platform": "toutiao",

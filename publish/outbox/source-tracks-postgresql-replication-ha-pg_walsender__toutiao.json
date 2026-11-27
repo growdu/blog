@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/pg_walsender",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/pg_walsender",
   "draft_id": "7708376868755456575",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-pg_walsender",
   "platform": "toutiao",

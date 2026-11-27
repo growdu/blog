@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "protocol/fib表",
+  "content_id": "source-tracks/linux/L4-networking/fib表",
   "draft_id": "7708376527326429732",
   "package_dir": "toutiao/out/protocol-fib表",
   "platform": "toutiao",

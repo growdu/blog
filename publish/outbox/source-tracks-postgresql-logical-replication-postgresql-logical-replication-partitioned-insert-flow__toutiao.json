@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/postgresql-logical-replication-partitioned-insert-flow",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-partitioned-insert-flow",
   "draft_id": "7708375149497680427",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-postgresql-logical-replication-partitioned-insert-flow",
   "platform": "toutiao",

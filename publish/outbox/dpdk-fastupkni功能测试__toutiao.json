@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/fastupkni功能测试",
+  "content_id": "source-tracks/dataplane/L3-plugin-dev/fastupkni功能测试",
   "draft_id": "7708376700320596522",
   "package_dir": "toutiao/out/dpdk-fastupkni功能测试",
   "platform": "toutiao",

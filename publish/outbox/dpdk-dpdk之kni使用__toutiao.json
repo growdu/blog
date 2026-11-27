@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/dpdk之kni使用",
+  "content_id": "source-tracks/dataplane/L1-environment/dpdk之kni使用",
   "draft_id": "7708376711972422163",
   "package_dir": "toutiao/out/dpdk-dpdk之kni使用",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/dpdk相关",
+  "content_id": "source-tracks/dataplane/L1-environment/dpdk相关",
   "draft_id": "7708376724522484266",
   "package_dir": "toutiao/out/dpdk-dpdk相关",
   "platform": "toutiao",

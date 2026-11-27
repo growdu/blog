@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/ha-and-dr/tptc",
+  "content_id": "source-tracks/distributed/L3-ha-and-dr/tptc",
   "draft_id": "7708376063847481910",
   "package_dir": "toutiao/out/distributed-ha-and-dr-tptc",
   "platform": "toutiao",

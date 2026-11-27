@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/postgresql-create-replication-slot-deep-dive",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/postgresql-create-replication-slot-deep-dive",
   "draft_id": "7708374948884021814",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-postgresql-create-replication-slot-deep-dive",
   "platform": "toutiao",

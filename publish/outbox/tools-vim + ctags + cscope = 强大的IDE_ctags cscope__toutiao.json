@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "tools/vim + ctags + cscope = 强大的IDE_ctags cscope",
+  "content_id": "source-tracks/engineering/L2-tooling/vim + ctags + cscope = 强大的IDE_ctags cscope",
   "draft_id": "7708376159414682175",
   "package_dir": "toutiao/out/tools-vim + ctags + cscope = 强大的IDE_ctags cscope",
   "platform": "toutiao",

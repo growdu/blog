@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/getting-started/多数据库模式命名空间问题",
+  "content_id": "source-tracks/postgresql/L1-getting-started/多数据库模式命名空间问题",
   "draft_id": "7708375617313538623",
   "package_dir": "toutiao/out/source-tracks-postgresql-getting-started-多数据库模式命名空间问题",
   "platform": "toutiao",

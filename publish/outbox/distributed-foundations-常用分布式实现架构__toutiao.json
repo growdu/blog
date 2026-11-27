@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/foundations/常用分布式实现架构",
+  "content_id": "source-tracks/distributed/L1-foundations/常用分布式实现架构",
   "draft_id": "7708375956167967275",
   "package_dir": "toutiao/out/distributed-foundations-常用分布式实现架构",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/逻辑复制性能测试",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/逻辑复制性能测试",
   "draft_id": "7708374788670014015",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-逻辑复制性能测试",
   "platform": "toutiao",

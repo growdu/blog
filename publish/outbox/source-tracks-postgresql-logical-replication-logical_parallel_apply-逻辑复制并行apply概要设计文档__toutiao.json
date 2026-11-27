@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/logical_parallel_apply/逻辑复制并行apply概要设计文档",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/logical_parallel_apply/逻辑复制并行apply概要设计文档",
   "draft_id": "7708375053506789907",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-logical_parallel_apply-逻辑复制并行apply概要设计文档",
   "platform": "toutiao",

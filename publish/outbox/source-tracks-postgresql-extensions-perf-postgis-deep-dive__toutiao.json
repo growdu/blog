@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/postgis-deep-dive",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/postgis-deep-dive",
   "draft_id": "7708374987967431187",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-postgis-deep-dive",
   "platform": "toutiao",

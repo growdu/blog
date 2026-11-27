@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/getting-started/Postgres中postmaster代码解析(--boot和--single)",
+  "content_id": "source-tracks/postgresql/L1-getting-started/Postgres中postmaster代码解析(--boot和--single)",
   "draft_id": "7708376235532894762",
   "package_dir": "toutiao/out/source-tracks-postgresql-getting-started-Postgres中postmaster代码解析(--boot和--single)",
   "platform": "toutiao",

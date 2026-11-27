@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "language/rust/rust设计原则",
+  "content_id": "source-tracks/engineering/L1-basics/rust设计原则",
   "draft_id": "7708375814521455147",
   "package_dir": "toutiao/out/language-rust-rust设计原则",
   "platform": "toutiao",

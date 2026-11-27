@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/linux/kernel-internals/cpu-affinity-top-guide",
+  "content_id": "source-tracks/linux/L3-kernel-internals/cpu-affinity-top-guide",
   "draft_id": "7708375079490454070",
   "package_dir": "toutiao/out/source-tracks-linux-kernel-internals-cpu-affinity-top-guide",
   "platform": "toutiao",

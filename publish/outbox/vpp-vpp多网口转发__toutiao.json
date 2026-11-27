@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/vpp多网口转发",
+  "content_id": "source-tracks/dataplane/L4-testing/vpp多网口转发",
   "draft_id": "7708376471568286251",
   "package_dir": "toutiao/out/vpp-vpp多网口转发",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/dcf运行机制",
+  "content_id": "source-tracks/distributed/L2-consensus/dcf运行机制",
   "draft_id": "7708376045452034602",
   "package_dir": "toutiao/out/distributed-consensus-dcf运行机制",
   "platform": "toutiao",

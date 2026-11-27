@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "docker/docker搭建C语言开发环境",
+  "content_id": "source-tracks/engineering/L3-container/docker搭建C语言开发环境",
   "draft_id": "7708376095858508342",
   "package_dir": "toutiao/out/docker-docker搭建C语言开发环境",
   "platform": "toutiao",

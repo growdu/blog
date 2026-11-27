@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/repmgr_cluster",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/repmgr_cluster",
   "draft_id": "7708376819073892906",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-repmgr_cluster",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/disk-paxos详解",
+  "content_id": "source-tracks/distributed/L2-consensus/disk-paxos详解",
   "draft_id": "7708376186694435369",
   "package_dir": "toutiao/out/distributed-consensus-disk-paxos详解",
   "platform": "toutiao",

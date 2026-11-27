@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/openguass升级机制",
+  "content_id": "source-tracks/distributed/L2-consensus/openguass升级机制",
   "draft_id": "7708376244785660435",
   "package_dir": "toutiao/out/distributed-consensus-openguass升级机制",
   "platform": "toutiao",

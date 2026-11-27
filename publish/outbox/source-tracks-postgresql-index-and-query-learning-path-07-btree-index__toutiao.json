@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/index-and-query/learning-path/07-btree-index",
+  "content_id": "source-tracks/postgresql/L3-index-and-query/learning-path/07-btree-index",
   "draft_id": "7708375336127316543",
   "package_dir": "toutiao/out/source-tracks-postgresql-index-and-query-learning-path-07-btree-index",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "page/python",
+  "content_id": "source-tracks/engineering/L4-web/python",
   "draft_id": "7708377064641937983",
   "package_dir": "toutiao/out/page-python",
   "platform": "toutiao",

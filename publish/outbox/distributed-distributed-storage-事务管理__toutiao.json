@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/distributed-storage/事务管理",
+  "content_id": "source-tracks/distributed/L3-ha-and-dr/事务管理",
   "draft_id": "7708375768266588713",
   "package_dir": "toutiao/out/distributed-distributed-storage-事务管理",
   "platform": "toutiao",

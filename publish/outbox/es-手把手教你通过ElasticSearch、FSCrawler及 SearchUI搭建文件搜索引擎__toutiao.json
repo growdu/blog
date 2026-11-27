@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "es/手把手教你通过ElasticSearch、FSCrawler及 SearchUI搭建文件搜索引擎",
+  "content_id": "source-tracks/engineering/L4-web/手把手教你通过ElasticSearch、FSCrawler及 SearchUI搭建文件搜索引擎",
   "draft_id": "7708376122152600118",
   "package_dir": "toutiao/out/es-手把手教你通过ElasticSearch、FSCrawler及 SearchUI搭建文件搜索引擎",
   "platform": "toutiao",

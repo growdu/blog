@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""把要发到博客的文档同步一份到 docs/life/aiv/。
+"""把要发到博客的文档同步一份到 docs/source-tracks/blogging/L4-video-pipeline/aiv/。
 
 `aiv/` 是仓库根级模块（与 `weixin/` 同级），整个目录不在 `docs/` 下面，
-而 `sync-hexo.py` 只扫 `docs/`——所以要发布的文档必须在 `docs/life/aiv/`
+而 `sync-hexo.py` 只扫 `docs/`——所以要发布的文档必须在 `docs/source-tracks/blogging/L4-video-pipeline/aiv/`
 留一份，否则那些规范页面会从 growdu.cn 上消失。
 
 这里是「哪些文档要发布」的唯一真相：
@@ -28,7 +28,7 @@ AIV_ROOT = Path(__file__).resolve().parents[1]
 REPO_ROOT = AIV_ROOT.parent
 PUBLISH_DIR = REPO_ROOT / "docs" / "life" / "aiv"
 
-# 要在 docs/life/aiv/ 留一份的文档（相对 aiv/）
+# 要在 docs/source-tracks/blogging/L4-video-pipeline/aiv/ 留一份的文档（相对 aiv/）
 PUBLISH_DOCS = (
     "index.md",
     "人格规范.md",
@@ -59,6 +59,6 @@ def copy_all() -> list[str]:
 if __name__ == "__main__":
     done = copy_all()
     for rel in done:
-        print(f"已同步 → docs/life/aiv/{rel}")
+        print(f"已同步 → docs/source-tracks/blogging/L4-video-pipeline/aiv/{rel}")
     print(f"共 {len(done)} 篇")
     sys.exit(0)

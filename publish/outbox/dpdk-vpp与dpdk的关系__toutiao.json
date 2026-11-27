@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/vpp与dpdk的关系",
+  "content_id": "source-tracks/dataplane/L2-architecture/vpp与dpdk的关系",
   "draft_id": "7708376665377784356",
   "package_dir": "toutiao/out/dpdk-vpp与dpdk的关系",
   "platform": "toutiao",

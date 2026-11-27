@@ -59,7 +59,7 @@ def test_the_fetcher_parses_a_goatcounter_response():
     payload = {
         "hits": [
             {
-                "path": "/2026/08/18/source-tracks/postgresql/index-and-query/learning-path/03-query-pipeline/",
+                "path": "/2026/08/18/source-tracks/postgresql/L3-index-and-query/learning-path/03-query-pipeline/",
                 "count": 42,
                 "event": False,
                 "path_id": 7,
@@ -72,7 +72,7 @@ def test_the_fetcher_parses_a_goatcounter_response():
 
     counts = fetcher.parse_counts(payload)
 
-    assert counts["2026/08/18/source-tracks/postgresql/index-and-query/learning-path/03-query-pipeline"] == 42
+    assert counts["2026/08/18/source-tracks/postgresql/L3-index-and-query/learning-path/03-query-pipeline"] == 42
     assert counts["archives"] == 3
 
 
@@ -138,13 +138,13 @@ def test_the_snapshot_key_matches_the_template_for_a_chinese_path():
     fetcher = _load_fetcher()
 
     assert fetcher.normalize_path(
-        "/2022/04/13/source-tracks/postgresql/extensions-perf/pgsql%E6%89%A9%E5%B1%95/"
-    ) == "2022/04/13/source-tracks/postgresql/extensions-perf/pgsql扩展"
+        "/2022/04/13/source-tracks/postgresql/L8-extensions-perf/pgsql%E6%89%A9%E5%B1%95/"
+    ) == "2022/04/13/source-tracks/postgresql/L8-extensions-perf/pgsql扩展"
 
     # 已经是原始 Unicode 的（有的 GoatCounter 实例存的是解码后的）也不能被改坏
     assert fetcher.normalize_path(
-        "/2022/04/13/source-tracks/postgresql/extensions-perf/pgsql扩展/"
-    ) == "2022/04/13/source-tracks/postgresql/extensions-perf/pgsql扩展"
+        "/2022/04/13/source-tracks/postgresql/L8-extensions-perf/pgsql扩展/"
+    ) == "2022/04/13/source-tracks/postgresql/L8-extensions-perf/pgsql扩展"
 
 
 def test_the_snapshot_key_matches_a_template_path_with_a_space():

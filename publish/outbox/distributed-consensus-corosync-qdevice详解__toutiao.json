@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/corosync-qdevice详解",
+  "content_id": "source-tracks/distributed/L2-consensus/corosync-qdevice详解",
   "draft_id": "7708376812220400169",
   "package_dir": "toutiao/out/distributed-consensus-corosync-qdevice详解",
   "platform": "toutiao",

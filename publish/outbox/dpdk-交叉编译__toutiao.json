@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/交叉编译",
+  "content_id": "source-tracks/dataplane/L1-environment/交叉编译",
   "draft_id": "7708376642751136319",
   "package_dir": "toutiao/out/dpdk-交叉编译",
   "platform": "toutiao",

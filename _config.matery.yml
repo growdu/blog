@@ -402,7 +402,7 @@ libs:
   js:
     mermaid: /lib/mermaid/mermaid.min.js
   css:
-    # 首页首屏的新样式（docs/blog/重构方案.md §5.4：新 CSS 不再塞进 patch-theme.py）
+    # 首页首屏的新样式（docs/source-tracks/blogging/L1-setup/重构方案.md §5.4：新 CSS 不再塞进 patch-theme.py）
     tech: /css/tech.css
 
 # 公网备案 (页脚显示，需 theme.icp.enable 为 true 才会渲染)

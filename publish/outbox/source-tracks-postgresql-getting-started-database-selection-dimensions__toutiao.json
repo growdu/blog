@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/getting-started/database-selection-dimensions",
+  "content_id": "source-tracks/postgresql/L1-getting-started/database-selection-dimensions",
   "draft_id": "7708375187728745002",
   "package_dir": "toutiao/out/source-tracks-postgresql-getting-started-database-selection-dimensions",
   "platform": "toutiao",

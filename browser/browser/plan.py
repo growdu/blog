@@ -279,7 +279,7 @@ def load_toutiao_plan(package_dir: Path) -> ToutiaoPlan:
 def find_toutiao_plan(packages_dir: Path, content_id: str) -> ToutiaoPlan:
     """在发布包目录里按 content id 找一篇。
 
-    **为什么扫目录而不是按名字拼路径**：content id 里带斜杠（``ai/claude安装教程``），
+    **为什么扫目录而不是按名字拼路径**：content id 里带斜杠（``source-tracks/ai-tools/L2-toolbox/claude安装教程``），
     包目录名是它把斜杠换成横杠的结果——那条规则是 adapter 的知识，
     执行器不 import adapter，所以这里读每个包的 ``meta.json`` 来认。
     """

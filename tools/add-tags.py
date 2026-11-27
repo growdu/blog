@@ -223,188 +223,188 @@ def main():
     # --- pgsql/ (53 files) ---
     pgsql_tags = {
         # Root - keyword matched
-        'source-tracks/postgresql/wal-and-recovery/wal机制浅析.md': ['WAL'],
-        'source-tracks/postgresql/replication-ha/postgresql——流复制和wal日志（八）.md': ['流复制', 'WAL', '复制'],
-        'source-tracks/postgresql/replication-ha/pg_replication.md': ['复制', '流复制'],
-        'source-tracks/postgresql/getting-started/postgresql启动流程.md': ['启动流程', '源码'],
-        'source-tracks/postgresql/getting-started/postgresql源码编译.md': ['源码编译', '源码'],
-        'source-tracks/postgresql/getting-started/Postgres中postmaster代码解析(--boot和--single).md': ['postmaster', '源码'],
-        'source-tracks/postgresql/storage-engine/pg源码对象管理.md': ['源码'],
-        'source-tracks/postgresql/extensions-perf/pg_io_调优.md': ['性能调优'],
-        'source-tracks/postgresql/wal-and-recovery/数据库崩溃恢复.md': ['崩溃恢复'],
-        'source-tracks/postgresql/wal-and-recovery/checkpoint机制浅析.md': ['Checkpoint'],
-        'source-tracks/postgresql/getting-started/pg_complie_and_run.md': ['源码编译'],
-        'source-tracks/postgresql/wal-and-recovery/PostgreSQL 时间线解析.md': ['PITR'],
-        'source-tracks/postgresql/getting-started/pgsql_main_structure.md': [],
-        'source-tracks/postgresql/getting-started/postgresql基操.md': [],
-        'source-tracks/postgresql/extensions-perf/sql_test.md': [],
-        'source-tracks/postgresql/index-and-query/insert_data.md': [],  # not really executor content without reading it
+        'source-tracks/postgresql/L5-wal-and-recovery/wal机制浅析.md': ['WAL'],
+        'source-tracks/postgresql/L6-replication-ha/postgresql——流复制和wal日志（八）.md': ['流复制', 'WAL', '复制'],
+        'source-tracks/postgresql/L6-replication-ha/pg_replication.md': ['复制', '流复制'],
+        'source-tracks/postgresql/L1-getting-started/postgresql启动流程.md': ['启动流程', '源码'],
+        'source-tracks/postgresql/L1-getting-started/postgresql源码编译.md': ['源码编译', '源码'],
+        'source-tracks/postgresql/L1-getting-started/Postgres中postmaster代码解析(--boot和--single).md': ['postmaster', '源码'],
+        'source-tracks/postgresql/L2-storage-engine/pg源码对象管理.md': ['源码'],
+        'source-tracks/postgresql/L8-extensions-perf/pg_io_调优.md': ['性能调优'],
+        'source-tracks/postgresql/L5-wal-and-recovery/数据库崩溃恢复.md': ['崩溃恢复'],
+        'source-tracks/postgresql/L5-wal-and-recovery/checkpoint机制浅析.md': ['Checkpoint'],
+        'source-tracks/postgresql/L1-getting-started/pg_complie_and_run.md': ['源码编译'],
+        'source-tracks/postgresql/L5-wal-and-recovery/PostgreSQL 时间线解析.md': ['PITR'],
+        'source-tracks/postgresql/L1-getting-started/pgsql_main_structure.md': [],
+        'source-tracks/postgresql/L1-getting-started/postgresql基操.md': [],
+        'source-tracks/postgresql/L8-extensions-perf/sql_test.md': [],
+        'source-tracks/postgresql/L3-index-and-query/insert_data.md': [],  # not really executor content without reading it
 
         # replication/
-        'source-tracks/postgresql/replication-ha/postgresql流复制同异步分析.md': ['异步复制', '流复制', '复制'],
-        'source-tracks/postgresql/replication-ha/PostgreSQL 同步流复制原理和代码浅析-阿里云开发者社区.md': ['同步流复制', '流复制', '复制'],
-        'source-tracks/postgresql/replication-ha/pg_slot.md': ['复制槽'],
-        'source-tracks/postgresql/replication-ha/PostgreSQL复制槽实操.md': ['复制槽'],
-        'source-tracks/postgresql/replication-ha/pg_walreceiver.md': ['WalReceiver'],
-        'source-tracks/postgresql/replication-ha/PostgreSQL数据库复制——后台一等公民进程WalReceiver&startup交互_postgressql walreceive线程_肥叔菌的博客-CSDN博客.md': ['WalReceiver'],
-        'source-tracks/postgresql/replication-ha/pg_walsender.md': ['WalSender'],
-        'source-tracks/postgresql/replication-ha/PostgreSQL的后台进程walsender分析 - 关系型数据库 - 亿速云.md': ['WalSender'],
-        'source-tracks/postgresql/replication-ha/pg_replication_keepalive.md': ['keepalive', '流复制'],
-        'source-tracks/postgresql/replication-ha/pg_logic_decode.md': ['逻辑解码', '逻辑复制'],
-        'source-tracks/postgresql/replication-ha/详解完整恢复及基于时间点的恢复.md': ['PITR'],
-        'source-tracks/postgresql/replication-ha/docker搭建Postgresql主备集群.md': ['复制'],
-        'source-tracks/postgresql/replication-ha/postgresql startup处理 - postgresql内核分析 - SegmentFault 思否.md': ['源码'],
-        'source-tracks/postgresql/replication-ha/Postgresql存储、索引及系统优化、主备切换.md': ['MVCC', '性能调优'],
+        'source-tracks/postgresql/L6-replication-ha/postgresql流复制同异步分析.md': ['异步复制', '流复制', '复制'],
+        'source-tracks/postgresql/L6-replication-ha/PostgreSQL 同步流复制原理和代码浅析-阿里云开发者社区.md': ['同步流复制', '流复制', '复制'],
+        'source-tracks/postgresql/L6-replication-ha/pg_slot.md': ['复制槽'],
+        'source-tracks/postgresql/L6-replication-ha/PostgreSQL复制槽实操.md': ['复制槽'],
+        'source-tracks/postgresql/L6-replication-ha/pg_walreceiver.md': ['WalReceiver'],
+        'source-tracks/postgresql/L6-replication-ha/PostgreSQL数据库复制——后台一等公民进程WalReceiver&startup交互_postgressql walreceive线程_肥叔菌的博客-CSDN博客.md': ['WalReceiver'],
+        'source-tracks/postgresql/L6-replication-ha/pg_walsender.md': ['WalSender'],
+        'source-tracks/postgresql/L6-replication-ha/PostgreSQL的后台进程walsender分析 - 关系型数据库 - 亿速云.md': ['WalSender'],
+        'source-tracks/postgresql/L6-replication-ha/pg_replication_keepalive.md': ['keepalive', '流复制'],
+        'source-tracks/postgresql/L6-replication-ha/pg_logic_decode.md': ['逻辑解码', '逻辑复制'],
+        'source-tracks/postgresql/L6-replication-ha/详解完整恢复及基于时间点的恢复.md': ['PITR'],
+        'source-tracks/postgresql/L6-replication-ha/docker搭建Postgresql主备集群.md': ['复制'],
+        'source-tracks/postgresql/L6-replication-ha/postgresql startup处理 - postgresql内核分析 - SegmentFault 思否.md': ['源码'],
+        'source-tracks/postgresql/L6-replication-ha/Postgresql存储、索引及系统优化、主备切换.md': ['MVCC', '性能调优'],
 
         # storage/
-        'source-tracks/postgresql/storage-engine/pgsql_storage.md': ['存储'],
-        'source-tracks/postgresql/wal-and-recovery/full_page_writes.md': ['full_page_writes'],
-        'source-tracks/postgresql/wal-and-recovery/pg_checksum.md': ['pg_checksum'],
-        'source-tracks/postgresql/storage-engine/pg共享内存.md': ['共享内存'],
-        'source-tracks/postgresql/storage-engine/PosgreSQL FSM文件解析 – 蛋挞.md': ['FSM', '存储'],
-        'source-tracks/postgresql/wal-and-recovery/xlog.md': ['WAL'],
-        'source-tracks/postgresql/storage-engine/干货  PostgreSQL数据表文件底层结构布局分析 - 知乎.md': ['存储'],
-        'source-tracks/postgresql/storage-engine/file/pgsql_page.md': ['存储'],
-        'source-tracks/postgresql/storage-engine/mm/pg_page.md': ['共享内存'],
-        'source-tracks/postgresql/storage-engine/mm/pgsql内存管理.md': ['共享内存'],
+        'source-tracks/postgresql/L2-storage-engine/pgsql_storage.md': ['存储'],
+        'source-tracks/postgresql/L5-wal-and-recovery/full_page_writes.md': ['full_page_writes'],
+        'source-tracks/postgresql/L5-wal-and-recovery/pg_checksum.md': ['pg_checksum'],
+        'source-tracks/postgresql/L2-storage-engine/pg共享内存.md': ['共享内存'],
+        'source-tracks/postgresql/L2-storage-engine/PosgreSQL FSM文件解析 – 蛋挞.md': ['FSM', '存储'],
+        'source-tracks/postgresql/L5-wal-and-recovery/xlog.md': ['WAL'],
+        'source-tracks/postgresql/L2-storage-engine/干货  PostgreSQL数据表文件底层结构布局分析 - 知乎.md': ['存储'],
+        'source-tracks/postgresql/L2-storage-engine/file/pgsql_page.md': ['存储'],
+        'source-tracks/postgresql/L2-storage-engine/mm/pg_page.md': ['共享内存'],
+        'source-tracks/postgresql/L2-storage-engine/mm/pgsql内存管理.md': ['共享内存'],
 
         # process/
-        'source-tracks/postgresql/wal-and-recovery/BgWriter.md': ['BgWriter'],
-        'source-tracks/postgresql/wal-and-recovery/Checkpoint.md': ['Checkpoint'],
-        'source-tracks/postgresql/wal-and-recovery/WalWriter.md': ['WalWriter'],
+        'source-tracks/postgresql/L5-wal-and-recovery/BgWriter.md': ['BgWriter'],
+        'source-tracks/postgresql/L5-wal-and-recovery/Checkpoint.md': ['Checkpoint'],
+        'source-tracks/postgresql/L5-wal-and-recovery/WalWriter.md': ['WalWriter'],
 
         # executor/
-        'source-tracks/postgresql/index-and-query/PostgreSQL的insert语句执行过程分析 - 墨天轮.md': ['executor'],
+        'source-tracks/postgresql/L3-index-and-query/PostgreSQL的insert语句执行过程分析 - 墨天轮.md': ['executor'],
 
         # debug/
-        'source-tracks/postgresql/getting-started/code-server调试postgresql.md': ['debug'],
+        'source-tracks/postgresql/L1-getting-started/code-server调试postgresql.md': ['debug'],
 
         # ha/
-        'source-tracks/postgresql/replication-ha/repmgr实现原理.md': ['repmgr'],
+        'source-tracks/postgresql/L6-replication-ha/repmgr实现原理.md': ['repmgr'],
 
         # extension/
-        'source-tracks/postgresql/extensions-perf/pgsql扩展.md': ['扩展'],
+        'source-tracks/postgresql/L8-extensions-perf/pgsql扩展.md': ['扩展'],
 
         # kernel/
-        'source-tracks/postgresql/index-and-query/Postgresql触发器详解.md': ['触发器'],
+        'source-tracks/postgresql/L3-index-and-query/Postgresql触发器详解.md': ['触发器'],
 
         # repmgr/
-        'source-tracks/postgresql/replication-ha/pgsql_repmgr.md': ['repmgr'],
-        'source-tracks/postgresql/replication-ha/repmgr_cluster.md': ['repmgr'],
+        'source-tracks/postgresql/L6-replication-ha/pgsql_repmgr.md': ['repmgr'],
+        'source-tracks/postgresql/L6-replication-ha/repmgr_cluster.md': ['repmgr'],
 
         # stats/
-        'source-tracks/postgresql/index-and-query/stats.md': ['统计信息'],
+        'source-tracks/postgresql/L3-index-and-query/stats.md': ['统计信息'],
 
         # pg_command/ - no new tags
-        'source-tracks/postgresql/getting-started/pg_ctl.md': [],
-        'source-tracks/postgresql/getting-started/initdb.md': [],
+        'source-tracks/postgresql/L1-getting-started/pg_ctl.md': [],
+        'source-tracks/postgresql/L1-getting-started/initdb.md': [],
     }
 
     # --- db/ (44 files) ---
     db_tags = {
         # logical_decode/
-        'source-tracks/postgresql/logical-replication/逻辑复制源码分析.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/postgresql逻辑复制-DML.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/逻辑复制解惑.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/逻辑复制支持ddl问题.md': ['逻辑复制', '逻辑解码'],
-        'source-tracks/postgresql/logical-replication/逻辑复制支持DDL需求分析.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/支持ddl评审相关问题.md': ['逻辑复制', '逻辑解码'],
-        'source-tracks/postgresql/logical-replication/指定列同步对逻辑复制支持DDL的影响.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/polardb逻辑解码源码解读.md': ['polardb', '逻辑解码'],
-        'source-tracks/postgresql/logical-replication/ai逻辑解码.md': ['逻辑解码'],
-        'source-tracks/postgresql/logical-replication/LogLogicalMessage详解.md': ['LogLogicalMessage', '逻辑解码'],
-        'source-tracks/postgresql/logical-replication/逻辑解码.md': ['逻辑解码'],
-        'source-tracks/postgresql/logical-replication/逻辑解码支持DDL.md': ['逻辑解码', '逻辑复制'],
-        'source-tracks/postgresql/logical-replication/pg15逻辑复制支持DDL.md': ['逻辑复制', '逻辑解码'],
-        'source-tracks/postgresql/logical-replication/pglogical详解.md': ['pglogical', '逻辑复制'],
-        'source-tracks/postgresql/logical-replication/pglogical支持DDL搭建教程.md': ['pglogical', '逻辑复制'],
-        'source-tracks/postgresql/logical-replication/pglogical.so.md': ['pglogical'],
-        'source-tracks/postgresql/logical-replication/逻辑解码DDL-Replay框架设计.md': ['DDL-Replay', '逻辑解码', '双向同步'],
-        'source-tracks/postgresql/logical-replication/逻辑解码ddl replay支持sqlserver模式.md': ['DDL-Replay', '逻辑解码'],
-        'source-tracks/postgresql/logical-replication/DDL.md': ['逻辑解码'],
-        'source-tracks/postgresql/logical-replication/logical_use.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/逻辑复制源码分析.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/postgresql逻辑复制-DML.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/逻辑复制解惑.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/逻辑复制支持ddl问题.md': ['逻辑复制', '逻辑解码'],
+        'source-tracks/postgresql/L7-logical-replication/逻辑复制支持DDL需求分析.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/支持ddl评审相关问题.md': ['逻辑复制', '逻辑解码'],
+        'source-tracks/postgresql/L7-logical-replication/指定列同步对逻辑复制支持DDL的影响.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/polardb逻辑解码源码解读.md': ['polardb', '逻辑解码'],
+        'source-tracks/postgresql/L7-logical-replication/ai逻辑解码.md': ['逻辑解码'],
+        'source-tracks/postgresql/L7-logical-replication/LogLogicalMessage详解.md': ['LogLogicalMessage', '逻辑解码'],
+        'source-tracks/postgresql/L7-logical-replication/逻辑解码.md': ['逻辑解码'],
+        'source-tracks/postgresql/L7-logical-replication/逻辑解码支持DDL.md': ['逻辑解码', '逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/pg15逻辑复制支持DDL.md': ['逻辑复制', '逻辑解码'],
+        'source-tracks/postgresql/L7-logical-replication/pglogical详解.md': ['pglogical', '逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/pglogical支持DDL搭建教程.md': ['pglogical', '逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/pglogical.so.md': ['pglogical'],
+        'source-tracks/postgresql/L7-logical-replication/逻辑解码DDL-Replay框架设计.md': ['DDL-Replay', '逻辑解码', '双向同步'],
+        'source-tracks/postgresql/L7-logical-replication/逻辑解码ddl replay支持sqlserver模式.md': ['DDL-Replay', '逻辑解码'],
+        'source-tracks/postgresql/L7-logical-replication/DDL.md': ['逻辑解码'],
+        'source-tracks/postgresql/L7-logical-replication/logical_use.md': ['逻辑复制'],
         # ai_coding/
-        'source-tracks/postgresql/logical-replication/ai_coding/ddl_design_improve.md': ['DDL-Replay', '逻辑复制', '双向同步'],
-        'source-tracks/postgresql/logical-replication/ai_coding/逻辑复制支持DDLAI提示词.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/ai_coding/ddl存储生命周期.md': ['逻辑解码', '逻辑复制'],
-        'source-tracks/postgresql/logical-replication/ai_coding/ddl写入wal日志的影响.md': ['逻辑解码', 'WAL'],
-        'source-tracks/postgresql/logical-replication/ai_coding/逻辑复制支持ddl ai配置流程.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/ai_coding/逻辑复制支持DDL概要设计.md': ['逻辑复制', 'DDL-Replay'],
-        'source-tracks/postgresql/logical-replication/ai_coding/逻辑复制支持同步系统表概要设计.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/ai_coding/新增逻辑复制同步系统表.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/ai_coding/ddl_design_improve.md': ['DDL-Replay', '逻辑复制', '双向同步'],
+        'source-tracks/postgresql/L7-logical-replication/ai_coding/逻辑复制支持DDLAI提示词.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/ai_coding/ddl存储生命周期.md': ['逻辑解码', '逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/ai_coding/ddl写入wal日志的影响.md': ['逻辑解码', 'WAL'],
+        'source-tracks/postgresql/L7-logical-replication/ai_coding/逻辑复制支持ddl ai配置流程.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/ai_coding/逻辑复制支持DDL概要设计.md': ['逻辑复制', 'DDL-Replay'],
+        'source-tracks/postgresql/L7-logical-replication/ai_coding/逻辑复制支持同步系统表概要设计.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/ai_coding/新增逻辑复制同步系统表.md': ['逻辑复制'],
 
         # sqlserver/ (also add SQLServer category)
-        'source-tracks/postgresql/logical-replication/sqlserver/sqlserver模式逻辑复制支持ddl.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/sqlserver/逻辑复制同步ddl适配bbf面临的挑战.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/sqlserver/支持逻辑复制同步ddl适配sqlserver方案.md': ['逻辑复制'],
-        'source-tracks/postgresql/logical-replication/sqlserver/babelfish ddl已知限制.md': [],
-        'source-tracks/postgresql/logical-replication/sqlserver/bbf创建分区表.md': [],
-        'source-tracks/postgresql/logical-replication/sqlserver/内核执行babelfish上下文需要考虑的问题.md': [],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/sqlserver模式逻辑复制支持ddl.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/逻辑复制同步ddl适配bbf面临的挑战.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/支持逻辑复制同步ddl适配sqlserver方案.md': ['逻辑复制'],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/babelfish ddl已知限制.md': [],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/bbf创建分区表.md': [],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/内核执行babelfish上下文需要考虑的问题.md': [],
 
         # postgresql/
-        'source-tracks/postgresql/getting-started/使用meson编译pg.md': ['源码编译'],
-        'source-tracks/postgresql/getting-started/part1.md': ['源码'],
-        'source-tracks/postgresql/index-and-query/pg常用函数.md': [],
+        'source-tracks/postgresql/L1-getting-started/使用meson编译pg.md': ['源码编译'],
+        'source-tracks/postgresql/L1-getting-started/part1.md': ['源码'],
+        'source-tracks/postgresql/L3-index-and-query/pg常用函数.md': [],
 
         # mysql/ (also add MySQL category)
-        'source-tracks/postgresql/extensions-perf/macos安装mysql.md': [],
+        'source-tracks/postgresql/L8-extensions-perf/macos安装mysql.md': [],
 
         # taos/ (also add TDengine category)
-        'source-tracks/postgresql/extensions-perf/taos基本使用.md': [],
+        'source-tracks/postgresql/L8-extensions-perf/taos基本使用.md': [],
 
         # root
-        'source-tracks/postgresql/logical-replication/ddl同步架构.md': ['双向同步', '逻辑复制', 'DDL-Replay'],
-        'source-tracks/postgresql/getting-started/命名空间.md': ['命名空间'],
-        'source-tracks/postgresql/getting-started/多数据库模式命名空间问题.md': ['命名空间'],
+        'source-tracks/postgresql/L7-logical-replication/ddl同步架构.md': ['双向同步', '逻辑复制', 'DDL-Replay'],
+        'source-tracks/postgresql/L1-getting-started/命名空间.md': ['命名空间'],
+        'source-tracks/postgresql/L1-getting-started/多数据库模式命名空间问题.md': ['命名空间'],
     }
 
     # --- openguass/ (4 files) ---
     openguass_tags = {
-        'distributed/consensus/openguass dcf启动详解.md': ['DCF'],
-        'distributed/consensus/opengauss dcf搭建 - 墨天轮.md': ['DCF'],
-        'distributed/consensus/openguass架构详解.md': [],
-        'distributed/consensus/openguass升级机制.md': [],
+        'source-tracks/distributed/L2-consensus/openguass dcf启动详解.md': ['DCF'],
+        'source-tracks/distributed/L2-consensus/opengauss dcf搭建 - 墨天轮.md': ['DCF'],
+        'source-tracks/distributed/L2-consensus/openguass架构详解.md': [],
+        'source-tracks/distributed/L2-consensus/openguass升级机制.md': [],
     }
 
     # --- cluster/ (relevant files only) ---
     cluster_tags = {
-        'distributed/consensus/一文读懂openguass dcf网络模块.md': ['DCF'],
-        'distributed/consensus/dcf投票系统详解.md': ['DCF'],
-        'distributed/consensus/dcf写入机制.md': ['DCF'],
-        'distributed/consensus/dcf运行机制.md': ['DCF'],
-        'distributed/consensus/openguass dcf源码阅读.md': ['DCF', '源码'],
-        'distributed/consensus/常用压缩算法编程.md': ['压缩'],
-        'distributed/consensus/raft重要概念.md': ['Raft'],
-        'distributed/consensus/raft协议动态调整quorum.md': ['Raft'],
-        'distributed/consensus/c-raft分布式存储方案.md': ['C-Raft', 'Raft'],
-        'distributed/consensus/c-rart.md': ['Raft', 'C-Raft'],
-        'distributed/ha-and-dr/ha元信息常见存储方式.md': ['HA'],
-        'distributed/ha-and-dr/调整corosync网络波动时间操作文档.md': ['HA'],
-        'distributed/selection/业界高可用解决方案.md': ['HA'],
-        'distributed/ha-and-dr/中移动数据库停库问题分析.md': ['HA'],
-        'distributed/distributed-storage/postgresql伪双写.md': ['伪双写'],
-        'distributed/distributed-storage/haproxy支持postgresql伪双写.md': ['HAProxy', '伪双写'],
-        'distributed/distributed-storage/haproxy使用extern-check支持伪双写配置验证.md': ['HAProxy', '伪双写'],
-        'distributed/distributed-storage/事务管理.md': ['事务管理', '并发控制', '锁'],
-        'distributed/field-notes/多地多中心方案调研.md': ['多中心'],
-        'distributed/field-notes/repmgr网络割裂问题.md': ['repmgr'],
+        'source-tracks/distributed/L2-consensus/一文读懂openguass dcf网络模块.md': ['DCF'],
+        'source-tracks/distributed/L2-consensus/dcf投票系统详解.md': ['DCF'],
+        'source-tracks/distributed/L2-consensus/dcf写入机制.md': ['DCF'],
+        'source-tracks/distributed/L2-consensus/dcf运行机制.md': ['DCF'],
+        'source-tracks/distributed/L2-consensus/openguass dcf源码阅读.md': ['DCF', '源码'],
+        'source-tracks/distributed/L2-consensus/常用压缩算法编程.md': ['压缩'],
+        'source-tracks/distributed/L2-consensus/raft重要概念.md': ['Raft'],
+        'source-tracks/distributed/L2-consensus/raft协议动态调整quorum.md': ['Raft'],
+        'source-tracks/distributed/L2-consensus/c-raft分布式存储方案.md': ['C-Raft', 'Raft'],
+        'source-tracks/distributed/L2-consensus/c-rart.md': ['Raft', 'C-Raft'],
+        'source-tracks/distributed/L3-ha-and-dr/ha元信息常见存储方式.md': ['HA'],
+        'source-tracks/distributed/L3-ha-and-dr/调整corosync网络波动时间操作文档.md': ['HA'],
+        'source-tracks/distributed/L3-ha-and-dr/业界高可用解决方案.md': ['HA'],
+        'source-tracks/distributed/L3-ha-and-dr/中移动数据库停库问题分析.md': ['HA'],
+        'source-tracks/distributed/L3-ha-and-dr/postgresql伪双写.md': ['伪双写'],
+        'source-tracks/distributed/L3-ha-and-dr/haproxy支持postgresql伪双写.md': ['HAProxy', '伪双写'],
+        'source-tracks/distributed/L3-ha-and-dr/haproxy使用extern-check支持伪双写配置验证.md': ['HAProxy', '伪双写'],
+        'source-tracks/distributed/L3-ha-and-dr/事务管理.md': ['事务管理', '并发控制', '锁'],
+        'source-tracks/distributed/L4-field-notes/多地多中心方案调研.md': ['多中心'],
+        'source-tracks/distributed/L4-field-notes/repmgr网络割裂问题.md': ['repmgr'],
     }
 
     # --- database/ (1 file) ---
     database_tags = {
-        'source-tracks/postgresql/extensions-perf/polardb竞争力分析.md': ['polardb'],
+        'source-tracks/postgresql/L8-extensions-perf/polardb竞争力分析.md': ['polardb'],
     }
 
     # --- Category additions (for MySQL, SQLServer, TDengine pages) ---
     category_additions = {
-        'source-tracks/postgresql/logical-replication/sqlserver/sqlserver模式逻辑复制支持ddl.md': ['SQLServer'],
-        'source-tracks/postgresql/logical-replication/sqlserver/逻辑复制同步ddl适配bbf面临的挑战.md': ['SQLServer'],
-        'source-tracks/postgresql/logical-replication/sqlserver/支持逻辑复制同步ddl适配sqlserver方案.md': ['SQLServer'],
-        'source-tracks/postgresql/logical-replication/sqlserver/babelfish ddl已知限制.md': ['SQLServer'],
-        'source-tracks/postgresql/logical-replication/sqlserver/bbf创建分区表.md': ['SQLServer'],
-        'source-tracks/postgresql/logical-replication/sqlserver/内核执行babelfish上下文需要考虑的问题.md': ['SQLServer'],
-        'source-tracks/postgresql/extensions-perf/macos安装mysql.md': ['MySQL'],
-        'source-tracks/postgresql/extensions-perf/taos基本使用.md': ['TDengine'],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/sqlserver模式逻辑复制支持ddl.md': ['SQLServer'],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/逻辑复制同步ddl适配bbf面临的挑战.md': ['SQLServer'],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/支持逻辑复制同步ddl适配sqlserver方案.md': ['SQLServer'],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/babelfish ddl已知限制.md': ['SQLServer'],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/bbf创建分区表.md': ['SQLServer'],
+        'source-tracks/postgresql/L7-logical-replication/sqlserver/内核执行babelfish上下文需要考虑的问题.md': ['SQLServer'],
+        'source-tracks/postgresql/L8-extensions-perf/macos安装mysql.md': ['MySQL'],
+        'source-tracks/postgresql/L8-extensions-perf/taos基本使用.md': ['TDengine'],
     }
 
     # Merge all

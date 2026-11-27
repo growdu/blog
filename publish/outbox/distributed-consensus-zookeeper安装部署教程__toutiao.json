@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/zookeeper安装部署教程",
+  "content_id": "source-tracks/distributed/L2-consensus/zookeeper安装部署教程",
   "draft_id": "7708376778738090532",
   "package_dir": "toutiao/out/distributed-consensus-zookeeper安装部署教程",
   "platform": "toutiao",

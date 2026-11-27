@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/storage-engine/pg共享内存",
+  "content_id": "source-tracks/postgresql/L2-storage-engine/pg共享内存",
   "draft_id": "7708376846991213075",
   "package_dir": "toutiao/out/source-tracks-postgresql-storage-engine-pg共享内存",
   "platform": "toutiao",

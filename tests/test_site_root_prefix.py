@@ -91,17 +91,17 @@ def test_site_root_keeps_a_relative_root_rooted(tmp_path):
 def test_permalink_without_root_is_the_legacy_format():
     """The primary domain's URLs must not change."""
     assert (
-        site_root.permalink("2026-11-11 23:20:00", "life/gaokao/chemistry-methods")
-        == "/2026/11/11/life/gaokao/chemistry-methods/"
+        site_root.permalink("2026-11-11 23:20:00", "source-tracks/life/L2-exam-prep/chemistry-methods")
+        == "/2026/11/11/source-tracks/life/L2-exam-prep/chemistry-methods/"
     )
 
 
 def test_permalink_carries_the_mount_point():
     assert (
         site_root.permalink(
-            "2026-11-11 23:20:00", "life/gaokao/chemistry-methods", root="/blog"
+            "2026-11-11 23:20:00", "source-tracks/life/L2-exam-prep/chemistry-methods", root="/blog"
         )
-        == "/blog/2026/11/11/life/gaokao/chemistry-methods/"
+        == "/blog/2026/11/11/source-tracks/life/L2-exam-prep/chemistry-methods/"
     )
 
 
@@ -110,11 +110,11 @@ def test_resolved_cross_links_carry_the_mount_point(sync, monkeypatch):
     monkeypatch.setattr(site_root, "_ROOT_CACHE", {})
     monkeypatch.setattr(site_root, "site_root", lambda *a, **k: "/blog")
     url = sync._resolve_link_target(
-        "life/gaokao/yunnan-policy/index.html", "life/gaokao/chemistry-methods"
+        "source-tracks/life/L2-exam-prep/yunnan-policy/index.html", "source-tracks/life/L2-exam-prep/chemistry-methods"
     )
     assert url is not None
     assert url.startswith("/blog/")
-    assert url.endswith("/life/gaokao/yunnan-policy/")
+    assert url.endswith("/source-tracks/life/L2-exam-prep/yunnan-policy/")
 
 
 def test_no_hardcoded_absolute_permalinks_remain_in_the_sync_tool():
@@ -128,26 +128,26 @@ def test_root_absolute_markdown_links_get_the_mount_point(sync, monkeypatch):
     """A hand-written `](/2026/...)` link is site-internal, so it needs the root."""
     monkeypatch.setattr(sync, "SITE_ROOT", "/blog")
     out = sync.rewrite_links(
-        "见 [政策](/2026/11/11/life/gaokao/yunnan-policy/)",
-        "life/gaokao/chemistry-methods/index.md",
+        "见 [政策](/2026/11/11/source-tracks/life/L2-exam-prep/yunnan-policy/)",
+        "source-tracks/life/L2-exam-prep/chemistry-methods/index.md",
     )
-    assert "](/blog/2026/11/11/life/gaokao/yunnan-policy/)" in out
+    assert "](/blog/2026/11/11/source-tracks/life/L2-exam-prep/yunnan-policy/)" in out
 
 
 def test_root_absolute_markdown_links_are_untouched_without_a_root(sync, monkeypatch):
     monkeypatch.setattr(sync, "SITE_ROOT", "")
     out = sync.rewrite_links(
-        "见 [政策](/2026/11/11/life/gaokao/yunnan-policy/)",
-        "life/gaokao/chemistry-methods/index.md",
+        "见 [政策](/2026/11/11/source-tracks/life/L2-exam-prep/yunnan-policy/)",
+        "source-tracks/life/L2-exam-prep/chemistry-methods/index.md",
     )
-    assert "](/2026/11/11/life/gaokao/yunnan-policy/)" in out
+    assert "](/2026/11/11/source-tracks/life/L2-exam-prep/yunnan-policy/)" in out
 
 
 def test_protocol_relative_links_are_never_rewritten(sync, monkeypatch):
     monkeypatch.setattr(sync, "SITE_ROOT", "/blog")
     out = sync.rewrite_links(
         "见 [CDN](//cdn.example/x.js)",
-        "life/gaokao/chemistry-methods/index.md",
+        "source-tracks/life/L2-exam-prep/chemistry-methods/index.md",
     )
     assert "](//cdn.example/x.js)" in out
 
@@ -236,14 +236,14 @@ def _load_link_checker():
 def test_link_checker_strips_the_mount_point_prefix():
     checker = _load_link_checker()
     prefix = checker.ROOT_PREFIX
-    mounted = f"{prefix}/2026/11/11/life/gaokao/chemistry-methods/"
-    assert checker.strip_root(mounted) == "/2026/11/11/life/gaokao/chemistry-methods/"
+    mounted = f"{prefix}/2026/11/11/source-tracks/life/L2-exam-prep/chemistry-methods/"
+    assert checker.strip_root(mounted) == "/2026/11/11/source-tracks/life/L2-exam-prep/chemistry-methods/"
 
 
 def test_link_checker_leaves_root_less_links_alone():
     checker = _load_link_checker()
-    assert checker.strip_root("/2026/11/11/life/gaokao/chemistry-methods/") == (
-        "/2026/11/11/life/gaokao/chemistry-methods/"
+    assert checker.strip_root("/2026/11/11/source-tracks/life/L2-exam-prep/chemistry-methods/") == (
+        "/2026/11/11/source-tracks/life/L2-exam-prep/chemistry-methods/"
     )
 
 
@@ -251,7 +251,7 @@ def test_link_checker_resolves_a_mounted_link_to_the_built_file():
     checker = _load_link_checker()
     if not checker.PUBLIC.is_dir():
         pytest.skip("还没有构建产物（public/ 不存在）")
-    link = f"{checker.ROOT_PREFIX}/2026/11/11/life/gaokao/chemistry-methods/"
+    link = f"{checker.ROOT_PREFIX}/2026/11/11/source-tracks/life/L2-exam-prep/chemistry-methods/"
     target = checker.PUBLIC / checker.strip_root(link).strip("/") / "index.html"
     assert target.exists(), f"干净检出里应存在 {target}"
 

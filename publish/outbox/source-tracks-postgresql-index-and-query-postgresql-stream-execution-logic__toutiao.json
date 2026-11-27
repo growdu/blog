@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/index-and-query/postgresql-stream-execution-logic",
+  "content_id": "source-tracks/postgresql/L3-index-and-query/postgresql-stream-execution-logic",
   "draft_id": "7708374873659163177",
   "package_dir": "toutiao/out/source-tracks-postgresql-index-and-query-postgresql-stream-execution-logic",
   "platform": "toutiao",

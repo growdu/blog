@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive",
+  "content_id": "source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive",
   "draft_id": "7708374945595736617",
   "package_dir": "toutiao/out/source-tracks-postgresql-transaction-mvcc-postgresql-row-lock-deep-dive",
   "platform": "toutiao",

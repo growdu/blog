@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/PostgreSQL的后台进程walsender分析 - 关系型数据库 - 亿速云",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/PostgreSQL的后台进程walsender分析 - 关系型数据库 - 亿速云",
   "draft_id": "7708376343473390099",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-PostgreSQL的后台进程walsender分析 - 关系型数据库 - 亿速云",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/getting-started/initdb",
+  "content_id": "source-tracks/postgresql/L1-getting-started/initdb",
   "draft_id": "7708376806672384553",
   "package_dir": "toutiao/out/source-tracks-postgresql-getting-started-initdb",
   "platform": "toutiao",

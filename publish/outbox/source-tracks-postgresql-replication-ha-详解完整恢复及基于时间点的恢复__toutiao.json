@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/详解完整恢复及基于时间点的恢复",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/详解完整恢复及基于时间点的恢复",
   "draft_id": "7708376178012258857",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-详解完整恢复及基于时间点的恢复",
   "platform": "toutiao",

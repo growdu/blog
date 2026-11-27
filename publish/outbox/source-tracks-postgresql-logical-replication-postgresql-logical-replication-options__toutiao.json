@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/postgresql-logical-replication-options",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-options",
   "draft_id": "7708375244578603574",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-postgresql-logical-replication-options",
   "platform": "toutiao",

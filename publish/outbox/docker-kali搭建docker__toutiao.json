@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "docker/kali搭建docker",
+  "content_id": "source-tracks/engineering/L3-container/kali搭建docker",
   "draft_id": "7708376334040384036",
   "package_dir": "toutiao/out/docker-kali搭建docker",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/vpp buffer接口",
+  "content_id": "source-tracks/dataplane/L2-architecture/vpp buffer接口",
   "draft_id": "7708376505166217791",
   "package_dir": "toutiao/out/vpp-vpp buffer接口",
   "platform": "toutiao",

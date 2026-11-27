@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/PostgreSQL复制槽实操",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/PostgreSQL复制槽实操",
   "draft_id": "7708375917659275795",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-PostgreSQL复制槽实操",
   "platform": "toutiao",

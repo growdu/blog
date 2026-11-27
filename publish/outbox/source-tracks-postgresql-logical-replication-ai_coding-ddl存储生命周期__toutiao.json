@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/ai_coding/ddl存储生命周期",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/ai_coding/ddl存储生命周期",
   "draft_id": "7708375686905381418",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-ai_coding-ddl存储生命周期",
   "platform": "toutiao",

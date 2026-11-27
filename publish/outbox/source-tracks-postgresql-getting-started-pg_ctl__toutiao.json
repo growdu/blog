@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/getting-started/pg_ctl",
+  "content_id": "source-tracks/postgresql/L1-getting-started/pg_ctl",
   "draft_id": "7708376840615821867",
   "package_dir": "toutiao/out/source-tracks-postgresql-getting-started-pg_ctl",
   "platform": "toutiao",

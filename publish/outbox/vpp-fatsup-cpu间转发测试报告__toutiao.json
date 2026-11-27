@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/fatsup-cpu间转发测试报告",
+  "content_id": "source-tracks/dataplane/L4-testing/fatsup-cpu间转发测试报告",
   "draft_id": "7708375387398603306",
   "package_dir": "toutiao/out/vpp-fatsup-cpu间转发测试报告",
   "platform": "toutiao",

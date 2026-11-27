@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/逻辑复制支持DDL需求分析",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/逻辑复制支持DDL需求分析",
   "draft_id": "7708375718782288447",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-逻辑复制支持DDL需求分析",
   "platform": "toutiao",

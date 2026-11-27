@@ -164,16 +164,16 @@ def test_cli_reports_missing_path():
 # 审校过的正文合入后，段落不该又长回去——AIF-03 盯的就是「单段 > 200 字」。
 # 改文章时把两段并回一段，这条测试会报出来：审校完的稿子不能带新债。
 REVIEWED_ARTICLES = (
-    "docs/source-tracks/postgresql/transaction-mvcc/postgresql-mvcc/index.md",
-    "docs/source-tracks/postgresql/logical-replication/postgresql-logical-replication-worker-model/index.md",
-    "docs/source-tracks/postgresql/transaction-mvcc/learning-path/06-heap-and-mvcc.md",
-    "docs/source-tracks/postgresql/wal-and-recovery/checkpoint机制浅析.md",
-    "docs/distributed/foundations/分布式一致性协议.md",
-    "docs/base/file.md",
-    "docs/distributed/field-notes/corosync-down网卡仍处于多数派/index.md",
-    "docs/distributed/ha-and-dr/tptc.md",
-    "docs/source-tracks/linux/networking/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md",
-    "docs/source-tracks/postgresql/replication-ha/Postgresql存储、索引及系统优化、主备切换/index.md",
+    "docs/source-tracks/postgresql/L4-transaction-mvcc/postgresql-mvcc/index.md",
+    "docs/source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-worker-model/index.md",
+    "docs/source-tracks/postgresql/L4-transaction-mvcc/learning-path/06-heap-and-mvcc.md",
+    "docs/source-tracks/postgresql/L5-wal-and-recovery/checkpoint机制浅析.md",
+    "docs/source-tracks/distributed/L1-foundations/分布式一致性协议.md",
+    "docs/source-tracks/engineering/L1-basics/file.md",
+    "docs/source-tracks/distributed/L4-field-notes/corosync-down网卡仍处于多数派/index.md",
+    "docs/source-tracks/distributed/L3-ha-and-dr/tptc.md",
+    "docs/source-tracks/linux/L4-networking/从原理到实践，彻底告别 IPv6 上网不稳定的问题.md",
+    "docs/source-tracks/postgresql/L6-replication-ha/Postgresql存储、索引及系统优化、主备切换/index.md",
 )
 
 

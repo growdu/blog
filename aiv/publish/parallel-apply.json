@@ -1,7 +1,7 @@
 {
   "episode": "parallel-apply",
   "title": "并行接收之后，谁先应用",
-  "url": "https://growdu.cn/2026/11/12/life/aiv/",
+  "url": "https://growdu.cn/2026/11/12/source-tracks/blogging/L4-video-pipeline/aiv/",
   "cover_at": 18.0,
   "channels": {
     "title": "发布端并行了 订阅端还在排队",

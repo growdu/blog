@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "tools/nc",
+  "content_id": "source-tracks/engineering/L2-tooling/nc",
   "draft_id": "7708376943565783595",
   "package_dir": "toutiao/out/tools-nc",
   "platform": "toutiao",

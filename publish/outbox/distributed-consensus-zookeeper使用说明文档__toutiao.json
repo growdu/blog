@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/zookeeper使用说明文档",
+  "content_id": "source-tracks/distributed/L2-consensus/zookeeper使用说明文档",
   "draft_id": "7708376765235823146",
   "package_dir": "toutiao/out/distributed-consensus-zookeeper使用说明文档",
   "platform": "toutiao",

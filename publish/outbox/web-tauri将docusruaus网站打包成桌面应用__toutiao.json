@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "web/tauri将docusruaus网站打包成桌面应用",
+  "content_id": "source-tracks/engineering/L4-web/tauri将docusruaus网站打包成桌面应用",
   "draft_id": "7708375895693656619",
   "package_dir": "toutiao/out/web-tauri将docusruaus网站打包成桌面应用",
   "platform": "toutiao",

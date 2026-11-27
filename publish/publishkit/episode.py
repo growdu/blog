@@ -26,7 +26,7 @@
 为什么落地 URL 必须派生、不能手写
 ----------------------------------
 2026-11-14 实测：六期的 ``aiv/publish/<EP>.json`` 里，**五期**的 ``url``
-指向 ``https://growdu.cn/2026/11/12/life/aiv/``，那个路径返回
+指向 ``https://growdu.cn/2026/11/12/source-tracks/blogging/L4-video-pipeline/aiv/``，那个路径返回
 **200 + 首页正文**（服务端对任何未知路径软 404 回首页）；剩下**一期**指向
 一篇母稿，而不是期号页。
 
@@ -383,8 +383,8 @@ def landing_url(content_id: str, date: str, root: str = "") -> str:
     ``= SITE_ROOT + "/" + permalink(content_id)``，permalink 用 Hexo 的
     ``:year/:month/:day/:title/``（``_config.yml`` 的 ``permalink``）：
 
-    >>> landing_url("source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive", "2026-10-15")
-    '/2026/10/15/source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive/'
+    >>> landing_url("source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive", "2026-10-15")
+    '/2026/10/15/source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive/'
 
     ``root`` 是部署挂载点：主站 ``""``，GitHub Pages 镜像 ``"/blog"``。
     """
@@ -416,12 +416,12 @@ def content_id_for_draft(path, drafts_root) -> str:
     ==========================================  ==========================================
     母稿                                        内容单元 id
     ==========================================  ==========================================
-    ``docs/database/postgresql-row-lock-        ``source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive``
+    ``docs/database/postgresql-row-lock-        ``source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive``
     deep-dive/index.md``
     ``docs/blog/scheduled.md``                  ``blog/scheduled``
     ==========================================  ==========================================
 
-    直接拿母稿路径去后缀会得到 ``source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive/index``，
+    直接拿母稿路径去后缀会得到 ``source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive/index``，
     派生的落地 URL 指向一个**不存在**的页面——所以这一条不能省。
 
     与编译产物的等价性由 ``publish/tests/test_episode.py`` 的集成测试钉住：

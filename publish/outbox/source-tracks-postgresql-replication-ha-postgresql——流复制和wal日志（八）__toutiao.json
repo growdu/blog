@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/postgresql——流复制和wal日志（八）",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/postgresql——流复制和wal日志（八）",
   "draft_id": "7708376025205457427",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-postgresql——流复制和wal日志（八）",
   "platform": "toutiao",

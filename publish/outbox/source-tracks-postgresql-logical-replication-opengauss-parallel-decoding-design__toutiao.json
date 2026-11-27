@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/opengauss-parallel-decoding-design",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/opengauss-parallel-decoding-design",
   "draft_id": "7708374915975627305",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-opengauss-parallel-decoding-design",
   "platform": "toutiao",

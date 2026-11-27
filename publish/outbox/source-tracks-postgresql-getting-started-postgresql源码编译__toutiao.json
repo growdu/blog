@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/getting-started/postgresql源码编译",
+  "content_id": "source-tracks/postgresql/L1-getting-started/postgresql源码编译",
   "draft_id": "7708376131610804790",
   "package_dir": "toutiao/out/source-tracks-postgresql-getting-started-postgresql源码编译",
   "platform": "toutiao",

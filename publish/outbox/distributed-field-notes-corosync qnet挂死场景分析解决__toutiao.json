@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/field-notes/corosync qnet挂死场景分析解决",
+  "content_id": "source-tracks/distributed/L4-field-notes/corosync qnet挂死场景分析解决",
   "draft_id": "7708376359844512319",
   "package_dir": "toutiao/out/distributed-field-notes-corosync qnet挂死场景分析解决",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/docker搭建Postgresql主备集群",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/docker搭建Postgresql主备集群",
   "draft_id": "7708376020008567332",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-docker搭建Postgresql主备集群",
   "platform": "toutiao",

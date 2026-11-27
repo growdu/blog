@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/fastup测试报告",
+  "content_id": "source-tracks/dataplane/L4-testing/fastup测试报告",
   "draft_id": "7708376708843422227",
   "package_dir": "toutiao/out/dpdk-fastup测试报告",
   "platform": "toutiao",

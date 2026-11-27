@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/selection/基于corosync的分布式应用程序开发方案分析",
+  "content_id": "source-tracks/distributed/L3-ha-and-dr/基于corosync的分布式应用程序开发方案分析",
   "draft_id": "7708376452831478314",
   "package_dir": "toutiao/out/distributed-selection-基于corosync的分布式应用程序开发方案分析",
   "platform": "toutiao",

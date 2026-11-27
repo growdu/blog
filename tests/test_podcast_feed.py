@@ -52,7 +52,7 @@ def _index():
                 "hook": "并发提交的时间是乱的",
                 "duration_s": 35.316,
                 "date": "2026-10-19",
-                "content_id": "source-tracks/postgresql/logical-replication/opengauss-csn-total-ordering",
+                "content_id": "source-tracks/postgresql/L7-logical-replication/opengauss-csn-total-ordering",
                 "video_date": "2026-11-12",
                 "video_content_id": "video/csn-total-ordering",
                 "platforms": [],
@@ -65,7 +65,7 @@ def _index():
                 "hook": "MVCC 让读不挡写",
                 "duration_s": 35.172,
                 "date": "2026-10-15",
-                "content_id": "source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive",
+                "content_id": "source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive",
                 "video_date": "2026-11-12",
                 "video_content_id": "video/row-lock",
                 "platforms": [],
@@ -178,7 +178,7 @@ def test_the_item_links_to_the_full_article(tmp_path, monkeypatch):
     root = ET.fromstring(text)
 
     link = root.find("./channel/item/link").text
-    assert link.endswith("/2026/10/15/source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive/")
+    assert link.endswith("/2026/10/15/source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive/")
 
 
 # --- 2. 托管 ---------------------------------------------------------------

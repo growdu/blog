@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/c-raft分布式存储方案",
+  "content_id": "source-tracks/distributed/L2-consensus/c-raft分布式存储方案",
   "draft_id": "7708376739776446995",
   "package_dir": "toutiao/out/distributed-consensus-c-raft分布式存储方案",
   "platform": "toutiao",

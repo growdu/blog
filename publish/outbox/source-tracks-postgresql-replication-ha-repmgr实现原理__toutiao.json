@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/repmgr实现原理",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/repmgr实现原理",
   "draft_id": "7708376022747595283",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-repmgr实现原理",
   "platform": "toutiao",

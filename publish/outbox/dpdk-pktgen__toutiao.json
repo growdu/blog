@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/pktgen",
+  "content_id": "source-tracks/dataplane/L1-environment/pktgen",
   "draft_id": "7708376619777393206",
   "package_dir": "toutiao/out/dpdk-pktgen",
   "platform": "toutiao",

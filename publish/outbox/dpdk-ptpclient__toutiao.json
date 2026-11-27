@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/ptpclient",
+  "content_id": "source-tracks/dataplane/L1-environment/ptpclient",
   "draft_id": "7708376672189366838",
   "package_dir": "toutiao/out/dpdk-ptpclient",
   "platform": "toutiao",

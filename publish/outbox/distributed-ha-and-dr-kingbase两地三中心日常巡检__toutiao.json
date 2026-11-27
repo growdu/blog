@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/ha-and-dr/kingbase两地三中心日常巡检",
+  "content_id": "source-tracks/distributed/L3-ha-and-dr/kingbase两地三中心日常巡检",
   "draft_id": "7708376124358804010",
   "package_dir": "toutiao/out/distributed-ha-and-dr-kingbase两地三中心日常巡检",
   "platform": "toutiao",

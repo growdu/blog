@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/linux/daily-ops/解决SSH连接Linux超时自动断开",
+  "content_id": "source-tracks/linux/L1-daily-ops/解决SSH连接Linux超时自动断开",
   "draft_id": "7708376133163336228",
   "package_dir": "toutiao/out/source-tracks-linux-daily-ops-解决SSH连接Linux超时自动断开",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/fastup发包测试说明文档",
+  "content_id": "source-tracks/dataplane/L4-testing/fastup发包测试说明文档",
   "draft_id": "7708376515154559524",
   "package_dir": "toutiao/out/vpp-fastup发包测试说明文档",
   "platform": "toutiao",

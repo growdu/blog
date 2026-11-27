@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/getting-started/pgsql_main_structure",
+  "content_id": "source-tracks/postgresql/L1-getting-started/pgsql_main_structure",
   "draft_id": "7708376940834554404",
   "package_dir": "toutiao/out/source-tracks-postgresql-getting-started-pgsql_main_structure",
   "platform": "toutiao",

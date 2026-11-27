@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "protocol/protobuf实现rpc",
+  "content_id": "source-tracks/linux/L4-networking/protobuf实现rpc",
   "draft_id": "7708375870594941494",
   "package_dir": "toutiao/out/protocol-protobuf实现rpc",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/dpdk常用接口指北",
+  "content_id": "source-tracks/dataplane/L1-environment/dpdk常用接口指北",
   "draft_id": "7708376725297709611",
   "package_dir": "toutiao/out/dpdk-dpdk常用接口指北",
   "platform": "toutiao",

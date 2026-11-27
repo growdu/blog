@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/raft重要概念",
+  "content_id": "source-tracks/distributed/L2-consensus/raft重要概念",
   "draft_id": "7708376381154951734",
   "package_dir": "toutiao/out/distributed-consensus-raft重要概念",
   "platform": "toutiao",

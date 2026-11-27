@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/fastup-kni设计实现说明文档",
+  "content_id": "source-tracks/dataplane/L3-plugin-dev/fastup-kni设计实现说明文档",
   "draft_id": "7708375402317627945",
   "package_dir": "toutiao/out/vpp-fastup-kni设计实现说明文档",
   "platform": "toutiao",

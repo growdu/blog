@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/pktgen编译使用",
+  "content_id": "source-tracks/dataplane/L1-environment/pktgen编译使用",
   "draft_id": "7708376672189415990",
   "package_dir": "toutiao/out/dpdk-pktgen编译使用",
   "platform": "toutiao",

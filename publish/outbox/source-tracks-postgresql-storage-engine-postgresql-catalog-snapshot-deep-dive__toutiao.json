@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/storage-engine/postgresql-catalog-snapshot-deep-dive",
+  "content_id": "source-tracks/postgresql/L2-storage-engine/postgresql-catalog-snapshot-deep-dive",
   "draft_id": "7708374815962300947",
   "package_dir": "toutiao/out/source-tracks-postgresql-storage-engine-postgresql-catalog-snapshot-deep-dive",
   "platform": "toutiao",

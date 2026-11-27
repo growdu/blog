@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/storage-engine/mm/pg_page",
+  "content_id": "source-tracks/postgresql/L2-storage-engine/mm/pg_page",
   "draft_id": "7708376882202395190",
   "package_dir": "toutiao/out/source-tracks-postgresql-storage-engine-mm-pg_page",
   "platform": "toutiao",

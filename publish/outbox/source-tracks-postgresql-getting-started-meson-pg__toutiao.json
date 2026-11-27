@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/getting-started/meson-pg",
+  "content_id": "source-tracks/postgresql/L1-getting-started/meson-pg",
   "draft_id": "7708375244578685494",
   "package_dir": "toutiao/out/source-tracks-postgresql-getting-started-meson-pg",
   "platform": "toutiao",

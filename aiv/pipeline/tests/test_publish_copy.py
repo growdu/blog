@@ -1,7 +1,7 @@
-"""发布副本的守卫：docs/life/aiv/ 下的文档必须与 aiv/ 正本逐字节一致。
+"""发布副本的守卫：docs/source-tracks/blogging/L4-video-pipeline/aiv/ 下的文档必须与 aiv/ 正本逐字节一致。
 
 `aiv/` 在仓库根，不在 `docs/` 下面，而 `sync-hexo.py` 只扫 `docs/`——
-所以博客上那几篇规范文档，实际发布出去的是 `docs/life/aiv/` 里的副本。
+所以博客上那几篇规范文档，实际发布出去的是 `docs/source-tracks/blogging/L4-video-pipeline/aiv/` 里的副本。
 
 两份一旦漂移，线上内容就会和仓库里的规范对不上，而且没人会发现：
 构建照常通过，测试照常全绿，只有读者看到的是旧版本。

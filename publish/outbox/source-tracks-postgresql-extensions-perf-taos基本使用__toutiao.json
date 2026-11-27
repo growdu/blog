@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/taos基本使用",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/taos基本使用",
   "draft_id": "7708375935006900772",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-taos基本使用",
   "platform": "toutiao",

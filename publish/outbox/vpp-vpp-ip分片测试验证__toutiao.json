@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/vpp-ip分片测试验证",
+  "content_id": "source-tracks/dataplane/L4-testing/vpp-ip分片测试验证",
   "draft_id": "7708375346990596662",
   "package_dir": "toutiao/out/vpp-vpp-ip分片测试验证",
   "platform": "toutiao",

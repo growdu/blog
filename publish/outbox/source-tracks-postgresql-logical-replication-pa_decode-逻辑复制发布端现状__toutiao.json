@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/pa_decode/逻辑复制发布端现状",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/pa_decode/逻辑复制发布端现状",
   "draft_id": "7708374853296734739",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-pa_decode-逻辑复制发布端现状",
   "platform": "toutiao",

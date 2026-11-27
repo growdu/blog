@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/pgoutput_change到HeapTupleSatisfiesVisibility调用栈分析",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/pgoutput_change到HeapTupleSatisfiesVisibility调用栈分析",
   "draft_id": "7708374854050824746",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-pgoutput_change到HeapTupleSatisfiesVisibility调用栈分析",
   "platform": "toutiao",

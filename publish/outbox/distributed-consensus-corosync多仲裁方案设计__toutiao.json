@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/corosync多仲裁方案设计",
+  "content_id": "source-tracks/distributed/L2-consensus/corosync多仲裁方案设计",
   "draft_id": "7708376735363908137",
   "package_dir": "toutiao/out/distributed-consensus-corosync多仲裁方案设计",
   "platform": "toutiao",

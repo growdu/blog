@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/index-and-query/insert_data",
+  "content_id": "source-tracks/postgresql/L3-index-and-query/insert_data",
   "draft_id": "7708376920399823396",
   "package_dir": "toutiao/out/source-tracks-postgresql-index-and-query-insert_data",
   "platform": "toutiao",

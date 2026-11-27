@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/pg_replication",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/pg_replication",
   "draft_id": "7708376903023624723",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-pg_replication",
   "platform": "toutiao",

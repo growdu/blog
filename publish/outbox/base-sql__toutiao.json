@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "base/sql",
+  "content_id": "source-tracks/engineering/L1-basics/sql",
   "draft_id": "7708376963831972394",
   "package_dir": "toutiao/out/base-sql",
   "platform": "toutiao",

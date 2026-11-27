@@ -1,7 +1,7 @@
 {
   "episode": "structured-ddl",
   "title": "为什么 DDL 同步不能直接把 SQL 文本发过去",
-  "url": "https://growdu.cn/2026/11/12/life/aiv/",
+  "url": "https://growdu.cn/2026/11/12/source-tracks/blogging/L4-video-pipeline/aiv/",
   "cover_at": 17.0,
   "channels": {
     "title": "DDL 同步 不能直接发 SQL",

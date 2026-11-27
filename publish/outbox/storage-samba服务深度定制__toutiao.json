@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "storage/samba服务深度定制",
+  "content_id": "source-tracks/linux/L5-filesystem/samba服务深度定制",
   "draft_id": "7708376034311225875",
   "package_dir": "toutiao/out/storage-samba服务深度定制",
   "platform": "toutiao",

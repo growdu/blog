@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/storage-engine/postgresql-catalog-storage",
+  "content_id": "source-tracks/postgresql/L2-storage-engine/postgresql-catalog-storage",
   "draft_id": "7708375030379381291",
   "package_dir": "toutiao/out/source-tracks-postgresql-storage-engine-postgresql-catalog-storage",
   "platform": "toutiao",

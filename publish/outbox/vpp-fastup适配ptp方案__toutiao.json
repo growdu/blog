@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/fastup适配ptp方案",
+  "content_id": "source-tracks/dataplane/L3-plugin-dev/fastup适配ptp方案",
   "draft_id": "7708376503964205610",
   "package_dir": "toutiao/out/vpp-fastup适配ptp方案",
   "platform": "toutiao",

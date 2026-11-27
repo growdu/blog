@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/linux/memory-and-linking/ebpf/rust-ebpf编程基础",
+  "content_id": "source-tracks/linux/L2-memory-and-linking/ebpf/rust-ebpf编程基础",
   "draft_id": "7708375826705777215",
   "package_dir": "toutiao/out/source-tracks-linux-memory-and-linking-ebpf-rust-ebpf编程基础",
   "platform": "toutiao",

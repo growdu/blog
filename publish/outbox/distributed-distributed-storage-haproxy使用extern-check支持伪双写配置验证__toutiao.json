@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/distributed-storage/haproxy使用extern-check支持伪双写配置验证",
+  "content_id": "source-tracks/distributed/L3-ha-and-dr/haproxy使用extern-check支持伪双写配置验证",
   "draft_id": "7708375823631270419",
   "package_dir": "toutiao/out/distributed-distributed-storage-haproxy使用extern-check支持伪双写配置验证",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/sql_test",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/sql_test",
   "draft_id": "7708376905531114027",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-sql_test",
   "platform": "toutiao",

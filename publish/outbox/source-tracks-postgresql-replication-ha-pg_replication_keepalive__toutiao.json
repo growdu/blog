@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/pg_replication_keepalive",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/pg_replication_keepalive",
   "draft_id": "7708376852372439594",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-pg_replication_keepalive",
   "platform": "toutiao",

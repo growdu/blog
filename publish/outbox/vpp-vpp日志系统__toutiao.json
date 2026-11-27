@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/vpp日志系统",
+  "content_id": "source-tracks/dataplane/L1-environment/vpp日志系统",
   "draft_id": "7708376459542266409",
   "package_dir": "toutiao/out/vpp-vpp日志系统",
   "platform": "toutiao",

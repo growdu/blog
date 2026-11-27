@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/dpdk无锁队列实现",
+  "content_id": "source-tracks/dataplane/L2-architecture/dpdk无锁队列实现",
   "draft_id": "7708376725297644075",
   "package_dir": "toutiao/out/dpdk-dpdk无锁队列实现",
   "platform": "toutiao",

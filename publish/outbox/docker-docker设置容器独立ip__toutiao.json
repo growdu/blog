@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "docker/docker设置容器独立ip",
+  "content_id": "source-tracks/engineering/L3-container/docker设置容器独立ip",
   "draft_id": "7708375981400113727",
   "package_dir": "toutiao/out/docker-docker设置容器独立ip",
   "platform": "toutiao",

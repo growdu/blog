@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/cdu_nxp2160_ptp1588v2实现方案",
+  "content_id": "source-tracks/dataplane/L3-plugin-dev/cdu_nxp2160_ptp1588v2实现方案",
   "draft_id": "7708376518795330084",
   "package_dir": "toutiao/out/vpp-cdu_nxp2160_ptp1588v2实现方案",
   "platform": "toutiao",

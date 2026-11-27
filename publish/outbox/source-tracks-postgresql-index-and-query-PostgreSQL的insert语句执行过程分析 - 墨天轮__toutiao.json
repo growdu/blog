@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/index-and-query/PostgreSQL的insert语句执行过程分析 - 墨天轮",
+  "content_id": "source-tracks/postgresql/L3-index-and-query/PostgreSQL的insert语句执行过程分析 - 墨天轮",
   "draft_id": "7708376366571323923",
   "package_dir": "toutiao/out/source-tracks-postgresql-index-and-query-PostgreSQL的insert语句执行过程分析 - 墨天轮",
   "platform": "toutiao",

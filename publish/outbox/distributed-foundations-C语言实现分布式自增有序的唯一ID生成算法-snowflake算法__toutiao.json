@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/foundations/C语言实现分布式自增有序的唯一ID生成算法-snowflake算法",
+  "content_id": "source-tracks/distributed/L1-foundations/C语言实现分布式自增有序的唯一ID生成算法-snowflake算法",
   "draft_id": "7708376149050589715",
   "package_dir": "toutiao/out/distributed-foundations-C语言实现分布式自增有序的唯一ID生成算法-snowflake算法",
   "platform": "toutiao",

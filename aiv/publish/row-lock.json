@@ -1,7 +1,7 @@
 {
   "episode": "row-lock",
   "title": "两个事务改同一行，谁先谁后",
-  "url": "https://growdu.cn/2026/10/15/source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive/",
+  "url": "https://growdu.cn/2026/10/15/source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive/",
   "cover_at": 17.0,
   "channels": {
     "title": "两个事务改同一行 谁先谁后",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/getting-started/postgresql-schema-search-path",
+  "content_id": "source-tracks/postgresql/L1-getting-started/postgresql-schema-search-path",
   "draft_id": "7708374760732246571",
   "package_dir": "toutiao/out/source-tracks-postgresql-getting-started-postgresql-schema-search-path",
   "platform": "toutiao",

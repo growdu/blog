@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/citus-columnar-deep-dive",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/citus-columnar-deep-dive",
   "draft_id": "7708374950863831606",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-citus-columnar-deep-dive",
   "platform": "toutiao",

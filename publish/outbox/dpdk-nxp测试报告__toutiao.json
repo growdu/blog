@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/nxp测试报告",
+  "content_id": "source-tracks/dataplane/L1-environment/nxp测试报告",
   "draft_id": "7708376700995830335",
   "package_dir": "toutiao/out/dpdk-nxp测试报告",
   "platform": "toutiao",

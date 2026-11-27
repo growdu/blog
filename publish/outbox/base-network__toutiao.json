@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "base/network",
+  "content_id": "source-tracks/engineering/L1-basics/network",
   "draft_id": "7708377133836206634",
   "package_dir": "toutiao/out/base-network",
   "platform": "toutiao",

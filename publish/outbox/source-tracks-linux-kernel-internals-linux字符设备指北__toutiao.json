@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/linux/kernel-internals/linux字符设备指北",
+  "content_id": "source-tracks/linux/L3-kernel-internals/linux字符设备指北",
   "draft_id": "7708376592375874067",
   "package_dir": "toutiao/out/source-tracks-linux-kernel-internals-linux字符设备指北",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/wal-and-recovery/xlog",
+  "content_id": "source-tracks/postgresql/L5-wal-and-recovery/xlog",
   "draft_id": "7708376884895957523",
   "package_dir": "toutiao/out/source-tracks-postgresql-wal-and-recovery-xlog",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/foundations/分布式一致性协议",
+  "content_id": "source-tracks/distributed/L1-foundations/分布式一致性协议",
   "draft_id": "7708376856784814628",
   "package_dir": "toutiao/out/distributed-foundations-分布式一致性协议",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/vpp代码流程图",
+  "content_id": "source-tracks/dataplane/L2-architecture/vpp代码流程图",
   "draft_id": "7708376491389682239",
   "package_dir": "toutiao/out/vpp-vpp代码流程图",
   "platform": "toutiao",

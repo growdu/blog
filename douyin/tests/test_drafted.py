@@ -255,7 +255,7 @@ def _publish_meta(tmp_path) -> Path:
         "episode": "ep01",
         "title": "PostgreSQL 18 并行逻辑解码",
         "cover_at": 1.0,
-        "url": "https://growdu.cn/2026/11/12/life/aiv/",
+        "url": "https://growdu.cn/2026/11/12/source-tracks/blogging/L4-video-pipeline/aiv/",
         "douyin": {
             "title": "32 核机器，解码只占 1 核",
             "description": "默认发布端只有一个解码线程，串行处理。",

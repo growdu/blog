@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "docker/docker与宿主机共享内存通信",
+  "content_id": "source-tracks/engineering/L3-container/docker与宿主机共享内存通信",
   "draft_id": "7708376692766655018",
   "package_dir": "toutiao/out/docker-docker与宿主机共享内存通信",
   "platform": "toutiao",

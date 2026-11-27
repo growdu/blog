@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/getting-started/pg_complie_and_run",
+  "content_id": "source-tracks/postgresql/L1-getting-started/pg_complie_and_run",
   "draft_id": "7708376868755374655",
   "package_dir": "toutiao/out/source-tracks-postgresql-getting-started-pg_complie_and_run",
   "platform": "toutiao",

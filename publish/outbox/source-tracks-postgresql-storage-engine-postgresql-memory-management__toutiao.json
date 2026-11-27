@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/storage-engine/postgresql-memory-management",
+  "content_id": "source-tracks/postgresql/L2-storage-engine/postgresql-memory-management",
   "draft_id": "7708375277520437814",
   "package_dir": "toutiao/out/source-tracks-postgresql-storage-engine-postgresql-memory-management",
   "platform": "toutiao",

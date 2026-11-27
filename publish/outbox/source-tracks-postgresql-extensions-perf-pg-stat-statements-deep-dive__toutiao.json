@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/pg-stat-statements-deep-dive",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/pg-stat-statements-deep-dive",
   "draft_id": "7708374966424683049",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-pg-stat-statements-deep-dive",
   "platform": "toutiao",

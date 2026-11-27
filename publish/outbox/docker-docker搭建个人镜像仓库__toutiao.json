@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "docker/docker搭建个人镜像仓库",
+  "content_id": "source-tracks/engineering/L3-container/docker搭建个人镜像仓库",
   "draft_id": "7708376045452149290",
   "package_dir": "toutiao/out/docker-docker搭建个人镜像仓库",
   "platform": "toutiao",

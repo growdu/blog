@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/ha-and-dr/调整corosync网络波动时间操作文档",
+  "content_id": "source-tracks/distributed/L3-ha-and-dr/调整corosync网络波动时间操作文档",
   "draft_id": "7708376247000187411",
   "package_dir": "toutiao/out/distributed-ha-and-dr-调整corosync网络波动时间操作文档",
   "platform": "toutiao",

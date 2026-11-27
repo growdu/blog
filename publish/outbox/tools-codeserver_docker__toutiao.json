@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "tools/codeserver_docker",
+  "content_id": "source-tracks/engineering/L3-container/codeserver_docker",
   "draft_id": "7708376888846090815",
   "package_dir": "toutiao/out/tools-codeserver_docker",
   "platform": "toutiao",

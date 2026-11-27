@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/field-notes/repmgr网络割裂问题",
+  "content_id": "source-tracks/distributed/L4-field-notes/repmgr网络割裂问题",
   "draft_id": "7708376799801098815",
   "package_dir": "toutiao/out/distributed-field-notes-repmgr网络割裂问题",
   "platform": "toutiao",

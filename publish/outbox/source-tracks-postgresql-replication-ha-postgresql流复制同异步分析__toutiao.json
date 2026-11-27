@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/postgresql流复制同异步分析",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/postgresql流复制同异步分析",
   "draft_id": "7708376317443523108",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-postgresql流复制同异步分析",
   "platform": "toutiao",

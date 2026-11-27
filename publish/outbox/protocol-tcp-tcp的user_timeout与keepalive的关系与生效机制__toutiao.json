@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "protocol/tcp/tcp的user_timeout与keepalive的关系与生效机制",
+  "content_id": "source-tracks/linux/L4-networking/tcp的user_timeout与keepalive的关系与生效机制",
   "draft_id": "7708376771938255379",
   "package_dir": "toutiao/out/protocol-tcp-tcp的user_timeout与keepalive的关系与生效机制",
   "platform": "toutiao",

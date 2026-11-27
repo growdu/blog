@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "page/ssh",
+  "content_id": "source-tracks/engineering/L4-web/ssh",
   "draft_id": "7708377100507546154",
   "package_dir": "toutiao/out/page-ssh",
   "platform": "toutiao",

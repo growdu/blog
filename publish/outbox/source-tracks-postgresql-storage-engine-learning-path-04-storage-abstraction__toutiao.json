@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/storage-engine/learning-path/04-storage-abstraction",
+  "content_id": "source-tracks/postgresql/L2-storage-engine/learning-path/04-storage-abstraction",
   "draft_id": "7708375304674296362",
   "package_dir": "toutiao/out/source-tracks-postgresql-storage-engine-learning-path-04-storage-abstraction",
   "platform": "toutiao",

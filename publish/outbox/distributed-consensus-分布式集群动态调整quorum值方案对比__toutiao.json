@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/分布式集群动态调整quorum值方案对比",
+  "content_id": "source-tracks/distributed/L2-consensus/分布式集群动态调整quorum值方案对比",
   "draft_id": "7708376838993461802",
   "package_dir": "toutiao/out/distributed-consensus-分布式集群动态调整quorum值方案对比",
   "platform": "toutiao",

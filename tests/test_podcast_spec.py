@@ -38,12 +38,12 @@ SPEC_LONG_VIDEO = REPO / "publish" / "spec" / "09-长视频三档.md"
 #
 # 主母稿 = 该期篇幅最大、承载本期机制的那一篇。
 EPISODE_DRAFTS = {
-    "pg-parallel-decode": "docs/source-tracks/postgresql/logical-replication/postgresql-logical-replication-end-to-end-flow/index.md",
-    "csn-total-ordering": "docs/source-tracks/postgresql/logical-replication/opengauss-csn-total-ordering/index.md",
-    "wal-interleave": "docs/source-tracks/postgresql/logical-replication/postgresql-logical-replication-worker-model/index.md",
-    "parallel-apply": "docs/source-tracks/postgresql/logical-replication/postgresql-logical-replication-ddl-trigger-apply-worker/index.md",
-    "structured-ddl": "docs/source-tracks/postgresql/logical-replication/postgresql-logical-replication-ddl-dml-ordering/index.md",
-    "row-lock": "docs/source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive/index.md",
+    "pg-parallel-decode": "docs/source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-end-to-end-flow/index.md",
+    "csn-total-ordering": "docs/source-tracks/postgresql/L7-logical-replication/opengauss-csn-total-ordering/index.md",
+    "wal-interleave": "docs/source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-worker-model/index.md",
+    "parallel-apply": "docs/source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-ddl-trigger-apply-worker/index.md",
+    "structured-ddl": "docs/source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-ddl-dml-ordering/index.md",
+    "row-lock": "docs/source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive/index.md",
 }
 
 # 期号标签的固定顺序。规格 §2.1 的表里期号与 slug 同行，

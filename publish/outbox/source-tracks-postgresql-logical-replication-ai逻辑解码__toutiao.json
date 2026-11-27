@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/ai逻辑解码",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/ai逻辑解码",
   "draft_id": "7708375757924205099",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-ai逻辑解码",
   "platform": "toutiao",

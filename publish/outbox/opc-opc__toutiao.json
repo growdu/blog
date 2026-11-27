@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "opc/opc",
+  "content_id": "source-tracks/engineering/L2-tooling/opc",
   "draft_id": "7708375414074343972",
   "package_dir": "toutiao/out/opc-opc",
   "platform": "toutiao",

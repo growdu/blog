@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/pa_decode/概要设计说明书-v2",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/pa_decode/概要设计说明书-v2",
   "draft_id": "7708374771365200425",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-pa_decode-概要设计说明书-v2",
   "platform": "toutiao",

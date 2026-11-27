@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/transaction-mvcc/postgresql-parallel-worker",
+  "content_id": "source-tracks/postgresql/L4-transaction-mvcc/postgresql-parallel-worker",
   "draft_id": "7708375138009432612",
   "package_dir": "toutiao/out/source-tracks-postgresql-transaction-mvcc-postgresql-parallel-worker",
   "platform": "toutiao",

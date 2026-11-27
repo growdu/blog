@@ -253,8 +253,8 @@ class ContentUnit:
 def content_id_for(path, posts_dir) -> str:
     """内容单元 id：相对 ``source/_posts/`` 的路径去掉 ``.md``。
 
-    例：``source-tracks/postgresql/logical-replication/postgresql逻辑复制-DML.md`` →
-    ``source-tracks/postgresql/logical-replication/postgresql逻辑复制-DML``。
+    例：``source-tracks/postgresql/L7-logical-replication/postgresql逻辑复制-DML.md`` →
+    ``source-tracks/postgresql/L7-logical-replication/postgresql逻辑复制-DML``。
     """
     root = Path(posts_dir).resolve()
     relative = Path(path).resolve().relative_to(root)

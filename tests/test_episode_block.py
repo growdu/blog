@@ -29,12 +29,12 @@ THEME_PARTIALS = REPO_ROOT / "themes" / "matery" / "layout" / "_partial"
 #: 六期母稿：期号 slug → 母稿路径（docs/ 下）。
 #: 母稿是唯一真相（不变量一），期号线由它们认领。
 SIX_DRAFTS = {
-    "pg-parallel-decode": "docs/source-tracks/postgresql/logical-replication/postgresql-logical-replication-end-to-end-flow/index.md",
-    "csn-total-ordering": "docs/source-tracks/postgresql/logical-replication/opengauss-csn-total-ordering/index.md",
-    "wal-interleave": "docs/source-tracks/postgresql/logical-replication/postgresql-logical-replication-worker-model/index.md",
-    "parallel-apply": "docs/source-tracks/postgresql/logical-replication/postgresql-logical-replication-ddl-trigger-apply-worker/index.md",
-    "structured-ddl": "docs/source-tracks/postgresql/logical-replication/postgresql-logical-replication-ddl-dml-ordering/index.md",
-    "row-lock": "docs/source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive/index.md",
+    "pg-parallel-decode": "docs/source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-end-to-end-flow/index.md",
+    "csn-total-ordering": "docs/source-tracks/postgresql/L7-logical-replication/opengauss-csn-total-ordering/index.md",
+    "wal-interleave": "docs/source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-worker-model/index.md",
+    "parallel-apply": "docs/source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-ddl-trigger-apply-worker/index.md",
+    "structured-ddl": "docs/source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-ddl-dml-ordering/index.md",
+    "row-lock": "docs/source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive/index.md",
 }
 
 
@@ -232,12 +232,12 @@ def test_the_landing_url_is_derived_not_copied(tmp_path, monkeypatch):
     index = _build(tmp_path, monkeypatch, date_text="2026-10-15 09:00:00")
     row = next(r for r in index["episodes"] if r["episode"] == "row-lock")
 
-    assert row["url"] == "/2026/10/15/source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive/"
-    assert row["content_id"] == "source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive"
+    assert row["url"] == "/2026/10/15/source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive/"
+    assert row["content_id"] == "source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive"
 
     other = _build(tmp_path / "second", monkeypatch, date_text="2027-01-02 00:00:00")
     other_row = next(r for r in other["episodes"] if r["episode"] == "row-lock")
-    assert other_row["url"] == "/2027/01/02/source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive/"
+    assert other_row["url"] == "/2027/01/02/source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive/"
 
 
 def test_the_index_carries_the_drafts_own_episode_facts(tmp_path, monkeypatch):
@@ -448,7 +448,7 @@ def _episode_row(**overrides):
                 "published_url": "https://www.bilibili.com/video/BV1NBWv6qECn",
             }
         ],
-        "url": "/2026/10/15/source-tracks/postgresql/transaction-mvcc/postgresql-row-lock-deep-dive/",
+        "url": "/2026/10/15/source-tracks/postgresql/L4-transaction-mvcc/postgresql-row-lock-deep-dive/",
     }
     row.update(overrides)
     return row

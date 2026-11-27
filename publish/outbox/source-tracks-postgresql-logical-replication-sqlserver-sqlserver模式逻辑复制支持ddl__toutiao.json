@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/sqlserver/sqlserver模式逻辑复制支持ddl",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/sqlserver/sqlserver模式逻辑复制支持ddl",
   "draft_id": "7708375598300971563",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-sqlserver-sqlserver模式逻辑复制支持ddl",
   "platform": "toutiao",

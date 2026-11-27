@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/vpp使用kni",
+  "content_id": "source-tracks/dataplane/L3-plugin-dev/vpp使用kni",
   "draft_id": "7708376619777294902",
   "package_dir": "toutiao/out/dpdk-vpp使用kni",
   "platform": "toutiao",

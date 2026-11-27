@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "protocol/tcp/tcp重建链",
+  "content_id": "source-tracks/linux/L4-networking/tcp重建链",
   "draft_id": "7708376833703543359",
   "package_dir": "toutiao/out/protocol-tcp-tcp重建链",
   "platform": "toutiao",

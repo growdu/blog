@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/postgresql-community-gems",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/postgresql-community-gems",
   "draft_id": "7708374923052155434",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-postgresql-community-gems",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/vpp主要数据结构",
+  "content_id": "source-tracks/dataplane/L2-architecture/vpp主要数据结构",
   "draft_id": "7708376495945515556",
   "package_dir": "toutiao/out/vpp-vpp主要数据结构",
   "platform": "toutiao",

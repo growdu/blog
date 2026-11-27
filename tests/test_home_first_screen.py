@@ -483,7 +483,7 @@ def test_the_dead_hero_styles_are_gone():
 def test_the_tagline_has_a_style_of_its_own():
     """导航栏里那句定位有自己的样式。
 
-    新样式只放 ``tech.css``（docs/blog/重构方案.md §5.4）—— 而且得
+    新样式只放 ``tech.css``（docs/source-tracks/blogging/L1-setup/重构方案.md §5.4）—— 而且得
     真的有：定位句是 ``<span>``，matery 的 h1 是 2.0rem；首页上站名是
     ``<h1>``，那一处得单独重置（``h1.logo-span``），不然会把导航栏撑成
     两行。

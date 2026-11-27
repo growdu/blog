@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/field-notes/一台主机运行多个corosync代码分析",
+  "content_id": "source-tracks/distributed/L4-field-notes/一台主机运行多个corosync代码分析",
   "draft_id": "7708376373248737828",
   "package_dir": "toutiao/out/distributed-field-notes-一台主机运行多个corosync代码分析",
   "platform": "toutiao",

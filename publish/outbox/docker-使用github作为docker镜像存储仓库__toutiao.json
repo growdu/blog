@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "docker/使用github作为docker镜像存储仓库",
+  "content_id": "source-tracks/engineering/L3-container/使用github作为docker镜像存储仓库",
   "draft_id": "7708376086669476395",
   "package_dir": "toutiao/out/docker-使用github作为docker镜像存储仓库",
   "platform": "toutiao",

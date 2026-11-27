@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/wal-and-recovery/数据库崩溃恢复",
+  "content_id": "source-tracks/postgresql/L5-wal-and-recovery/数据库崩溃恢复",
   "draft_id": "7708376324557881875",
   "package_dir": "toutiao/out/source-tracks-postgresql-wal-and-recovery-数据库崩溃恢复",
   "platform": "toutiao",

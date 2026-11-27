@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/指定列同步对逻辑复制支持DDL的影响",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/指定列同步对逻辑复制支持DDL的影响",
   "draft_id": "7708375661777306155",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-指定列同步对逻辑复制支持DDL的影响",
   "platform": "toutiao",

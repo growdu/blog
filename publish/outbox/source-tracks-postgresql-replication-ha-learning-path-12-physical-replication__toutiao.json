@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/learning-path/12-physical-replication",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/learning-path/12-physical-replication",
   "draft_id": "7708375310844084778",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-learning-path-12-physical-replication",
   "platform": "toutiao",

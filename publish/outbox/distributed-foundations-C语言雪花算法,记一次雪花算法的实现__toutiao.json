@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/foundations/C语言雪花算法,记一次雪花算法的实现",
+  "content_id": "source-tracks/distributed/L1-foundations/C语言雪花算法,记一次雪花算法的实现",
   "draft_id": "7708376124997009939",
   "package_dir": "toutiao/out/distributed-foundations-C语言雪花算法,记一次雪花算法的实现",
   "platform": "toutiao",

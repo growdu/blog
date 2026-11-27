@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/postgresql-logical-replication-docker-setup",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-docker-setup",
   "draft_id": "7708375168506249769",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-postgresql-logical-replication-docker-setup",
   "platform": "toutiao",

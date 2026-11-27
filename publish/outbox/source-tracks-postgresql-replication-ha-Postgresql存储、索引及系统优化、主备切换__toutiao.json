@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/Postgresql存储、索引及系统优化、主备切换",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/Postgresql存储、索引及系统优化、主备切换",
   "draft_id": "7708375993379062308",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-Postgresql存储、索引及系统优化、主备切换",
   "platform": "toutiao",

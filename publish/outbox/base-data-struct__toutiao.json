@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "base/data-struct",
+  "content_id": "source-tracks/engineering/L1-basics/data-struct",
   "draft_id": "7708377105888854569",
   "package_dir": "toutiao/out/base-data-struct",
   "platform": "toutiao",

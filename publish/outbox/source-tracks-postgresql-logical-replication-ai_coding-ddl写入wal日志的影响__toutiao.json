@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/ai_coding/ddl写入wal日志的影响",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/ai_coding/ddl写入wal日志的影响",
   "draft_id": "7708375715929932342",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-ai_coding-ddl写入wal日志的影响",
   "platform": "toutiao",

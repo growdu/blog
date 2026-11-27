@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/corosync-qdevice中ffsplit与lsm算法的区别",
+  "content_id": "source-tracks/distributed/L2-consensus/corosync-qdevice中ffsplit与lsm算法的区别",
   "draft_id": "7708376829102424612",
   "package_dir": "toutiao/out/distributed-consensus-corosync-qdevice中ffsplit与lsm算法的区别",
   "platform": "toutiao",

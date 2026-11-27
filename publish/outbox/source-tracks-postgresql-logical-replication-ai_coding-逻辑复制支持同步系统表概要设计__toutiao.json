@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/ai_coding/逻辑复制支持同步系统表概要设计",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/ai_coding/逻辑复制支持同步系统表概要设计",
   "draft_id": "7708375666156192319",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-ai_coding-逻辑复制支持同步系统表概要设计",
   "platform": "toutiao",

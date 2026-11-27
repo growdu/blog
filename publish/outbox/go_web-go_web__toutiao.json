@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "go_web/go_web",
+  "content_id": "source-tracks/engineering/L4-web/go_web",
   "draft_id": "7708376234874470955",
   "package_dir": "toutiao/out/go_web-go_web",
   "platform": "toutiao",

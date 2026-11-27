@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/l3fwd",
+  "content_id": "source-tracks/dataplane/L1-environment/l3fwd",
   "draft_id": "7708376709346738730",
   "package_dir": "toutiao/out/dpdk-l3fwd",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/postgresql-reorderbuffer-c-function-reference",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/postgresql-reorderbuffer-c-function-reference",
   "draft_id": "7708374890201580075",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-postgresql-reorderbuffer-c-function-reference",
   "platform": "toutiao",

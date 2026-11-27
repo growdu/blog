@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/index-and-query/postgresql-read-a-row-deep-dive",
+  "content_id": "source-tracks/postgresql/L3-index-and-query/postgresql-read-a-row-deep-dive",
   "draft_id": "7708374854336070180",
   "package_dir": "toutiao/out/source-tracks-postgresql-index-and-query-postgresql-read-a-row-deep-dive",
   "platform": "toutiao",

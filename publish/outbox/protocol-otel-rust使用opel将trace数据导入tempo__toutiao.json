@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "protocol/otel/rust使用opel将trace数据导入tempo",
+  "content_id": "source-tracks/linux/L4-networking/rust使用opel将trace数据导入tempo",
   "draft_id": "7708375778094596662",
   "package_dir": "toutiao/out/protocol-otel-rust使用opel将trace数据导入tempo",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/consensus/c-rart",
+  "content_id": "source-tracks/distributed/L2-consensus/c-rart",
   "draft_id": "7708376724114899497",
   "package_dir": "toutiao/out/distributed-consensus-c-rart",
   "platform": "toutiao",

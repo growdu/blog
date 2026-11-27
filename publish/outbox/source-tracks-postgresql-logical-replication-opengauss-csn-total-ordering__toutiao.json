@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/opengauss-csn-total-ordering",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/opengauss-csn-total-ordering",
   "draft_id": "7708374915975545385",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-opengauss-csn-total-ordering",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/逻辑复制解惑",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/逻辑复制解惑",
   "draft_id": "7708375671927734847",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-逻辑复制解惑",
   "platform": "toutiao",

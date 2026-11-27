@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "storage/nfs详解",
+  "content_id": "source-tracks/linux/L5-filesystem/nfs详解",
   "draft_id": "7708375993173410347",
   "package_dir": "toutiao/out/storage-nfs详解",
   "platform": "toutiao",

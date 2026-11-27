@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/index-and-query/postgresql-rangevar-and-data-structures",
+  "content_id": "source-tracks/postgresql/L3-index-and-query/postgresql-rangevar-and-data-structures",
   "draft_id": "7708374939866300971",
   "package_dir": "toutiao/out/source-tracks-postgresql-index-and-query-postgresql-rangevar-and-data-structures",
   "platform": "toutiao",

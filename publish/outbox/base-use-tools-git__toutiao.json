@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "base/use-tools/git",
+  "content_id": "source-tracks/engineering/L1-basics/git",
   "draft_id": "7708376977668866623",
   "package_dir": "toutiao/out/base-use-tools-git",
   "platform": "toutiao",

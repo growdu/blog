@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/selection/分布式数据库高可用方案设计",
+  "content_id": "source-tracks/distributed/L3-ha-and-dr/分布式数据库高可用方案设计",
   "draft_id": "7708376815848456723",
   "package_dir": "toutiao/out/distributed-selection-分布式数据库高可用方案设计",
   "platform": "toutiao",

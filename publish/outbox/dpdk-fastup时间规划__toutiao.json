@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/fastup时间规划",
+  "content_id": "source-tracks/dataplane/L4-testing/fastup时间规划",
   "draft_id": "7708376669190423059",
   "package_dir": "toutiao/out/dpdk-fastup时间规划",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/nxp运行vpp",
+  "content_id": "source-tracks/dataplane/L1-environment/nxp运行vpp",
   "draft_id": "7708376691088835113",
   "package_dir": "toutiao/out/dpdk-nxp运行vpp",
   "platform": "toutiao",

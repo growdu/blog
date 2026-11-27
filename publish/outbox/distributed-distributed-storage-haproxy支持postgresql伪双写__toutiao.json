@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/distributed-storage/haproxy支持postgresql伪双写",
+  "content_id": "source-tracks/distributed/L3-ha-and-dr/haproxy支持postgresql伪双写",
   "draft_id": "7708375819684446774",
   "package_dir": "toutiao/out/distributed-distributed-storage-haproxy支持postgresql伪双写",
   "platform": "toutiao",

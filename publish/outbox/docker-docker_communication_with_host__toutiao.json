@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "docker/docker_communication_with_host",
+  "content_id": "source-tracks/engineering/L3-container/docker_communication_with_host",
   "draft_id": "7708376880872735286",
   "package_dir": "toutiao/out/docker-docker_communication_with_host",
   "platform": "toutiao",

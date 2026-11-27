@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/抓包",
+  "content_id": "source-tracks/dataplane/L1-environment/抓包",
   "draft_id": "7708376656662938166",
   "package_dir": "toutiao/out/dpdk-抓包",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/pgaudit-deep-dive",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/pgaudit-deep-dive",
   "draft_id": "7708374966424650281",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-pgaudit-deep-dive",
   "platform": "toutiao",

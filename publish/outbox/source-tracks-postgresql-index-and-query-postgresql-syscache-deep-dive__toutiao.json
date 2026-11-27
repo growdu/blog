@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/index-and-query/postgresql-syscache-deep-dive",
+  "content_id": "source-tracks/postgresql/L3-index-and-query/postgresql-syscache-deep-dive",
   "draft_id": "7708374914029355562",
   "package_dir": "toutiao/out/source-tracks-postgresql-index-and-query-postgresql-syscache-deep-dive",
   "platform": "toutiao",

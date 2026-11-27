@@ -63,7 +63,7 @@ def meta():
         episode="ep02",
         title="一个 64 位计数器，决定所有事务的提交顺序",
         cover_at=1.0,
-        url="https://growdu.cn/2026/11/12/life/aiv/",
+        url="https://growdu.cn/2026/11/12/source-tracks/blogging/L4-video-pipeline/aiv/",
         bilibili={
             "title": "一个 64 位计数器，决定所有事务的提交顺序",
             "description": "并发时 commit 的先后是乱的。",

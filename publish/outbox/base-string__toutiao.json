@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "base/string",
+  "content_id": "source-tracks/engineering/L1-basics/string",
   "draft_id": "7708377072292364854",
   "package_dir": "toutiao/out/base-string",
   "platform": "toutiao",

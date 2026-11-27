@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/transaction-mvcc/postgresql-latch-mechanism",
+  "content_id": "source-tracks/postgresql/L4-transaction-mvcc/postgresql-latch-mechanism",
   "draft_id": "7708375036335227455",
   "package_dir": "toutiao/out/source-tracks-postgresql-transaction-mvcc-postgresql-latch-mechanism",
   "platform": "toutiao",

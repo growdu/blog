@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "page/regexp",
+  "content_id": "source-tracks/engineering/L4-web/regexp",
   "draft_id": "7708376959037833770",
   "package_dir": "toutiao/out/page-regexp",
   "platform": "toutiao",

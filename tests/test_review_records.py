@@ -284,7 +284,7 @@ def changed_paths(sha: str, *, extra_env: dict[str, str] | None = None) -> list[
     ``core.quotePath`` is false -- and that setting lives in the
     machine's git config: a developer often has it off, a CI runner
     keeps the default (true).  The same commit then reports
-    ``docs/distributed/foundations/分布式一致性协议.md`` on one machine and
+    ``docs/source-tracks/distributed/L1-foundations/分布式一致性协议.md`` on one machine and
     ``"docs/distributed/foundations/\\350\\276\\205..."`` on the other, so comparing the
     record's path against that output matches on one machine and not on
     the other.  ``-z`` pins the output to raw bytes with NUL separators,

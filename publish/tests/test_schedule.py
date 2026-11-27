@@ -230,7 +230,7 @@ def test_discover_units_reads_the_content_id_from_the_path(tmp_path):
     posts = tmp_path / "_posts"
     write_post(
         posts,
-        "source-tracks/postgresql/logical-replication/postgresql逻辑复制-DML.md",
+        "source-tracks/postgresql/L7-logical-replication/postgresql逻辑复制-DML.md",
         "title: \"逻辑复制(DML)\"\ndate: 2026-07-27 10:40:11\nplatforms:\n  - wechat",
     )
 
@@ -238,7 +238,7 @@ def test_discover_units_reads_the_content_id_from_the_path(tmp_path):
 
     assert errors == []
     assert len(units) == 1
-    assert units[0].content_id == "source-tracks/postgresql/logical-replication/postgresql逻辑复制-DML"
+    assert units[0].content_id == "source-tracks/postgresql/L7-logical-replication/postgresql逻辑复制-DML"
     assert units[0].platforms == ("wechat",)
     assert units[0].date == date(2026, 7, 27)
     assert units[0].publish_on is None

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/field-notes/sanlock实现共享corosync共享存储仲裁",
+  "content_id": "source-tracks/distributed/L4-field-notes/sanlock实现共享corosync共享存储仲裁",
   "draft_id": "7708376173658571305",
   "package_dir": "toutiao/out/distributed-field-notes-sanlock实现共享corosync共享存储仲裁",
   "platform": "toutiao",

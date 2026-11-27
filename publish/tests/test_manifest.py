@@ -18,7 +18,7 @@ from publishkit import (
 )
 
 FULL_MANIFEST = {
-    "content_id": "source-tracks/postgresql/logical-replication/postgresql-logical-replication-add-guc",
+    "content_id": "source-tracks/postgresql/L7-logical-replication/postgresql-logical-replication-add-guc",
     "platform": "wechat",
     "kind": "document",
     "title": "逻辑复制大事务同步要 30 分钟？",

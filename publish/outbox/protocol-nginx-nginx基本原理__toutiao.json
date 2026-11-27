@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "protocol/nginx/nginx基本原理",
+  "content_id": "source-tracks/linux/L4-networking/nginx基本原理",
   "draft_id": "7708375856700031507",
   "package_dir": "toutiao/out/protocol-nginx-nginx基本原理",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/logical-replication/postgresql-reorder-buffer-code-analysis",
+  "content_id": "source-tracks/postgresql/L7-logical-replication/postgresql-reorder-buffer-code-analysis",
   "draft_id": "7708375037279076883",
   "package_dir": "toutiao/out/source-tracks-postgresql-logical-replication-postgresql-reorder-buffer-code-analysis",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "dpdk/fastup模拟UE测试",
+  "content_id": "source-tracks/dataplane/L4-testing/fastup模拟UE测试",
   "draft_id": "7708376719249457718",
   "package_dir": "toutiao/out/dpdk-fastup模拟UE测试",
   "platform": "toutiao",

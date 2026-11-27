@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/vpp vector指北",
+  "content_id": "source-tracks/dataplane/L2-architecture/vpp vector指北",
   "draft_id": "7708376465309434410",
   "package_dir": "toutiao/out/vpp-vpp vector指北",
   "platform": "toutiao",

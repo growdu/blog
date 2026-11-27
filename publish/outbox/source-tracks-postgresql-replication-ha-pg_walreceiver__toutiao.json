@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/replication-ha/pg_walreceiver",
+  "content_id": "source-tracks/postgresql/L6-replication-ha/pg_walreceiver",
   "draft_id": "7708376871846674980",
   "package_dir": "toutiao/out/source-tracks-postgresql-replication-ha-pg_walreceiver",
   "platform": "toutiao",

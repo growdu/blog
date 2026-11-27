@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/transaction-mvcc/postgresql-running-xacts-snapshot",
+  "content_id": "source-tracks/postgresql/L4-transaction-mvcc/postgresql-running-xacts-snapshot",
   "draft_id": "7708374950863782454",
   "package_dir": "toutiao/out/source-tracks-postgresql-transaction-mvcc-postgresql-running-xacts-snapshot",
   "platform": "toutiao",

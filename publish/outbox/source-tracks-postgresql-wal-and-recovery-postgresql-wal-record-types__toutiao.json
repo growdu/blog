@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/wal-and-recovery/postgresql-wal-record-types",
+  "content_id": "source-tracks/postgresql/L5-wal-and-recovery/postgresql-wal-record-types",
   "draft_id": "7708374939866382891",
   "package_dir": "toutiao/out/source-tracks-postgresql-wal-and-recovery-postgresql-wal-record-types",
   "platform": "toutiao",

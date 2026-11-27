@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/extensions-perf/timescaledb-deep-dive",
+  "content_id": "source-tracks/postgresql/L8-extensions-perf/timescaledb-deep-dive",
   "draft_id": "7708375010850685482",
   "package_dir": "toutiao/out/source-tracks-postgresql-extensions-perf-timescaledb-deep-dive",
   "platform": "toutiao",

@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "vpp/fastgtpu配置及cli说明文档",
+  "content_id": "source-tracks/dataplane/L3-plugin-dev/fastgtpu配置及cli说明文档",
   "draft_id": "7708376514923872804",
   "package_dir": "toutiao/out/vpp-fastgtpu配置及cli说明文档",
   "platform": "toutiao",

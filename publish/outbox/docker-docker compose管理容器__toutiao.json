@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "docker/docker compose管理容器",
+  "content_id": "source-tracks/engineering/L3-container/docker compose管理容器",
   "draft_id": "7708375874432778793",
   "package_dir": "toutiao/out/docker-docker compose管理容器",
   "platform": "toutiao",

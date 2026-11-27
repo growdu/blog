@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "distributed/distributed-storage/postgresql伪双写",
+  "content_id": "source-tracks/distributed/L3-ha-and-dr/postgresql伪双写",
   "draft_id": "7708375819441177130",
   "package_dir": "toutiao/out/distributed-distributed-storage-postgresql伪双写",
   "platform": "toutiao",

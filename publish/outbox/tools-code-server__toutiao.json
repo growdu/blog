@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "tools/code-server",
+  "content_id": "source-tracks/engineering/L3-container/code-server",
   "draft_id": "7708376761091899945",
   "package_dir": "toutiao/out/tools-code-server",
   "platform": "toutiao",

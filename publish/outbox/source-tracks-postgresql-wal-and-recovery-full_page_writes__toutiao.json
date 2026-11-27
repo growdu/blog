@@ -1,6 +1,6 @@
 {
   "automation": "manual",
-  "content_id": "source-tracks/postgresql/wal-and-recovery/full_page_writes",
+  "content_id": "source-tracks/postgresql/L5-wal-and-recovery/full_page_writes",
   "draft_id": "7708376829102522916",
   "package_dir": "toutiao/out/source-tracks-postgresql-wal-and-recovery-full_page_writes",
   "platform": "toutiao",
